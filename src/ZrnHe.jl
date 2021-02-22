@@ -1,8 +1,13 @@
 
+"""
+```julia
+intersectionFraction(r1, r2, d)
+```
+Calculate the fraction of the surface area of a sphere s2 with radius `r2`
+that intersects the interior of a sphere s1 of radius `r1` if the two are
+separated by distance `d`. Assumptions: `r1`>0, `r2`>0, `d`>=0
+"""
 function intersectionFraction(r1::T, r2::T, d::T) where T <: Number
-    # Calculate the fraction of the surface area of a sphere s2 with radius r2
-    # that intersects the interior of a sphere s1 of radius r1 if the two are
-    # separated by distance d. Assumptions: r1>0, r2>0, d>=0
     dmax = r1+r2
     dmin = abs(r1-r2)
     if d > dmax ## If separated by more than dmax, there is no intersection
@@ -27,13 +32,19 @@ function intersectionFraction(r1::T, r2::T, d::T) where T <: Number
     end
     return omega
 end
-
 export intersectionFraction
 
+
+"""
+```julia
+intersectionDensity(rEdges::Vector, rVolumes::Vector, ralpha, d)
+```
+Calculate the volume-nomalized fractional intersection density of an alpha
+stopping sphere of radius `ralpha` with each concentric shell (with shell edges
+`rEdges` and relative volumes `rVolumes`) of a spherical crystal where the
+two are separated by distance `d`
+"""
 function intersectionDensity(rEdges::Vector{T}, rVolumes::Vector{T}, ralpha::T, d::T) where T <: Number
-    # Calculate the volume-nomalized fractional intersection density of an alpha
-    # stopping sphere of radius ralpha with each concentric shell of a spherical
-    # crystal where the two are separated by distance d
     n = length(rEdges) - 1
     dInt = Array{Float64,1}(undef, n)
     fIntLast = intersectionFraction(rEdges[1],ralpha,d)
@@ -50,9 +61,14 @@ function intersectionDensity(rEdges::Vector{T}, rVolumes::Vector{T}, ralpha::T, 
 end
 export intersectionDensity
 
-function CalcDamageAnnealing(dt::Number,tSteps::Vector{T},TSteps::Vector{T}) where T <: Number
-    # Guenthner et al. 2013 (AJS) damage annealing model
 
+"""
+```julia
+pr = CalcDamageAnnealing(dt::Number, tSteps::Vector, TSteps)
+```
+Zircon damage annealing model as in Guenthner et al. 2013 (AJS)
+"""
+function CalcDamageAnnealing(dt::Number,tSteps::Vector{T},TSteps::Vector{T}) where T <: Number
     # Annealing model constants
     B=-0.05721
     C0=6.24534
@@ -106,9 +122,16 @@ function CalcDamageAnnealing(dt::Number,tSteps::Vector{T},TSteps::Vector{T}) whe
 end
 export CalcDamageAnnealing
 
-function CalcZrnHeAgeSpherical(dt::Number,ageSteps::Vector{T},TSteps::Vector{T},pr::Matrix{T},crystalRadius::T,dr::Number,Uppm::T,Thppm::T) where T <: Number
-    # Calculate the precdicted zircon He ages for a given set of samples for a given t-T path
 
+"""
+```julia
+HeAge = CalcZrnHeAgeSpherical(dt, ageSteps::Vector, TSteps::Vector, pr::Matrix, r, dr, Uppm, Thppm)
+```
+Calculate the precdicted U-Th/He age of a zircon that has experienced a given t-T path
+(specified by `ageSteps` for time and `TSteps` for temperature, at a time resolution of `dt`)
+using a Crank-Nicholson diffusion solution for a spherical grain of radius `r` at spatial resolution `dr`.
+"""
+function CalcZrnHeAgeSpherical(dt::Number,ageSteps::Vector{T},TSteps::Vector{T},pr::Matrix{T},crystalRadius::T,dr::Number,Uppm::T,Thppm::T) where T <: Number
     # Temporal discretization
     tSteps = reverse(ageSteps)
     ntSteps = length(tSteps) # Number of time steps
