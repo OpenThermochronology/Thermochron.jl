@@ -1,56 +1,56 @@
 
 """
 ```julia
-intersectionFraction(r1, r2, d)
+intersectionfraction(𝓇₁, 𝓇₂, d)
 ```
-Calculate the fraction of the surface area of a sphere s2 with radius `r2`
-that intersects the interior of a sphere s1 of radius `r1` if the two are
-separated by distance `d`. Assumptions: `r1`>0, `r2`>0, `d`>=0
+Calculate the fraction of the surface area of a sphere s2 with radius `𝓇₂`
+that intersects the interior of a sphere s1 of radius `𝓇₁` if the two are
+separated by distance `d`. Assumptions: `𝓇₁`>0, `𝓇₂`>0, `d`>=0
 """
-function intersectionFraction(r1::T, r2::T, d::T) where T <: Number
-    dmax = r1+r2
-    dmin = abs(r1-r2)
+function intersectionfraction(𝓇₁::T, 𝓇₂::T, d::T) where T <: Number
+    dmax = 𝓇₁+𝓇₂
+    dmin = abs(𝓇₁-𝓇₂)
     if d > dmax ## If separated by more than dmax, there is no intersection
         omega = zero(T)
     elseif d > dmin
         # X is the radial distance between the center of s2 and the interseciton plane
         # See e.g., http://mathworld.wolfram.com/Sphere-SphereIntersection.html
-        # x = (d^2 - r1^2 + r2^2) / (2 * d)
+        # x = (d^2 - 𝓇₁^2 + 𝓇₂^2) / (2 * d)
 
         # Let omega be is the solid angle of intersection normalized by 4pi,
         # where the solid angle of a cone is 2pi*(1-cos(theta)) and cos(theta)
-        # is adjacent/hypotenuse = x/r2.
-        # omega = (1 - x/r2)/2
+        # is adjacent/hypotenuse = x/𝓇₂.
+        # omega = (1 - x/𝓇₂)/2
 
         # Rearranged for optimization:
-        omega = one(T)/2 - (d^2 - r1^2 + r2^2) / (4 * d * r2)
+        omega = one(T)/2 - (d^2 - 𝓇₁^2 + 𝓇₂^2) / (4 * d * 𝓇₂)
 
-    elseif r1<r2 # If r1 is entirely within r2
+    elseif 𝓇₁<𝓇₂ # If 𝓇₁ is entirely within 𝓇₂
         omega = zero(T)
     else
-        omega = one(T) # If r2 is entirely within r1
+        omega = one(T) # If 𝓇₂ is entirely within 𝓇₁
     end
     return omega
 end
-export intersectionFraction
+export intersectionfraction
 
 
 """
 ```julia
-intersectionDensity(rEdges::Vector, rVolumes::Vector, ralpha, d)
+intersectiondensity(rEdges::Vector, rVolumes::Vector, ralpha, d)
 ```
 Calculate the volume-nomalized fractional intersection density of an alpha
 stopping sphere of radius `ralpha` with each concentric shell (with shell edges
 `rEdges` and relative volumes `rVolumes`) of a spherical crystal where the
 two are separated by distance `d`
 """
-function intersectionDensity(rEdges::Vector{T}, rVolumes::Vector{T}, ralpha::T, d::T) where T <: Number
+function intersectiondensity(rEdges::Vector{T}, rVolumes::Vector{T}, ralpha::T, d::T) where T <: Number
     n = length(rEdges) - 1
     dInt = Array{Float64,1}(undef, n)
-    fIntLast = intersectionFraction(rEdges[1],ralpha,d)
+    fIntLast = intersectionfraction(rEdges[1],ralpha,d)
     for i=1:n
         # Integrated intersection fraction for each concentric sphere (rEdges) of crystal
-        fInt = intersectionFraction(rEdges[i+1],ralpha,d)
+        fInt = intersectionfraction(rEdges[i+1],ralpha,d)
 
         # Intersection fraction for each spherical shell of the crystal (subtracting
         # one concentric sphere from the next) normalized by shell volume
@@ -59,16 +59,16 @@ function intersectionDensity(rEdges::Vector{T}, rVolumes::Vector{T}, ralpha::T, 
     end
     return dInt
 end
-export intersectionDensity
+export intersectiondensity
 
 
 """
 ```julia
-pr = CalcDamageAnnealing(dt::Number, tSteps::Vector, TSteps)
+ρᵣ = DamageAnnealing(dt::Number, tSteps::Vector, TSteps)
 ```
 Zircon damage annealing model as in Guenthner et al. 2013 (AJS)
 """
-function CalcDamageAnnealing(dt::Number,tSteps::Vector{T},TSteps::Vector{T}) where T <: Number
+function DamageAnnealing(dt::Number,tSteps::Vector{T},TSteps::Vector{T}) where T <: Number
     # Annealing model constants
     B=-0.05721
     C0=6.24534
@@ -79,59 +79,59 @@ function CalcDamageAnnealing(dt::Number,tSteps::Vector{T},TSteps::Vector{T}) whe
     # Allocate matrix to hold reduced track lengths for all previous
     # timesteps
     ntSteps = length(tSteps)
-    r = zeros(ntSteps,ntSteps)
+    lᵣ = zeros(ntSteps,ntSteps)
 
     # First timestep
-    teq = zeros(1,ntSteps)
-    r[1,1] = 1 / ((C0 + C1*(log(dt)-C2)/(log(1 / (TSteps[1]+273.15))-C3))^(1/B)+1)
+    Teq = zeros(1,ntSteps)
+    lᵣ[1,1] = 1 / ((C0 + C1*(log(dt)-C2)/(log(1 / (TSteps[1]+273.15))-C3))^(1/B)+1)
 
     # All subsequent timesteps
     @inbounds for i=2:ntSteps
         # Convert any existing track length reduction for damage from
         # all previous timestep to an equivalent annealing time at the
         # current temperature
-        teq[1:i-1] .= exp.(C2 .+ (log(1 / (TSteps[i]+273.15)) - C3) .* (((1 ./ r[i-1,1:i-1]) .- 1).^B .- C0) ./ C1)
+        Teq[1:i-1] .= exp.(C2 .+ (log(1 / (TSteps[i]+273.15)) - C3) .* (((1 ./ lᵣ[i-1,1:i-1]) .- 1).^B .- C0) ./ C1)
 
         # Calculate the new reduced track lengths for all previous time steps
         # Accumulating annealing strictly in terms of reduced track length
-        r[i,1:i] .= 1 ./ ((C0 .+ C1 .* (log.(dt .+ teq[1:i]) .- C2) ./ (log(1 / (TSteps[i]+273.15)) - C3)).^(1/B) .+ 1) #+273.15?
+        lᵣ[i,1:i] .= 1 ./ ((C0 .+ C1 .* (log.(dt .+ Teq[1:i]) .- C2) ./ (log(1 / (TSteps[i]+273.15)) - C3)).^(1/B) .+ 1) #+273.15?
 
     end
 
     # Convert to reduced density
-    pr = copy(r)
+    ρᵣ = copy(lᵣ)
 
     # Guenthner et al conversion
-    # pr = 1.25*(r-0.2)
+    # ρᵣ = 1.25*(lᵣ-0.2)
 
     # # Zero-out any reduced densities below the equivalent total
     # # annealing length
-    # pr[pr.<0.36]=0
+    # ρᵣ[ρᵣ.<0.36]=0
 
     # # Extrapolate from bottom of data to origin
-    # pr[r.<0.4] = 5/8*r[r<0.4]
+    # ρᵣ[lᵣ.<0.4] = 5/8*lᵣ[lᵣ<0.4]
 
     # # Rescale reduced densities based on the equivalent total annealing
     # # length
-    # pr = (pr-0.36)/(1-0.36)
+    # ρᵣ = (ρᵣ-0.36)/(1-0.36)
 
     # Remove any negative reduced densities
-    pr[pr.<0] .= 0
+    ρᵣ[ρᵣ.<0] .= 0
 
-    return pr
+    return ρᵣ
 end
-export CalcDamageAnnealing
+export DamageAnnealing
 
 
 """
 ```julia
-HeAge = CalcZrnHeAgeSpherical(dt, ageSteps::Vector, TSteps::Vector, pr::Matrix, r, dr, Uppm, Thppm)
+HeAge = ZrnHeAgeSpherical(dt, ageSteps::Vector, TSteps::Vector, ρᵣ::Matrix, 𝓇, d𝓇, Uppm, Thppm)
 ```
 Calculate the precdicted U-Th/He age of a zircon that has experienced a given t-T path
 (specified by `ageSteps` for time and `TSteps` for temperature, at a time resolution of `dt`)
-using a Crank-Nicholson diffusion solution for a spherical grain of radius `r` at spatial resolution `dr`.
+using a Crank-Nicholson diffusion solution for a spherical grain of radius `𝓇` at spatial resolution `d𝓇`.
 """
-function CalcZrnHeAgeSpherical(dt::Number,ageSteps::Vector{T},TSteps::Vector{T},pr::Matrix{T},crystalRadius::T,dr::Number,Uppm::T,Thppm::T) where T <: Number
+function ZrnHeAgeSpherical(dt::Number, ageSteps::Vector{T}, TSteps::Vector{T}, ρᵣ::Matrix{T}, 𝓇::T, d𝓇::Number, Uppm::T, Thppm::T) where T <: Number
     # Temporal discretization
     tSteps = reverse(ageSteps)
     ntSteps = length(tSteps) # Number of time steps
@@ -153,9 +153,9 @@ function CalcZrnHeAgeSpherical(dt::Number,ageSteps::Vector{T},TSteps::Vector{T},
     R=.008314472 #kJ/(K*mol)
 
     # Crystal size and spatial discretization
-    rSteps = Array{Float64}(0+dr/2 : dr: crystalRadius-dr/2)
+    rSteps = Array{Float64}(0+d𝓇/2 : d𝓇: 𝓇-d𝓇/2)
     nrSteps = length(rSteps)+2 # number of radial grid points
-    rEdges = Array{Float64}(0 : dr : crystalRadius) # Edges of each radius element
+    rEdges = Array{Float64}(0 : d𝓇 : 𝓇) # Edges of each radius element
     relVolumes = (rEdges[2:end].^3 - rEdges[1:end-1].^3)/rEdges[end]^3 # Relative volume fraction of spherical shell corresponding to each radius element
 
 
@@ -184,7 +184,7 @@ function CalcZrnHeAgeSpherical(dt::Number,ageSteps::Vector{T},TSteps::Vector{T},
     for i=1:length(alphaRadii238U)
         for ri = 1:length(rSteps)
             # Effective radial alpha deposition from 238U
-            r238UHe += relVolumes[ri] * intersectionDensity(rEdges,relVolumes,alphaRadii238U[i],rSteps[ri]) * r238U[ri]
+            r238UHe += relVolumes[ri] * intersectiondensity(rEdges,relVolumes,alphaRadii238U[i],rSteps[ri]) * r238U[ri]
         end
     end
 
@@ -193,7 +193,7 @@ function CalcZrnHeAgeSpherical(dt::Number,ageSteps::Vector{T},TSteps::Vector{T},
     for i=1:length(alphaRadii235U)
         for ri = 1:length(rSteps)
             # Effective radial alpha deposition from 235U
-            r235UHe += relVolumes[ri] * intersectionDensity(rEdges,relVolumes,alphaRadii235U[i],rSteps[ri]) * r235U[ri]
+            r235UHe += relVolumes[ri] * intersectiondensity(rEdges,relVolumes,alphaRadii235U[i],rSteps[ri]) * r235U[ri]
         end
     end
 
@@ -202,7 +202,7 @@ function CalcZrnHeAgeSpherical(dt::Number,ageSteps::Vector{T},TSteps::Vector{T},
     for i=1:length(alphaRadii232Th)
         for ri = 1:length(rSteps)
             # Effective radial alpha deposition from 232Th
-            r232ThHe += relVolumes[ri] * intersectionDensity(rEdges,relVolumes,alphaRadii232Th[i],rSteps[ri]) * r232Th[ri]
+            r232ThHe += relVolumes[ri] * intersectiondensity(rEdges,relVolumes,alphaRadii232Th[i],rSteps[ri]) * r232Th[ri]
         end
     end
 
@@ -221,11 +221,11 @@ function CalcZrnHeAgeSpherical(dt::Number,ageSteps::Vector{T},TSteps::Vector{T},
         (exp.(l232Th.*(ageSteps .+ dt/2)) - exp.(l232Th.*(ageSteps .- dt/2))) * (r232Thdam')
 
 
-    # The annealed damage matrix is the summation of the pr for each
+    # The annealed damage matrix is the summation of the ρᵣ for each
     # previous timestep multiplied by the the alpha dose at each
     # previous timestep; this is a linear combination, which can be
     # calculated efficiently for all radii by simple matrix multiplication.
-    annealedDamageMatrix = pr * alphaDamageMatrix
+    annealedDamageMatrix = ρᵣ * alphaDamageMatrix
 
     # Diffusivities of crystalline and amorphous endmembers
     Dz = DzD0 .* exp.(-DzEa ./ R ./ (TSteps .+ 273.15)) # cm^2/sr
@@ -239,15 +239,15 @@ function CalcZrnHeAgeSpherical(dt::Number,ageSteps::Vector{T},TSteps::Vector{T},
     fa = 1 .- exp.(-Ba.*alphaDamage.*Phi)
     tau = (lint0 ./ (4.2 ./ (1 .- exp.(-Ba.*alphaDamage)) ./ SV .- 2.5)).^2
     De = 1 ./ ((1 .- fa) ./ (Dz[1] ./ (1 .- fa).^2 ./ tau) + fa ./ (DN17[1] ./ fa.^2))
-    Beta = 2 .* dr.^2 ./ (De.*dt) # Common beta factor
+    Beta = 2 .* d𝓇.^2 ./ (De.*dt) # Common beta factor
 
     # # Looped version
     # Beta = Array{Float64}(undef, nrSteps-2)
-    # @simd for r = 1:(nrSteps-2)
-    #     fa = 1-exp(-Ba*alphaDamage[r]*Phi)
-    #     tau = (lint0/(4.2 / ((1-exp(-Ba.*alphaDamage[r])) * SV) - 2.5))^2
+    # @simd for k = 1:(nrSteps-2)
+    #     fa = 1-exp(-Ba*alphaDamage[k]*Phi)
+    #     tau = (lint0/(4.2 / ((1-exp(-Ba.*alphaDamage[k])) * SV) - 2.5))^2
     #     De = 1 / ((1-fa)^3 / (Dz[1]/tau) + fa^3 / DN17[1])
-    #     Beta[r] = 2 * dr^2 / (De*dt) # Common beta factor
+    #     Beta[k] = 2 * d𝓇^2 / (De*dt) # Common beta factor
     # end
 
     # Index to construct diagonal from Beta
@@ -286,14 +286,14 @@ function CalcZrnHeAgeSpherical(dt::Number,ageSteps::Vector{T},TSteps::Vector{T},
         fa .= 1 .- exp.(-Ba.*alphaDamage.*Phi)
         tau .= (lint0./(4.2 ./ (1 .- exp.(-Ba.*alphaDamage)) ./ SV .- 2.5)).^2
         De .= 1 ./ ((1 .- fa) ./ (Dz[i] ./ (1 .- fa).^2 ./ tau) + fa ./ (DN17[i] ./ fa.^2))
-        Beta .= 2 .* dr.^2 ./ (De.*dt) # Common beta factor
+        Beta .= 2 .* d𝓇.^2 ./ (De.*dt) # Common beta factor
 
         # # Looped version
-        # @simd for r = 1:(nrSteps-2)
-        #     fa = 1-exp(-Ba*alphaDamage[r]*Phi)
-        #     tau = (lint0/(4.2 / ((1-exp(-Ba.*alphaDamage[r])) * SV) - 2.5))^2
+        # @simd for k = 1:(nrSteps-2)
+        #     fa = 1-exp(-Ba*alphaDamage[k]*Phi)
+        #     tau = (lint0/(4.2 / ((1-exp(-Ba.*alphaDamage[k])) * SV) - 2.5))^2
         #     De = 1 / ((1-fa)^3 / (Dz[i]/tau) + fa^3 / DN17[i])
-        #     Beta[r] = 2 * dr^2 / (De*dt) # Common beta factor
+        #     Beta[k] = 2 * d𝓇^2 / (De*dt) # Common beta factor
         # end
 
         A.d .= -2 .- Beta[bInd] # Diagonal
@@ -317,7 +317,7 @@ function CalcZrnHeAgeSpherical(dt::Number,ageSteps::Vector{T},TSteps::Vector{T},
 
     # Convert from u (coordinate-transform'd concentration) to v (real He
     # concentration)
-    vFinal = u[end,:]./[-dr/2; rSteps; crystalRadius+dr/2]
+    vFinal = u[end,:]./[-d𝓇/2; rSteps; 𝓇+d𝓇/2]
     HeAvg = mean(vFinal[2:end-1]) # Atoms/gram
 
     # Raw Age (i.e., as measured)
@@ -335,4 +335,4 @@ function CalcZrnHeAgeSpherical(dt::Number,ageSteps::Vector{T},TSteps::Vector{T},
 
     return HeAge
 end
-export CalcZrnHeAgeSpherical
+export ZrnHeAgeSpherical
