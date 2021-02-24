@@ -141,16 +141,28 @@ function ZrnHeAgeSpherical(dt::Number, ageSteps::Vector{T}, TSteps::Vector{T}, �
     l238U = log(2)/(4.4683*10^9)*10^6 # [1/Myr]
     l232Th = log(2)/(1.405*10^10)*10^6 # [1/Myr]
 
+    # Alpha stopping distances for each isotope in each decay chain, from
+    # Farley et al., 1996
+    alphaRadii238U = [11.78; 14.09; 13.73; 14.13; 17.32; 16.69; 28.56; 16.48;]
+    alphaRadii235U = [12.58; 15.04; 19.36; 18.06; 23.07; 26.87; 22.47;]
+    alphaRadii232Th = [10.99; 16.67; 18.16; 17.32; 23.61; 29.19;]
+
     # Other constants
     DzEa = 165.0 # kJ/mol
     DzD0 = 193188.0 # cm^2/sec
     lint0 = 45920.0 # nm
     SV = 1.669 # 1/nm
-    Ba = 5.48E-19 # g/alpha
+    Bα = 5.48E-19 # [g/alpha] mass of amorphous material produced per alpha decay
     DN17Ea = 71.0 # kJ/mol
     DN17D0 = 0.0034 #6.367E-3 # cm^2/sec
     Phi = 3.0
     R=.008314472 #kJ/(K*mol)
+
+    # Diffusivities of crystalline and amorphous endmembers
+    Dz = DzD0 .* exp.(-DzEa ./ R ./ (TSteps .+ 273.15)) # cm^2/sr
+    DN17 = DN17D0 .* exp.(-DN17Ea ./ R ./ (TSteps .+ 273.15)) # cm^2/s
+    Dz = Dz*10000^2*(1E6*365.25*24*3600) # Convert to micron^2/Myr
+    DN17 = DN17*10000^2*(1E6*365.25*24*3600) # Convert to micron^2/Myr
 
     # Crystal size and spatial discretization
     rSteps = Array{Float64}(0+d𝓇/2 : d𝓇: 𝓇-d𝓇/2)
@@ -172,12 +184,6 @@ function ZrnHeAgeSpherical(dt::Number, ageSteps::Vector{T}, TSteps::Vector{T}, �
 
     # Calculate effective He deposition for each decay chain, corrected for alpha
     # stopping distance
-
-    # Alpha stopping distances for each isotope in each decay chain, from
-    # Farley et al., 1996
-    alphaRadii238U = [11.78; 14.09; 13.73; 14.13; 17.32; 16.69; 28.56; 16.48;]
-    alphaRadii235U = [12.58; 15.04; 19.36; 18.06; 23.07; 26.87; 22.47;]
-    alphaRadii232Th = [10.99; 16.67; 18.16; 17.32; 23.61; 29.19;]
 
     #238U
     r238UHe = zeros(size(r238U))
@@ -227,25 +233,20 @@ function ZrnHeAgeSpherical(dt::Number, ageSteps::Vector{T}, TSteps::Vector{T}, �
     # calculated efficiently for all radii by simple matrix multiplication.
     annealedDamageMatrix = ρᵣ * alphaDamageMatrix
 
-    # Diffusivities of crystalline and amorphous endmembers
-    Dz = DzD0 .* exp.(-DzEa ./ R ./ (TSteps .+ 273.15)) # cm^2/sr
-    DN17 = DN17D0 .* exp.(-DN17Ea ./ R ./ (TSteps .+ 273.15)) # cm^2/s
-    Dz = Dz*10000^2*(1E6*365.25*24*3600) # Convert to micron^2/Myr
-    DN17 = DN17*10000^2*(1E6*365.25*24*3600) # Convert to micron^2/Myr
 
     # Calculate initial alpha damage
     alphaDamage = annealedDamageMatrix[1,:]
     # Vectorized version
-    fa = 1 .- exp.(-Ba.*alphaDamage.*Phi)
-    tau = (lint0 ./ (4.2 ./ (1 .- exp.(-Ba.*alphaDamage)) ./ SV .- 2.5)).^2
+    fa = 1 .- exp.(-Bα.*alphaDamage.*Phi)
+    tau = (lint0 ./ (4.2 ./ (1 .- exp.(-Bα.*alphaDamage)) ./ SV .- 2.5)).^2
     De = 1 ./ ((1 .- fa) ./ (Dz[1] ./ (1 .- fa).^2 ./ tau) + fa ./ (DN17[1] ./ fa.^2))
     Beta = 2 .* d𝓇.^2 ./ (De.*dt) # Common beta factor
 
     # # Looped version
     # Beta = Array{Float64}(undef, nrSteps-2)
     # @simd for k = 1:(nrSteps-2)
-    #     fa = 1-exp(-Ba*alphaDamage[k]*Phi)
-    #     tau = (lint0/(4.2 / ((1-exp(-Ba.*alphaDamage[k])) * SV) - 2.5))^2
+    #     fa = 1-exp(-Bα*alphaDamage[k]*Phi)
+    #     tau = (lint0/(4.2 / ((1-exp(-Bα.*alphaDamage[k])) * SV) - 2.5))^2
     #     De = 1 / ((1-fa)^3 / (Dz[1]/tau) + fa^3 / DN17[1])
     #     Beta[k] = 2 * d𝓇^2 / (De*dt) # Common beta factor
     # end
@@ -283,15 +284,15 @@ function ZrnHeAgeSpherical(dt::Number, ageSteps::Vector{T}, TSteps::Vector{T}, �
         alphaDamage = annealedDamageMatrix[i,:]
 
         # Vectorized version
-        fa .= 1 .- exp.(-Ba.*alphaDamage.*Phi)
-        tau .= (lint0./(4.2 ./ (1 .- exp.(-Ba.*alphaDamage)) ./ SV .- 2.5)).^2
+        fa .= 1 .- exp.(-Bα.*alphaDamage.*Phi)
+        tau .= (lint0./(4.2 ./ (1 .- exp.(-Bα.*alphaDamage)) ./ SV .- 2.5)).^2
         De .= 1 ./ ((1 .- fa) ./ (Dz[i] ./ (1 .- fa).^2 ./ tau) + fa ./ (DN17[i] ./ fa.^2))
         Beta .= 2 .* d𝓇.^2 ./ (De.*dt) # Common beta factor
 
         # # Looped version
         # @simd for k = 1:(nrSteps-2)
-        #     fa = 1-exp(-Ba*alphaDamage[k]*Phi)
-        #     tau = (lint0/(4.2 / ((1-exp(-Ba.*alphaDamage[k])) * SV) - 2.5))^2
+        #     fa = 1-exp(-Bα*alphaDamage[k]*Phi)
+        #     tau = (lint0/(4.2 / ((1-exp(-Bα.*alphaDamage[k])) * SV) - 2.5))^2
         #     De = 1 / ((1-fa)^3 / (Dz[i]/tau) + fa^3 / DN17[i])
         #     Beta[k] = 2 * d𝓇^2 / (De*dt) # Common beta factor
         # end
