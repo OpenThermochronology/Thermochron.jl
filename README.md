@@ -1,10 +1,12 @@
-# Thermochron
+# Thermochron.jl
 
 [![Dev][docs-dev-img]][docs-dev-url]
 [![Build Status][ci-img]][ci-url]
 [![codecov.io][codecov-img]][codecov-url]
 
-Time-temperature inversion of thermochronologic data
+Open-source time-temperature inversion of thermochronologic data
+
+Currently supporting zircon helium; see [examples](examples) and the test suite.
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
 [docs-stable-url]: https://brenhinkeller.github.io/Thermochron.jl/stable/
