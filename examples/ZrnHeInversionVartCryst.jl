@@ -10,16 +10,16 @@
 #       This file contains the MCMC code, while "ZrnHe.jl" contains the damage  #
 #   annealing function and the Crank-Nicholson code.                            #
 #                                                                               #
-#   Last modified by C. Brenhin Keller 2018-03-13                               #
-#   Last modified by K. McDannell 2022-10-19                                    #                                                                            #
+#   © 2022 C. Brenhin Keller and Kalin McDannell                                #                                                                            #
 #                                                                               #
 #   If running for the first time, make sure you have instantiated the          #
 #   manifest that came with this file                                           #
 #                                                                               #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 ## ---  Load required packages
-    using Statistics, LinearAlgebra, SparseArrays
+    using Statistics, LinearAlgebra
     using StatsBase: fit, Histogram
+    using ProgressMeter: @showprogress
     using StatGeochem
     using JLD: @load, @save
     using Plots; gr() # Use the GR backend for plotting
@@ -48,10 +48,10 @@
     # Model uncertainty is not well known (depends on annealing parameters,
     # decay constants, diffusion parameters, etc.), but is certainly non-zero.
     # Here we add (in quadrature) a blanket model uncertainty of 25 Ma.
-    simannealparams = (;
-        ModelUncertainty = 25.0, # Ma
-        InitialUncertainty = 35.0, # [Ma]
-        lambda = 10 ./ burnin, # [1/n]
+    simannealparams = (
+        25.0, # Model uncertainty [Ma]
+        35.0, # Initial uncertainty [Ma]
+        10 ./ burnin, # lambda [1/n]
     )
 
     simplified = false
@@ -141,7 +141,7 @@
     ntSteps = length(tSteps) # Number of time steps
     eU = U_ppm+.238*Th_ppm # Used only for plotting
 
-    AnnealedSigma = SimAnnealSigma.(1, HeAge_Ma_sigma, simannealparams)
+    AnnealedSigma = simannealsigma.(1, HeAge_Ma_sigma; params=simannealparams)
 
 
 ## --- Test proscribed t-T paths with Neoproterozoic exhumation step
@@ -158,10 +158,10 @@
 
     # Calculate model ages
     #CalcHeAges = Array{Float64}(undef, size(HeAge_Ma))
-    #@time pr = CalcDamageAnnealing(dt,tSteps,TSteps)
+    #@time pr = DamageAnnealing(dt,tSteps,TSteps)
     #@time for i=1:length(Halfwidth)
     #    first_index = 1 + floor(Int64,(tCryst - CrystAge_Ma[i])/dt)
-    #    CalcHeAges[i] = CalcZrnHeAgeSpherical(dt,ageSteps[first_index:end],TSteps[first_index:end],pr[first_index:end,first_index:end],Halfwidth[i],dr,U_ppm[i],Th_ppm[i],diffusionparams)
+    #    CalcHeAges[i] = ZrnHeAgeSpherical(dt,ageSteps[first_index:end],TSteps[first_index:end],pr[first_index:end,first_index:end],Halfwidth[i],dr,U_ppm[i],Th_ppm[i],diffusionparams)
     #end
 
     # Plot Comparison of results
@@ -204,20 +204,16 @@
     #TPoints[1:4]  =  Array{Float64}([       Tr+T0, Tr+T0,  T0,  70]) # Temp. (C)
     #nPoints+=4
 
-    simannealparams = lambda, InitialUncertainty, ModelUncertainty
-
     function MCMC_vartcryst(nPoints, maxPoints, agePoints, TPoints, unconf_agePoints, unconf_TPoints, boundary_agePoints, boundary_TPoints, simannealparams, diffusionparams)
-
-
         # Calculate model ages for initial proposal
         TSteps = linterp1s([agePoints[1:nPoints] ; boundary_agePoints ; unconf_agePoints],
                             [TPoints[1:nPoints] ; boundary_TPoints ; unconf_TPoints], ageSteps)
         CalcHeAges = Array{Float64}(undef, size(HeAge_Ma))
-        pr = CalcDamageAnnealing(dt,tSteps,TSteps) # Damage annealing history
+        pr = DamageAnnealing(dt,tSteps,TSteps) # Damage annealing history
         for i=1:length(Halfwidth)
             # Iterate through each grain, calculate the modeled age for each
             first_index = 1 + floor(Int64,(tCryst - CrystAge_Ma[i])/dt)
-            CalcHeAges[i] = CalcZrnHeAgeSpherical(dt,ageSteps[first_index:end],TSteps[first_index:end],pr[first_index:end,first_index:end],Halfwidth[i],dr,U_ppm[i],Th_ppm[i], diffusionparams)
+            CalcHeAges[i] = ZrnHeAgeSpherical(dt,ageSteps[first_index:end],TSteps[first_index:end],pr[first_index:end,first_index:end],Halfwidth[i],dr,U_ppm[i],Th_ppm[i], diffusionparams)
         end
         CalcHeAges_prop = copy(CalcHeAges)
 
@@ -233,8 +229,8 @@
         HeAgeDist = Array{Float64}(undef, length(HeAge_Ma), nsteps)
         TStepDist = Array{Float64}(undef, ntSteps, nsteps)
         llDist = Array{Float64}(undef, nsteps)
-        nDist = zeros(nsteps, 1)
-        acceptanceDist = zeros(nsteps, 1)
+        nDist = zeros(Int, nsteps)
+        acceptanceDist = zeros(Bool, nsteps)
 
         # Standard deviations of Gaussian proposal distributions for temperature and time
         t_sigma = tCryst/60
@@ -360,14 +356,14 @@
                                     [TPoints_prop[1:nPoints_prop] ; boundary_TPoints_prop ; unconf_TPoints_prop], ageSteps)
 
              # Calculate model ages for each grain
-            pr = CalcDamageAnnealing(dt,tSteps,TSteps_prop)
+            pr = DamageAnnealing(dt,tSteps,TSteps_prop)
             for i=1:length(Halfwidth)
                 first_index = 1 + floor(Int64,(tCryst - CrystAge_Ma[i])/dt)
-                CalcHeAges_prop[i] = CalcZrnHeAgeSpherical(dt,ageSteps[first_index:end],TSteps_prop[first_index:end],pr[first_index:end,first_index:end],Halfwidth[i],dr,U_ppm[i],Th_ppm[i],diffusionparams)
+                CalcHeAges_prop[i] = ZrnHeAgeSpherical(dt,ageSteps[first_index:end],TSteps_prop[first_index:end],pr[first_index:end,first_index:end],Halfwidth[i],dr,U_ppm[i],Th_ppm[i],diffusionparams)
             end
 
             # Calculate log likelihood of proposal
-            AnnealedSigma .= SimAnnealSigma.(n, HeAge_Ma_sigma, simannealparams)
+            AnnealedSigma .= simannealsigma.(n, HeAge_Ma_sigma; params=simannealparams)
 
             # Recalculate ll in case annealed sigma has changed
             if simplified
@@ -399,7 +395,7 @@
             end
 
             # Record results for analysis and troubleshooting
-            llDist[n] = sum(-(CalcHeAges - HeAge_Ma).^2 ./ (2 .* SimAnnealSigma.(nsteps, HeAge_Ma_sigma, simannealparams).^2)) # Recalculated to constant baseline
+            llDist[n] = sum(-(CalcHeAges - HeAge_Ma).^2 ./ (2 .* simannealsigma.(nsteps, HeAge_Ma_sigma; params=simannealparams).^2)) # Recalculated to constant baseline
             nDist[n] = nPoints # Distribution of # of points
             HeAgeDist[:,n] = CalcHeAges # Distribution of He ages
 
@@ -411,7 +407,7 @@
     end
 
     # Run Markov Chain
-    (TStepDist, HeAgeDist, nDist, llDist, acceptanceDist) = MCMC_vartcryst(nPoints, maxPoints, agePoints, TPoints, unconf_agePoints, unconf_TPoints, boundary_agePoints, boundary_TPoints)
+    (TStepDist, HeAgeDist, nDist, llDist, acceptanceDist) = MCMC_vartcryst(nPoints, maxPoints, agePoints, TPoints, unconf_agePoints, unconf_TPoints, boundary_agePoints, boundary_TPoints, simannealparams, diffusionparams)
 
     # # Save results using JLD
     @save string(name, ".jld") ageSteps tSteps TStepDist burnin nsteps TCryst tCryst

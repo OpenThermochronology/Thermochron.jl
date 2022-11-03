@@ -1,18 +1,23 @@
 
     """
     ```julia
-    SimAnnealSigma(n, AnalyticalSigma, params)
+    simannealsigma(n, sigma_analytical; params=(25.0, 35.0, 10/10^5))
     ```
-    To avoid getting stuck in local optima, decrease uncertainty slowly by simulated annealing:
-    Calculate annealing sigma which declines from InitialUncertainty to ModelUncertainty with
-    a decay constant of lambda. Returns:
+    To avoid getting stuck in local optima, decrease uncertainty slowly by
+    simulated annealing. Parameters are specified as a tuple `params` of the
+    form (σₘ, σᵢ, λ), where annealing uncertainty declines from `σᵢ+σₘ` to `σₘ`
+    with a decay constant of λ.
 
-        sigma = sqrt(AnalyticalSigma^2 + AnnealingSigma^2)
+    Returns the annealing uncertainty added in quadrature with analytical
+    uncertainty, or in other words
+
+        sigma_annealing = σᵢ*exp(-λ*n) + σₘ
+        sigma = sqrt(sigma_analytical^2 + sigma_annealing^2)
 
     """
-    function SimAnnealSigma(n, AnalyticalSigma, params)
-        AnnealingSigma = params.InitialUncertainty*exp(-params.lambda*n) + params.ModelUncertainty
-        sigma = sqrt(AnalyticalSigma^2 + AnnealingSigma^2)
-        return sigma
+    function simannealsigma(n, sigma_analytical; params=(25.0, 35.0, 10/10^5))
+        σₘ, σᵢ, λ = params
+        sigma_annealing = σᵢ*exp(-λ*n) + σₘ
+        return sqrt(sigma_analytical^2 + sigma_annealing^2)
     end
-    export SimAnnealSigma
+    export simannealsigma
