@@ -2,7 +2,7 @@
 
 julia_version = "1.8.2"
 manifest_format = "2.0"
-project_hash = "fceac95b6440893af67bc84a365c350b3b9fed4e"
+project_hash = "9e4693ad75a4338fc0221cd8d3578875ce5258ea"
 
 [[deps.AbstractFFTs]]
 deps = ["ChainRulesCore", "LinearAlgebra"]
@@ -1305,6 +1305,14 @@ version = "0.1.1"
 [[deps.Test]]
 deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[[deps.Thermochron]]
+deps = ["LinearAlgebra", "ProgressMeter", "Statistics"]
+git-tree-sha1 = "37f231040f5b629e9b15e7cda84768a6e9cef75e"
+repo-rev = "main"
+repo-url = "https://github.com/OpenThermochronology/Thermochron.jl"
+uuid = "b9a8379e-ee1a-4388-b7ca-7852af1cef08"
+version = "0.1.0"
 
 [[deps.ThreadingUtilities]]
 deps = ["ManualMemory"]

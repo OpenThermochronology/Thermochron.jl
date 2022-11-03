@@ -48,15 +48,25 @@
     # Model uncertainty is not well known (depends on annealing parameters,
     # decay constants, diffusion parameters, etc.), but is certainly non-zero.
     # Here we add (in quadrature) a blanket model uncertainty of 25 Ma.
-    ModelUncertainty = 25.0 # Ma
-    InitialUncertainty = 35.0 # [Ma]
-    lambda = 10 ./ burnin # [1/n]
+    simannealparams = (;
+        ModelUncertainty = 25.0, # Ma
+        InitialUncertainty = 35.0, # [Ma]
+        lambda = 10 ./ burnin, # [1/n]
+    )
+
     simplified = false
     CrystAgeMax_Ma = 4000.0 # Ma -- forbid anything older than this
 
     # Other model parameters
     TCryst = 400.0 # Temperature (in C)
     dr = 1 # Radius step, in microns
+
+    diffusionparams = (;
+        DzEa = 165.0, # kJ/mol
+        DzD0 = 193188.0, # cm^2/sec
+        DN17Ea = 71.0, # kJ/mol
+        DN17D0 = 0.0034, #6.367E-3 # cm^2/sec
+    )
 
     # # # # # # # # # # Choice of regional thermochron data # # # # # # # # # # #
 
@@ -131,7 +141,7 @@
     ntSteps = length(tSteps) # Number of time steps
     eU = U_ppm+.238*Th_ppm # Used only for plotting
 
-    AnnealedSigma = SimAnnealSigma.(1, lambda,  HeAge_Ma_sigma, InitialUncertainty, ModelUncertainty)
+    AnnealedSigma = SimAnnealSigma.(1, HeAge_Ma_sigma, simannealparams)
 
 
 ## --- Test proscribed t-T paths with Neoproterozoic exhumation step
@@ -151,7 +161,7 @@
     #@time pr = CalcDamageAnnealing(dt,tSteps,TSteps)
     #@time for i=1:length(Halfwidth)
     #    first_index = 1 + floor(Int64,(tCryst - CrystAge_Ma[i])/dt)
-    #    CalcHeAges[i] = CalcZrnHeAgeSpherical(dt,ageSteps[first_index:end],TSteps[first_index:end],pr[first_index:end,first_index:end],Halfwidth[i],dr,U_ppm[i],Th_ppm[i])
+    #    CalcHeAges[i] = CalcZrnHeAgeSpherical(dt,ageSteps[first_index:end],TSteps[first_index:end],pr[first_index:end,first_index:end],Halfwidth[i],dr,U_ppm[i],Th_ppm[i],diffusionparams)
     #end
 
     # Plot Comparison of results
@@ -194,11 +204,10 @@
     #TPoints[1:4]  =  Array{Float64}([       Tr+T0, Tr+T0,  T0,  70]) # Temp. (C)
     #nPoints+=4
 
-    params = lambda, InitialUncertainty, ModelUncertainty
+    simannealparams = lambda, InitialUncertainty, ModelUncertainty
 
-    function MCMC_vartcryst(nPoints, maxPoints, agePoints, TPoints, unconf_agePoints, unconf_TPoints, boundary_agePoints, boundary_TPoints, params)
+    function MCMC_vartcryst(nPoints, maxPoints, agePoints, TPoints, unconf_agePoints, unconf_TPoints, boundary_agePoints, boundary_TPoints, simannealparams, diffusionparams)
 
-        lambda, InitialUncertainty, ModelUncertainty = params
 
         # Calculate model ages for initial proposal
         TSteps = linterp1s([agePoints[1:nPoints] ; boundary_agePoints ; unconf_agePoints],
@@ -208,7 +217,7 @@
         for i=1:length(Halfwidth)
             # Iterate through each grain, calculate the modeled age for each
             first_index = 1 + floor(Int64,(tCryst - CrystAge_Ma[i])/dt)
-            CalcHeAges[i] = CalcZrnHeAgeSpherical(dt,ageSteps[first_index:end],TSteps[first_index:end],pr[first_index:end,first_index:end],Halfwidth[i],dr,U_ppm[i],Th_ppm[i])
+            CalcHeAges[i] = CalcZrnHeAgeSpherical(dt,ageSteps[first_index:end],TSteps[first_index:end],pr[first_index:end,first_index:end],Halfwidth[i],dr,U_ppm[i],Th_ppm[i], diffusionparams)
         end
         CalcHeAges_prop = copy(CalcHeAges)
 
@@ -354,11 +363,11 @@
             pr = CalcDamageAnnealing(dt,tSteps,TSteps_prop)
             for i=1:length(Halfwidth)
                 first_index = 1 + floor(Int64,(tCryst - CrystAge_Ma[i])/dt)
-                CalcHeAges_prop[i] = CalcZrnHeAgeSpherical(dt,ageSteps[first_index:end],TSteps_prop[first_index:end],pr[first_index:end,first_index:end],Halfwidth[i],dr,U_ppm[i],Th_ppm[i])
+                CalcHeAges_prop[i] = CalcZrnHeAgeSpherical(dt,ageSteps[first_index:end],TSteps_prop[first_index:end],pr[first_index:end,first_index:end],Halfwidth[i],dr,U_ppm[i],Th_ppm[i],diffusionparams)
             end
 
             # Calculate log likelihood of proposal
-            AnnealedSigma .= SimAnnealSigma.(n, lambda, HeAge_Ma_sigma, InitialUncertainty, ModelUncertainty)
+            AnnealedSigma .= SimAnnealSigma.(n, HeAge_Ma_sigma, simannealparams)
 
             # Recalculate ll in case annealed sigma has changed
             if simplified
@@ -390,7 +399,7 @@
             end
 
             # Record results for analysis and troubleshooting
-            llDist[n] = sum(-(CalcHeAges - HeAge_Ma).^2 ./ (2 .* SimAnnealSigma.(nsteps, lambda, HeAge_Ma_sigma, InitialUncertainty, ModelUncertainty).^2)) # Recalculated to constant baseline
+            llDist[n] = sum(-(CalcHeAges - HeAge_Ma).^2 ./ (2 .* SimAnnealSigma.(nsteps, HeAge_Ma_sigma, simannealparams).^2)) # Recalculated to constant baseline
             nDist[n] = nPoints # Distribution of # of points
             HeAgeDist[:,n] = CalcHeAges # Distribution of He ages
 

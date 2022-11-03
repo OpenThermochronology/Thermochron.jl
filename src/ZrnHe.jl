@@ -131,7 +131,7 @@ Calculate the precdicted U-Th/He age of a zircon that has experienced a given t-
 (specified by `ageSteps` for time and `TSteps` for temperature, at a time resolution of `dt`)
 using a Crank-Nicholson diffusion solution for a spherical grain of radius `𝓇` at spatial resolution `d𝓇`.
 """
-function ZrnHeAgeSpherical(dt::Number, ageSteps::Vector{T}, TSteps::Vector{T}, ρᵣ::Matrix{T}, 𝓇::T, d𝓇::Number, Uppm::T, Thppm::T) where T <: Number
+function ZrnHeAgeSpherical(dt::Number, ageSteps::Vector{T}, TSteps::Vector{T}, ρᵣ::Matrix{T}, 𝓇::T, d𝓇::Number, Uppm::T, Thppm::T, diffusionparams) where T <: Number
     # Temporal discretization
     tSteps = reverse(ageSteps)
     ntSteps = length(tSteps) # Number of time steps
@@ -148,13 +148,19 @@ function ZrnHeAgeSpherical(dt::Number, ageSteps::Vector{T}, TSteps::Vector{T}, �
     alphaRadii232Th = [10.99; 16.67; 18.16; 17.32; 23.61; 29.19;]
 
     # Other constants
-    DzEa = 165.0 # kJ/mol
-    DzD0 = 193188.0 # cm^2/sec
+    # DzEa = 165.0 # kJ/mol
+    # DzD0 = 193188.0 # cm^2/sec
+    # DN17Ea = 71.0 # kJ/mol
+    # DN17D0 = 0.0034 #6.367E-3 # cm^2/sec
+    DzEa = diffusionparams.DzEa
+    DzD0 = diffusionparams.DzD0
+    DN17Ea = diffusionparams.DN17Ea
+    DN17D0 = diffusionparams.DN17D0
+
+
     lint0 = 45920.0 # nm
     SV = 1.669 # 1/nm
     Bα = 5.48E-19 # [g/alpha] mass of amorphous material produced per alpha decay
-    DN17Ea = 71.0 # kJ/mol
-    DN17D0 = 0.0034 #6.367E-3 # cm^2/sec
     Phi = 3.0
     R=.008314472 #kJ/(K*mol)
 

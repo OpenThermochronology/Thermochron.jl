@@ -50,12 +50,19 @@
     @test isapprox(A\y, sol_known, atol=0.00000000001)
 
 # Test whole integrated age program
+    diffusionparams = (;
+        DzEa = 165.0, # kJ/mol
+        DzD0 = 193188.0, # cm^2/sec
+        DN17Ea = 71.0, # kJ/mol
+        DN17D0 = 0.0034, #6.367E-3 # cm^2/sec
+    )
+
     crystalRadius = 29.26
     Uppm = 462.98
     Thppm = 177.76
-    @test round(ZrnHeAgeSpherical(dt,reverse(tSteps),TSteps,pr,crystalRadius,dr,Uppm,Thppm), sigdigits=5) ≈ 520.03
+    @test round(ZrnHeAgeSpherical(dt,reverse(tSteps),TSteps,pr,crystalRadius,dr,Uppm,Thppm,diffusionparams), sigdigits=5) ≈ 520.03
 
     crystalRadius = 35.
     Uppm = 1107.
     Thppm = 351.
-    @test round(ZrnHeAgeSpherical(dt,reverse(tSteps),TSteps,pr,crystalRadius,dr,Uppm,Thppm), sigdigits=5) ≈ 309.76
+    @test round(ZrnHeAgeSpherical(dt,reverse(tSteps),TSteps,pr,crystalRadius,dr,Uppm,Thppm,diffusionparams), sigdigits=5) ≈ 309.76
