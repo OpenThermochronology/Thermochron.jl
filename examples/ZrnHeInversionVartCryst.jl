@@ -158,8 +158,8 @@
 
     function MCMC_vartcryst(nPoints, maxPoints, agePoints, TPoints, unconf_agePoints, unconf_TPoints, boundary_agePoints, boundary_TPoints, simannealparams, diffusionparams)
         # Calculate model ages for initial proposal
-        TSteps = linterp1s([agePoints[1:nPoints] ; boundary_agePoints ; unconf_agePoints],
-                            [TPoints[1:nPoints] ; boundary_TPoints ; unconf_TPoints], ageSteps)
+        TSteps = linterp1s([view(agePoints, 1:nPoints) ; boundary_agePoints ; unconf_agePoints],
+                           [view(TPoints, 1:nPoints) ; boundary_TPoints ; unconf_TPoints], ageSteps)
         CalcHeAges = Array{Float64}(undef, size(HeAge_Ma))
         pr = DamageAnnealing(dt,tSteps,TSteps) # Damage annealing history
         for i=1:length(Halfwidth)
@@ -241,8 +241,8 @@
                     end
 
                     # Interpolate proposed t-T path
-                    TStepsₚ = linterp1s([agePointsₚ[1:nPointsₚ] ; boundary_agePoints ; unconf_agePointsₚ],
-                                              [TPointsₚ[1:nPointsₚ] ; boundary_TPointsₚ ; unconf_TPointsₚ], ageSteps)
+                    TStepsₚ = linterp1s([view(agePointsₚ, 1:nPointsₚ) ; boundary_agePoints ; unconf_agePointsₚ],
+                                        [view(TPointsₚ, 1:nPointsₚ) ; boundary_TPointsₚ ; unconf_TPointsₚ], ageSteps)
 
                     # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
                     maximum(diff(TStepsₚ)) < dTmax && break
@@ -260,8 +260,8 @@
                     TPointsₚ[nPointsₚ] = rand()*TCryst
 
                     # Interpolate proposed t-T path
-                    TStepsₚ = linterp1s([agePointsₚ[1:nPointsₚ] ; boundary_agePoints ; unconf_agePointsₚ],
-                                            [TPointsₚ[1:nPointsₚ] ; boundary_TPointsₚ ; unconf_TPointsₚ], ageSteps)
+                    TStepsₚ = linterp1s([view(agePointsₚ, 1:nPointsₚ) ; boundary_agePoints ; unconf_agePointsₚ],
+                                        [view(TPointsₚ, 1:nPointsₚ) ; boundary_TPointsₚ ; unconf_TPointsₚ], ageSteps)
 
                     # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
                     maximum(diff(TStepsₚ)) < dTmax && break
@@ -276,8 +276,8 @@
                     TPointsₚ[k] = TPointsₚ[nPoints]
 
                     # Interpolate proposed t-T path
-                    TStepsₚ = linterp1s([agePointsₚ[1:nPointsₚ] ; boundary_agePoints ; unconf_agePointsₚ],
-                                            [TPointsₚ[1:nPointsₚ] ; boundary_TPointsₚ ; unconf_TPointsₚ], ageSteps)
+                    TStepsₚ = linterp1s([view(agePointsₚ, 1:nPointsₚ) ; boundary_agePoints ; unconf_agePointsₚ],
+                                        [view(TPointsₚ, 1:nPointsₚ) ; boundary_TPointsₚ ; unconf_TPointsₚ], ageSteps)
 
                     # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
                     maximum(diff(TStepsₚ)) < dTmax && break
@@ -301,8 +301,8 @@
                     end
 
                     # Recalculate interpolated proposed t-T path
-                    TStepsₚ = linterp1s([agePointsₚ[1:nPointsₚ] ; boundary_agePoints ; unconf_agePointsₚ],
-                                            [TPointsₚ[1:nPointsₚ] ; boundary_TPointsₚ ; unconf_TPointsₚ], ageSteps)
+                    TStepsₚ = linterp1s([view(agePointsₚ, 1:nPointsₚ) ; boundary_agePoints ; unconf_agePointsₚ],
+                                            [view(TPointsₚ, 1:nPointsₚ) ; boundary_TPointsₚ ; unconf_TPointsₚ], ageSteps)
 
                     # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
                     maximum(diff(TStepsₚ)) < dTmax && break
@@ -315,14 +315,14 @@
             end
 
             # Recalculate interpolated proposed t-T path
-            TStepsₚ = linterp1s([agePointsₚ[1:nPointsₚ] ; boundary_agePoints ; unconf_agePointsₚ],
-                                    [TPointsₚ[1:nPointsₚ] ; boundary_TPointsₚ ; unconf_TPointsₚ], ageSteps)
+            TStepsₚ = linterp1s([view(agePointsₚ, 1:nPointsₚ) ; boundary_agePoints ; unconf_agePointsₚ],
+                                [view(TPointsₚ, 1:nPointsₚ) ; boundary_TPointsₚ ; unconf_TPointsₚ], ageSteps)
 
              # Calculate model ages for each grain
             pr = DamageAnnealing(dt,tSteps,TStepsₚ)
             for i=1:length(Halfwidth)
                 first_index = 1 + floor(Int64,(tCryst - CrystAge_Ma[i])/dt)
-                CalcHeAgesₚ[i] = ZrnHeAgeSpherical(dt,ageSteps[first_index:end],TStepsₚ[first_index:end],pr[first_index:end,first_index:end],Halfwidth[i],dr,U_ppm[i],Th_ppm[i],diffusionparams)
+                @views CalcHeAgesₚ[i] = ZrnHeAgeSpherical(dt,ageSteps[first_index:end],TStepsₚ[first_index:end],pr[first_index:end,first_index:end],Halfwidth[i],dr,U_ppm[i],Th_ppm[i],diffusionparams)
             end
 
             # Calculate log likelihood of proposal

@@ -68,7 +68,7 @@ export intersectiondensity
 ```
 Zircon damage annealing model as in Guenthner et al. 2013 (AJS)
 """
-function DamageAnnealing(dt::Number,tSteps::Vector{T},TSteps::Vector{T}) where T <: Number
+function DamageAnnealing(dt::Number,tSteps::DenseVector{T},TSteps::DenseVector{T}) where T <: Number
     # Annealing model constants
     B=-0.05721
     C0=6.24534
@@ -90,16 +90,16 @@ function DamageAnnealing(dt::Number,tSteps::Vector{T},TSteps::Vector{T}) where T
         # Convert any existing track length reduction for damage from
         # all previous timestep to an equivalent annealing time at the
         # current temperature
-        Teq[1:i-1] .= exp.(C2 .+ (log(1 / (TSteps[i]+273.15)) - C3) .* (((1 ./ lᵣ[i-1,1:i-1]) .- 1).^B .- C0) ./ C1)
+        @views Teq[1:i-1] .= exp.(C2 .+ (log(1 / (TSteps[i]+273.15)) - C3) .* (((1 ./ lᵣ[i-1,1:i-1]) .- 1).^B .- C0) ./ C1)
 
         # Calculate the new reduced track lengths for all previous time steps
         # Accumulating annealing strictly in terms of reduced track length
-        lᵣ[i,1:i] .= 1 ./ ((C0 .+ C1 .* (log.(dt .+ Teq[1:i]) .- C2) ./ (log(1 / (TSteps[i]+273.15)) - C3)).^(1/B) .+ 1) #+273.15?
+        @views lᵣ[i,1:i] .= 1 ./ ((C0 .+ C1 .* (log.(dt .+ Teq[1:i]) .- C2) ./ (log(1 / (TSteps[i]+273.15)) - C3)).^(1/B) .+ 1) #+273.15?
 
     end
 
     # Convert to reduced density
-    ρᵣ = copy(lᵣ)
+    ρᵣ = lᵣ
 
     # Guenthner et al conversion
     # ρᵣ = 1.25*(lᵣ-0.2)
@@ -116,7 +116,8 @@ function DamageAnnealing(dt::Number,tSteps::Vector{T},TSteps::Vector{T}) where T
     # ρᵣ = (ρᵣ-0.36)/(1-0.36)
 
     # Remove any negative reduced densities
-    ρᵣ[ρᵣ.<0] .= 0
+    # ρᵣ[ρᵣ.<0] .= 0
+    map!(x->ifelse(x<0., 0., x), ρᵣ, ρᵣ)
 
     return ρᵣ
 end
@@ -131,7 +132,7 @@ Calculate the precdicted U-Th/He age of a zircon that has experienced a given t-
 (specified by `ageSteps` for time and `TSteps` for temperature, at a time resolution of `dt`)
 using a Crank-Nicholson diffusion solution for a spherical grain of radius `𝓇` at spatial resolution `d𝓇`.
 """
-function ZrnHeAgeSpherical(dt::Number, ageSteps::Vector{T}, TSteps::Vector{T}, ρᵣ::Matrix{T}, 𝓇::T, d𝓇::Number, Uppm::T, Thppm::T, diffusionparams) where T <: Number
+function ZrnHeAgeSpherical(dt::Number, ageSteps::AbstractVector{T}, TSteps::AbstractVector{T}, ρᵣ::AbstractMatrix{T}, 𝓇::T, d𝓇::Number, Uppm::T, Thppm::T, diffusionparams) where T <: Number
     # Temporal discretization
     tSteps = reverse(ageSteps)
     ntSteps = length(tSteps) # Number of time steps
@@ -320,6 +321,8 @@ function ZrnHeAgeSpherical(dt::Number, ageSteps::Vector{T}, TSteps::Vector{T}, �
                         alphaDepositionMatrix[i,:] .* rSteps .* Beta
 
         u[i,:] = A\y # Invert using tridiagonal matrix algorithm
+        F = lu!(A)
+        u[i,:] = ldiv!(F, y)
     end
 
     # Convert from u (coordinate-transform'd concentration) to v (real He
