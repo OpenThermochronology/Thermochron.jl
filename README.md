@@ -5,7 +5,7 @@
 [![CI (Julia nightly)][ci-nightly-img]][ci-nightly-url]
 [![codecov.io][codecov-img]][codecov-url]
 
-Open-source time-temperature inversion of thermochronologic data.
+Open-source time-temperature inversion of thermochronometric data.
 
 Implements a Markov chain Monte Carlo (MCMC) time-temperature inversion with optional simulated annealing.
 Currently supports zircon helium data with the damage and annealing model of [Guenthner et al., 2013](https://doi.org/10.2475/03.2013.01), with additional systems and models expected to be added in future releases.
