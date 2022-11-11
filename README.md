@@ -7,7 +7,7 @@
 
 Open-source time-temperature inversion of thermochronometric data.
 
-Implements a Markov chain Monte Carlo (MCMC) time-temperature inversion with optional Simulated Annealing (e.g., [Laarhoven and Aarts, 1987](https://doi.org/10.1007/978-94-015-7744-1_2)).
+Implements a Markov chain Monte Carlo (MCMC) time-temperature inversion with optional Simulated Annealing (e.g., [van Laarhoven and Aarts, 1987](https://doi.org/10.1007/978-94-015-7744-1_2)).
 Currently supports zircon helium data with the damage and annealing model of [Guenthner et al., 2013](https://doi.org/10.2475/03.2013.01), with additional systems and models expected to be added in future releases.
 
 ## Installation
