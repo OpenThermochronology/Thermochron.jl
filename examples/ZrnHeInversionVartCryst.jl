@@ -24,7 +24,7 @@
     using JLD: @load, @save
     using Plots; gr() # Use the GR backend for plotting
 
-    using Thermchron
+    using Thermochron
 
     # Make sure we're running in the directory where the script is located
     cd(@__DIR__)
