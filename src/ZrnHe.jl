@@ -1,34 +1,34 @@
 
 """
 ```julia
-intersectionfraction(𝓇₁, 𝓇₂, d)
+intersectionfraction(r₁, r₂, d)
 ```
-Calculate the fraction of the surface area of a sphere s2 with radius `𝓇₂`
-that intersects the interior of a sphere s1 of radius `𝓇₁` if the two are
-separated by distance `d`. Assumptions: `𝓇₁`>0, `𝓇₂`>0, `d`>=0
+Calculate the fraction of the surface area of a sphere s2 with radius `r₂`
+that intersects the interior of a sphere s1 of radius `r₁` if the two are
+separated by distance `d`. Assumptions: `r₁`>0, `r₂`>0, `d`>=0
 """
-function intersectionfraction(𝓇₁::T, 𝓇₂::T, d::T) where T <: Number
-    dmax = 𝓇₁+𝓇₂
-    dmin = abs(𝓇₁-𝓇₂)
+function intersectionfraction(r₁::T, r₂::T, d::T) where T <: Number
+    dmax = r₁+r₂
+    dmin = abs(r₁-r₂)
     if d > dmax ## If separated by more than dmax, there is no intersection
         omega = zero(T)
     elseif d > dmin
         # X is the radial distance between the center of s2 and the interseciton plane
         # See e.g., http://mathworld.wolfram.com/Sphere-SphereIntersection.html
-        # x = (d^2 - 𝓇₁^2 + 𝓇₂^2) / (2 * d)
+        # x = (d^2 - r₁^2 + r₂^2) / (2 * d)
 
         # Let omega be is the solid angle of intersection normalized by 4pi,
         # where the solid angle of a cone is 2pi*(1-cos(theta)) and cos(theta)
-        # is adjacent/hypotenuse = x/𝓇₂.
-        # omega = (1 - x/𝓇₂)/2
+        # is adjacent/hypotenuse = x/r₂.
+        # omega = (1 - x/r₂)/2
 
         # Rearranged for optimization:
-        omega = one(T)/2 - (d^2 - 𝓇₁^2 + 𝓇₂^2) / (4 * d * 𝓇₂)
+        omega = one(T)/2 - (d^2 - r₁^2 + r₂^2) / (4 * d * r₂)
 
-    elseif 𝓇₁<𝓇₂ # If 𝓇₁ is entirely within 𝓇₂
+    elseif r₁<r₂ # If r₁ is entirely within r₂
         omega = zero(T)
     else
-        omega = one(T) # If 𝓇₂ is entirely within 𝓇₁
+        omega = one(T) # If r₂ is entirely within r₁
     end
     return omega
 end
@@ -131,13 +131,13 @@ export DamageAnnealing!
 
 """
 ```julia
-HeAge = ZrnHeAgeSpherical(dt, ageSteps::Vector, TSteps::Vector, ρᵣ::Matrix, 𝓇, d𝓇, Uppm, Thppm)
+HeAge = ZrnHeAgeSpherical(dt, ageSteps::Vector, TSteps::Vector, ρᵣ::Matrix, r, dr, Uppm, Thppm)
 ```
 Calculate the precdicted U-Th/He age of a zircon that has experienced a given t-T path
 (specified by `ageSteps` for time and `TSteps` for temperature, at a time resolution of `dt`)
-using a Crank-Nicholson diffusion solution for a spherical grain of radius `𝓇` at spatial resolution `d𝓇`.
+using a Crank-Nicholson diffusion solution for a spherical grain of radius `r` at spatial resolution `dr`.
 """
-function ZrnHeAgeSpherical(dt::Number, ageSteps::AbstractVector{T}, TSteps::AbstractVector{T}, ρᵣ::AbstractMatrix{T}, 𝓇::T, d𝓇::Number, Uppm::T, Thppm::T, diffusionparams) where T <: Number
+function ZrnHeAgeSpherical(dt::Number, ageSteps::AbstractVector{T}, TSteps::AbstractVector{T}, ρᵣ::AbstractMatrix{T}, r::T, dr::Number, Uppm::T, Thppm::T, diffusionparams) where T <: Number
     # Temporal discretization
     tSteps = reverse(ageSteps)
     ntSteps = length(tSteps) # Number of time steps
@@ -177,8 +177,8 @@ function ZrnHeAgeSpherical(dt::Number, ageSteps::AbstractVector{T}, TSteps::Abst
     DN17 = DN17*10000^2*(1E6*365.25*24*3600) # Convert to micron^2/Myr
 
     # Crystal size and spatial discretization
-    rSteps = Array{Float64}(0+d𝓇/2 : d𝓇: 𝓇-d𝓇/2)
-    rEdges = Array{Float64}(0 : d𝓇 : 𝓇) # Edges of each radius element
+    rSteps = Array{Float64}(0+dr/2 : dr: r-dr/2)
+    rEdges = Array{Float64}(0 : dr : r) # Edges of each radius element
     nrSteps = length(rSteps)+2 # number of radial grid points
     relVolumes = (rEdges[2:end].^3 - rEdges[1:end-1].^3)/rEdges[end]^3 # Relative volume fraction of spherical shell corresponding to each radius element
 
@@ -251,7 +251,7 @@ function ZrnHeAgeSpherical(dt::Number, ageSteps::AbstractVector{T}, TSteps::Abst
         fₐ = 1-exp(-Bα*annealedDamage[1,k]*Phi)
         τ = (lint0/(4.2 / ((1-exp(-Bα*annealedDamage[1,k])) * SV) - 2.5))^2
         De = 1 / ((1-fₐ)^3 / (Dz[1]/τ) + fₐ^3 / DN17[1])
-        β[k+1] = 2 * d𝓇^2 / (De*dt) # Common β factor
+        β[k+1] = 2 * dr^2 / (De*dt) # Common β factor
     end
     β[1] = β[2]
     β[end] = β[end-1]
@@ -268,8 +268,6 @@ function ZrnHeAgeSpherical(dt::Number, ageSteps::AbstractVector{T}, TSteps::Abst
     du = ones(nrSteps-1)    # Supra-diagonal row
     du2 = ones(nrSteps-2)   # sup-sup-diagonal row for pivoting
 
-    y = Array{Float64}(undef, nrSteps, 1)
-
     # Neumann inner boundary condition (u(i,1) + u(i,2) = 0)
     d[1] = 1
     du[1] = 1
@@ -278,8 +276,11 @@ function ZrnHeAgeSpherical(dt::Number, ageSteps::AbstractVector{T}, TSteps::Abst
     dl[nrSteps-1] = 0
     d[nrSteps] = 1
 
-    # Fill sparse tridiagonal matrix
-    A = Tridiagonal(copy(dl), d, copy(du), du2)
+    # Tridiagonal matrix for LHS of Crank-Nicholson equation with regular grid cells
+    A = Tridiagonal(dl, d, du, du2)
+
+    # Vector for RHS of Crank-Nicholson equation with regular grid cells
+    y = Array{Float64}(undef, nrSteps)
 
     @inbounds for i=2:ntSteps
 
@@ -288,21 +289,23 @@ function ZrnHeAgeSpherical(dt::Number, ageSteps::AbstractVector{T}, TSteps::Abst
             fₐ = 1-exp(-Bα*annealedDamage[i,k]*Phi)
             τ = (lint0/(4.2 / ((1-exp(-Bα*annealedDamage[i,k])) * SV) - 2.5))^2
             De = 1 / ((1-fₐ)^3 / (Dz[i]/τ) + fₐ^3 / DN17[i])
-            β[k+1] = 2 * d𝓇^2 / (De*dt) # Common β factor
+            β[k+1] = 2 * dr^2 / (De*dt) # Common β factor
         end
         β[1] = β[2]
         β[end] = β[end-1]
 
         # Update tridiagonal matrix
-        copyto!(A.dl, dl)       # Sub-diagonal
-        @. A.d = -2. - β        # Diagonal
-        copyto!(A.du, du)       # Supra-diagonal
+        @. A.dl = 1         # Sub-diagonal
+        @. A.d = -2 - β     # Diagonal
+        @. A.du = 1         # Supra-diagonal
 
         # Neumann inner boundary condition (u(i,1) + u(i,2) = 0)
+        A.du[1] = 1
         A.d[1] = 1
         y[1] = 0
 
         # Dirichlet outer boundary condition (u(i,end) = u(i-1,end))
+        A.dl[nrSteps-1] = 0
         A.d[nrSteps] = 1
         y[nrSteps] = u[i-1,nrSteps]
 
@@ -321,7 +324,7 @@ function ZrnHeAgeSpherical(dt::Number, ageSteps::AbstractVector{T}, TSteps::Abst
 
     # Convert from u (coordinate-transform'd concentration) to v (real He
     # concentration)
-    vFinal = u[end,:]./[-d𝓇/2; rSteps; 𝓇+d𝓇/2]
+    vFinal = u[end,:]./[-dr/2; rSteps; r+dr/2]
     HeAvg = mean(vFinal[2:end-1]) # Atoms/gram
 
     # Raw Age (i.e., as measured)
