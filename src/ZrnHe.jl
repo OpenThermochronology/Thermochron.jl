@@ -143,9 +143,9 @@ function ZrnHeAgeSpherical(dt::Number, ageSteps::AbstractVector{T}, TSteps::Abst
     ntSteps = length(tSteps) # Number of time steps
 
     # Jaffey decay constants
-    l235U = log(2)/(7.0381*10^8)*10^6 # [1/Myr]
-    l238U = log(2)/(4.4683*10^9)*10^6 # [1/Myr]
-    l232Th = log(2)/(1.405*10^10)*10^6 # [1/Myr]
+    λ235U = log(2)/(7.0381*10^8)*10^6 # [1/Myr]
+    λ238U = log(2)/(4.4683*10^9)*10^6 # [1/Myr]
+    λ232Th = log(2)/(1.405*10^10)*10^6 # [1/Myr]
 
     # Alpha stopping distances for each isotope in each decay chain, from
     # Farley et al., 1996
@@ -178,8 +178,8 @@ function ZrnHeAgeSpherical(dt::Number, ageSteps::AbstractVector{T}, TSteps::Abst
 
     # Crystal size and spatial discretization
     rSteps = Array{Float64}(0+d𝓇/2 : d𝓇: 𝓇-d𝓇/2)
-    nrSteps = length(rSteps)+2 # number of radial grid points
     rEdges = Array{Float64}(0 : d𝓇 : 𝓇) # Edges of each radius element
+    nrSteps = length(rSteps)+2 # number of radial grid points
     relVolumes = (rEdges[2:end].^3 - rEdges[1:end-1].^3)/rEdges[end]^3 # Relative volume fraction of spherical shell corresponding to each radius element
 
 
@@ -189,9 +189,9 @@ function ZrnHeAgeSpherical(dt::Number, ageSteps::AbstractVector{T}, TSteps::Abst
     r232Th = Thppm.*ones(size(rSteps)) #PPM
 
     # Convert to atoms per gram
-    r238U = r238U * 6.022E23 / 1E6 / 238
-    r235U = r235U * 6.022E23 / 1E6 / 235
-    r232Th = r232Th * 6.022E23 / 1E6 / 232
+    r238U *= 6.022E23 / 1E6 / 238
+    r235U *= 6.022E23 / 1E6 / 235
+    r232Th *= 6.022E23 / 1E6 / 232
 
 
     # Calculate effective He deposition for each decay chain, corrected for alpha
@@ -225,18 +225,18 @@ function ZrnHeAgeSpherical(dt::Number, ageSteps::AbstractVector{T}, TSteps::Abst
     end
 
     # Calculate corrected alpha deposition each time step for each radius
-    alphaDeposition = (exp.(l238U.*(ageSteps .+ dt/2)) - exp.(l238U.*(ageSteps .- dt/2))) * (r238UHe') +
-        (exp.(l235U.*(ageSteps .+ dt/2)) - exp.(l235U.*(ageSteps .- dt/2))) * (r235UHe') +
-        (exp.(l232Th.*(ageSteps .+ dt/2)) - exp.(l232Th.*(ageSteps .- dt/2))) * (r232ThHe')
+    alphaDeposition = (exp.(λ238U.*(ageSteps .+ dt/2)) - exp.(λ238U.*(ageSteps .- dt/2))) * (r238UHe') +
+        (exp.(λ235U.*(ageSteps .+ dt/2)) - exp.(λ235U.*(ageSteps .- dt/2))) * (r235UHe') +
+        (exp.(λ232Th.*(ageSteps .+ dt/2)) - exp.(λ232Th.*(ageSteps .- dt/2))) * (r232ThHe')
 
     r238Udam = 8*r238U # No smoothing of alpha damage, 8 alphas per 238U
     r235Udam = 7*r235U # No smoothing of alpha damage, 7 alphas per 235U
     r232Thdam = 6*r232Th # No smoothing of alpha damage, 6 alphas per 232 Th
 
     # Calculate corrected alpha damage at each time step for each radius
-    alphaDamage = (exp.(l238U.*(ageSteps .+ dt/2)) - exp.(l238U.*(ageSteps .- dt/2))) * (r238Udam') +
-        (exp.(l235U.*(ageSteps .+ dt/2)) - exp.(l235U.*(ageSteps .- dt/2))) * (r235Udam') +
-        (exp.(l232Th.*(ageSteps .+ dt/2)) - exp.(l232Th.*(ageSteps .- dt/2))) * (r232Thdam')
+    alphaDamage = (exp.(λ238U.*(ageSteps .+ dt/2)) - exp.(λ238U.*(ageSteps .- dt/2))) * (r238Udam') +
+        (exp.(λ235U.*(ageSteps .+ dt/2)) - exp.(λ235U.*(ageSteps .- dt/2))) * (r235Udam') +
+        (exp.(λ232Th.*(ageSteps .+ dt/2)) - exp.(λ232Th.*(ageSteps .- dt/2))) * (r232Thdam')
 
 
     # The annealed damage matrix is the summation of the ρᵣ for each
@@ -328,7 +328,7 @@ function ZrnHeAgeSpherical(dt::Number, ageSteps::AbstractVector{T}, TSteps::Abst
     Avg238U = mean(r238U) # Atoms/gram
     Avg235U = mean(r235U)
     Avg232Th = mean(r232Th)
-    He(t) = Avg238U*8*(exp(l238U*t)-1) + Avg235U*7*(exp(l235U*t)-1) + Avg232Th*6*(exp(l232Th*t)-1)
+    He(t) = Avg238U*8*(exp(λ238U*t)-1) + Avg235U*7*(exp(λ235U*t)-1) + Avg232Th*6*(exp(λ232Th*t)-1)
 
     # Numerically solve for helium age of the grain
     HeAge = 1
