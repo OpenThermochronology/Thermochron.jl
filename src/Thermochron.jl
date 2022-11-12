@@ -6,7 +6,7 @@ module Thermochron
     using ProgressMeter: @showprogress
 
     include("minerals.jl")
-    include("ZrnHe.jl")
+    include("zirconhelium.jl")
     include("inversion.jl")
 
 end

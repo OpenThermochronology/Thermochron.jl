@@ -1,25 +1,26 @@
 
 """
 ```julia
-ρᵣ = DamageAnnealing(dt::Number, tSteps::Vector, TSteps::Matrix)
+ρᵣ = anneal(dt::Number, tSteps::Vector, TSteps::Matrix, [model::Symbol])
 ```
 Zircon damage annealing model as in Guenthner et al. 2013 (AJS)
 """
-function DamageAnnealing(dt::Number, tSteps::DenseVector, TSteps::DenseVector)
+function anneal(dt::Number, tSteps::DenseVector, TSteps::DenseVector, model=:zrdaam)
     # Allocate matrix to hold reduced track lengths for all previous timesteps
     ρᵣ = zeros(length(tSteps),length(tSteps))
     # In=-place version
-    DamageAnnealing!(ρᵣ, dt, tSteps, TSteps)
+    anneal!(ρᵣ, dt, tSteps, TSteps, model)
 end
-export DamageAnnealing
+export anneal
 
 """
 ```julia
-DamageAnnealing!(ρᵣ::Matrix, dt::Number, tSteps::Vector, TSteps::Vector)
+anneal!(ρᵣ::Matrix, dt::Number, tSteps::Vector, TSteps::Vector, [model::Symbol])
 ```
-In-place version of `DamageAnnealing`
+In-place version of `anneal`
 """
-function DamageAnnealing!(ρᵣ::DenseMatrix, dt::Number, tSteps::DenseVector, TSteps::DenseVector)
+anneal!(ρᵣ::DenseMatrix, dt::Number, tSteps::DenseVector, TSteps::DenseVector, model::Symbol) = anneal!(ρᵣ, dt, tSteps, TSteps, Val(model))
+function anneal!(ρᵣ::DenseMatrix, dt::Number, tSteps::DenseVector, TSteps::DenseVector, ::Val{:zrdaam})
     # Annealing model constants
     B=-0.05721
     C0=6.24534
@@ -63,7 +64,7 @@ function DamageAnnealing!(ρᵣ::DenseMatrix, dt::Number, tSteps::DenseVector, T
 
     return ρᵣ
 end
-export DamageAnnealing!
+export anneal!
 
 
 """
