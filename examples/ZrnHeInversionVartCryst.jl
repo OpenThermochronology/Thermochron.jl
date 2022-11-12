@@ -251,7 +251,6 @@
                     copyto!(agePointsₚ, agePoints)
                     copyto!(TPointsₚ, TPoints)
                 end
-
             elseif (r < move+birth) && (nPointsₚ < maxPoints)
                 # Birth: add a new model point
                 nPointsₚ += 1
@@ -266,7 +265,6 @@
                     # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
                     maximum(diff(TStepsₚ)) < dTmax && break
                 end
-
             elseif (r < move+birth+death) && (r >= move+birth) && (nPointsₚ > 1)
                 # Death: remove a model point
                 nPointsₚ -= 1 # Delete last point in array from proposal
@@ -282,7 +280,6 @@
                     # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
                     maximum(diff(TStepsₚ)) < dTmax && break
                 end
-
             else
                 # Move boundary conditions
                 for i=1:maxattempts # Try maxattempts times to satisfy the reheating rate limit
@@ -319,7 +316,7 @@
                                 [view(TPointsₚ, 1:nPointsₚ) ; boundary_TPointsₚ ; unconf_TPointsₚ], ageSteps)
 
              # Calculate model ages for each grain
-            pr = DamageAnnealing(dt,tSteps,TStepsₚ)
+            DamageAnnealing!(pr, dt, tSteps, TStepsₚ)
             for i=1:length(Halfwidth)
                 first_index = 1 + floor(Int64,(tCryst - CrystAge_Ma[i])/dt)
                 @views CalcHeAgesₚ[i] = ZrnHeAgeSpherical(dt,ageSteps[first_index:end],TStepsₚ[first_index:end],pr[first_index:end,first_index:end],Halfwidth[i],dr,U_ppm[i],Th_ppm[i],diffusionparams)

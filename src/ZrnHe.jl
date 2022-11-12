@@ -64,11 +64,25 @@ export intersectiondensity
 
 """
 ```julia
-ρᵣ = DamageAnnealing(dt::Number, tSteps::Vector, TSteps)
+ρᵣ = DamageAnnealing(dt::Number, tSteps::Vector, TSteps::Matrix)
 ```
 Zircon damage annealing model as in Guenthner et al. 2013 (AJS)
 """
-function DamageAnnealing(dt::Number,tSteps::DenseVector{T},TSteps::DenseVector{T}) where T <: Number
+function DamageAnnealing(dt::Number, tSteps::DenseVector, TSteps::DenseVector)
+    # Allocate matrix to hold reduced track lengths for all previous timesteps
+    ρᵣ = zeros(length(tSteps),length(tSteps))
+    # In=-place version
+    DamageAnnealing!(ρᵣ, dt, tSteps, TSteps)
+end
+export DamageAnnealing
+
+"""
+```julia
+DamageAnnealing!(ρᵣ::Matrix, dt::Number, tSteps::Vector, TSteps::Vector)
+```
+In-place version of `DamageAnnealing`
+"""
+function DamageAnnealing!(ρᵣ::DenseMatrix, dt::Number, tSteps::DenseVector, TSteps::DenseVector)
     # Annealing model constants
     B=-0.05721
     C0=6.24534
@@ -76,52 +90,43 @@ function DamageAnnealing(dt::Number,tSteps::DenseVector{T},TSteps::DenseVector{T
     C2=-314.937 - log(1E6*365.25*24*3600) # Convert from seconds to Myr
     C3=-14.2868
 
-    # Allocate matrix to hold reduced track lengths for all previous
-    # timesteps
     ntSteps = length(tSteps)
-    lᵣ = zeros(ntSteps,ntSteps)
 
     # First timestep
     Teq = zeros(1,ntSteps)
-    lᵣ[1,1] = 1 / ((C0 + C1*(log(dt)-C2)/(log(1 / (TSteps[1]+273.15))-C3))^(1/B)+1)
+    ρᵣ[1,1] = 1 / ((C0 + C1*(log(dt)-C2)/(log(1 / (TSteps[1]+273.15))-C3))^(1/B)+1)
 
     # All subsequent timesteps
     @inbounds for i=2:ntSteps
         # Convert any existing track length reduction for damage from
         # all previous timestep to an equivalent annealing time at the
         # current temperature
-        @views Teq[1:i-1] .= exp.(C2 .+ (log(1 / (TSteps[i]+273.15)) - C3) .* (((1 ./ lᵣ[i-1,1:i-1]) .- 1).^B .- C0) ./ C1)
+        @views Teq[1:i-1] .= exp.(C2 .+ (log(1 / (TSteps[i]+273.15)) - C3) .* (((1 ./ ρᵣ[i-1,1:i-1]) .- 1).^B .- C0) ./ C1)
 
         # Calculate the new reduced track lengths for all previous time steps
         # Accumulating annealing strictly in terms of reduced track length
-        @views lᵣ[i,1:i] .= 1 ./ ((C0 .+ C1 .* (log.(dt .+ Teq[1:i]) .- C2) ./ (log(1 / (TSteps[i]+273.15)) - C3)).^(1/B) .+ 1) #+273.15?
+        @views ρᵣ[i,1:i] .= 1 ./ ((C0 .+ C1 .* (log.(dt .+ Teq[1:i]) .- C2) ./ (log(1 / (TSteps[i]+273.15)) - C3)).^(1/B) .+ 1) #+273.15?
 
     end
 
-    # Convert to reduced density
-    ρᵣ = lᵣ
+    # # Guenthner et al conversion
+    # map!(x->1.25*(x-0.2), ρᵣ, ρᵣ)
 
-    # Guenthner et al conversion
-    # ρᵣ = 1.25*(lᵣ-0.2)
-
-    # # Zero-out any reduced densities below the equivalent total
-    # # annealing length
-    # ρᵣ[ρᵣ.<0.36]=0
+    # # Zero-out any reduced densities below the equivalent total annealing length
+    # ρᵣ[ρᵣ.<0.36] .= 0
 
     # # Extrapolate from bottom of data to origin
-    # ρᵣ[lᵣ.<0.4] = 5/8*lᵣ[lᵣ<0.4]
+    # ρᵣ[ρᵣ.<0.4] .= 5/8*ρᵣ[ρᵣ<0.4]
 
-    # # Rescale reduced densities based on the equivalent total annealing
-    # # length
+    # # Rescale reduced densities based on the equivalent total annealing length
     # ρᵣ = (ρᵣ-0.36)/(1-0.36)
 
     # Remove any negative reduced densities
-    # ρᵣ[ρᵣ.<0] .= 0
     map!(x->ifelse(x<0., 0., x), ρᵣ, ρᵣ)
 
     return ρᵣ
 end
-export DamageAnnealing
+export DamageAnnealing!
 
 
 """
