@@ -60,9 +60,11 @@
     crystalRadius = 29.26
     Uppm = 462.98
     Thppm = 177.76
-    @test round(ZrnHeAgeSpherical(dt,reverse(tSteps),TSteps,pr,crystalRadius,dr,Uppm,Thppm,diffusionparams), sigdigits=5) ≈ 520.03
+    zircon = Zircon(crystalRadius,dr,Uppm,Thppm,dt,reverse(tSteps))
+    @test round(HeAgeSpherical(zircon,TSteps,pr,diffusionparams), sigdigits=5) ≈ 520.03
 
     crystalRadius = 35.
     Uppm = 1107.
     Thppm = 351.
-    @test round(ZrnHeAgeSpherical(dt,reverse(tSteps),TSteps,pr,crystalRadius,dr,Uppm,Thppm,diffusionparams), sigdigits=5) ≈ 309.76
+    zircon = Zircon(crystalRadius,dr,Uppm,Thppm,dt,reverse(tSteps))
+    @test round(HeAgeSpherical(zircon,TSteps,pr,diffusionparams), sigdigits=5) ≈ 309.76

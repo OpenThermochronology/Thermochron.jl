@@ -5,6 +5,7 @@ module Thermochron
     using LoopVectorization
     using ProgressMeter: @showprogress
 
+    include("minerals.jl")
     include("ZrnHe.jl")
     include("inversion.jl")
 
