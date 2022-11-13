@@ -207,12 +207,12 @@
         TStepsₚ = similar(TSteps)
         calcHeAgesₚ = similar(calcHeAges)
 
-        # Distributions to populate
-        HeAgeDist = Array{Float64}(undef, length(data.HeAge), model.nsteps)
-        TStepDist = Array{Float64}(undef, length(tSteps), model.nsteps)
-        llDist = Array{Float64}(undef, model.nsteps)
-        nDist = zeros(Int, model.nsteps)
-        acceptanceDist = zeros(Bool, model.nsteps)
+        # distributions to populate
+        HeAgedist = Array{Float64}(undef, length(data.HeAge), model.nsteps)
+        TStepdist = Array{Float64}(undef, length(tSteps), model.nsteps)
+        lldist = Array{Float64}(undef, model.nsteps)
+        ndist = zeros(Int, model.nsteps)
+        acceptancedist = zeros(Bool, model.nsteps)
 
         # Standard deviations of Gaussian proposal distributions for temperature and time
         t_sigma = model.tInit/60
@@ -363,31 +363,31 @@
 
                 # These are saved for ouput, but not critical to the function of the MCMC loop
                 copyto!(TSteps, TStepsₚ)
-                acceptanceDist[n] = true
+                acceptancedist[n] = true
             end
 
             # Record results for analysis and troubleshooting
-            llDist[n] = normpdf_ll(data.HeAge, σₙ, calcHeAges) # Recalculated to constant baseline
-            nDist[n] = nPoints # Distribution of # of points
-            HeAgeDist[:,n] = calcHeAges # Distribution of He ages
+            lldist[n] = normpdf_ll(data.HeAge, σₙ, calcHeAges) # Recalculated to constant baseline
+            ndist[n] = nPoints # distribution of # of points
+            HeAgedist[:,n] = calcHeAges # distribution of He ages
 
             # This is the actual output we want -- the distribution of t-T paths (t path is always identical)
-            TStepDist[:,n] = TSteps # Distribution of T paths
+            TStepdist[:,n] = TSteps # distribution of T paths
 
         end
-        return (TStepDist, HeAgeDist, nDist, llDist, acceptanceDist)
+        return (TStepdist, HeAgedist, ndist, lldist, acceptancedist)
     end
 
     # Run Markov Chain
-    @time (TStepDist, HeAgeDist, nDist, llDist, acceptanceDist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary)
+    @time (TStepdist, HeAgedist, ndist, lldist, acceptancedist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary)
 
     # # Save results using JLD
-    @save string(name, ".jld") ageSteps tSteps TStepDist model
+    @save string(name, ".jld") ageSteps tSteps TStepdist model
 
 ## ---  Plot sample age-eU correlations
 
     eU = data.U+.238*data.Th # Used only for plotting
-    h = scatter(eU,HeAgeDist[:,model.burnin:model.burnin+50], label="")
+    h = scatter(eU,HeAgedist[:,model.burnin:model.burnin+50], label="")
     plot!(h, eU, data.HeAge, yerror=data.HeAge_sigma, seriestype=:scatter, label="Data")
     xlabel!(h,"eU (ppm)"); ylabel!(h,"Age (Ma)")
     savefig(h,string(name,"Age-eU.pdf"))
@@ -396,17 +396,17 @@
 ## --- Create image of paths
 
     # Resize the post-burnin part of the stationary distribution
-    TStepDistResized = Array{Float64}(undef, 2001, size(TStepDist,2)-model.burnin)
+    TStepdistResized = Array{Float64}(undef, 2001, size(TStepdist,2)-model.burnin)
     xq = collect(range(0,model.tInit,length=2001))
-    for i=1:size(TStepDist,2)-model.burnin
-        TStepDistResized[:,i] = linterp1s(tSteps,TStepDist[:,i+model.burnin],xq)
+    for i=1:size(TStepdist,2)-model.burnin
+        TStepdistResized[:,i] = linterp1s(tSteps,TStepdist[:,i+model.burnin],xq)
     end
 
     # Calculate composite image
-    tTimage = zeros(ceil(Int, TInit)*2, size(TStepDistResized,1))
+    tTimage = zeros(ceil(Int, TInit)*2, size(TStepdistResized,1))
     yq = collect(0:0.5:TInit)
-    for i=1:size(TStepDistResized,1)
-        hist = fit(Histogram,TStepDistResized[i,:],yq,closed=:right)
+    for i=1:size(TStepdistResized,1)
+        hist = fit(Histogram,TStepdistResized[i,:],yq,closed=:right)
         tTimage[:,i] = hist.weights
     end
 
