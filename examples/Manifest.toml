@@ -1310,7 +1310,7 @@ uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 deps = ["LinearAlgebra", "LoopVectorization", "ProgressMeter", "Statistics"]
 git-tree-sha1 = "bcadf61e7da9bbad34fb109c44345bb882d2616a"
 uuid = "b9a8379e-ee1a-4388-b7ca-7852af1cef08"
-version = "0.3.0"
+version = "0.3.1"
 
 [[deps.ThreadingUtilities]]
 deps = ["ManualMemory"]
