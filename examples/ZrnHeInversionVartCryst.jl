@@ -117,7 +117,7 @@
     model = (model...,
         ageSteps = Array{Float64}(model.tInit-model.dt/2 : -model.dt : 0+model.dt/2),
         tSteps = Array{Float64}(0+model.dt/2 : model.dt : model.tInit-model.dt/2),
-    )
+    );
 
 ## --- Test proscribed t-T paths with Neoproterozoic exhumation step
 
@@ -159,6 +159,7 @@
     # This is where the "transdimensional" part comes in
     agePoints = Array{Float64}(undef, model.maxPoints+1) # Array of fixed size to hold all optional age points
     TPoints = Array{Float64}(undef, model.maxPoints+1) # Array of fixed size to hold all optional age points
+
     # Fill some intermediate points to give the MCMC something to work with
     Tr = 250 # Residence temperature
     nPoints = 5
@@ -169,8 +170,8 @@
     # Tr = 150
     # T0 = 30
     # nPoints = 4
-    # agePoints[1:nPoints] = Float64[model.tInit*29/30,   720, 510, 250]) # Age (Ma)
-    # TPoints[1:nPoints]  =  Float64[       Tr+T0, Tr+T0,  T0,  70]) # Temp. (C)
+    # agePoints[1:nPoints] = Float64[model.tInit*29/30,   720, 510, 250] # Age (Ma)
+    # TPoints[1:nPoints]  =  Float64[            Tr+T0, Tr+T0,  T0,  70] # Temp. (C)
 
     # Run Markov Chain
     @time (TStepdist, HeAgedist, ndist, lldist, acceptancedist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary)
