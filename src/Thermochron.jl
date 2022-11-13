@@ -4,6 +4,7 @@ module Thermochron
     using Statistics
     using LoopVectorization
     using ProgressMeter: @showprogress
+    using StatGeochemBase
 
     include("minerals.jl")
     include("zirconhelium.jl")
