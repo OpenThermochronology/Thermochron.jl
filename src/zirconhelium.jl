@@ -1,4 +1,19 @@
 
+# Jaffey decay constants
+const λ235U = log(2)/(7.0381*10^8)*10^6 # [1/Myr]
+const λ238U = log(2)/(4.4683*10^9)*10^6 # [1/Myr]
+const λ232Th = log(2)/(1.405*10^10)*10^6 # [1/Myr]
+
+# The amount of ingrown helium since time t
+function He(t, U238, U235, Th232)
+    8*U238*(exp(λ238U*t)-1) + 7*U235*(exp(λ235U*t)-1) + 6*Th232*(exp(λ232Th*t)-1)
+end
+# First time derivative of the amount of ingrown helium since time t
+function dHe(t, U238, U235, Th232)
+    8*U238*λ238U*exp(λ238U*t) + 7*U235*λ235U*exp(λ235U*t) + 6*Th232*λ232Th*exp(λ232Th*t)
+end
+
+
 """
 ```julia
 ρᵣ = anneal(dt::Number, tSteps::Vector, TSteps::Matrix, [model::Symbol])
@@ -36,15 +51,18 @@ function anneal!(ρᵣ::DenseMatrix, dt::Number, tSteps::DenseVector, TSteps::De
 
     # All subsequent timesteps
     @inbounds for i=2:ntSteps
+        lᵢ = log(1 / (TSteps[i]+273.15)) - C3
+
         # Convert any existing track length reduction for damage from
         # all previous timestep to an equivalent annealing time at the
         # current temperature
-        @views Teq[1:i-1] .= exp.(C2 .+ (log(1 / (TSteps[i]+273.15)) - C3) .* (((1 ./ ρᵣ[i-1,1:i-1]) .- 1).^B .- C0) ./ C1)
+        pᵣᵢ = view(ρᵣ, i-1, 1:i-1)
+        @turbo @. Teq[1:i-1] = exp(C2 + lᵢ * ((1/pᵣᵢ - 1)^B - C0) / C1)
 
         # Calculate the new reduced track lengths for all previous time steps
         # Accumulating annealing strictly in terms of reduced track length
-        @views ρᵣ[i,1:i] .= 1 ./ ((C0 .+ C1 .* (log.(dt .+ Teq[1:i]) .- C2) ./ (log(1 / (TSteps[i]+273.15)) - C3)).^(1/B) .+ 1) #+273.15?
-
+        Teqᵢ = view(Teq, 1:i)
+        @turbo @. ρᵣ[i,1:i] = 1 / ((C0 + C1 * (log(dt + Teqᵢ) - C2) / lᵢ)^(1/B) + 1)
     end
 
     # # Guenthner et al conversion
@@ -76,11 +94,6 @@ Calculate the precdicted U-Th/He age of a zircon that has experienced a given t-
 using a Crank-Nicholson diffusion solution for a spherical grain of radius `zircon.r` at spatial resolution `zircon.dr`.
 """
 function HeAgeSpherical(zircon::Zircon{T}, TSteps::AbstractVector{T}, ρᵣ::AbstractMatrix{T}, diffusionmodel) where T <: Number
-
-    # Jaffey decay constants
-    λ235U = log(2)/(7.0381*10^8)*10^6 # [1/Myr]
-    λ238U = log(2)/(4.4683*10^9)*10^6 # [1/Myr]
-    λ232Th = log(2)/(1.405*10^10)*10^6 # [1/Myr]
 
     # Diffusion constants
     # DzEa = 165.0 # kJ/mol
@@ -205,13 +218,11 @@ function HeAgeSpherical(zircon::Zircon{T}, TSteps::AbstractVector{T}, ρᵣ::Abs
     μ235U = mean(zircon.r235U)
     μ232Th = mean(zircon.r232Th)
 
-    He(t) = μ238U*8*(exp(λ238U*t)-1) + μ235U*7*(exp(λ235U*t)-1) + μ232Th*6*(exp(λ232Th*t)-1)
-
     # Numerically solve for helium age of the grain
     HeAge = 1
     for i=1:10
-        dHe = 10000*(He(HeAge+1/10000)-He(HeAge)) # Calculate derivative
-        HeAge += (μHe-He(HeAge))/dHe # Move towards zero (He(HeAge) == μHe)
+        ∂He∂t = dHe(HeAge, μ238U, μ235U, μ232Th) # Calculate derivative
+        HeAge += (μHe - He(HeAge, μ238U, μ235U, μ232Th))/∂He∂t # Move towards zero (He(HeAge) == μHe)
     end
 
     return HeAge
