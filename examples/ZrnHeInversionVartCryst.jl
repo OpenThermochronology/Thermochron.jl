@@ -7,12 +7,12 @@
 #   damage and annealing model "ZRDAAM" from Guenthner et al, 2013 (AJS).       #
 #   Requires uncorrected ZHe ages, grain size, [U] and [Th] in ppm.             #
 #                                                                               #
-#       This file contains the MCMC code, while "ZrnHe.jl" contains the damage  #
-#   annealing function and the Crank-Nicholson code.                            #
+#       This file uses the MCMC, damage annealing, and Crank-Nicholson          #
+#   diffusion codes provided by the Thermochron.jl package.                     #
 #                                                                               #
 #   © 2022 C. Brenhin Keller and Kalin McDannell                                #                                                                            #
 #                                                                               #
-#   If running for the first time, make sure you have instantiated the          #
+#       If running for the first time, you might consider instantiating the     #
 #   manifest that came with this file                                           #
 #                                                                               #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -31,7 +31,7 @@
     # # # # # # # # # # Choice of regional thermochron data # # # # # # # # # #
 
     # Literature samples from Guenthner et al. 2013 (AJS), Minnesota
-    name = "MinnesotaInversion"
+    name = "Minnesota"
     ds = importdataset("minnesota.csv", ',', importas=:Tuple);
 
 ## --- Prepare problem
@@ -231,7 +231,7 @@
     #plot!([635.5, 650.0, 650.0, 635.5, 635.5],[0, 0, 650, 650, 0], fill=true, color=:white, alpha=0.6) #Marinoan glacial
     #plot!([480, 640, 640, 480, 480],[0, 0, 50, 50, 0], linestyle = :dot, color=:black, linewidth=1.25) # t-T box 640 to 480 Ma, 0-50°C
 
-    savefig(k,"minnesota-mcmc-zrdaam-unc.pdf")
+    savefig(k, name*"mcmc-zrdaam.pdf")
     display(k)
 
 ## ---
