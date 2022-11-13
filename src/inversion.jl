@@ -22,6 +22,17 @@
     end
     export simannealsigma
 
+    # Utility function for agePoint and TPoint buffers
+    function collectto!(buffer, a, b, c)
+        i₀ = 1
+        copyto!(buffer, i₀, a, 1, length(a))
+        i₀ += length(a)
+        copyto!(buffer, i₀, b, 1, length(b))
+        i₀ += length(b)
+        copyto!(buffer, i₀, c, 1, length(c))
+        n = length(a) + length(b) + length(c)
+        return n
+    end
 
     """
     ```julia
@@ -37,9 +48,18 @@
     ```
     """
     function MCMC_vartcryst(data::NamedTuple, model::NamedTuple, nPoints::Int, agePoints::AbstractVector, TPoints::AbstractVector, unconf::NamedTuple, boundary::NamedTuple)
+        @assert firstindex(agePoints) === 1
+        @assert firstindex(TPoints) === 1
+
+        # Calculate number of boundary and unconformity points and allocate buffer for interpolating
+        extraPoints = length(boundary.agePoints) + length(unconf.agePoints)
+        agePointBuffer = similar(agePoints, model.maxPoints+extraPoints)
+        TPointBuffer = similar(agePoints, model.maxPoints+extraPoints)
+
         # Calculate model ages for initial proposal
-        TSteps = linterp1s([view(agePoints, 1:nPoints) ; boundary.agePoints ; unconf.agePoints],
-                           [view(TPoints, 1:nPoints) ; boundary.TPoints ; unconf.TPoints], model.ageSteps)
+        na = collectto!(agePointBuffer, view(agePoints, 1:nPoints), boundary.agePoints, unconf.agePoints)
+        nt = collectto!(TPointBuffer, view(TPoints, 1:nPoints), boundary.TPoints, unconf.TPoints)
+        TSteps = linterp1s(view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
         calcHeAges = Array{Float64}(undef, size(data.HeAge))
         pr = anneal(model.dt, model.tSteps, TSteps, :zrdaam) # Damage annealing history
 
@@ -69,7 +89,6 @@
         nPointsₚ = nPoints
         agePointsₚ = similar(agePoints)
         TPointsₚ = similar(TPoints)
-        TStepsₚ = similar(TSteps)
         calcHeAgesₚ = similar(calcHeAges)
 
         # distributions to populate
@@ -96,7 +115,6 @@
             nPointsₚ = nPoints
             copyto!(agePointsₚ, agePoints)
             copyto!(TPointsₚ, TPoints)
-            copyto!(TStepsₚ, TSteps)
             copyto!(unconf.agePointsₚ, unconf.agePoints)
             copyto!(unconf.TPointsₚ, unconf.TPoints)
             copyto!(boundary.TPointsₚ, boundary.TPoints)
@@ -125,12 +143,13 @@
                         TPointsₚ[k] = model.TInit
                     end
 
-                    # Interpolate proposed t-T path
-                    TStepsₚ = linterp1s([view(agePointsₚ, 1:nPointsₚ) ; boundary.agePoints ; unconf.agePointsₚ],
-                                        [view(TPointsₚ, 1:nPointsₚ) ; boundary.TPointsₚ ; unconf.TPointsₚ], model.ageSteps)
+                    # Recalculate interpolated proposed t-T path
+                    na = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
+                    nt = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
+                    linterp1s!(TSteps, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
 
                     # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
-                    maximum(diff(TStepsₚ)) < model.dTmax && break
+                    maximum(diff(TSteps)) < model.dTmax && break
 
                     # Copy last accepted solution to re-modify if we don't break
                     copyto!(agePointsₚ, agePoints)
@@ -143,12 +162,13 @@
                     agePointsₚ[nPointsₚ] = rand()*model.tInit
                     TPointsₚ[nPointsₚ] = rand()*model.TInit
 
-                    # Interpolate proposed t-T path
-                    TStepsₚ = linterp1s([view(agePointsₚ, 1:nPointsₚ) ; boundary.agePoints ; unconf.agePointsₚ],
-                                        [view(TPointsₚ, 1:nPointsₚ) ; boundary.TPointsₚ ; unconf.TPointsₚ], model.ageSteps)
+                    # Recalculate interpolated proposed t-T path
+                    na = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
+                    nt = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
+                    linterp1s!(TSteps, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
 
                     # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
-                    maximum(diff(TStepsₚ)) < model.dTmax && break
+                    maximum(diff(TSteps)) < model.dTmax && break
                 end
             elseif (r < move+birth+death) && (r >= move+birth) && (nPointsₚ > 1)
                 # Death: remove a model point
@@ -158,12 +178,13 @@
                     agePointsₚ[k] = agePointsₚ[nPoints]
                     TPointsₚ[k] = TPointsₚ[nPoints]
 
-                    # Interpolate proposed t-T path
-                    TStepsₚ = linterp1s([view(agePointsₚ, 1:nPointsₚ) ; boundary.agePoints ; unconf.agePointsₚ],
-                                        [view(TPointsₚ, 1:nPointsₚ) ; boundary.TPointsₚ ; unconf.TPointsₚ], model.ageSteps)
+                    # Recalculate interpolated proposed t-T path
+                    na = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
+                    nt = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
+                    linterp1s!(TSteps, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
 
                     # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
-                    maximum(diff(TStepsₚ)) < model.dTmax && break
+                    maximum(diff(TSteps)) < model.dTmax && break
                 end
             else
                 # Move boundary conditions
@@ -177,13 +198,13 @@
                         @. unconf.TPointsₚ = unconf.T₀ + rand()*unconf.ΔT
                     end
 
-
                     # Recalculate interpolated proposed t-T path
-                    TStepsₚ = linterp1s([view(agePointsₚ, 1:nPointsₚ) ; boundary.agePoints ; unconf.agePointsₚ],
-                                            [view(TPointsₚ, 1:nPointsₚ) ; boundary.TPointsₚ ; unconf.TPointsₚ], model.ageSteps)
+                    na = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
+                    nt = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
+                    linterp1s!(TSteps, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
 
                     # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
-                    maximum(diff(TStepsₚ)) < model.dTmax && break
+                    maximum(diff(TSteps)) < model.dTmax && break
 
                     # Copy last accepted solution to re-modify if we don't break
                     copyto!(unconf.agePointsₚ, unconf.agePoints)
@@ -192,15 +213,11 @@
                 end
             end
 
-            # Recalculate interpolated proposed t-T path
-            TStepsₚ = linterp1s([view(agePointsₚ, 1:nPointsₚ) ; boundary.agePoints ; unconf.agePointsₚ],
-                                [view(TPointsₚ, 1:nPointsₚ) ; boundary.TPointsₚ ; unconf.TPointsₚ], model.ageSteps)
-
              # Calculate model ages for each grain
-            anneal!(pr, model.dt, model.tSteps, TStepsₚ, :zrdaam)
+            anneal!(pr, model.dt, model.tSteps, TSteps, :zrdaam)
             for i=1:length(zircons)
                 first_index = 1 + floor(Int64,(model.tInit - data.CrystAge[i])/model.dt)
-                calcHeAgesₚ[i] = HeAgeSpherical(zircons[i], @views(TStepsₚ[first_index:end]), @views(pr[first_index:end,first_index:end]), diffusionmodel)
+                calcHeAgesₚ[i] = HeAgeSpherical(zircons[i], @views(TSteps[first_index:end]), @views(pr[first_index:end,first_index:end]), diffusionmodel)
             end
 
             # Calculate log likelihood of proposal
@@ -226,8 +243,7 @@
                 copyto!(boundary.TPoints, boundary.TPointsₚ)
                 copyto!(calcHeAges, calcHeAgesₚ)
 
-                # These are saved for ouput, but not critical to the function of the MCMC loop
-                copyto!(TSteps, TStepsₚ)
+                # This is saved for ouput, but not critical to the function of the MCMC loop
                 acceptancedist[n] = true
             end
 

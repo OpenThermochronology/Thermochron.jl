@@ -13,7 +13,7 @@ model = (
     burnin = 100, # How long should we wait for MC to converge (become stationary)
     dr = 1.0,    # Radius step, in microns
     dt = 10.0,   # time step size in Myr
-    dTmax = 10.0, # Maximum reheating/burial per model timestep (to prevent numerical overflow)
+    dTmax = 10.0, # Maximum reheating/burial per model timestep
     TInit = 400.0, # Initial model temperature (in C) (i.e., crystallization temperature)
     ΔTInit = -50.0, # TInit can vary from TInit to TInit+ΔTinit
     TNow = 0.0, # Current surface temperature (in C)
@@ -97,9 +97,8 @@ TPoints = Array{Float64}(undef, model.maxPoints+1) # Array of fixed size to hold
 # Fill some intermediate points to give the MCMC something to work with
 Tr = 250 # Residence temperature
 nPoints = 5
-agePoints[1:nPoints] .= [model.tInit/30,model.tInit/4,model.tInit/2,model.tInit-model.tInit/4,model.tInit-model.tInit/30] # Ma
-TPoints[1:nPoints] .+ Tr  # Degrees C
-
+agePoints[1:nPoints] .= (model.tInit/30,model.tInit/4,model.tInit/2,model.tInit-model.tInit/4,model.tInit-model.tInit/30) # Ma
+TPoints[1:nPoints] .= Tr  # Degrees C
 
 # Run Markov Chain
 @time MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary)
