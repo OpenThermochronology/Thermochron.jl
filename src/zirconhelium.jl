@@ -156,9 +156,9 @@ function HeAgeSpherical(zircon::Zircon{T}, TSteps::AbstractVector{T}, ρᵣ::Abs
 
     # Tridiagonal matrix for LHS of Crank-Nicholson equation with regular grid cells
     A = zircon.A
-    @. A.dl = 1         # Sub-diagonal row
-    @. A.d = -2 - β     # Diagonal
-    @. A.du = 1         # Supra-diagonal row
+    @turbo @. A.dl = 1         # Sub-diagonal row
+    @turbo @. A.d = -2 - β     # Diagonal
+    @turbo @. A.du = 1         # Supra-diagonal row
 
     # Neumann inner boundary condition (u(i,1) + u(i,2) = 0)
     A.d[1] = 1
@@ -181,9 +181,9 @@ function HeAgeSpherical(zircon::Zircon{T}, TSteps::AbstractVector{T}, ρᵣ::Abs
         β[end] = β[end-1]
 
         # Update tridiagonal matrix
-        @. A.dl = 1         # Sub-diagonal
-        @. A.d = -2 - β     # Diagonal
-        @. A.du = 1         # Supra-diagonal
+        @turbo @. A.dl = 1         # Sub-diagonal
+        @turbo @. A.d = -2 - β     # Diagonal
+        @turbo @. A.du = 1         # Supra-diagonal
 
         # Neumann inner boundary condition (u(i,1) + u(i,2) = 0)
         A.du[1] = 1
@@ -205,7 +205,8 @@ function HeAgeSpherical(zircon::Zircon{T}, TSteps::AbstractVector{T}, ρᵣ::Abs
         # Invert using tridiagonal matrix algorithm
         # equivalent to u[i,:] = A\y
         F = lu!(A)
-        u[i,:] .= ldiv!(F, y)
+        ldiv!(F, y)
+        @turbo @. u[i,:] = y
     end
 
     # Convert from u (coordinate-transform'd concentration) to v (real He
