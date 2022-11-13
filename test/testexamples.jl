@@ -1,5 +1,4 @@
 using Statistics, LinearAlgebra
-using StatsBase: fit, Histogram
 using ProgressMeter: @showprogress
 using StatGeochem
 
@@ -9,10 +8,10 @@ ds = importdataset(datapath, ',', importas=:Tuple);
 
 ## --- Prepare problem
 
-burnin = 100
+annealingburnin = 100
 model = (
     nsteps = 200, # How many steps of the Markov chain should we run?
-    burnin = burnin, # How long should we wait for MC to converge (become stationary)
+    burnin = 100, # How long should we wait for MC to converge (become stationary)
     dr = 1.0,    # Radius step, in microns
     dt = 10.0,   # time step size in Myr
     dTmax = 10.0, # Maximum reheating/burial per model timestep (to prevent numerical overflow)
@@ -33,7 +32,7 @@ model = (
     # Here we add (in quadrature) a blanket model uncertainty of 25 Ma.
     σModel = 25.0, # Ma
     σAnnealing = 35.0, # Initial annealing uncertainty [Ma]
-    λAnnealing = 10 ./ burnin # Annealing decay [1/n]
+    λAnnealing = 10 ./ annealingburnin # Annealing decay [1/n]
 )
 
 
@@ -135,12 +134,12 @@ function MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, bounda
     TStepsₚ = similar(TSteps)
     calcHeAgesₚ = similar(calcHeAges)
 
-    # Distributions to populate
-    HeAgeDist = Array{Float64}(undef, length(data.HeAge), model.nsteps)
-    TStepDist = Array{Float64}(undef, length(tSteps), model.nsteps)
-    llDist = Array{Float64}(undef, model.nsteps)
-    nDist = zeros(Int, model.nsteps)
-    acceptanceDist = zeros(Bool, model.nsteps)
+    # distributions to populate
+    HeAgedist = Array{Float64}(undef, length(data.HeAge), model.nsteps)
+    TStepdist = Array{Float64}(undef, length(tSteps), model.nsteps)
+    lldist = Array{Float64}(undef, model.nsteps)
+    ndist = zeros(Int, model.nsteps)
+    acceptancedist = zeros(Bool, model.nsteps)
 
     # Standard deviations of Gaussian proposal distributions for temperature and time
     t_sigma = model.tInit/60
@@ -291,29 +290,39 @@ function MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, bounda
 
             # These are saved for ouput, but not critical to the function of the MCMC loop
             copyto!(TSteps, TStepsₚ)
-            acceptanceDist[n] = true
+            acceptancedist[n] = true
         end
 
         # Record results for analysis and troubleshooting
-        llDist[n] = normpdf_ll(data.HeAge, σₙ, calcHeAges) # Recalculated to constant baseline
-        nDist[n] = nPoints # Distribution of # of points
-        HeAgeDist[:,n] = calcHeAges # Distribution of He ages
+        lldist[n] = normpdf_ll(data.HeAge, σₙ, calcHeAges) # Recalculated to constant baseline
+        ndist[n] = nPoints # distribution of # of points
+        HeAgedist[:,n] = calcHeAges # distribution of He ages
 
         # This is the actual output we want -- the distribution of t-T paths (t path is always identical)
-        TStepDist[:,n] = TSteps # Distribution of T paths
+        TStepdist[:,n] = TSteps # distribution of T paths
 
     end
-    return (TStepDist, HeAgeDist, nDist, llDist, acceptanceDist)
+    return (TStepdist, HeAgedist, ndist, lldist, acceptancedist)
 end
 
 
 # Run Markov Chain
-@time (TStepDist, HeAgeDist, nDist, llDist, acceptanceDist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary)
-@time (TStepDist, HeAgeDist, nDist, llDist, acceptanceDist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary)
+@time MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary)
+@time (TStepdist, HeAgedist, ndist, lldist, acceptancedist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary)
 
+@test isa(TStepdist, AbstractMatrix)
+@test maximum(TStepdist) <= model.TInit
+@test minimum(TStepdist) >= model.TNow
 
-@test isa(TStepDist, AbstractMatrix)
-@test isa(HeAgeDist, AbstractMatrix)
-@test isa(nDist, AbstractVector{Int})
-@test isa(llDist, AbstractVector)
-@test isa(acceptanceDist, AbstractVector{Bool})
+@test isa(HeAgedist, AbstractMatrix)
+@test abs(sum(nanmean(HeAgedist, dims=2) - data.HeAge)/length(data.HeAge)) < 100
+
+@test isa(ndist, AbstractVector{Int})
+@test minimum(ndist) >= 0
+@test maximum(ndist) <= model.maxPoints
+
+@test isa(lldist, AbstractVector)
+@test isapprox(mean(@view(lldist[model.burnin:end])), -50, atol=10)
+
+@test isa(acceptancedist, AbstractVector{Bool})
+@test isapprox(mean(acceptancedist), 0.58, atol=0.3)
