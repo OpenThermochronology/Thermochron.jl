@@ -44,10 +44,13 @@ stopping sphere of radius `ralpha` with each concentric shell (with shell edges
 two are separated by distance `d`
 """
 function intersectiondensity(rEdges::Vector{T}, rVolumes::Vector{T}, ralpha::T, d::T) where T <: Number
+    dInt = Array{T}(undef, length(rEdges) - 1)
+    intersectiondensity!(dInt, rEdges, rVolumes, ralpha, d)
+end
+function intersectiondensity!(dInt::Vector{T}, rEdges::Vector{T}, rVolumes::Vector{T}, ralpha::T, d::T) where T <: Number
     n = length(rEdges) - 1
-    dInt = Array{Float64,1}(undef, n)
-    fIntLast = intersectionfraction(rEdges[1],ralpha,d)
-    for i=1:n
+    fIntLast = intersectionfraction(first(rEdges),ralpha,d)
+    @inbounds for i ∈ 1:n
         # Integrated intersection fraction for each concentric sphere (rEdges) of crystal
         fInt = intersectionfraction(rEdges[i+1],ralpha,d)
 
@@ -122,31 +125,35 @@ function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, ageSteps::Abstr
 
     # Calculate effective He deposition for each decay chain, corrected for alpha
     # stopping distance
+    dInt = Array{Float64}(undef, length(rEdges) - 1)
 
     #238U
     r238UHe = zeros(size(r238U))
-    for i=1:length(alphaRadii238U)
-        for ri = 1:length(rSteps)
+    @inbounds for ri = 1:length(rSteps)
+        for i=1:length(alphaRadii238U)
             # Effective radial alpha deposition from 238U
-            r238UHe += relVolumes[ri] * intersectiondensity(rEdges,relVolumes,alphaRadii238U[i],rSteps[ri]) * r238U[ri]
+            intersectiondensity!(dInt,rEdges,relVolumes,alphaRadii238U[i],rSteps[ri])
+            @turbo @. r238UHe += relVolumes[ri] * dInt * r238U[ri]
         end
     end
 
     #235U
     r235UHe = zeros(size(r235U))
-    for i=1:length(alphaRadii235U)
-        for ri = 1:length(rSteps)
+    @inbounds for ri = 1:length(rSteps)
+        for i=1:length(alphaRadii235U)
             # Effective radial alpha deposition from 235U
-            r235UHe += relVolumes[ri] * intersectiondensity(rEdges,relVolumes,alphaRadii235U[i],rSteps[ri]) * r235U[ri]
+            intersectiondensity!(dInt, rEdges,relVolumes,alphaRadii235U[i],rSteps[ri])
+            @turbo @. r235UHe += relVolumes[ri] * dInt * r235U[ri]
         end
     end
 
     #232Th
     r232ThHe = zeros(size(r232Th))
-    for i=1:length(alphaRadii232Th)
-        for ri = 1:length(rSteps)
+    @inbounds for ri = 1:length(rSteps)
+        for i=1:length(alphaRadii232Th)
             # Effective radial alpha deposition from 232Th
-            r232ThHe += relVolumes[ri] * intersectiondensity(rEdges,relVolumes,alphaRadii232Th[i],rSteps[ri]) * r232Th[ri]
+            intersectiondensity!(dInt, rEdges,relVolumes,alphaRadii232Th[i],rSteps[ri])
+            @turbo @. r232ThHe += relVolumes[ri] * dInt * r232Th[ri]
         end
     end
 
