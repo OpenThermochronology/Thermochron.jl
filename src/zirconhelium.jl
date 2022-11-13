@@ -149,7 +149,7 @@ function HeAgeSpherical(zircon::Zircon{T}, TSteps::AbstractVector{T}, ρᵣ::Abs
     # u = v*r is the coordinate transform (u-substitution) for the Crank-
     # Nicholson equations where v is the He profile and r is radius
     u = zircon.u
-    u[1,:] .= 0 # Initial u = v = 0 everywhere
+    @turbo @. u[:,1] = 0 # Initial u = v = 0 everywhere
 
     # Vector for RHS of Crank-Nicholson equation with regular grid cells
     y = zircon.y
@@ -193,25 +193,25 @@ function HeAgeSpherical(zircon::Zircon{T}, TSteps::AbstractVector{T}, ρᵣ::Abs
         # Dirichlet outer boundary condition (u(i,end) = u(i-1,end))
         A.dl[nrSteps-1] = 0
         A.d[nrSteps] = 1
-        y[nrSteps] = u[i-1,nrSteps]
+        y[nrSteps] = u[nrSteps,i-1]
 
         # RHS of tridiagonal Crank-Nicholson equation for regular grid cells.
         # From Ketcham, 2005
         @turbo for k = 2:nrSteps-1
-            𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[i-1, k], u[i-1, k-1], u[i-1, k+1]
+            𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i-1], u[k-1, i-1], u[k+1, i-1]
             y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - alphaDeposition[i, k-1]*rSteps[k-1]*β[k]
         end
 
         # Invert using tridiagonal matrix algorithm
-        # equivalent to u[i,:] = A\y
+        # equivalent to u[:,i] = A\y
         F = lu!(A)
         ldiv!(F, y)
-        @turbo @. u[i,:] = y
+        @turbo @. u[:,i] = y
     end
 
     # Convert from u (coordinate-transform'd concentration) to v (real He
     # concentration)
-    vFinal = u[end,:]./[first(rSteps)-dr; rSteps; last(rSteps)+dr]
+    vFinal = u[:,end]./[first(rSteps)-dr; rSteps; last(rSteps)+dr]
     μHe = mean(vFinal[2:end-1]) # Atoms/gram
 
     # Raw Age (i.e., as measured)

@@ -176,7 +176,7 @@ function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, ageSteps::Abstr
     β = Array{T}(undef, nrSteps) # First row of annealedDamage
 
     # Allocate output matrix for all timesteps
-    u = Array{T}(undef, ntSteps, nrSteps)
+    u = Array{T}(undef, nrSteps, ntSteps)
 
     # Allocate variables for tridiagonal matrix and RHS
     dl = ones(T, nrSteps-1)    # Sub-diagonal row
