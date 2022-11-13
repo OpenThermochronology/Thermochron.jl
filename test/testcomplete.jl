@@ -7,9 +7,9 @@ ds = importdataset(datapath, ',', importas=:Tuple);
 
 ## --- Prepare problem
 
-annealingburnin = 100
+annealingburnin = 200
 model = (
-    nsteps = 200, # How many steps of the Markov chain should we run?
+    nsteps = 400, # How many steps of the Markov chain should we run?
     burnin = 100, # How long should we wait for MC to converge (become stationary)
     dr = 1.0,    # Radius step, in microns
     dt = 10.0,   # time step size in Myr
