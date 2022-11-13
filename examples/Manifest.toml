@@ -251,9 +251,9 @@ version = "1.1.0"
 
 [[deps.DiffRules]]
 deps = ["IrrationalConstants", "LogExpFunctions", "NaNMath", "Random", "SpecialFunctions"]
-git-tree-sha1 = "9a95659c283c9018ea99e017aa9e13b7e89fadd2"
+git-tree-sha1 = "c5b6685d53f933c11404a3ae9822afe30d522494"
 uuid = "b552c78f-8df3-52c6-915a-8e097449b14b"
-version = "1.12.1"
+version = "1.12.2"
 
 [[deps.Distances]]
 deps = ["LinearAlgebra", "SparseArrays", "Statistics", "StatsAPI"]
@@ -341,9 +341,9 @@ version = "0.4.2"
 
 [[deps.ForwardDiff]]
 deps = ["CommonSubexpressions", "DiffResults", "DiffRules", "LinearAlgebra", "LogExpFunctions", "NaNMath", "Preferences", "Printf", "Random", "SpecialFunctions", "StaticArrays"]
-git-tree-sha1 = "187198a4ed8ccd7b5d99c41b69c679269ea2b2d4"
+git-tree-sha1 = "10fa12fe96e4d76acfa738f4df2126589a67374f"
 uuid = "f6369f11-7733-5829-9624-2563aa707210"
-version = "0.10.32"
+version = "0.10.33"
 
 [[deps.FreeType2_jll]]
 deps = ["Artifacts", "Bzip2_jll", "JLLWrappers", "Libdl", "Pkg", "Zlib_jll"]
@@ -626,9 +626,9 @@ version = "0.13.2"
 
 [[deps.JLD2]]
 deps = ["FileIO", "MacroTools", "Mmap", "OrderedCollections", "Pkg", "Printf", "Reexport", "TranscodingStreams", "UUIDs"]
-git-tree-sha1 = "acb4be8227e1f3ff890d564d55dcde9cf92e4337"
+git-tree-sha1 = "7859af8179d90fb1d0352172e1bf5abef279dcf6"
 uuid = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
-version = "0.4.26"
+version = "0.4.27"
 
 [[deps.JLFzf]]
 deps = ["Pipe", "REPL", "Random", "fzf_jll"]
@@ -880,9 +880,9 @@ version = "1.0.1"
 
 [[deps.NaNStatistics]]
 deps = ["IfElse", "LoopVectorization", "Static"]
-git-tree-sha1 = "b511bf0ee14bb73e22d100164bb426c35d86291c"
+git-tree-sha1 = "c813eac3a432d887d238587fb6cb9d8c7e67d418"
 uuid = "b946abbf-3ea7-4610-9019-9858bfdeaf2d"
-version = "0.6.14"
+version = "0.6.15"
 
 [[deps.NearestNeighbors]]
 deps = ["Distances", "StaticArrays"]
@@ -1308,9 +1308,9 @@ uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [[deps.Thermochron]]
 deps = ["LinearAlgebra", "LoopVectorization", "ProgressMeter", "Statistics"]
-git-tree-sha1 = "cc5bb8683b2d4113c2fd898facb5958ed094daa7"
+git-tree-sha1 = "bcadf61e7da9bbad34fb109c44345bb882d2616a"
 uuid = "b9a8379e-ee1a-4388-b7ca-7852af1cef08"
-version = "0.2.0"
+version = "0.3.0"
 
 [[deps.ThreadingUtilities]]
 deps = ["ManualMemory"]
