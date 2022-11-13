@@ -17,8 +17,6 @@
 #                                                                               #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 ## ---  Load required packages
-    using Statistics
-    using StatsBase: fit, Histogram
     using StatGeochem
     using JLD: @load, @save
     using Plots
@@ -36,9 +34,9 @@
 
 ## --- Prepare problem
 
-    burnin = 100000
+    burnin = 1000
     model = (
-        nsteps = 200000, # How many steps of the Markov chain should we run?
+        nsteps = 2000, # How many steps of the Markov chain should we run?
         burnin = burnin, # How long should we wait for MC to converge (become stationary)
         dr = 1.0,    # Radius step, in microns
         dt = 10.0,   # time step size in Myr
@@ -196,20 +194,22 @@
 
 ## --- Create image of paths
 
-    # Resize the post-burnin part of the stationary distribution
+    # Desired rsolution of resulting image
     xresolution = 2000
+    yresolution = 1000
+
+    # Resize the post-burnin part of the stationary distribution
     tTdist = Array{Float64}(undef, xresolution, size(TStepdist,2)-model.burnin)
     xq = range(0,model.tInit,length=xresolution)
-    @time for i = 1:size(TStepdist,2)-model.burnin
-        @views tTdist[:,i] = linterp1(model.tSteps, TStepdist[:,i+model.burnin], xq)
+    @time @inbounds for i = 1:size(TStepdist,2)-model.burnin
+        linterp1!(view(tTdist,:,i), model.tSteps, view(TStepdist,:,i+model.burnin), xq)
     end
 
     # Calculate composite image
-    yresolution = 1000
     ybinedges = range(model.TNow, model.TInit, length=yresolution+1)
     tTimage = zeros(yresolution, size(tTdist,1))
-    @time for i=1:size(tTdist,1)
-        @views tTimage[:,i] = histcounts(tTdist[i,:], ybinedges)
+    @time @inbounds for i=1:size(tTdist,1)
+        histcounts!(view(tTimage,:,i), view(tTdist,i,:), ybinedges)
     end
 
 ## --- Plot image with 'ylcn' custom colorscale
@@ -220,7 +220,7 @@
     # Plot image with colorscale in first subplot
     A = imsc(reverse(tTimage,dims=2), ylcn, 0, nanpctile(tTimage[:],98.5))
     plot!(k[1], xlabel="Time (Ma)",ylabel="Temperature (°C)",yticks=0:50:400,xticks=0:500:3500,yminorticks=5,xminorticks=5,tick_dir=:out,framestyle=:box)
-    plot!(k[1],xq,cntr(yq),A,yflip=true,xflip=true,legend=false,aspectratio=3500/400/1.5,xlims=(0,3500),ylims=(0,400))
+    plot!(k[1],xq,cntr(ybinedges),A,yflip=true,xflip=true,legend=false,aspectratio=3500/400/1.5,xlims=(0,3500),ylims=(0,400))
 
     # Add colorbar in second subplot
     cb = imsc(repeat(0:100, 1, 10), ylcn, 0, 100)

@@ -880,9 +880,9 @@ version = "1.0.1"
 
 [[deps.NaNStatistics]]
 deps = ["IfElse", "LoopVectorization", "Static"]
-git-tree-sha1 = "c813eac3a432d887d238587fb6cb9d8c7e67d418"
+git-tree-sha1 = "edd029acbf3c58764cb3e21520564c7905a6367d"
 uuid = "b946abbf-3ea7-4610-9019-9858bfdeaf2d"
-version = "0.6.15"
+version = "0.6.16"
 
 [[deps.NearestNeighbors]]
 deps = ["Distances", "StaticArrays"]
@@ -1239,9 +1239,9 @@ version = "0.5.3"
 
 [[deps.StatGeochemBase]]
 deps = ["Colors", "IndirectArrays", "LoopVectorization", "NaNStatistics", "SpecialFunctions", "VectorizationBase"]
-git-tree-sha1 = "068c430f340e337b1f827453810c80b70003ae06"
+git-tree-sha1 = "5e5aaec15e882f2a3ecb491b11295c451030994a"
 uuid = "61e559cd-58b4-4257-8528-26bb26ff2b9a"
-version = "0.4.0"
+version = "0.4.1"
 
 [[deps.Static]]
 deps = ["IfElse"]
@@ -1308,7 +1308,7 @@ uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [[deps.Thermochron]]
 deps = ["LinearAlgebra", "LoopVectorization", "ProgressMeter", "Statistics"]
-git-tree-sha1 = "bcadf61e7da9bbad34fb109c44345bb882d2616a"
+git-tree-sha1 = "16781a9b3bdc49b7c54240d7aa0ce00122088da5"
 uuid = "b9a8379e-ee1a-4388-b7ca-7852af1cef08"
 version = "0.4.0"
 
