@@ -18,8 +18,8 @@
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 ## ---  Load required packages
     using Statistics, LinearAlgebra
-    using StatsBase: fit, Histogram
     using ProgressMeter: @showprogress
+    using StatsBase: fit, Histogram
     using StatGeochem
     using JLD: @load, @save
     using Plots; gr() # Use the GR backend for plotting
@@ -82,9 +82,6 @@
         tInit = ceil(maximum(data.CrystAge)/model.dt) * model.dt,
     )
 
-    tSteps = Array{Float64,1}(0+model.dt/2 : model.dt : model.tInit-model.dt/2)
-    ageSteps = reverse(tSteps)
-
     # Boundary conditions (e.g. 10C at present and 650 C at the time of zircon formation).
     boundary = (
         agePoints = Float64[model.TNow, model.tInit],  # Ma
@@ -110,6 +107,20 @@
     #     ΔT = Float64[50,],
     # )
 
+    # Add additional vectors for proposed unconformity and boundary points
+    unconf = (unconf...,
+        agePointsₚ = similar(unconf.agePoints),
+        TPointsₚ = similar(unconf.TPoints),
+    )
+    boundary = (boundary...,
+        agePointsₚ = similar(boundary.agePoints),
+        TPointsₚ = similar(boundary.TPoints),
+    )
+    model = (model...,
+        ageSteps = Array{Float64}(model.tInit-model.dt/2 : -model.dt : 0+model.dt/2),
+        tSteps = Array{Float64}(0+model.dt/2 : model.dt : model.tInit-model.dt/2),
+    )
+
 ## --- Test proscribed t-T paths with Neoproterozoic exhumation step
 
     # # Generate T path to test
@@ -117,19 +128,19 @@
     # T0 = 30
     # agePoints = Float64[model.tInit, model.tInit*29/30,   720, 580, 250,  0] # Age (Ma)
     # TPoints  =  Float64[model.TInit,        Tr+T0, Tr+T0,  T0,  70, 10] # Temp. (C)
-    # TSteps = linterp1s(agePoints,TPoints,ageSteps)
+    # TSteps = linterp1s(agePoints,TPoints,model.ageSteps)
     #
     # # Plot t-T path
-    # plot(ageSteps,TSteps,xflip=true)
+    # plot(model.ageSteps,TSteps,xflip=true)
     #
     # # Calculate model ages
     # calcHeAges = Array{Float64}(undef, size(data.HeAge))
-    # @time pr = anneal(model.dt, tSteps, TSteps, :zrdaam)
+    # @time pr = anneal(model.dt, model.tSteps, TSteps, :zrdaam)
     # zircons = Array{Zircon{Float64}}(undef, length(data.halfwidth))
     # @time for i=1:length(zircons)
     #     # Iterate through each grain, calculate the modeled age for each
     #     first_index = 1 + floor(Int64,(model.tInit - data.CrystAge[i])/model.dt)
-    #     zircons[i] = Zircon(data.halfwidth[i], model.dr, data.U[i], data.Th[i], model.dt, ageSteps[first_index:end])
+    #     zircons[i] = Zircon(data.halfwidth[i], model.dr, data.U[i], data.Th[i], model.dt, model.ageSteps[first_index:end])
     #     calcHeAges[i] = HeAgeSpherical(zircons[i], @views(TSteps[first_index:end]), @views(pr[first_index:end,first_index:end]), model)
     # end
     #
@@ -147,16 +158,6 @@
 
 ## --- Invert for maximum likelihood t-T path
 
-    # Add additional vectors for proposed unconformity and boundary points
-    unconf = (unconf...,
-        agePointsₚ = similar(unconf.agePoints),
-        TPointsₚ = similar(unconf.TPoints),
-    )
-    boundary = (boundary...,
-        agePointsₚ = similar(boundary.agePoints),
-        TPointsₚ = similar(boundary.TPoints),
-    )
-
     # This is where the "transdimensional" part comes in
     agePoints = Array{Float64}(undef, model.maxPoints+1) # Array of fixed size to hold all optional age points
     TPoints = Array{Float64}(undef, model.maxPoints+1) # Array of fixed size to hold all optional age points
@@ -173,19 +174,19 @@
     # agePoints[1:nPoints] = Float64[model.tInit*29/30,   720, 510, 250]) # Age (Ma)
     # TPoints[1:nPoints]  =  Float64[       Tr+T0, Tr+T0,  T0,  70]) # Temp. (C)
 
-    function MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary)
+    function MCMC_vartcryst(data::NamedTuple, model::NamedTuple, nPoints::Int, agePoints::AbstractVector, TPoints::AbstractVector, unconf::NamedTuple, boundary::NamedTuple)
         # Calculate model ages for initial proposal
         TSteps = linterp1s([view(agePoints, 1:nPoints) ; boundary.agePoints ; unconf.agePoints],
-                           [view(TPoints, 1:nPoints) ; boundary.TPoints ; unconf.TPoints], ageSteps)
+                           [view(TPoints, 1:nPoints) ; boundary.TPoints ; unconf.TPoints], model.ageSteps)
         calcHeAges = Array{Float64}(undef, size(data.HeAge))
-        pr = anneal(model.dt, tSteps, TSteps, :zrdaam) # Damage annealing history
+        pr = anneal(model.dt, model.tSteps, TSteps, :zrdaam) # Damage annealing history
 
         # Prepare a Mineral object for each analysis
         zircons = Array{Zircon{Float64}}(undef, length(data.halfwidth))
         for i=1:length(zircons)
             # Iterate through each grain, calculate the modeled age for each
             first_index = 1 + floor(Int64,(model.tInit - data.CrystAge[i])/model.dt)
-            zircons[i] = Zircon(data.halfwidth[i], model.dr, data.U[i], data.Th[i], model.dt, ageSteps[first_index:end])
+            zircons[i] = Zircon(data.halfwidth[i], model.dr, data.U[i], data.Th[i], model.dt, model.ageSteps[first_index:end])
             calcHeAges[i] = HeAgeSpherical(zircons[i], @views(TSteps[first_index:end]), @views(pr[first_index:end,first_index:end]), model)
         end
 
@@ -209,7 +210,7 @@
 
         # distributions to populate
         HeAgedist = Array{Float64}(undef, length(data.HeAge), model.nsteps)
-        TStepdist = Array{Float64}(undef, length(tSteps), model.nsteps)
+        TStepdist = Array{Float64}(undef, length(model.tSteps), model.nsteps)
         lldist = Array{Float64}(undef, model.nsteps)
         ndist = zeros(Int, model.nsteps)
         acceptancedist = zeros(Bool, model.nsteps)
@@ -262,7 +263,7 @@
 
                     # Interpolate proposed t-T path
                     TStepsₚ = linterp1s([view(agePointsₚ, 1:nPointsₚ) ; boundary.agePoints ; unconf.agePointsₚ],
-                                        [view(TPointsₚ, 1:nPointsₚ) ; boundary.TPointsₚ ; unconf.TPointsₚ], ageSteps)
+                                        [view(TPointsₚ, 1:nPointsₚ) ; boundary.TPointsₚ ; unconf.TPointsₚ], model.ageSteps)
 
                     # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
                     maximum(diff(TStepsₚ)) < model.dTmax && break
@@ -280,7 +281,7 @@
 
                     # Interpolate proposed t-T path
                     TStepsₚ = linterp1s([view(agePointsₚ, 1:nPointsₚ) ; boundary.agePoints ; unconf.agePointsₚ],
-                                        [view(TPointsₚ, 1:nPointsₚ) ; boundary.TPointsₚ ; unconf.TPointsₚ], ageSteps)
+                                        [view(TPointsₚ, 1:nPointsₚ) ; boundary.TPointsₚ ; unconf.TPointsₚ], model.ageSteps)
 
                     # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
                     maximum(diff(TStepsₚ)) < model.dTmax && break
@@ -295,7 +296,7 @@
 
                     # Interpolate proposed t-T path
                     TStepsₚ = linterp1s([view(agePointsₚ, 1:nPointsₚ) ; boundary.agePoints ; unconf.agePointsₚ],
-                                        [view(TPointsₚ, 1:nPointsₚ) ; boundary.TPointsₚ ; unconf.TPointsₚ], ageSteps)
+                                        [view(TPointsₚ, 1:nPointsₚ) ; boundary.TPointsₚ ; unconf.TPointsₚ], model.ageSteps)
 
                     # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
                     maximum(diff(TStepsₚ)) < model.dTmax && break
@@ -315,7 +316,7 @@
 
                     # Recalculate interpolated proposed t-T path
                     TStepsₚ = linterp1s([view(agePointsₚ, 1:nPointsₚ) ; boundary.agePoints ; unconf.agePointsₚ],
-                                            [view(TPointsₚ, 1:nPointsₚ) ; boundary.TPointsₚ ; unconf.TPointsₚ], ageSteps)
+                                            [view(TPointsₚ, 1:nPointsₚ) ; boundary.TPointsₚ ; unconf.TPointsₚ], model.ageSteps)
 
                     # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
                     maximum(diff(TStepsₚ)) < model.dTmax && break
@@ -329,10 +330,10 @@
 
             # Recalculate interpolated proposed t-T path
             TStepsₚ = linterp1s([view(agePointsₚ, 1:nPointsₚ) ; boundary.agePoints ; unconf.agePointsₚ],
-                                [view(TPointsₚ, 1:nPointsₚ) ; boundary.TPointsₚ ; unconf.TPointsₚ], ageSteps)
+                                [view(TPointsₚ, 1:nPointsₚ) ; boundary.TPointsₚ ; unconf.TPointsₚ], model.ageSteps)
 
              # Calculate model ages for each grain
-            anneal!(pr, model.dt, tSteps, TStepsₚ, :zrdaam)
+            anneal!(pr, model.dt, model.tSteps, TStepsₚ, :zrdaam)
             for i=1:length(zircons)
                 first_index = 1 + floor(Int64,(model.tInit - data.CrystAge[i])/model.dt)
                 calcHeAgesₚ[i] = HeAgeSpherical(zircons[i], @views(TStepsₚ[first_index:end]), @views(pr[first_index:end,first_index:end]), model)
@@ -382,7 +383,7 @@
     @time (TStepdist, HeAgedist, ndist, lldist, acceptancedist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary)
 
     # # Save results using JLD
-    @save string(name, ".jld") ageSteps tSteps TStepdist model
+    @save string(name, ".jld") TStepdist model
 
 ## ---  Plot sample age-eU correlations
 
@@ -399,7 +400,7 @@
     TStepdistResized = Array{Float64}(undef, 2001, size(TStepdist,2)-model.burnin)
     xq = collect(range(0,model.tInit,length=2001))
     for i=1:size(TStepdist,2)-model.burnin
-        TStepdistResized[:,i] = linterp1s(tSteps,TStepdist[:,i+model.burnin],xq)
+        TStepdistResized[:,i] = linterp1s(model.tSteps,TStepdist[:,i+model.burnin],xq)
     end
 
     # Calculate composite image
