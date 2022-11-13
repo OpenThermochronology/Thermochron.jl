@@ -32,8 +32,7 @@
 
     # Literature samples from Guenthner et al. 2013 (AJS), Minnesota
     name = "MinnesotaInversion"
-    ds = importdataset("minnesota.csv", ',', importas=:Tuple)
-
+    ds = importdataset("minnesota.csv", ',', importas=:Tuple);
 
 ## --- Prepare problem
 
@@ -179,33 +178,41 @@
     # # Save results using JLD
     @save string(name, ".jld") TStepdist model
 
+    # Plot log likelihood distribution
+    h = plot(lldist, xlabel="Step number", ylabel="Log likelihood", label="")
+    savefig(h, name*"_lldist.pdf")
+    display(h)
+
 ## ---  Plot sample age-eU correlations
 
     eU = data.U+.238*data.Th # Used only for plotting
     h = scatter(eU,HeAgedist[:,model.burnin:model.burnin+50], label="")
     plot!(h, eU, data.HeAge, yerror=data.HeAge_sigma, seriestype=:scatter, label="Data")
     xlabel!(h,"eU (ppm)"); ylabel!(h,"Age (Ma)")
-    savefig(h,string(name,"Age-eU.pdf"))
+    savefig(h, name*"_Age-eU.pdf")
+    display(h)
 
 
 ## --- Create image of paths
 
     # Resize the post-burnin part of the stationary distribution
-    TStepdistResized = Array{Float64}(undef, 2001, size(TStepdist,2)-model.burnin)
-    xq = collect(range(0,model.tInit,length=2001))
-    for i=1:size(TStepdist,2)-model.burnin
-        TStepdistResized[:,i] = linterp1s(model.tSteps,TStepdist[:,i+model.burnin],xq)
+    xresolution = 2000
+    tTdist = Array{Float64}(undef, xresolution, size(TStepdist,2)-model.burnin)
+    xq = range(0,model.tInit,length=xresolution)
+    @time for i = 1:size(TStepdist,2)-model.burnin
+        @views tTdist[:,i] = linterp1(model.tSteps, TStepdist[:,i+model.burnin], xq)
     end
 
     # Calculate composite image
-    tTimage = zeros(ceil(Int, TInit)*2, size(TStepdistResized,1))
-    yq = collect(0:0.5:TInit)
-    for i=1:size(TStepdistResized,1)
-        hist = fit(Histogram,TStepdistResized[i,:],yq,closed=:right)
-        tTimage[:,i] = hist.weights
+    yresolution = 1000
+    ybinedges = range(model.TNow, model.TInit, length=yresolution+1)
+    tTimage = zeros(yresolution, size(tTdist,1))
+    @time for i=1:size(tTdist,1)
+        @views tTimage[:,i] = histcounts(tTdist[i,:], ybinedges)
     end
 
 ## --- Plot image with 'ylcn' custom colorscale
+
     # Prepare axes
     k = plot(layout = grid(1,2, widths=[0.94, 0.06]), framestyle=:box)
 
@@ -216,20 +223,14 @@
 
     # Add colorbar in second subplot
     cb = imsc(repeat(0:100, 1, 10), ylcn, 0, 100)
-    plot!(k[2], 0:0.01:0.1, 0:0.01:1, cb, xticks=false, framestyle=:box, yflip=false)
+    plot!(k[2], 0:0.01:0.1, 0:0.01:1, cb, ylims=(0,1), xticks=false, framestyle=:box, yflip=false)
 
     #plot!([659, 717.4, 717.4, 659, 659],[0, 0, 650, 650, 0], fill=true, color=:white, alpha=0.6) #Sturtian glacial
     plot!([635.5, 717.4, 717.4, 635.5, 635.5],[0, 0, 650, 650, 0], fill=true, color=:white, alpha=0.5) #Sturtian & Marinoan glacial
     #plot!([635.5, 650.0, 650.0, 635.5, 635.5],[0, 0, 650, 650, 0], fill=true, color=:white, alpha=0.6) #Marinoan glacial
     #plot!([480, 640, 640, 480, 480],[0, 0, 50, 50, 0], linestyle = :dot, color=:black, linewidth=1.25) # t-T box 640 to 480 Ma, 0-50°C
 
-
     savefig(k,"minnesota-mcmc-zrdaam-unc.pdf")
     display(k)
-
-    #img = plot(reverse(xq), cntr(yq), imsc(reverse(tTimage,dims=2), viridis, 0, nanpctile(tTimage[:],97.5)), yflip=true, xflip=true, legend=false,
-    #     xlabel="Age (Ma)", ylabel="Temperature (°C)")
-    #savefig(img,string(name,"minnesota-mcmc.pdf"))
-    #display(img)
 
 ## ---

@@ -69,28 +69,28 @@ export anneal!
 
 """
 ```julia
-HeAge = HeAgeSpherical(zircon::Zircon, TSteps::Vector, ρᵣ::Matrix, diffusionparams)
+HeAge = HeAgeSpherical(zircon::Zircon, TSteps::Vector, ρᵣ::Matrix, diffusionmodel)
 ```
 Calculate the precdicted U-Th/He age of a zircon that has experienced a given t-T path
 (specified by `zircon.ageSteps` for time and `TSteps` for temperature, at a time resolution of `zircon.dt`)
 using a Crank-Nicholson diffusion solution for a spherical grain of radius `zircon.r` at spatial resolution `zircon.dr`.
 """
-function HeAgeSpherical(zircon::Zircon{T}, TSteps::AbstractVector{T}, ρᵣ::AbstractMatrix{T}, diffusionparams) where T <: Number
+function HeAgeSpherical(zircon::Zircon{T}, TSteps::AbstractVector{T}, ρᵣ::AbstractMatrix{T}, diffusionmodel) where T <: Number
 
     # Jaffey decay constants
     λ235U = log(2)/(7.0381*10^8)*10^6 # [1/Myr]
     λ238U = log(2)/(4.4683*10^9)*10^6 # [1/Myr]
     λ232Th = log(2)/(1.405*10^10)*10^6 # [1/Myr]
 
-    # Diffucsion constants
+    # Diffusion constants
     # DzEa = 165.0 # kJ/mol
     # DzD0 = 193188.0 # cm^2/sec
     # DN17Ea = 71.0 # kJ/mol
     # DN17D0 = 0.0034 #6.367E-3 # cm^2/sec
-    DzEa = diffusionparams.DzEa
-    DzD0 = diffusionparams.DzD0
-    DN17Ea = diffusionparams.DN17Ea
-    DN17D0 = diffusionparams.DN17D0
+    DzEa = diffusionmodel.DzEa
+    DzD0 = diffusionmodel.DzD0
+    DN17Ea = diffusionmodel.DN17Ea
+    DN17D0 = diffusionmodel.DN17D0
 
     # Damage and annealing constants
     lint0 = 45920.0 # nm

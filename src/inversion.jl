@@ -1,10 +1,10 @@
 
     """
     ```julia
-    simannealsigma(n, sigma_analytical; [params::NamedTuple])
+    simannealsigma(n, sigma_analytical; [simannealmodel::NamedTuple])
     ```
     To avoid getting stuck in local optima, decrease uncertainty slowly by
-    simulated annealing. Parameters are specified as a tuple `params` of the
+    simulated annealing. Parameters are specified as a tuple `simannealmodel` of the
     form (σₘ, σᵢ, λ), where annealing uncertainty declines from `σᵢ+σₘ` to `σₘ`
     with a decay constant of λ.
 
@@ -15,8 +15,9 @@
         sigma = sqrt(sigma_analytical^2 + sigma_annealing^2)
 
     """
-    function simannealsigma(n::Number, sigma_analytical::Number; params::NamedTuple=(σModel=25.0, σAnnealing=35.0, λAnnealing=10/10^5))
-        sigma_combined = params.σAnnealing * exp(-params.λAnnealing*n) + params.σModel
+    function simannealsigma(n::Number, sigma_analytical::Number; simannealmodel::NamedTuple=(σModel=25.0, σAnnealing=35.0, λAnnealing=10/10^5))
+        mdl = simannealmodel
+        sigma_combined = mdl.σAnnealing * exp(-mdl.λAnnealing*n) + mdl.σModel
         return sqrt(sigma_analytical^2 + sigma_combined^2)
     end
     export simannealsigma
@@ -43,17 +44,19 @@
         pr = anneal(model.dt, model.tSteps, TSteps, :zrdaam) # Damage annealing history
 
         # Prepare a Mineral object for each analysis
+        diffusionmodel = (DzEa=model.DzEa, DzD0=model.DzD0, DN17Ea=model.DN17Ea, DN17D0=model.DN17D0)
         zircons = Array{Zircon{Float64}}(undef, length(data.halfwidth))
         for i=1:length(zircons)
             # Iterate through each grain, calculate the modeled age for each
             first_index = 1 + floor(Int64,(model.tInit - data.CrystAge[i])/model.dt)
             zircons[i] = Zircon(data.halfwidth[i], model.dr, data.U[i], data.Th[i], model.dt, model.ageSteps[first_index:end])
-            calcHeAges[i] = HeAgeSpherical(zircons[i], @views(TSteps[first_index:end]), @views(pr[first_index:end,first_index:end]), model)
+            calcHeAges[i] = HeAgeSpherical(zircons[i], @views(TSteps[first_index:end]), @views(pr[first_index:end,first_index:end]), diffusionmodel)
         end
 
         # Simulated annealing of uncertainty
-        σₐ = simannealsigma.(1, data.HeAge_sigma; params=model)
-        σₙ = simannealsigma.(model.nsteps, data.HeAge_sigma; params=model)
+        simannealmodel = (σModel=model.σModel, σAnnealing=model.σAnnealing, λAnnealing=model.λAnnealing)
+        σₐ = simannealsigma.(1, data.HeAge_sigma; simannealmodel)
+        σₙ = simannealsigma.(model.nsteps, data.HeAge_sigma; simannealmodel)
 
         # Log-likelihood for initial proposal
         ll = normpdf_ll(data.HeAge, σₐ, calcHeAges)
@@ -197,11 +200,11 @@
             anneal!(pr, model.dt, model.tSteps, TStepsₚ, :zrdaam)
             for i=1:length(zircons)
                 first_index = 1 + floor(Int64,(model.tInit - data.CrystAge[i])/model.dt)
-                calcHeAgesₚ[i] = HeAgeSpherical(zircons[i], @views(TStepsₚ[first_index:end]), @views(pr[first_index:end,first_index:end]), model)
+                calcHeAgesₚ[i] = HeAgeSpherical(zircons[i], @views(TStepsₚ[first_index:end]), @views(pr[first_index:end,first_index:end]), diffusionmodel)
             end
 
             # Calculate log likelihood of proposal
-            σₐ .= simannealsigma.(n, data.HeAge_sigma; params=model)
+            σₐ .= simannealsigma.(n, data.HeAge_sigma; simannealmodel)
             llₚ = normpdf_ll(data.HeAge, σₐ, calcHeAgesₚ)
             llₗ = normpdf_ll(data.HeAge, σₐ, calcHeAges) # Recalulate last one too with new σₐ
             if model.simplified # slightly penalize more complex t-T paths
