@@ -218,10 +218,10 @@ function HeAgeSpherical(zircon::Zircon{T}, TSteps::AbstractVector{T}, ρᵣ::Abs
         @turbo @. u[:,i] = y
     end
 
-    # Convert from u (coordinate-transform'd concentration) to v (real He
-    # concentration)
-    vFinal = u[:,end]./[first(rSteps)-dr; rSteps; last(rSteps)+dr]
-    μHe = mean(vFinal[2:end-1]) # Atoms/gram
+    # Convert from u (coordinate-transform'd conc.) to v (real He conc.)
+    vFinal = @views u[2:end-1,end]
+    vFinal ./= rSteps
+    μHe = mean(vFinal) # Atoms/gram
 
     # Raw Age (i.e., as measured)
     μ238U = mean(zircon.r238U) # Atoms/gram
@@ -229,7 +229,7 @@ function HeAgeSpherical(zircon::Zircon{T}, TSteps::AbstractVector{T}, ρᵣ::Abs
     μ232Th = mean(zircon.r232Th)
 
     # Numerically solve for helium age of the grain
-    HeAge = 1
+    HeAge = one(T)
     for i=1:10
         ∂He∂t = dHe(HeAge, μ238U, μ235U, μ232Th) # Calculate derivative
         HeAge += (μHe - He(HeAge, μ238U, μ235U, μ232Th))/∂He∂t # Move towards zero (He(HeAge) == μHe)
