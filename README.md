@@ -1,5 +1,6 @@
 # Thermochron.jl
 
+[![DOI](osf_io_WQ2U5.svg)](https://doi.org/10.17605/OSF.IO/WQ2U5
 [![Dev][docs-dev-img]][docs-dev-url]
 [![CI][ci-img]][ci-url]
 [![CI (Julia nightly)][ci-nightly-img]][ci-nightly-url]
@@ -25,6 +26,10 @@ Pkg.add("StaticCompiler")
 Download an example script such as [ZrnHeInversionVartCryst.jl](examples/ZrnHeInversionVartCryst.jl) from the [examples](examples) folder, along with any relevant data files, and run it in your favorite Julia-connected editor or IDE. A Manifest.toml is also provided in the examples folder, which you may `Pkg.instantiate` to ensure you have the same versions of all relevant packages that the example was built for.
 
 See also the test suite for more information and examples.
+
+## Citation
+Please cite Thermochron.jl as:
+> Keller, C.B., McDannell, K.T., Guenthner, W.R., and Shuster, D.L. (2022). *Thermochron.jl: Open-source time-Temperature inversion of thermochronometric data.* https://doi.org/10.17605/osf.io/wq2U5
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
 [docs-stable-url]: https://brenhinkeller.github.io/Thermochron.jl/stable/
