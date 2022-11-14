@@ -175,7 +175,7 @@
     @time (TStepdist, HeAgedist, ndist, lldist, acceptancedist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary)
 
     # # Save results using JLD
-    @save string(name, ".jld") TStepdist model
+    @save string(name, ".jld") TStepdist HeAgedist lldist acceptancedist model
 
     # Plot log likelihood distribution
     h = plot(lldist, xlabel="Step number", ylabel="Log likelihood", label="")

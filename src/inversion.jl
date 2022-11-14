@@ -160,7 +160,7 @@
                 nPointsₚ += 1
                 for i=1:maxattempts # Try maxattempts times to satisfy the reheating rate limit
                     agePointsₚ[nPointsₚ] = rand()*model.tInit
-                    TPointsₚ[nPointsₚ] = rand()*model.TInit
+                    TPointsₚ[nPointsₚ] = model.TNow + rand()*(model.TInit-model.TNow)
 
                     # Recalculate interpolated proposed t-T path
                     na = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
