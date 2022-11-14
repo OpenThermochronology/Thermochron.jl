@@ -34,6 +34,23 @@
         return n
     end
 
+    # Utility function for checking maximum reheating rate
+    function maxdiff(x::AbstractVector)
+        i₀ = firstindex(x)
+        δₘ = x[i₀+1] - x[i₀]
+        if length(x) > 2
+            last = x[i₀+1]
+            @inbounds for i ∈ (i₀+2):(i₀+length(x)-1)
+                δᵢ = x[i] - last
+                if δᵢ > δₘ
+                    δₘ = δᵢ
+                end
+                last = x[i]
+            end
+        end
+        return δₘ
+    end
+
     """
     ```julia
     MCMC_vartcryst(data::NamedTuple, model::NamedTuple, nPoints::Int, agePoints::Vector, TPoints::Vector, unconf::NamedTuple, boundary::NamedTuple)
@@ -149,7 +166,7 @@
                     linterp1s!(TSteps, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
 
                     # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
-                    maximum(diff(TSteps)) < model.dTmax && break
+                    maxdiff(TSteps) < model.dTmax && break
 
                     # Copy last accepted solution to re-modify if we don't break
                     copyto!(agePointsₚ, agePoints)
@@ -168,7 +185,7 @@
                     linterp1s!(TSteps, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
 
                     # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
-                    maximum(diff(TSteps)) < model.dTmax && break
+                    maxdiff(TSteps) < model.dTmax && break
                 end
             elseif (r < move+birth+death) && (r >= move+birth) && (nPointsₚ > 1)
                 # Death: remove a model point
@@ -184,7 +201,7 @@
                     linterp1s!(TSteps, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
 
                     # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
-                    maximum(diff(TSteps)) < model.dTmax && break
+                    maxdiff(TSteps) < model.dTmax && break
                 end
             else
                 # Move boundary conditions
@@ -204,7 +221,7 @@
                     linterp1s!(TSteps, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
 
                     # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
-                    maximum(diff(TSteps)) < model.dTmax && break
+                    maxdiff(TSteps) < model.dTmax && break
 
                     # Copy last accepted solution to re-modify if we don't break
                     copyto!(unconf.agePointsₚ, unconf.agePoints)
@@ -250,10 +267,10 @@
             # Record results for analysis and troubleshooting
             lldist[n] = normpdf_ll(data.HeAge, σₙ, calcHeAges) # Recalculated to constant baseline
             ndist[n] = nPoints # distribution of # of points
-            HeAgedist[:,n] = calcHeAges # distribution of He ages
+            HeAgedist[:,n] .= calcHeAges # distribution of He ages
 
             # This is the actual output we want -- the distribution of t-T paths (t path is always identical)
-            TStepdist[:,n] = TSteps # distribution of T paths
+            TStepdist[:,n] .= TSteps # distribution of T paths
 
         end
         return (TStepdist, HeAgedist, ndist, lldist, acceptancedist)
