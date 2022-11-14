@@ -34,9 +34,9 @@
 
 ## --- Prepare problem
 
-    burnin = 100000
+    burnin = 1000
     model = (
-        nsteps = 200000, # How many steps of the Markov chain should we run?
+        nsteps = 2000, # How many steps of the Markov chain should we run?
         burnin = burnin, # How long should we wait for MC to converge (become stationary)
         dr = 1.0,    # Radius step, in microns
         dt = 10.0,   # time step size in Myr
