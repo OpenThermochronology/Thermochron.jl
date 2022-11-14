@@ -102,7 +102,7 @@ function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, ageSteps::Abstr
     # Crystal size and spatial discretization
     rSteps = Array{T}(0+dr/2 : dr: r-dr/2)
     rEdges = Array{T}(0 : dr : r) # Edges of each radius element
-    nrSteps = length(rSteps)+2 # number of radial grid points
+    nrSteps = length(rSteps)+2 # number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
     relVolumes = (rEdges[2:end].^3 - rEdges[1:end-1].^3)/rEdges[end]^3 # Relative volume fraction of spherical shell corresponding to each radius element
 
     # Alpha stopping distances for each isotope in each decay chain, from
