@@ -118,10 +118,13 @@ function HeAgeSpherical(zircon::Zircon{T}, TSteps::AbstractVector{T}, ρᵣ::Abs
     R = 0.008314472 #kJ/(K*mol)
 
     # Diffusivities of crystalline and amorphous endmembers
-    Dz = DzD0 .* exp.(-DzEa ./ R ./ (TSteps .+ 273.15)) # cm^2/s
-    DN17 = DN17D0 .* exp.(-DN17Ea ./ R ./ (TSteps .+ 273.15)) # cm^2/s
-    Dz *= 10000^2*(1E6*365.25*24*3600) # Convert to micron^2/Myr
-    DN17 *= 10000^2*(1E6*365.25*24*3600) # Convert to micron^2/Myr
+    Dz, DN17 = zircon.Dz, zircon.DN17
+    @turbo for i ∈ eachindex(Dz, DN17, TSteps)
+        Dzᵢ = DzD0 * exp(-DzEa / R / (TSteps[i] + 273.15)) # cm^2/s
+        Dz[i] = Dzᵢ * 10000^2*(1E6*365.25*24*3600) # Convert to micron^2/Myr
+        DN17ᵢ = DN17D0 * exp(-DN17Ea / R / (TSteps[i] + 273.15)) # cm^2/s
+        DN17[i] = DN17ᵢ * 10000^2*(1E6*365.25*24*3600) # Convert to micron^2/Myr
+    end
 
     # Get time and radius discretization
     dr = zircon.dr

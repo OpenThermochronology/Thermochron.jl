@@ -86,6 +86,8 @@ struct Zircon{T<:Number} <: Mineral
     annealedDamage::Matrix{T}
     u::Matrix{T}
     β::Vector{T}
+    Dz::Vector{T}
+    DN17::Vector{T}
     A::Tridiagonal{T, Vector{T}}
     ipiv::Vector{LinearAlgebra.BlasInt}
     y::Vector{T}
@@ -176,6 +178,10 @@ function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, ageSteps::Abstr
     annealedDamage = similar(alphaDamage)
     β = Array{T}(undef, nrSteps) # First row of annealedDamage
 
+    # Allocate arrays for diffusivities
+    Dz = Array{T}(undef, ntSteps)
+    DN17 = Array{T}(undef, ntSteps)
+
     # Allocate output matrix for all timesteps
     u = Array{T}(undef, nrSteps, ntSteps)
 
@@ -213,6 +219,8 @@ function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, ageSteps::Abstr
         annealedDamage,
         u,
         β,
+        Dz,
+        DN17,
         A,
         ipiv,
         y,
