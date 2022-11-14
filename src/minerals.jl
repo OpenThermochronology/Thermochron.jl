@@ -87,6 +87,7 @@ struct Zircon{T<:Number} <: Mineral
     u::Matrix{T}
     β::Vector{T}
     A::Tridiagonal{T, Vector{T}}
+    ipiv::Vector{LinearAlgebra.BlasInt}
     y::Vector{T}
 end
 
@@ -183,6 +184,7 @@ function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, ageSteps::Abstr
     d = ones(T, nrSteps)       # Diagonal
     du = ones(T, nrSteps-1)    # Supra-diagonal row
     du2 = ones(T, nrSteps-2)   # sup-sup-diagonal row for pivoting
+    ipiv = Vector{LinearAlgebra.BlasInt}(undef, nrSteps) # For pivoting
 
     # Tridiagonal matrix for LHS of Crank-Nicholson equation with regular grid cells
     A = Tridiagonal(dl, d, du, du2)
@@ -212,6 +214,7 @@ function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, ageSteps::Abstr
         u,
         β,
         A,
+        ipiv,
         y,
     )
 end

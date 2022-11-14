@@ -159,6 +159,7 @@ function HeAgeSpherical(zircon::Zircon{T}, TSteps::AbstractVector{T}, ρᵣ::Abs
     @turbo @. A.dl = 1         # Sub-diagonal row
     @turbo @. A.d = -2 - β     # Diagonal
     @turbo @. A.du = 1         # Supra-diagonal row
+    ipiv = zircon.ipiv         # For pivoting
 
     # Neumann inner boundary condition (u(i,1) + u(i,2) = 0)
     A.d[1] = 1
@@ -204,7 +205,7 @@ function HeAgeSpherical(zircon::Zircon{T}, TSteps::AbstractVector{T}, ρᵣ::Abs
 
         # Invert using tridiagonal matrix algorithm
         # equivalent to u[:,i] = A\y
-        F = lu!(A)
+        F = lu!(A, ipiv)
         ldiv!(F, y)
         @turbo @. u[:,i] = y
     end
@@ -229,3 +230,89 @@ function HeAgeSpherical(zircon::Zircon{T}, TSteps::AbstractVector{T}, ρᵣ::Abs
     return HeAge
 end
 export HeAgeSpherical
+
+
+## --- Modify LinearAlgebra.lu! to reuse du2 for pivoting
+
+using LinearAlgebra: BlasInt, checknonsingular
+# Modified from LinearAlgebra stdlib to reuse `du2` and `ipiv`
+function lu!(A::Tridiagonal{T,V}, ipiv::Vector{BlasInt}, pivot::Union{RowMaximum,NoPivot} = RowMaximum(); check::Bool = true) where {T,V}
+
+    # Extract values
+    n = size(A, 1)
+    @assert length(ipiv) == n
+
+    # Initialize variables
+    info = 0
+    dl = A.dl
+    d = A.d
+    du = A.du
+    if dl === du
+        throw(ArgumentError("off-diagonals of `A` must not alias"))
+    end
+    # Check if Tridiagonal matrix already has du2 for pivoting
+    has_du2_defined = isdefined(A, :du2) && isa(A.du2, V) && length(A.du2) == max(0, n-2)
+    if has_du2_defined
+        du2 = A.du2::V
+    else
+        du2 = fill!(similar(d, max(0, n-2)), 0)::V
+    end
+
+
+    @inbounds begin
+        for i = 1:n
+            ipiv[i] = i
+        end
+        for i = 1:n-2
+            # pivot or not?
+            if pivot === NoPivot() || abs(d[i]) >= abs(dl[i])
+                # No interchange
+                if d[i] != 0
+                    fact = dl[i]/d[i]
+                    dl[i] = fact
+                    d[i+1] -= fact*du[i]
+                    du2[i] = 0
+                end
+            else
+                # Interchange
+                fact = d[i]/dl[i]
+                d[i] = dl[i]
+                dl[i] = fact
+                tmp = du[i]
+                du[i] = d[i+1]
+                d[i+1] = tmp - fact*d[i+1]
+                du2[i] = du[i+1]
+                du[i+1] = -fact*du[i+1]
+                ipiv[i] = i+1
+            end
+        end
+        if n > 1
+            i = n-1
+            if pivot === NoPivot() || abs(d[i]) >= abs(dl[i])
+                if d[i] != 0
+                    fact = dl[i]/d[i]
+                    dl[i] = fact
+                    d[i+1] -= fact*du[i]
+                end
+            else
+                fact = d[i]/dl[i]
+                d[i] = dl[i]
+                dl[i] = fact
+                tmp = du[i]
+                du[i] = d[i+1]
+                d[i+1] = tmp - fact*d[i+1]
+                ipiv[i] = i+1
+            end
+        end
+        # check for a zero on the diagonal of U
+        for i = 1:n
+            if d[i] == 0
+                info = i
+                break
+            end
+        end
+    end
+    B = has_du2_defined ? A : Tridiagonal{T,V}(dl, d, du, du2)
+    check && checknonsingular(info, pivot)
+    return LU{T,Tridiagonal{T,V},typeof(ipiv)}(B, ipiv, convert(BlasInt, info))
+end
