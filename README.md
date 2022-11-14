@@ -1,6 +1,6 @@
 # Thermochron.jl
 
-[![DOI](osf_io_WQ2U5.svg)](https://doi.org/10.17605/OSF.IO/WQ2U5
+[![DOI](osf_io_WQ2U5.svg)](https://doi.org/10.17605/OSF.IO/WQ2U5)
 [![Dev][docs-dev-img]][docs-dev-url]
 [![CI][ci-img]][ci-url]
 [![CI (Julia nightly)][ci-nightly-img]][ci-nightly-url]
