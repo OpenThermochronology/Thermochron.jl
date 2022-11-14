@@ -22,9 +22,12 @@ Zircon damage annealing model as in Guenthner et al. 2013 (AJS)
 """
 function anneal(dt::Number, tSteps::DenseVector, TSteps::DenseVector, model=:zrdaam)
     # Allocate matrix to hold reduced track lengths for all previous timesteps
-    ρᵣ = zeros(length(tSteps),length(tSteps))
+    ntSteps = length(tSteps)
+    ρᵣ = zeros(ntSteps,ntSteps)
+    Teq = zeros(ntSteps)
     # In=-place version
-    anneal!(ρᵣ, dt, tSteps, TSteps, model)
+    anneal!(ρᵣ, Teq, dt, tSteps, TSteps, model)
+    return ρᵣ, Teq
 end
 export anneal
 
@@ -34,8 +37,8 @@ anneal!(ρᵣ::Matrix, dt::Number, tSteps::Vector, TSteps::Vector, [model::Symbo
 ```
 In-place version of `anneal`
 """
-anneal!(ρᵣ::DenseMatrix, dt::Number, tSteps::DenseVector, TSteps::DenseVector, model::Symbol) = anneal!(ρᵣ, dt, tSteps, TSteps, Val(model))
-function anneal!(ρᵣ::DenseMatrix, dt::Number, tSteps::DenseVector, TSteps::DenseVector, ::Val{:zrdaam})
+anneal!(ρᵣ::DenseMatrix, Teq::DenseVector, dt::Number, tSteps::DenseVector, TSteps::DenseVector, model::Symbol) = anneal!(ρᵣ, Teq, dt, tSteps, TSteps, Val(model))
+function anneal!(ρᵣ::DenseMatrix, Teq::DenseVector, dt::Number, tSteps::DenseVector, TSteps::DenseVector, ::Val{:zrdaam})
     # Annealing model constants
     B=-0.05721
     C0=6.24534
@@ -44,9 +47,11 @@ function anneal!(ρᵣ::DenseMatrix, dt::Number, tSteps::DenseVector, TSteps::De
     C3=-14.2868
 
     ntSteps = length(tSteps)
+    @assert size(ρᵣ) === (ntSteps, ntSteps)
+    @assert size(Teq) === (ntSteps,)
+    @turbo @. Teq = 0.0
 
     # First timestep
-    Teq = zeros(1,ntSteps)
     ρᵣ[1,1] = 1 / ((C0 + C1*(log(dt)-C2)/(log(1 / (TSteps[1]+273.15))-C3))^(1/B)+1)
 
     # All subsequent timesteps
@@ -113,10 +118,10 @@ function HeAgeSpherical(zircon::Zircon{T}, TSteps::AbstractVector{T}, ρᵣ::Abs
     R = 0.008314472 #kJ/(K*mol)
 
     # Diffusivities of crystalline and amorphous endmembers
-    Dz = DzD0 .* exp.(-DzEa ./ R ./ (TSteps .+ 273.15)) # cm^2/sr
+    Dz = DzD0 .* exp.(-DzEa ./ R ./ (TSteps .+ 273.15)) # cm^2/s
     DN17 = DN17D0 .* exp.(-DN17Ea ./ R ./ (TSteps .+ 273.15)) # cm^2/s
-    Dz = Dz*10000^2*(1E6*365.25*24*3600) # Convert to micron^2/Myr
-    DN17 = DN17*10000^2*(1E6*365.25*24*3600) # Convert to micron^2/Myr
+    Dz *= 10000^2*(1E6*365.25*24*3600) # Convert to micron^2/Myr
+    DN17 *= 10000^2*(1E6*365.25*24*3600) # Convert to micron^2/Myr
 
     # Get time and radius discretization
     dr = zircon.dr
