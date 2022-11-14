@@ -52,6 +52,15 @@
 
     @test isapprox(A\y, sol_known, atol=0.00000000001)
 
+# Test creating and allocating a Zircon
+
+    crystalRadius = 29.26
+    Uppm = 462.98
+    Thppm = 177.76
+    Zircon(crystalRadius,dr,Uppm,Thppm,dt,reverse(tSteps))
+    @time "Allocating a zircon" zircon = Zircon(crystalRadius,dr,Uppm,Thppm,dt,reverse(tSteps))
+    @test isa(zircon, Zircon)
+
 # Test whole integrated age program
     diffusionparams = (;
         DzEa = 165.0, # kJ/mol
@@ -59,12 +68,9 @@
         DN17Ea = 71.0, # kJ/mol
         DN17D0 = 0.0034, #6.367E-3 # cm^2/sec
     )
-
-    crystalRadius = 29.26
-    Uppm = 462.98
-    Thppm = 177.76
-    zircon = Zircon(crystalRadius,dr,Uppm,Thppm,dt,reverse(tSteps))
-    @test round(HeAgeSpherical(zircon,TSteps,pr,diffusionparams), sigdigits=5) ≈ 520.03
+    HeAgeSpherical(zircon,TSteps,pr,diffusionparams)
+    @time "Running HeAgeSpherical" age = HeAgeSpherical(zircon,TSteps,pr,diffusionparams)
+    @test round(age, sigdigits=5) ≈ 520.03
 
     crystalRadius = 35.
     Uppm = 1107.

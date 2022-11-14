@@ -101,8 +101,8 @@ agePoints[1:nPoints] .= (model.tInit/30,model.tInit/4,model.tInit/2,model.tInit-
 TPoints[1:nPoints] .= Tr  # Degrees C
 
 # Run Markov Chain
-@time MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary)
-@time (TStepdist, HeAgedist, ndist, lldist, acceptancedist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary)
+@time "Compiling MCMC_vartcryst" MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary)
+@time "Running MCMC_vartcryst" (TStepdist, HeAgedist, ndist, lldist, acceptancedist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary)
 
 @test isa(TStepdist, AbstractMatrix)
 @test maximum(TStepdist) <= model.TInit
