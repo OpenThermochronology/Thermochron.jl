@@ -28,7 +28,7 @@ Download an example script such as [ZrnHeInversionVartCryst.jl](examples/ZrnHeIn
 See also the test suite for more information and examples.
 
 ## Citation
-Please cite Thermochron.jl as:
+When using model results derived from Thermochron.jl, you may cite this package as:
 > Keller, C.B., McDannell, K.T., Guenthner, W.R., and Shuster, D.L. (2022). *Thermochron.jl: Open-source time-Temperature inversion of thermochronometric data.* https://doi.org/10.17605/osf.io/wq2U5
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
