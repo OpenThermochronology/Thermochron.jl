@@ -72,6 +72,8 @@
         extraPoints = length(boundary.agePoints) + length(unconf.agePoints)
         agePointBuffer = similar(agePoints, model.maxPoints+extraPoints)
         TPointBuffer = similar(agePoints, model.maxPoints+extraPoints)
+        sortBuffer = similar(agePoints, Int, model.maxPoints+extraPoints)
+        knot_index = similar(model.ageSteps, Int)
 
         # Calculate model ages for initial proposal
         na = collectto!(agePointBuffer, view(agePoints, 1:nPoints), boundary.agePoints, unconf.agePoints)
@@ -163,7 +165,8 @@
                     # Recalculate interpolated proposed t-T path
                     na = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
                     nt = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
-                    linterp1s!(TSteps, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
+                    sort_index = view(sortBuffer, 1:nt)
+                    linterp1s!(TSteps, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps; knot_index, sort_index)
 
                     # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
                     maxdiff(TSteps) < model.dTmax && break
@@ -182,7 +185,8 @@
                     # Recalculate interpolated proposed t-T path
                     na = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
                     nt = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
-                    linterp1s!(TSteps, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
+                    sort_index = view(sortBuffer, 1:nt)
+                    linterp1s!(TSteps, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps; knot_index, sort_index)
 
                     # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
                     maxdiff(TSteps) < model.dTmax && break
@@ -198,7 +202,8 @@
                     # Recalculate interpolated proposed t-T path
                     na = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
                     nt = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
-                    linterp1s!(TSteps, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
+                    sort_index = view(sortBuffer, 1:nt)
+                    linterp1s!(TSteps, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps; knot_index, sort_index)
 
                     # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
                     maxdiff(TSteps) < model.dTmax && break
@@ -218,7 +223,8 @@
                     # Recalculate interpolated proposed t-T path
                     na = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
                     nt = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
-                    linterp1s!(TSteps, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
+                    sort_index = view(sortBuffer, 1:nt)
+                    linterp1s!(TSteps, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps; knot_index, sort_index)
 
                     # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
                     maxdiff(TSteps) < model.dTmax && break
