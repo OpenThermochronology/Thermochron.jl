@@ -78,7 +78,7 @@
         nt = collectto!(TPointBuffer, view(TPoints, 1:nPoints), boundary.TPoints, unconf.TPoints)
         TSteps = linterp1s(view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
         calcHeAges = Array{Float64}(undef, size(data.HeAge))
-        pr, Teq = anneal(model.dt, model.tSteps, TSteps, :zrdaam) # Damage annealing history
+        pr, Teq = anneal(model.dt, model.tSteps, TSteps, ZRDAAM()) # Damage annealing history
 
         # Prepare a Mineral object for each analysis
         diffusionmodel = (DzEa=model.DzEa, DzD0=model.DzD0, DN17Ea=model.DN17Ea, DN17D0=model.DN17D0)
@@ -231,7 +231,7 @@
             end
 
              # Calculate model ages for each grain
-            anneal!(pr, Teq, model.dt, model.tSteps, TSteps, :zrdaam)
+            anneal!(pr, Teq, model.dt, model.tSteps, TSteps, ZRDAAM())
             for i=1:length(zircons)
                 first_index = 1 + floor(Int64,(model.tInit - data.CrystAge[i])/model.dt)
                 calcHeAgesₚ[i] = HeAgeSpherical(zircons[i], @views(TSteps[first_index:end]), @views(pr[first_index:end,first_index:end]), diffusionmodel)

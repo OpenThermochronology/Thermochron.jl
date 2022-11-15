@@ -13,14 +13,18 @@ function dHe(t, U238, U235, Th232)
     8*U238*λ238U*exp(λ238U*t) + 7*U235*λ235U*exp(λ235U*t) + 6*Th232*λ232Th*exp(λ232Th*t)
 end
 
+# Define Damage model types
+abstract type DamageModel end
+struct ZRDAAM <: DamageModel end
+export ZRDAAM
 
 """
 ```julia
-ρᵣ = anneal(dt::Number, tSteps::Vector, TSteps::Matrix, [model::Symbol])
+ρᵣ = anneal(dt::Number, tSteps::Vector, TSteps::Matrix, [model::DamageModel=ZRDAAM()])
 ```
 Zircon damage annealing model as in Guenthner et al. 2013 (AJS)
 """
-function anneal(dt::Number, tSteps::DenseVector, TSteps::DenseVector, model=:zrdaam)
+function anneal(dt::Number, tSteps::DenseVector, TSteps::DenseVector, model::DamageModel=ZRDAAM())
     # Allocate matrix to hold reduced track lengths for all previous timesteps
     ntSteps = length(tSteps)
     ρᵣ = zeros(ntSteps,ntSteps)
@@ -33,12 +37,12 @@ export anneal
 
 """
 ```julia
-anneal!(ρᵣ::Matrix, dt::Number, tSteps::Vector, TSteps::Vector, [model::Symbol])
+anneal!(ρᵣ::Matrix, dt::Number, tSteps::Vector, TSteps::Vector, [model::DamageModel=ZRDAAM()])
 ```
 In-place version of `anneal`
 """
-anneal!(ρᵣ::DenseMatrix, Teq::DenseVector, dt::Number, tSteps::DenseVector, TSteps::DenseVector, model::Symbol) = anneal!(ρᵣ, Teq, dt, tSteps, TSteps, Val(model))
-function anneal!(ρᵣ::DenseMatrix, Teq::DenseVector, dt::Number, tSteps::DenseVector, TSteps::DenseVector, ::Val{:zrdaam})
+anneal!(ρᵣ::DenseMatrix, Teq::DenseVector, dt::Number, tSteps::DenseVector, TSteps::DenseVector) = anneal!(ρᵣ, Teq, dt, tSteps, TSteps, ZRDAAM())
+function anneal!(ρᵣ::DenseMatrix, Teq::DenseVector, dt::Number, tSteps::DenseVector, TSteps::DenseVector, ::ZRDAAM)
     # Annealing model constants
     B=-0.05721
     C0=6.24534
