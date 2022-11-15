@@ -67,6 +67,7 @@
     function MCMC_vartcryst(data::NamedTuple, model::NamedTuple, nPoints::Int, agePoints::AbstractVector, TPoints::AbstractVector, unconf::NamedTuple, boundary::NamedTuple)
         @assert firstindex(agePoints) === 1
         @assert firstindex(TPoints) === 1
+        nsteps = model.nsteps::Int
 
         # Calculate number of boundary and unconformity points and allocate buffer for interpolating
         extraPoints = length(boundary.agePoints) + length(unconf.agePoints)
@@ -95,7 +96,7 @@
         # Simulated annealing of uncertainty
         simannealmodel = (σModel=model.σModel, σAnnealing=model.σAnnealing, λAnnealing=model.λAnnealing)
         σₐ = simannealsigma.(1, data.HeAge_sigma; simannealmodel)
-        σₙ = simannealsigma.(model.nsteps, data.HeAge_sigma; simannealmodel)
+        σₙ = simannealsigma.(nsteps, data.HeAge_sigma; simannealmodel)
 
         # Log-likelihood for initial proposal
         ll = normpdf_ll(data.HeAge, σₐ, calcHeAges)
@@ -111,11 +112,11 @@
         calcHeAgesₚ = similar(calcHeAges)
 
         # distributions to populate
-        HeAgedist = Array{Float64}(undef, length(data.HeAge), model.nsteps)
-        TStepdist = Array{Float64}(undef, length(model.tSteps), model.nsteps)
-        lldist = Array{Float64}(undef, model.nsteps)
-        ndist = zeros(Int, model.nsteps)
-        acceptancedist = zeros(Bool, model.nsteps)
+        HeAgedist = Array{Float64}(undef, length(data.HeAge), nsteps)
+        TStepdist = Array{Float64}(undef, length(model.tSteps), nsteps)
+        lldist = Array{Float64}(undef, nsteps)
+        ndist = zeros(Int, nsteps)
+        acceptancedist = zeros(Bool, nsteps)
 
         # Standard deviations of Gaussian proposal distributions for temperature and time
         t_sigma = model.tInit/60
@@ -128,7 +129,9 @@
         boundarymove = 0.05
         maxattempts = 1000
 
-        @showprogress 10 "Running MCMC..." for n=1:model.nsteps
+        progress = Progress(nsteps, dt=1, desc="Running MCMC ($(nsteps) steps):")
+        progress_interval = ceil(Int,sqrt(nsteps))
+        for n = 1:nsteps
 
             # Copy proposal from last accepted solution
             nPointsₚ = nPoints
@@ -278,6 +281,8 @@
             # This is the actual output we want -- the distribution of t-T paths (t path is always identical)
             TStepdist[:,n] .= TSteps # distribution of T paths
 
+            # Update progress meter every `progress_interval` steps
+            (mod(n, progress_interval) == 0) && update!(progress, n)
         end
         return (TStepdist, HeAgedist, ndist, lldist, acceptancedist)
     end
