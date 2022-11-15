@@ -160,19 +160,36 @@ function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, ageSteps::Abstr
         end
     end
 
-    # Calculate corrected alpha deposition each time step for each radius
-    alphaDeposition = (exp.(λ238U.*(ageSteps .+ dt/2)) - exp.(λ238U.*(ageSteps .- dt/2))) * (r238UHe') +
-        (exp.(λ235U.*(ageSteps .+ dt/2)) - exp.(λ235U.*(ageSteps .- dt/2))) * (r235UHe') +
-        (exp.(λ232Th.*(ageSteps .+ dt/2)) - exp.(λ232Th.*(ageSteps .- dt/2))) * (r232ThHe')
-
+    # Alpha decay recoil damage
     r238Udam = 8*r238U # No smoothing of alpha damage, 8 alphas per 238U
     r235Udam = 7*r235U # No smoothing of alpha damage, 7 alphas per 235U
     r232Thdam = 6*r232Th # No smoothing of alpha damage, 6 alphas per 232 Th
 
-    # Calculate corrected alpha damage at each time step for each radius
-    alphaDamage = (exp.(λ238U.*(ageSteps .+ dt/2)) - exp.(λ238U.*(ageSteps .- dt/2))) * (r238Udam') +
-        (exp.(λ235U.*(ageSteps .+ dt/2)) - exp.(λ235U.*(ageSteps .- dt/2))) * (r235Udam') +
-        (exp.(λ232Th.*(ageSteps .+ dt/2)) - exp.(λ232Th.*(ageSteps .- dt/2))) * (r232Thdam')
+    # Calculate corrected alpha deposition and recoil damage each time step for each radius
+    dt_2 = dt/2
+    decay = Array{T}(undef, ntSteps)
+    buffer = zeros(T, ntSteps, nrSteps-2)
+    # Allocate deposition and damage arrays
+    alphaDeposition = zeros(T, ntSteps, nrSteps-2)
+    alphaDamage = zeros(T, ntSteps, nrSteps-2)
+    # 238U
+    @turbo @. decay = exp(λ238U*(ageSteps + dt_2)) - exp(λ238U*(ageSteps - dt_2))
+    mul!(buffer, decay, r238UHe')
+    @turbo @. alphaDeposition += buffer
+    mul!(buffer, decay, r238Udam')
+    @turbo @. alphaDamage += buffer
+    # 235U
+    @turbo @. decay = exp(λ235U*(ageSteps + dt_2)) - exp(λ235U*(ageSteps - dt_2))
+    mul!(buffer, decay, r235UHe')
+    @turbo @. alphaDeposition += buffer
+    mul!(buffer, decay, r235Udam')
+    @turbo @. alphaDamage += buffer
+    # 232Th
+    @turbo @. decay = exp(λ232Th*(ageSteps + dt_2)) - exp(λ232Th*(ageSteps - dt_2))
+    mul!(buffer, decay, r232ThHe')
+    @turbo @. alphaDeposition += buffer
+    mul!(buffer, decay, r232Thdam')
+    @turbo @. alphaDamage += buffer
 
     # Allocate additional variables that will be needed for Crank-Nicholson
     annealedDamage = similar(alphaDamage)
