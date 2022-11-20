@@ -122,10 +122,10 @@
         T_sigma = model.TInit/60
 
         # Proposal probabilities (must sum to 1)
-        move = 0.65
+        move = 0.64
         birth = 0.15
         death = 0.15 # Should equal birth
-        boundarymove = 0.05
+        boundarymove = 0.06
         maxattempts = 1000
 
         progress = Progress(nsteps, dt=1, desc="Running MCMC ($(nsteps) steps):")
@@ -191,7 +191,7 @@
                     # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
                     maxdiff(TSteps) < model.dTmax && break
                 end
-            elseif (r < move+birth+death) && (r >= move+birth) && (nPointsₚ > 1)
+            elseif (r < move+birth+death) && (r >= move+birth) && (nPointsₚ > model.minPoints)
                 # Death: remove a model point
                 nPointsₚ -= 1 # Delete last point in array from proposal
                 for i=1:maxattempts # Try maxattempts times to satisfy the reheating rate limit
