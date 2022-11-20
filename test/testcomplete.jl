@@ -19,6 +19,7 @@ model = (
     TNow = 0.0, # Current surface temperature (in C)
     ΔTNow = 10.0, # TNow may vary from TNow to TNow+ΔTNow
     tInitMax = 4000.0, # Ma -- forbid anything older than this
+    minPoints = 1,
     maxPoints = 40, # Maximum allowed number of t-T points
     simplified = false, # Prefer simpler tT paths?
     # Diffusion parameters
