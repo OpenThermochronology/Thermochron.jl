@@ -225,10 +225,10 @@
                                 [view(TPointsₚ, 1:nPointsₚ) ; boundary.TPointsₚ ; unconf.TPointsₚ], model.ageSteps)
 
              # Calculate model ages for each grain
-             anneal!(pr, Teq, model.dt, model.tSteps, TSteps, ZRDAAM())
+             anneal!(pr, Teq, model.dt, model.tSteps, TStepsₚ, ZRDAAM())
              for i=1:length(zircons)
                  first_index = 1 + floor(Int64,(model.tInit - data.CrystAge[i])/model.dt)
-                 @views CalcHeAgesₚ[i] = HeAgeSpherical(zircons[i],TSteps[first_index:end], pr[first_index:end,first_index:end], model)
+                 @views CalcHeAgesₚ[i] = HeAgeSpherical(zircons[i], TStepsₚ[first_index:end], pr[first_index:end,first_index:end], model)
              end
 
             # Calculate log likelihood of proposal

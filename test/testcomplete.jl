@@ -117,7 +117,7 @@ TPoints[1:nPoints] .= Tr  # Degrees C
 @test maximum(ndist) <= model.maxPoints
 
 @test isa(lldist, AbstractVector)
-# @test -200 < mean(@view(lldist[model.burnin:end])) < 0
+@test -200 < mean(@view(lldist[model.burnin:end])) < 0
 
 @test isa(acceptancedist, AbstractVector{Bool})
-# @test isapprox(mean(acceptancedist), 0.58, atol=0.3)
+@test isapprox(mean(acceptancedist), 0.58, atol=0.3)
