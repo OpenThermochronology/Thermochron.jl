@@ -126,7 +126,6 @@
         birth = 0.15
         death = 0.15 # Should equal birth
         boundarymove = 0.06
-        maxattempts = 1000
 
         progress = Progress(nsteps, dt=1, desc="Running MCMC ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
@@ -143,94 +142,91 @@
             # Adjust the proposal
             r = rand()
             if r < move
+                # Move one t-T point
+                k = ceil(Int, rand() * nPoints)
+                while true
+
                 # Move the age of one model point
-                for i=1:maxattempts # Try maxattempts times to satisfy the reheating rate limit
-                    k = ceil(Int, rand() * nPoints)
+                agePointsₚ[k] += randn() * t_sigma
+                if agePointsₚ[k] < (0 + model.dt)
+                    # Don't let any point get too close to 0
+                    agePointsₚ[k] = 0 + model.dt
+                elseif agePointsₚ[k] > (model.tInit - model.dt)
+                    # Don't let any point get too close to tInit
+                    agePointsₚ[k] = model.tInit - model.dt
+                end
 
-                    agePointsₚ[k] += randn() * t_sigma
-                    if agePointsₚ[k] < (0 + model.dt)
-                        # Don't let any point get too close to 0
-                        agePointsₚ[k] = 0 + model.dt
-                    elseif agePointsₚ[k] > (model.tInit - model.dt)
-                        # Don't let any point get too close to tInit
-                        agePointsₚ[k] = model.tInit - model.dt
-                    end
-                    # Move the Temperature of one model point
-                    if TPointsₚ[k] < 0
-                        # Don't allow T<0
-                        TPointsₚ[k] = 0
-                    elseif TPointsₚ[k] > model.TInit
-                        # Don't allow T>TInit
-                        TPointsₚ[k] = model.TInit
-                    end
+                # Move the Temperature of one model point
+                TPointsₚ[k] += randn() * T_sigma
+                if TPointsₚ[k] < 0
+                    # Don't allow T<0
+                    TPointsₚ[k] = 0
+                elseif TPointsₚ[k] > model.TInit
+                    # Don't allow T>TInit
+                    TPointsₚ[k] = model.TInit
+                end
 
-                    # Recalculate interpolated proposed t-T path
-                    na = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
-                    nt = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
-                    linterp1s!(TSteps, knot_index, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
+                # Recalculate interpolated proposed t-T path
+                na = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
+                nt = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
+                linterp1s!(TSteps, knot_index, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
 
-                    # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
-                    maxdiff(TSteps) < model.dTmax && break
-
-                    # Copy last accepted solution to re-modify if we don't break
-                    copyto!(agePointsₚ, agePoints)
-                    copyto!(TPointsₚ, TPoints)
+                # Retry unless we have satisfied the maximum reheating rate
+                (maxdiff(TSteps) < model.dTmax) && break
                 end
             elseif (r < move+birth) && (nPointsₚ < model.maxPoints)
                 # Birth: add a new model point
                 nPointsₚ += 1
-                for i=1:maxattempts # Try maxattempts times to satisfy the reheating rate limit
-                    agePointsₚ[nPointsₚ] = rand()*model.tInit
-                    TPointsₚ[nPointsₚ] = model.TNow + rand()*(model.TInit-model.TNow)
+                while true
+                agePointsₚ[nPointsₚ] = rand()*model.tInit
+                TPointsₚ[nPointsₚ] = model.TNow + rand()*(model.TInit-model.TNow)
 
-                    # Recalculate interpolated proposed t-T path
-                    na = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
-                    nt = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
-                    linterp1s!(TSteps, knot_index, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
+                # Recalculate interpolated proposed t-T path
+                na = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
+                nt = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
+                linterp1s!(TSteps, knot_index, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
 
-                    # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
-                    maxdiff(TSteps) < model.dTmax && break
+                # Retry unless we have satisfied the maximum reheating rate
+                (maxdiff(TSteps) < model.dTmax) && break
                 end
             elseif (r < move+birth+death) && (r >= move+birth) && (nPointsₚ > model.minPoints)
                 # Death: remove a model point
                 nPointsₚ -= 1 # Delete last point in array from proposal
-                for i=1:maxattempts # Try maxattempts times to satisfy the reheating rate limit
-                    k = ceil(Int, rand()*nPoints) # Choose point to delete
-                    agePointsₚ[k] = agePointsₚ[nPoints]
-                    TPointsₚ[k] = TPointsₚ[nPoints]
+                while true
+                k = ceil(Int, rand()*nPoints) # Choose point to delete
+                agePointsₚ[k] = agePointsₚ[nPoints]
+                TPointsₚ[k] = TPointsₚ[nPoints]
 
-                    # Recalculate interpolated proposed t-T path
-                    na = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
-                    nt = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
-                    linterp1s!(TSteps, knot_index, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
+                # Recalculate interpolated proposed t-T path
+                na = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
+                nt = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
+                linterp1s!(TSteps, knot_index, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
 
-                    # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
-                    maxdiff(TSteps) < model.dTmax && break
+                # Retry unless we have satisfied the maximum reheating rate
+                (maxdiff(TSteps) < model.dTmax) && break
                 end
             else
                 # Move boundary conditions
-                for i=1:maxattempts # Try maxattempts times to satisfy the reheating rate limit
-                    # Move the temperatures of the starting and ending boundaries
-                    @. boundary.TPointsₚ = boundary.T₀ + rand()*boundary.ΔT
+                while true
+                # Move the temperatures of the starting and ending boundaries
+                @. boundary.TPointsₚ = boundary.T₀ + rand()*boundary.ΔT
 
-                    # If there's an imposed unconformity, adjust within parameters
-                    if length(unconf.agePoints) > 0
-                        @. unconf.agePointsₚ = unconf.Age₀ + rand()*unconf.ΔAge
-                        @. unconf.TPointsₚ = unconf.T₀ + rand()*unconf.ΔT
-                    end
+                # If there's an imposed unconformity, adjust within parameters
+                if length(unconf.agePoints) > 0
+                    @. unconf.agePointsₚ = unconf.Age₀ + rand()*unconf.ΔAge
+                    @. unconf.TPointsₚ = unconf.T₀ + rand()*unconf.ΔT
+                end
 
-                    # Recalculate interpolated proposed t-T path
-                    na = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
-                    nt = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
-                    linterp1s!(TSteps, knot_index, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
+                # Recalculate interpolated proposed t-T path
+                na = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
+                nt = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
+                linterp1s!(TSteps, knot_index, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
 
-                    # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
-                    maxdiff(TSteps) < model.dTmax && break
+                # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
+                maxdiff(TSteps) < model.dTmax && break
 
-                    # Copy last accepted solution to re-modify if we don't break
-                    copyto!(unconf.agePointsₚ, unconf.agePoints)
-                    copyto!(unconf.TPointsₚ, unconf.TPoints)
-                    copyto!(boundary.TPointsₚ, boundary.TPoints)
+                # Retry unless we have satisfied the maximum reheating rate
+                (maxdiff(TSteps) < model.dTmax) && break
                 end
             end
 
