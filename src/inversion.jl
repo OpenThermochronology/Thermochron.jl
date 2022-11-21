@@ -68,11 +68,13 @@
         @assert firstindex(agePoints) === 1
         @assert firstindex(TPoints) === 1
         nsteps = model.nsteps::Int
+        maxPoints = model.maxPoints::Int
+        minPoints = (haskey(model, :minPoints) ? model.minPoints : 1)::Int
 
         # Calculate number of boundary and unconformity points and allocate buffer for interpolating
         extraPoints = length(boundary.agePoints) + length(unconf.agePoints)
-        agePointBuffer = similar(agePoints, model.maxPoints+extraPoints)
-        TPointBuffer = similar(agePoints, model.maxPoints+extraPoints)
+        agePointBuffer = similar(agePoints, maxPoints+extraPoints)
+        TPointBuffer = similar(agePoints, maxPoints+extraPoints)
         knot_index = similar(model.ageSteps, Int)
 
         # Calculate model ages for initial proposal
@@ -174,7 +176,7 @@
                 # Retry unless we have satisfied the maximum reheating rate
                 (maxdiff(TSteps) < model.dTmax) && break
                 end
-            elseif (r < move+birth) && (nPointsₚ < model.maxPoints)
+            elseif (r < move+birth) && (nPointsₚ < maxPoints)
                 # Birth: add a new model point
                 nPointsₚ += 1
                 while true
@@ -189,7 +191,7 @@
                 # Retry unless we have satisfied the maximum reheating rate
                 (maxdiff(TSteps) < model.dTmax) && break
                 end
-            elseif (r < move+birth+death) && (r >= move+birth) && (nPointsₚ > model.minPoints)
+            elseif (r < move+birth+death) && (r >= move+birth) && (nPointsₚ > minPoints)
                 # Death: remove a model point
                 nPointsₚ -= 1 # Delete last point in array from proposal
                 while true
