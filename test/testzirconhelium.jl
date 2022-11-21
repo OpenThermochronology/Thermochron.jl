@@ -92,9 +92,13 @@
     HeAgeSpherical(zircon,TSteps,pr,diffusionparams)
     @time "Running HeAgeSpherical" age = HeAgeSpherical(zircon,TSteps,pr,diffusionparams)
     @test round(age, sigdigits=5) ≈ 520.03
+    # Re-run to ensure internal state has not changed
+    @test round(HeAgeSpherical(zircon,TSteps,pr,diffusionparams), sigdigits=5) ≈ 520.03
 
     crystalRadius = 35.
     Uppm = 1107.
     Thppm = 351.
     zircon = Zircon(crystalRadius,dr,Uppm,Thppm,dt,reverse(tSteps))
+    @test round(HeAgeSpherical(zircon,TSteps,pr,diffusionparams), sigdigits=5) ≈ 309.76
+    # Re-run to ensure internal state has not changed
     @test round(HeAgeSpherical(zircon,TSteps,pr,diffusionparams), sigdigits=5) ≈ 309.76
