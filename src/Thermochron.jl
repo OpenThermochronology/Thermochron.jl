@@ -3,7 +3,7 @@ module Thermochron
     using LinearAlgebra
     using Statistics
     using LoopVectorization
-    using ProgressMeter: Progress, update!
+    using ProgressMeter: Progress, update!, @showprogress
     using StatGeochemBase
 
     include("minerals.jl")

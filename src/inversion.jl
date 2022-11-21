@@ -57,48 +57,31 @@
     ```
     Markov chain Monte Carlo time-Temperature inversion of the data specified in `data` and model parameters specified by `model`.
 
-    Returns a tuple of distributions `(TStepdist, HeAgedist, ndist, lldist, acceptancedist)`
+    Returns a tuple of distributions `(TStepDist, HeAgeDist, nDist, llDist, acceptanceDist)`
 
     ## Examples
     ```julia
-    TStepdist, HeAgedist, ndist, lldist, acceptancedist = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary)
+    TStepDist, HeAgeDist, nDist, llDist, acceptanceDist = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary)
     ```
     """
     function MCMC_vartcryst(data::NamedTuple, model::NamedTuple, nPoints::Int, agePoints::AbstractVector, TPoints::AbstractVector, unconf::NamedTuple, boundary::NamedTuple)
-        @assert firstindex(agePoints) === 1
-        @assert firstindex(TPoints) === 1
-        nsteps = model.nsteps::Int
-
-        # Calculate number of boundary and unconformity points and allocate buffer for interpolating
-        extraPoints = length(boundary.agePoints) + length(unconf.agePoints)
-        agePointBuffer = similar(agePoints, model.maxPoints+extraPoints)
-        TPointBuffer = similar(agePoints, model.maxPoints+extraPoints)
-        knot_index = similar(model.ageSteps, Int)
-
         # Calculate model ages for initial proposal
-        na = collectto!(agePointBuffer, view(agePoints, 1:nPoints), boundary.agePoints, unconf.agePoints)
-        nt = collectto!(TPointBuffer, view(TPoints, 1:nPoints), boundary.TPoints, unconf.TPoints)
-        TSteps = linterp1s(view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
-        calcHeAges = Array{Float64}(undef, size(data.HeAge))
+        TSteps = linterp1s([view(agePoints, 1:nPoints) ; boundary.agePoints ; unconf.agePoints],
+                           [view(TPoints, 1:nPoints) ; boundary.TPoints ; unconf.TPoints], model.ageSteps)
+        CalcHeAges = Array{Float64}(undef, size(data.HeAge))
         pr, Teq = anneal(model.dt, model.tSteps, TSteps, ZRDAAM()) # Damage annealing history
-
-        # Prepare a Mineral object for each analysis
-        diffusionmodel = (DzEa=model.DzEa, DzD0=model.DzD0, DN17Ea=model.DN17Ea, DN17D0=model.DN17D0)
         zircons = Array{Zircon{Float64}}(undef, length(data.halfwidth))
-        for i=1:length(zircons)
+        for i=1:length(data.halfwidth)
             # Iterate through each grain, calculate the modeled age for each
             first_index = 1 + floor(Int64,(model.tInit - data.CrystAge[i])/model.dt)
             zircons[i] = Zircon(data.halfwidth[i], model.dr, data.U[i], data.Th[i], model.dt, model.ageSteps[first_index:end])
-            calcHeAges[i] = HeAgeSpherical(zircons[i], @views(TSteps[first_index:end]), @views(pr[first_index:end,first_index:end]), diffusionmodel)
+            CalcHeAges[i] = HeAgeSpherical(zircons[i], TSteps[first_index:end], pr[first_index:end,first_index:end], model)
         end
-
-        # Simulated annealing of uncertainty
-        simannealmodel = (σModel=model.σModel, σAnnealing=model.σAnnealing, λAnnealing=model.λAnnealing)
-        σₐ = simannealsigma.(1, data.HeAge_sigma; simannealmodel)
-        σₙ = simannealsigma.(nsteps, data.HeAge_sigma; simannealmodel)
+        AnnealedSigma = simannealsigma.(1, data.HeAge_sigma; simannealmodel=model)
+        UnAnnealedSigma = simannealsigma.(model.nsteps, data.HeAge_sigma; simannealmodel=model)
 
         # Log-likelihood for initial proposal
-        ll = normpdf_ll(data.HeAge, σₐ, calcHeAges)
+        ll = normpdf_ll(data.HeAge, AnnealedSigma, CalcHeAges)
         if model.simplified
             ll -= log(nPoints)
         end
@@ -108,14 +91,15 @@
         nPointsₚ = nPoints
         agePointsₚ = similar(agePoints)
         TPointsₚ = similar(TPoints)
-        calcHeAgesₚ = similar(calcHeAges)
+        TStepsₚ = similar(TSteps)
+        CalcHeAgesₚ = similar(CalcHeAges)
 
-        # distributions to populate
-        HeAgedist = Array{Float64}(undef, length(data.HeAge), nsteps)
-        TStepdist = Array{Float64}(undef, length(model.tSteps), nsteps)
-        lldist = Array{Float64}(undef, nsteps)
-        ndist = zeros(Int, nsteps)
-        acceptancedist = zeros(Bool, nsteps)
+        # Distributions to populate
+        HeAgeDist = Array{Float64}(undef, length(data.HeAge), model.nsteps)
+        TStepDist = Array{Float64}(undef, length(model.tSteps), model.nsteps)
+        llDist = Array{Float64}(undef, model.nsteps)
+        nDist = zeros(Int, model.nsteps)
+        acceptanceDist = zeros(Bool, model.nsteps)
 
         # Standard deviations of Gaussian proposal distributions for temperature and time
         t_sigma = model.tInit/60
@@ -125,16 +109,16 @@
         move = 0.64
         birth = 0.15
         death = 0.15 # Should equal birth
-        boundarymove = 0.06
+        movebounds = 0.06
+        maxattempts = 1000
 
-        progress = Progress(nsteps, dt=1, desc="Running MCMC ($(nsteps) steps):")
-        progress_interval = ceil(Int,sqrt(nsteps))
-        for n = 1:nsteps
+        @showprogress 10 "Running MCMC..." for n=1:model.nsteps
 
             # Copy proposal from last accepted solution
             nPointsₚ = nPoints
             copyto!(agePointsₚ, agePoints)
             copyto!(TPointsₚ, TPoints)
+            copyto!(TStepsₚ, TSteps)
             copyto!(unconf.agePointsₚ, unconf.agePoints)
             copyto!(unconf.TPointsₚ, unconf.TPoints)
             copyto!(boundary.TPointsₚ, boundary.TPoints)
@@ -142,105 +126,115 @@
             # Adjust the proposal
             r = rand()
             if r < move
-                # Move one t-T point
-                k = ceil(Int, rand() * nPoints)
-                while true
-
                 # Move the age of one model point
-                agePointsₚ[k] += randn() * t_sigma
-                if agePointsₚ[k] < (0 + model.dt)
-                    # Don't let any point get too close to 0
-                    agePointsₚ[k] = 0 + model.dt
-                elseif agePointsₚ[k] > (model.tInit - model.dt)
-                    # Don't let any point get too close to tInit
-                    agePointsₚ[k] = model.tInit - model.dt
+                for i=1:maxattempts # Try maxattempts times to satisfy the reheating rate limit
+                    k = ceil(Int, rand() * nPoints)
+
+                    agePointsₚ[k] += randn() * t_sigma
+                    if agePointsₚ[k] < model.dt
+                        # Don't let any point get too close to 0
+                        agePointsₚ[k] += (model.dt - agePointsₚ[k])
+                    elseif agePointsₚ[k] > (model.tInit - model.dt)
+                        # Don't let any point get too close to model.tInit
+                        agePointsₚ[k] -= (agePointsₚ[k] - (model.tInit - model.dt))
+                    end
+                    # Move the Temperature of one model point
+                    if TPointsₚ[k] < 0
+                        # Don't allow T<0
+                        TPointsₚ[k] = 0
+                    elseif TPointsₚ[k] > model.TInit
+                        # Don't allow T>model.TInit
+                        TPointsₚ[k] = model.TInit
+                    end
+
+                    # Interpolate proposed t-T path
+                    TStepsₚ = linterp1s([view(agePointsₚ, 1:nPointsₚ) ; boundary.agePoints ; unconf.agePointsₚ],
+                                        [view(TPointsₚ, 1:nPointsₚ) ; boundary.TPointsₚ ; unconf.TPointsₚ], model.ageSteps)
+
+                    # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
+                    maximum(diff(TStepsₚ)) < model.dTmax && break
+
+                    # Copy last accepted solution to re-modify if we don't break
+                    copyto!(agePointsₚ, agePoints)
+                    copyto!(TPointsₚ, TPoints)
                 end
 
-                # Move the Temperature of one model point
-                TPointsₚ[k] += randn() * T_sigma
-                if TPointsₚ[k] < 0
-                    # Don't allow T<0
-                    TPointsₚ[k] = 0
-                elseif TPointsₚ[k] > model.TInit
-                    # Don't allow T>TInit
-                    TPointsₚ[k] = model.TInit
-                end
-
-                # Recalculate interpolated proposed t-T path
-                na = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
-                nt = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
-                linterp1s!(TSteps, knot_index, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
-
-                # Retry unless we have satisfied the maximum reheating rate
-                (maxdiff(TSteps) < model.dTmax) && break
-                end
             elseif (r < move+birth) && (nPointsₚ < model.maxPoints)
                 # Birth: add a new model point
                 nPointsₚ += 1
-                while true
-                agePointsₚ[nPointsₚ] = rand()*model.tInit
-                TPointsₚ[nPointsₚ] = model.TNow + rand()*(model.TInit-model.TNow)
+                for i=1:maxattempts # Try maxattempts times to satisfy the reheating rate limit
+                    agePointsₚ[nPointsₚ] = rand()*model.tInit
+                    TPointsₚ[nPointsₚ] = rand()*model.TInit
 
-                # Recalculate interpolated proposed t-T path
-                na = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
-                nt = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
-                linterp1s!(TSteps, knot_index, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
+                    # Interpolate proposed t-T path
+                    TStepsₚ = linterp1s([view(agePointsₚ, 1:nPointsₚ) ; boundary.agePoints ; unconf.agePointsₚ],
+                                        [view(TPointsₚ, 1:nPointsₚ) ; boundary.TPointsₚ ; unconf.TPointsₚ], model.ageSteps)
 
-                # Retry unless we have satisfied the maximum reheating rate
-                (maxdiff(TSteps) < model.dTmax) && break
+                    # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
+                    maximum(diff(TStepsₚ)) < model.dTmax && break
                 end
-            elseif (r < move+birth+death) && (r >= move+birth) && (nPointsₚ > model.minPoints)
+
+            elseif (r < move+birth+death) && (r >= move+birth) && (nPointsₚ > 1)
                 # Death: remove a model point
                 nPointsₚ -= 1 # Delete last point in array from proposal
-                while true
-                k = ceil(Int, rand()*nPoints) # Choose point to delete
-                agePointsₚ[k] = agePointsₚ[nPoints]
-                TPointsₚ[k] = TPointsₚ[nPoints]
+                for i=1:maxattempts # Try maxattempts times to satisfy the reheating rate limit
+                    k = ceil(Int, rand()*nPoints) # Choose point to delete
+                    agePointsₚ[k] = agePointsₚ[nPoints]
+                    TPointsₚ[k] = TPointsₚ[nPoints]
 
-                # Recalculate interpolated proposed t-T path
-                na = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
-                nt = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
-                linterp1s!(TSteps, knot_index, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
+                    # Interpolate proposed t-T path
+                    TStepsₚ = linterp1s([view(agePointsₚ, 1:nPointsₚ) ; boundary.agePoints ; unconf.agePointsₚ],
+                                        [view(TPointsₚ, 1:nPointsₚ) ; boundary.TPointsₚ ; unconf.TPointsₚ], model.ageSteps)
 
-                # Retry unless we have satisfied the maximum reheating rate
-                (maxdiff(TSteps) < model.dTmax) && break
+                    # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
+                    maximum(diff(TStepsₚ)) < model.dTmax && break
                 end
+
             else
                 # Move boundary conditions
-                while true
-                # Move the temperatures of the starting and ending boundaries
-                @. boundary.TPointsₚ = boundary.T₀ + rand()*boundary.ΔT
+                for i=1:maxattempts # Try maxattempts times to satisfy the reheating rate limit
+                    if rand() < 0.5
+                        # Allow the present temperature to vary from 0 to 10 degrees C
+                        boundary.TPointsₚ[1] = 0+rand()*10
+                    else
+                        # Allow the initial temperature to vary from model.TInit to model.TInit-50 C
+                        boundary.TPointsₚ[2] = model.TInit-rand()*50
+                    end
+                    if length(unconf.agePointsₚ) > 0
+                        # If there's an imposed unconformity, adjust within parameters
+                        @. unconf.agePointsₚ = unconf.Age₀ + rand()*unconf.ΔAge
+                        @. unconf.TPointsₚ = unconf.T₀ + rand()*unconf.ΔT
+                    end
 
-                # If there's an imposed unconformity, adjust within parameters
-                if length(unconf.agePoints) > 0
-                    @. unconf.agePointsₚ = unconf.Age₀ + rand()*unconf.ΔAge
-                    @. unconf.TPointsₚ = unconf.T₀ + rand()*unconf.ΔT
-                end
+                    # Recalculate interpolated proposed t-T path
+                    TStepsₚ = linterp1s([view(agePointsₚ, 1:nPointsₚ) ; boundary.agePoints ; unconf.agePointsₚ],
+                                            [view(TPointsₚ, 1:nPointsₚ) ; boundary.TPointsₚ ; unconf.TPointsₚ], model.ageSteps)
 
-                # Recalculate interpolated proposed t-T path
-                na = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
-                nt = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
-                linterp1s!(TSteps, knot_index, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
+                    # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
+                    maximum(diff(TStepsₚ)) < model.dTmax && break
 
-                # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
-                maxdiff(TSteps) < model.dTmax && break
-
-                # Retry unless we have satisfied the maximum reheating rate
-                (maxdiff(TSteps) < model.dTmax) && break
+                    # Copy last accepted solution to re-modify if we don't break
+                    copyto!(unconf.agePointsₚ, unconf.agePoints)
+                    copyto!(unconf.TPointsₚ, unconf.TPoints)
+                    copyto!(boundary.TPointsₚ, boundary.TPoints)
                 end
             end
+
+            # Recalculate interpolated proposed t-T path
+            TStepsₚ = linterp1s([view(agePointsₚ, 1:nPointsₚ) ; boundary.agePoints ; unconf.agePointsₚ],
+                                [view(TPointsₚ, 1:nPointsₚ) ; boundary.TPointsₚ ; unconf.TPointsₚ], model.ageSteps)
 
              # Calculate model ages for each grain
-            anneal!(pr, Teq, model.dt, model.tSteps, TSteps, ZRDAAM())
-            for i=1:length(zircons)
-                first_index = 1 + floor(Int64,(model.tInit - data.CrystAge[i])/model.dt)
-                calcHeAgesₚ[i] = HeAgeSpherical(zircons[i], @views(TSteps[first_index:end]), @views(pr[first_index:end,first_index:end]), diffusionmodel)
-            end
+             anneal!(pr, Teq, model.dt, model.tSteps, TSteps, ZRDAAM())
+             for i=1:length(zircons)
+                 first_index = 1 + floor(Int64,(model.tInit - data.CrystAge[i])/model.dt)
+                 @views CalcHeAgesₚ[i] = HeAgeSpherical(zircons[i],TSteps[first_index:end], pr[first_index:end,first_index:end], model)
+             end
 
             # Calculate log likelihood of proposal
-            σₐ .= simannealsigma.(n, data.HeAge_sigma; simannealmodel)
-            llₚ = normpdf_ll(data.HeAge, σₐ, calcHeAgesₚ)
-            llₗ = normpdf_ll(data.HeAge, σₐ, calcHeAges) # Recalulate last one too with new σₐ
+            AnnealedSigma .= simannealsigma.(n, data.HeAge_sigma; simannealmodel=model)
+            llₚ = normpdf_ll(data.HeAge, AnnealedSigma, CalcHeAgesₚ)
+            llₗ = normpdf_ll(data.HeAge, AnnealedSigma, CalcHeAges) # Recalulate last one too with new AnnealedSigma
             if model.simplified # slightly penalize more complex t-T paths
                 llₚ -= log(nPointsₚ)
                 llₗ -= log(nPoints)
@@ -258,23 +252,22 @@
                 copyto!(unconf.agePoints, unconf.agePointsₚ)
                 copyto!(unconf.TPoints, unconf.TPointsₚ)
                 copyto!(boundary.TPoints, boundary.TPointsₚ)
-                copyto!(calcHeAges, calcHeAgesₚ)
+                copyto!(CalcHeAges, CalcHeAgesₚ)
 
-                # This is saved for ouput, but not critical to the function of the MCMC loop
-                acceptancedist[n] = true
+                # These are saved for ouput, but not critical to the function of the MCMC loop
+                copyto!(TSteps, TStepsₚ)
+                acceptanceDist[n] = true
             end
 
             # Record results for analysis and troubleshooting
-            lldist[n] = normpdf_ll(data.HeAge, σₙ, calcHeAges) # Recalculated to constant baseline
-            ndist[n] = nPoints # distribution of # of points
-            HeAgedist[:,n] .= calcHeAges # distribution of He ages
+            llDist[n] = normpdf_ll(data.HeAge, UnAnnealedSigma, CalcHeAges) # Recalculated to constant baseline
+            nDist[n] = nPoints # Distribution of # of points
+            HeAgeDist[:,n] .= CalcHeAges # Distribution of He ages
 
             # This is the actual output we want -- the distribution of t-T paths (t path is always identical)
-            TStepdist[:,n] .= TSteps # distribution of T paths
+            TStepDist[:,n] .= TSteps # Distribution of T paths
 
-            # Update progress meter every `progress_interval` steps
-            (mod(n, progress_interval) == 0) && update!(progress, n)
         end
-        return (TStepdist, HeAgedist, ndist, lldist, acceptancedist)
+        return (TStepDist, HeAgeDist, nDist, llDist, acceptanceDist)
     end
     export MCMC_vartcryst
