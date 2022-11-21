@@ -148,12 +148,12 @@
                     k = ceil(Int, rand() * nPoints)
 
                     agePointsₚ[k] += randn() * t_sigma
-                    if agePointsₚ[k] < model.dt
+                    if agePointsₚ[k] < (0 + model.dt)
                         # Don't let any point get too close to 0
-                        agePointsₚ[k] += (model.dt - agePointsₚ[k])
+                        agePointsₚ[k] = 0 + model.dt
                     elseif agePointsₚ[k] > (model.tInit - model.dt)
                         # Don't let any point get too close to tInit
-                        agePointsₚ[k] -= (agePointsₚ[k] - (model.tInit - model.dt))
+                        agePointsₚ[k] = model.tInit - model.dt
                     end
                     # Move the Temperature of one model point
                     if TPointsₚ[k] < 0
