@@ -14,8 +14,7 @@ buffer = rand(20)
 a = rand(3)
 b = rand(4)
 c = rand(2)
-n = Thermochron.collectto!(buffer, a, b, c)
-@test buffer[1:n] == vcat(a,b,c)
+@test Thermochron.collectto!(buffer, a, b, c) == vcat(a,b,c)
 
 # Test maxdiff
 a = rand(1000)

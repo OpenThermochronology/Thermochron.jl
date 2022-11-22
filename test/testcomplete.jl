@@ -7,10 +7,9 @@ ds = importdataset(datapath, ',', importas=:Tuple);
 
 ## --- Prepare problem
 
-annealingburnin = 200
 model = (
-    nsteps = 400, # How many steps of the Markov chain should we run?
-    burnin = 100, # How long should we wait for MC to converge (become stationary)
+    nsteps = 500, # How many steps of the Markov chain should we run?
+    burnin = 300, # How long should we wait for MC to converge (become stationary)
     dr = 1.0,    # Radius step, in microns
     dt = 10.0,   # time step size in Myr
     dTmax = 10.0, # Maximum reheating/burial per model timestep
@@ -19,7 +18,7 @@ model = (
     TNow = 0.0, # Current surface temperature (in C)
     ΔTNow = 10.0, # TNow may vary from TNow to TNow+ΔTNow
     tInitMax = 4000.0, # Ma -- forbid anything older than this
-    minPoints = 1,
+    minPoints = 1,  # Minimum allowed number of t-T points
     maxPoints = 40, # Maximum allowed number of t-T points
     simplified = false, # Prefer simpler tT paths?
     # Diffusion parameters
@@ -32,7 +31,7 @@ model = (
     # Here we add (in quadrature) a blanket model uncertainty of 25 Ma.
     σModel = 25.0, # Ma
     σAnnealing = 35.0, # Initial annealing uncertainty [Ma]
-    λAnnealing = 10 ./ annealingburnin # Annealing decay [1/n]
+    λAnnealing = 10 ./ 200 # Annealing decay [1/n]
 )
 
 # Populate data NamedTuple from imported dataset
@@ -64,17 +63,6 @@ unconf = (
     agePoints = Float64[],  # Ma
     TPoints = Float64[],    # Degrees C
 )
-
-# # Uncomment this section if you wish to impose an unconformity at any point in the record
-# # Uniform distributions from Age₀ to Age₀+ΔAge, T₀ to T₀+ΔT,
-# unconf = (;
-#     agePoints = Float64[560.0,],  # Ma
-#     TPoints = Float64[20.0,],     # Degrees C
-#     Age₀ = Float64[500,],
-#     ΔAge = Float64[80,],
-#     T₀ = Float64[0,],
-#     ΔT = Float64[50,],
-# )
 
 # Add additional vectors for proposed unconformity and boundary points
 unconf = (unconf...,
@@ -117,7 +105,7 @@ TPoints[1:nPoints] .= Tr  # Degrees C
 @test maximum(ndist) <= model.maxPoints
 
 @test isa(lldist, AbstractVector)
-@test -200 < mean(@view(lldist[model.burnin:end])) < 0
+@test -100 < mean(@view(lldist[model.burnin:end])) < 0
 
 @test isa(acceptancedist, AbstractVector{Bool})
 @test isapprox(mean(acceptancedist), 0.58, atol=0.3)

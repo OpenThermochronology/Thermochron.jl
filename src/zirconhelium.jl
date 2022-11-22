@@ -263,12 +263,9 @@ function lu!(A::Tridiagonal{T,V}, ipiv::Vector{BlasInt}, pivot::Union{RowMaximum
         throw(ArgumentError("off-diagonals of `A` must not alias"))
     end
     # Check if Tridiagonal matrix already has du2 for pivoting
-    has_du2_defined = isdefined(A, :du2) && isa(A.du2, V) && length(A.du2) == max(0, n-2)
-    if has_du2_defined
-        du2 = A.du2::V
-    else
-        du2 = similar(d, max(0, n-2))::V
-    end
+    d2len = max(0, n-2) # Proper length of a second off-diagonal
+    has_du2_defined = isdefined(A, :du2) && length(A.du2) == d2len
+    du2 = (has_du2_defined ? A.du2 : similar(d, d2len))::V
     fill!(du2, 0)
 
     @inbounds begin

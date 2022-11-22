@@ -24,14 +24,14 @@
 
     # Utility function for agePoint and TPoint buffers
     function collectto!(buffer, a, b, c)
-        i₀ = 1
+        i₀ = firstindex(buffer)
         copyto!(buffer, i₀, a, 1, length(a))
         i₀ += length(a)
         copyto!(buffer, i₀, b, 1, length(b))
         i₀ += length(b)
         copyto!(buffer, i₀, c, 1, length(c))
-        n = length(a) + length(b) + length(c)
-        return n
+        i₀ += length(c)
+        return view(buffer, firstindex(buffer):i₀-1)
     end
 
     # Utility function for checking maximum reheating rate
@@ -78,9 +78,9 @@
         knot_index = similar(model.ageSteps, Int)
 
         # Calculate model ages for initial proposal
-        na = collectto!(agePointBuffer, view(agePoints, 1:nPoints), boundary.agePoints, unconf.agePoints)
-        nt = collectto!(TPointBuffer, view(TPoints, 1:nPoints), boundary.TPoints, unconf.TPoints)
-        TSteps = linterp1s(view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
+        ages = collectto!(agePointBuffer, view(agePoints, 1:nPoints), boundary.agePoints, unconf.agePoints)
+        temperatures = collectto!(TPointBuffer, view(TPoints, 1:nPoints), boundary.TPoints, unconf.TPoints)
+        TSteps = linterp1s(ages, temperatures, model.ageSteps)
         calcHeAges = Array{Float64}(undef, size(data.HeAge))
         pr, Teq = anneal(model.dt, model.tSteps, TSteps, ZRDAAM()) # Damage annealing history
 
@@ -127,7 +127,7 @@
         move = 0.64
         birth = 0.15
         death = 0.15 # Should equal birth
-        boundarymove = 0.06
+        movebounds = 0.06
 
         progress = Progress(nsteps, dt=1, desc="Running MCMC ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
@@ -169,9 +169,9 @@
                 end
 
                 # Recalculate interpolated proposed t-T path
-                na = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
-                nt = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
-                linterp1s!(TSteps, knot_index, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
+                ages = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
+                temperatures = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
+                linterp1s!(TSteps, knot_index, ages, temperatures, model.ageSteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
                 (maxdiff(TSteps) < model.dTmax) && break
@@ -184,9 +184,9 @@
                 TPointsₚ[nPointsₚ] = model.TNow + rand()*(model.TInit-model.TNow)
 
                 # Recalculate interpolated proposed t-T path
-                na = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
-                nt = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
-                linterp1s!(TSteps, knot_index, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
+                ages = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
+                temperatures = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
+                linterp1s!(TSteps, knot_index, ages, temperatures, model.ageSteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
                 (maxdiff(TSteps) < model.dTmax) && break
@@ -200,9 +200,9 @@
                 TPointsₚ[k] = TPointsₚ[nPoints]
 
                 # Recalculate interpolated proposed t-T path
-                na = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
-                nt = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
-                linterp1s!(TSteps, knot_index, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
+                ages = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
+                temperatures = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
+                linterp1s!(TSteps, knot_index, ages, temperatures, model.ageSteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
                 (maxdiff(TSteps) < model.dTmax) && break
@@ -220,12 +220,9 @@
                 end
 
                 # Recalculate interpolated proposed t-T path
-                na = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
-                nt = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
-                linterp1s!(TSteps, knot_index, view(agePointBuffer, 1:na), view(TPointBuffer, 1:nt), model.ageSteps)
-
-                # Accept the proposal (and break out of the loop) if it satisfies the maximum reheating rate
-                maxdiff(TSteps) < model.dTmax && break
+                ages = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
+                temperatures = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
+                linterp1s!(TSteps, knot_index, ages, temperatures, model.ageSteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
                 (maxdiff(TSteps) < model.dTmax) && break

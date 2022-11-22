@@ -46,7 +46,7 @@
         TNow = 0.0, # Current surface temperature (in C)
         ΔTNow = 10.0, # TNow may vary from TNow to TNow+ΔTNow
         tInitMax = 4000.0, # Ma -- forbid anything older than this
-        minPoints = 10, # Minimum allowed number of t-T points
+        minPoints = 5,  # Minimum allowed number of t-T points
         maxPoints = 50, # Maximum allowed number of t-T points
         simplified = false, # Prefer simpler tT paths?
         # Diffusion parameters
@@ -177,6 +177,8 @@
 
     # # Save results using JLD
     @save string(name, ".jld") TStepdist HeAgedist lldist acceptancedist model
+    # To read in from file, equivalently
+    # @load "filename.jld"
 
     # Plot log likelihood distribution
     h = plot(lldist, xlabel="Step number", ylabel="Log likelihood", label="")
