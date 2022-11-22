@@ -23,6 +23,10 @@
 
     using Thermochron
 
+    using LinearAlgebra
+    # Diminishing returns with more than ~3 threads
+    BLAS.get_num_threads() > 3 && BLAS.set_num_threads(3)
+
     # Make sure we're running in the directory where the script is located
     cd(@__DIR__)
 

@@ -147,9 +147,14 @@
 
         # Proposal probabilities (must sum to 1)
         move = 0.64
-        birth = 0.15
-        death = 0.15 # Should equal birth
+        birth = 0.15 # Must equal death
+        death = 0.15 # Must equal birth
         movebounds = 0.06
+
+        # Number of times to attempt to satisfy reheating rate: # Should be large
+        # enough that proposal probabilities are unchanged, but low enough to prevent
+        # infinite loop
+        nattempts = 10_000
 
         progress = Progress(nsteps, dt=1, desc="Running MCMC ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
@@ -168,7 +173,7 @@
             if r < move
                 # Move one t-T point
                 k = ceil(Int, rand() * nPoints)
-                while true
+                for attempt ∈ 1:nattempts
 
                 # Move the age of one model point
                 agePointsₚ[k] += randn() * σⱼt
@@ -201,11 +206,12 @@
                 # Copy last accepted solution to re-modify if we don't break
                 copyto!(agePointsₚ, agePoints)
                 copyto!(TPointsₚ, TPoints)
+                (attempt == nattempts) && println("Warning: `move` proposals failed to satisfy reheating rate limit")
                 end
             elseif (r < move+birth) && (nPointsₚ < maxPoints)
                 # Birth: add a new model point
                 nPointsₚ += 1
-                while true
+                for attempt ∈ 1:nattempts
                 agePointsₚ[nPointsₚ] = rand()*tInit
                 TPointsₚ[nPointsₚ] = TNow + rand()*(TInit-TNow)
 
@@ -216,11 +222,12 @@
 
                 # Retry unless we have satisfied the maximum reheating rate
                 (maxdiff(TStepsₚ) < dTmax) && break
+                (attempt == nattempts) && println("Warning: new point proposals failed to satisfy reheating rate limit")
                 end
             elseif (r < move+birth+death) && (r >= move+birth) && (nPointsₚ > minPoints)
                 # Death: remove a model point
                 nPointsₚ -= 1 # Delete last point in array from proposal
-                while true
+                for attempt ∈ 1:nattempts
                 k = ceil(Int, rand()*nPoints) # Choose point to delete
                 agePointsₚ[k] = agePointsₚ[nPoints]
                 TPointsₚ[k] = TPointsₚ[nPoints]
@@ -232,10 +239,11 @@
 
                 # Retry unless we have satisfied the maximum reheating rate
                 (maxdiff(TStepsₚ) < dTmax) && break
+                (attempt == nattempts) && println("Warning: point removal proposals failed to satisfy reheating rate limit")
                 end
             else
                 # Move boundary conditions
-                while true
+                for attempt ∈ 1:nattempts
                 # Move the temperatures of the starting and ending boundaries
                 @. boundary.TPointsₚ = boundary.T₀ + rand()*boundary.ΔT
 
@@ -257,6 +265,7 @@
                 copyto!(unconf.agePointsₚ, unconf.agePoints)
                 copyto!(unconf.TPointsₚ, unconf.TPoints)
                 copyto!(boundary.TPointsₚ, boundary.TPoints)
+                (attempt == nattempts) && println("Warning: `movebounds` proposals failed to satisfy reheating rate limit")
                 end
             end
 
