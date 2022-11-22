@@ -42,7 +42,7 @@ anneal!(ρᵣ::Matrix, dt::Number, tSteps::Vector, TSteps::Vector, [model::Damag
 In-place version of `anneal`
 """
 anneal!(ρᵣ::DenseMatrix, Teq::DenseVector, dt::Number, tSteps::DenseVector, TSteps::DenseVector) = anneal!(ρᵣ, Teq, dt, tSteps, TSteps, ZRDAAM())
-function anneal!(ρᵣ::DenseMatrix, Teq::DenseVector, dt::Number, tSteps::DenseVector, TSteps::DenseVector, ::ZRDAAM)
+function anneal!(ρᵣ::DenseMatrix{T}, Teq::DenseVector{T}, dt::Number, tSteps::DenseVector, TSteps::DenseVector, ::ZRDAAM) where T <: Number
     # Annealing model constants
     B=-0.05721
     C0=6.24534
@@ -50,10 +50,11 @@ function anneal!(ρᵣ::DenseMatrix, Teq::DenseVector, dt::Number, tSteps::Dense
     C2=-314.937 - log(1E6*365.25*24*3600) # Convert from seconds to Myr
     C3=-14.2868
 
+    ∅ = zero(T)
     ntSteps = length(tSteps)
     @assert size(ρᵣ) === (ntSteps, ntSteps)
     @assert size(Teq) === (ntSteps,)
-    @turbo @. Teq = 0.0
+    @turbo @. Teq = ∅
 
     # First timestep
     ρᵣ[1,1] = 1 / ((C0 + C1*(log(dt)-C2)/(log(1 / (TSteps[1]+273.15))-C3))^(1/B)+1)
@@ -86,8 +87,11 @@ function anneal!(ρᵣ::DenseMatrix, Teq::DenseVector, dt::Number, tSteps::Dense
     # # Rescale reduced densities based on the equivalent total annealing length
     # ρᵣ = (ρᵣ-0.36)/(1-0.36)
 
-    # Remove any negative reduced densities
-    map!(x->ifelse(x<0., 0., x), ρᵣ, ρᵣ)
+    # # Remove any negative reduced densities
+    @turbo for i ∈ eachindex(ρᵣ)
+        ρᵣᵢ = ρᵣ[i]
+        ρᵣ[i] = ifelse(ρᵣᵢ < ∅, ∅, ρᵣᵢ)
+    end
 
     return ρᵣ
 end
@@ -225,12 +229,12 @@ function HeAgeSpherical(zircon::Zircon{T}, TSteps::AbstractVector{T}, ρᵣ::Abs
     # Convert from u (coordinate-transform'd conc.) to v (real He conc.)
     vFinal = @views u[2:end-1,end]
     vFinal ./= rSteps
-    μHe = mean(vFinal) # Atoms/gram
+    μHe = vmean(vFinal) # Atoms/gram
 
     # Raw Age (i.e., as measured)
-    μ238U = mean(zircon.r238U) # Atoms/gram
-    μ235U = mean(zircon.r235U)
-    μ232Th = mean(zircon.r232Th)
+    μ238U = vmean(zircon.r238U::Vector{T}) # Atoms/gram
+    μ235U = vmean(zircon.r235U::Vector{T})
+    μ232Th = vmean(zircon.r232Th::Vector{T})
 
     # Numerically solve for helium age of the grain
     HeAge = one(T)

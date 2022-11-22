@@ -1,7 +1,7 @@
 module Thermochron
 
     using LinearAlgebra
-    using Statistics
+    using VectorizedStatistics
     using LoopVectorization
     using ProgressMeter: Progress, update!
     using StatGeochemBase
