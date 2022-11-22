@@ -34,19 +34,19 @@
 
 ## --- Prepare problem
 
-    burnin = 350000
+    burnin = 350_000
     model = (
-        nsteps = 500000, # How many steps of the Markov chain should we run?
+        nsteps = 500_000, # How many steps of the Markov chain should we run?
         burnin = burnin, # How long should we wait for MC to converge (become stationary)
         dr = 1.0,    # Radius step, in microns
         dt = 10.0,   # time step size in Myr
-        dTmax = 10.0, # Maximum reheating/burial per model timestep
+        dTmax = 15.0, # Maximum reheating/burial per model timestep
         TInit = 400.0, # Initial model temperature (in C) (i.e., crystallization temperature)
         ΔTInit = -50.0, # TInit can vary from TInit to TInit+ΔTinit
         TNow = 0.0, # Current surface temperature (in C)
         ΔTNow = 10.0, # TNow may vary from TNow to TNow+ΔTNow
         tInitMax = 4000.0, # Ma -- forbid anything older than this
-        minPoints = 5,  # Minimum allowed number of t-T points
+        minPoints = 10,  # Minimum allowed number of t-T points
         maxPoints = 50, # Maximum allowed number of t-T points
         simplified = false, # Prefer simpler tT paths?
         # Diffusion parameters

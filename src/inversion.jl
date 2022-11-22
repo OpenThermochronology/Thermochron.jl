@@ -116,7 +116,7 @@
         # Simulated annealing of uncertainty
         simannealmodel = (σModel=T(model.σModel), σAnnealing=T(model.σAnnealing), λAnnealing=T(model.λAnnealing))
         σₐ = simannealsigma.(1, HeAge_sigma; simannealmodel)::DenseVector{T}
-        σₙ = simannealsigma.(nsteps, HeAge_sigma; simannealmodel)::DenseVector{T}
+        σ = sqrt.(T(model.σModel)^2 .+ HeAge_sigma.^2)
 
         # Log-likelihood for initial proposal
         ll = normpdf_ll(HeAge, σₐ, calcHeAges)
@@ -195,6 +195,10 @@
 
                 # Retry unless we have satisfied the maximum reheating rate
                 (maxdiff(TStepsₚ) < dTmax) && break
+
+                # Copy last accepted solution to re-modify if we don't break
+                copyto!(agePointsₚ, agePoints)
+                copyto!(TPointsₚ, TPoints)
                 end
             elseif (r < move+birth) && (nPointsₚ < maxPoints)
                 # Birth: add a new model point
@@ -246,6 +250,11 @@
 
                 # Retry unless we have satisfied the maximum reheating rate
                 (maxdiff(TStepsₚ) < dTmax) && break
+
+                # Copy last accepted solution to re-modify if we don't break
+                copyto!(unconf.agePointsₚ, unconf.agePoints)
+                copyto!(unconf.TPointsₚ, unconf.TPoints)
+                copyto!(boundary.TPointsₚ, boundary.TPoints)
                 end
             end
 
@@ -283,13 +292,13 @@
                 copyto!(boundary.TPoints, boundary.TPointsₚ)
                 copyto!(calcHeAges, calcHeAgesₚ)
 
-                # This is saved for ouput, but not critical to the function of the MCMC loop
+                # Not critical to the function of the MCMC loop, but critical for recording stationary distribution!
                 copyto!(TSteps, TStepsₚ)
                 acceptancedist[n] = true
             end
 
             # Record results for analysis and troubleshooting
-            lldist[n] = normpdf_ll(HeAge, σₙ, calcHeAges) # Recalculated to constant baseline
+            lldist[n] = normpdf_ll(HeAge, σ, calcHeAges) # Recalculated to constant baseline
             ndist[n] = nPoints # distribution of # of points
             HeAgedist[:,n] .= calcHeAges # distribution of He ages
 
