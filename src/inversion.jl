@@ -105,12 +105,12 @@
 
         # Prepare a Mineral object for each analysis
         diffusionmodel = (DzEa=T(model.DzEa), DzD0=T(model.DzD0), DN17Ea=T(model.DN17Ea), DN17D0=T(model.DN17D0))
-        zircons = Array{Zircon{T}}(undef, length(halfwidth))
+        zircons = Array{Zircon{T}}(undef, length(halfwidth))::Vector{Zircon{T}}
         for i=1:length(zircons)
             # Iterate through each grain, calculate the modeled age for each
             first_index = 1 + floor(Int64,(tInit - CrystAge[i])/dt)
             zircons[i] = Zircon(halfwidth[i], dr, U[i], Th[i], dt, ageSteps[first_index:end])
-            calcHeAges[i] = HeAgeSpherical(zircons[i], @views(TSteps[first_index:end]), @views(pr[first_index:end,first_index:end]), diffusionmodel)
+            calcHeAges[i] = HeAgeSpherical(zircons[i], @views(TSteps[first_index:end]), @views(pr[first_index:end,first_index:end]), diffusionmodel)::T
         end
 
         # Simulated annealing of uncertainty
@@ -127,9 +127,9 @@
         # Variables to hold proposals
         llₚ = ll
         nPointsₚ = nPoints
-        agePointsₚ = similar(agePoints)
-        TPointsₚ = similar(TPoints)
-        calcHeAgesₚ = similar(calcHeAges)
+        agePointsₚ = similar(agePoints)::DenseVector{T}
+        TPointsₚ = similar(TPoints)::DenseVector{T}
+        calcHeAgesₚ = similar(calcHeAges)::DenseVector{T}
 
         # distributions to populate
         HeAgedist = Array{T}(undef, length(HeAge), nsteps)
@@ -256,7 +256,7 @@
             anneal!(pr, Teq, dt, tSteps, TSteps, ZRDAAM())
             for i=1:length(zircons)
                 first_index = 1 + floor(Int64,(tInit - CrystAge[i])/dt)
-                calcHeAgesₚ[i] = HeAgeSpherical(zircons[i], @views(TSteps[first_index:end]), @views(pr[first_index:end,first_index:end]), diffusionmodel)
+                calcHeAgesₚ[i] = HeAgeSpherical(zircons[i], @views(TSteps[first_index:end]), @views(pr[first_index:end,first_index:end]), diffusionmodel)::T
             end
 
             # Calculate log likelihood of proposal
