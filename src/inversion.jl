@@ -97,9 +97,11 @@
         # Calculate model ages for initial proposal
         ages = collectto!(agePointBuffer, view(agePoints, 1:nPoints), boundary.agePoints, unconf.agePoints)
         temperatures = collectto!(TPointBuffer, view(TPoints, 1:nPoints), boundary.TPoints, unconf.TPoints)
-        TSteps = linterp1s(ages, temperatures, ageSteps)
-        calcHeAges = Array{T}(undef, length(HeAge))
+        TSteps = linterp1s(ages, temperatures, ageSteps)::DenseVector{T}
+        calcHeAges = similar(HeAge)::DenseVector{T}
         pr, Teq = anneal(dt, tSteps, TSteps, ZRDAAM()) # Damage annealing history
+        pr::DenseMatrix{T}
+        Teq::DenseVector{T}
 
         # Prepare a Mineral object for each analysis
         diffusionmodel = (DzEa=T(model.DzEa), DzD0=T(model.DzD0), DN17Ea=T(model.DN17Ea), DN17D0=T(model.DN17D0))
@@ -113,8 +115,8 @@
 
         # Simulated annealing of uncertainty
         simannealmodel = (σModel=T(model.σModel), σAnnealing=T(model.σAnnealing), λAnnealing=T(model.λAnnealing))
-        σₐ = simannealsigma.(1, HeAge_sigma; simannealmodel)
-        σₙ = simannealsigma.(nsteps, HeAge_sigma; simannealmodel)
+        σₐ = simannealsigma.(1, HeAge_sigma; simannealmodel)::DenseVector{T}
+        σₙ = simannealsigma.(nsteps, HeAge_sigma; simannealmodel)::DenseVector{T}
 
         # Log-likelihood for initial proposal
         ll = normpdf_ll(HeAge, σₐ, calcHeAges)
