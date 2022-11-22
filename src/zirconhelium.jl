@@ -106,7 +106,7 @@ Calculate the precdicted U-Th/He age of a zircon that has experienced a given t-
 (specified by `zircon.ageSteps` for time and `TSteps` for temperature, at a time resolution of `zircon.dt`)
 using a Crank-Nicholson diffusion solution for a spherical grain of radius `zircon.r` at spatial resolution `zircon.dr`.
 """
-function HeAgeSpherical(zircon::Zircon{T}, TSteps::AbstractVector{T}, ρᵣ::AbstractMatrix{T}, diffusionmodel) where T <: Number
+function HeAgeSpherical(zircon::Zircon{T}, TSteps::StridedVector{T}, ρᵣ::StridedMatrix{T}, diffusionmodel) where T <: Number
 
     # Diffusion constants
     # DzEa = 165.0 # kJ/mol
@@ -126,7 +126,8 @@ function HeAgeSpherical(zircon::Zircon{T}, TSteps::AbstractVector{T}, ρᵣ::Abs
     R = 0.008314472 #kJ/(K*mol)
 
     # Diffusivities of crystalline and amorphous endmembers
-    Dz, DN17 = zircon.Dz, zircon.DN17
+    Dz = zircon.Dz::StridedVector{T}
+    DN17 = zircon.DN17::StridedVector{T}
     @turbo for i ∈ eachindex(Dz, DN17, TSteps)
         Dzᵢ = DzD0 * exp(-DzEa / R / (TSteps[i] + 273.15)) # cm^2/s
         Dz[i] = Dzᵢ * 10000^2*(1E6*365.25*24*3600) # Convert to micron^2/Myr
@@ -140,18 +141,18 @@ function HeAgeSpherical(zircon::Zircon{T}, TSteps::AbstractVector{T}, ρᵣ::Abs
     nrSteps = zircon.nrSteps
     dt = zircon.dt
     ntSteps = zircon.ntSteps
-    alphaDeposition = zircon.alphaDeposition
-    alphaDamage = zircon.alphaDamage
+    alphaDeposition = zircon.alphaDeposition::StridedMatrix{T}
+    alphaDamage = zircon.alphaDamage::StridedMatrix{T}
 
     # The annealed damage matrix is the summation of the ρᵣ for each
     # previous timestep multiplied by the the alpha dose at each
     # previous timestep; this is a linear combination, which can be
     # calculated efficiently for all radii by simple matrix multiplication.
-    annealedDamage = zircon.annealedDamage
+    annealedDamage = zircon.annealedDamage::StridedMatrix{T}
     mul!(annealedDamage, ρᵣ, alphaDamage)
 
     # Calculate initial alpha damage
-    β = zircon.β
+    β = zircon.β::StridedVector{T}
     @turbo for k = 1:(nrSteps-2)
         fₐ = 1-exp(-Bα*annealedDamage[1,k]*Phi)
         τ = (lint0/(4.2 / ((1-exp(-Bα*annealedDamage[1,k])) * SV) - 2.5))^2
@@ -232,9 +233,9 @@ function HeAgeSpherical(zircon::Zircon{T}, TSteps::AbstractVector{T}, ρᵣ::Abs
     μHe = vmean(vFinal) # Atoms/gram
 
     # Raw Age (i.e., as measured)
-    μ238U = vmean(zircon.r238U::Vector{T}) # Atoms/gram
-    μ235U = vmean(zircon.r235U::Vector{T})
-    μ232Th = vmean(zircon.r232Th::Vector{T})
+    μ238U = vmean(zircon.r238U::StridedVector{T}) # Atoms/gram
+    μ235U = vmean(zircon.r235U::StridedVector{T})
+    μ232Th = vmean(zircon.r232Th::StridedVector{T})
 
     # Numerically solve for helium age of the grain
     HeAge = one(T)
