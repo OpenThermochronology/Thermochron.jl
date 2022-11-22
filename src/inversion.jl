@@ -139,9 +139,11 @@
         ndist = zeros(Int, nsteps)
         acceptancedist = zeros(Bool, nsteps)
 
-        # Standard deviations of Gaussian proposal distributions for temperature and time
-        t_sigma = tInit/60
-        T_sigma = TInit/60
+        # Standard deviations of Gaussian proposal ("jumping") distributions
+        # for temperature and time
+        σⱼt = tInit/60
+        σⱼT = TInit/60
+        k = 1 # Index of chosen t-T point
 
         # Proposal probabilities (must sum to 1)
         move = 0.64
@@ -169,7 +171,7 @@
                 while true
 
                 # Move the age of one model point
-                agePointsₚ[k] += randn() * t_sigma
+                agePointsₚ[k] += randn() * σⱼt
                 if agePointsₚ[k] < (0 + dt)
                     # Don't let any point get too close to 0
                     agePointsₚ[k] = 0 + dt
@@ -179,7 +181,7 @@
                 end
 
                 # Move the Temperature of one model point
-                TPointsₚ[k] += randn() * T_sigma
+                TPointsₚ[k] += randn() * σⱼT
                 if TPointsₚ[k] < 0
                     # Don't allow T<0
                     TPointsₚ[k] = 0
@@ -291,6 +293,12 @@
                 copyto!(unconf.TPoints, unconf.TPointsₚ)
                 copyto!(boundary.TPoints, boundary.TPointsₚ)
                 copyto!(calcHeAges, calcHeAgesₚ)
+
+                # Update jumping distribution based on size of last accepted move
+                if r < move
+                    σⱼt = 3*abs(agePointsₚ[k] - agePoints[k])
+                    σⱼT = 3*abs(TPointsₚ[k] - TPoints[k])
+                end
 
                 # Not critical to the function of the MCMC loop, but critical for recording stationary distribution!
                 copyto!(TSteps, TStepsₚ)
