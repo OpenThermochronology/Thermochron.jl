@@ -90,13 +90,13 @@
 
         # Calculate number of boundary and unconformity points and allocate buffer for interpolating
         extraPoints = length(boundary.agePoints) + length(unconf.agePoints)
-        agePointBuffer = similar(agePoints, maxPoints+extraPoints)
-        TPointBuffer = similar(agePoints, maxPoints+extraPoints)
-        knot_index = similar(ageSteps, Int)
+        agePointBuffer = similar(agePoints, maxPoints+extraPoints)::DenseVector{T}
+        TPointBuffer = similar(agePoints, maxPoints+extraPoints)::DenseVector{T}
+        knot_index = similar(ageSteps, Int)::DenseVector{Int}
 
         # Calculate model ages for initial proposal
-        ages = collectto!(agePointBuffer, view(agePoints, 1:nPoints), boundary.agePoints, unconf.agePoints)
-        temperatures = collectto!(TPointBuffer, view(TPoints, 1:nPoints), boundary.TPoints, unconf.TPoints)
+        ages = collectto!(agePointBuffer, view(agePoints, 1:nPoints), boundary.agePoints, unconf.agePoints)::StridedVector{T}
+        temperatures = collectto!(TPointBuffer, view(TPoints, 1:nPoints), boundary.TPoints, unconf.TPoints)::StridedVector{T}
         TSteps = linterp1s(ages, temperatures, ageSteps)::DenseVector{T}
         calcHeAges = similar(HeAge)::DenseVector{T}
         pr, Teq = anneal(dt, tSteps, TSteps, ZRDAAM()) # Damage annealing history
@@ -188,8 +188,8 @@
                 end
 
                 # Recalculate interpolated proposed t-T path
-                ages = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
-                temperatures = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
+                ages = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)::StridedVector{T}
+                temperatures = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)::StridedVector{T}
                 linterp1s!(TSteps, knot_index, ages, temperatures, ageSteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
@@ -203,8 +203,8 @@
                 TPointsₚ[nPointsₚ] = TNow + rand()*(TInit-TNow)
 
                 # Recalculate interpolated proposed t-T path
-                ages = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
-                temperatures = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
+                ages = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)::StridedVector{T}
+                temperatures = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)::StridedVector{T}
                 linterp1s!(TSteps, knot_index, ages, temperatures, ageSteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
@@ -219,8 +219,8 @@
                 TPointsₚ[k] = TPointsₚ[nPoints]
 
                 # Recalculate interpolated proposed t-T path
-                ages = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
-                temperatures = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
+                ages = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)::StridedVector{T}
+                temperatures = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)::StridedVector{T}
                 linterp1s!(TSteps, knot_index, ages, temperatures, ageSteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
@@ -239,14 +239,18 @@
                 end
 
                 # Recalculate interpolated proposed t-T path
-                ages = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)
-                temperatures = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)
+                ages = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)::StridedVector{T}
+                temperatures = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)::StridedVector{T}
                 linterp1s!(TSteps, knot_index, ages, temperatures, ageSteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
                 (maxdiff(TSteps) < dTmax) && break
                 end
             end
+
+            ages = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)::StridedVector{T}
+            temperatures = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)::StridedVector{T}
+            linterp1s!(TSteps, knot_index, ages, temperatures, ageSteps)
 
              # Calculate model ages for each grain
             anneal!(pr, Teq, dt, tSteps, TSteps, ZRDAAM())
