@@ -260,9 +260,9 @@
                 end
             end
 
-            ages = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)::StridedVector{T}
-            temperatures = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)::StridedVector{T}
-            linterp1s!(TStepsₚ, knot_index, ages, temperatures, ageSteps)
+            # ages = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)::StridedVector{T}
+            # temperatures = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)::StridedVector{T}
+            # linterp1s!(TStepsₚ, knot_index, ages, temperatures, ageSteps)
 
              # Calculate model ages for each grain
             anneal!(pr, Teq, dt, tSteps, TStepsₚ, ZRDAAM())
@@ -296,8 +296,8 @@
 
                 # Update jumping distribution based on size of last accepted move
                 if r < move
-                    σⱼt = 3*abs(agePointsₚ[k] - agePoints[k])
-                    σⱼT = 3*abs(TPointsₚ[k] - TPoints[k])
+                    σⱼt = 3 * abs(agePointsₚ[k] - agePoints[k])
+                    σⱼT = 3 * abs(TPointsₚ[k] - TPoints[k])
                 end
 
                 # Not critical to the function of the MCMC loop, but critical for recording stationary distribution!
