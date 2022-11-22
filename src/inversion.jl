@@ -130,6 +130,7 @@
         agePointsₚ = similar(agePoints)::DenseVector{T}
         TPointsₚ = similar(TPoints)::DenseVector{T}
         calcHeAgesₚ = similar(calcHeAges)::DenseVector{T}
+        TStepsₚ = similar(TSteps)::DenseVector{T}
 
         # distributions to populate
         HeAgedist = Array{T}(undef, length(HeAge), nsteps)
@@ -190,10 +191,10 @@
                 # Recalculate interpolated proposed t-T path
                 ages = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)::StridedVector{T}
                 temperatures = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)::StridedVector{T}
-                linterp1s!(TSteps, knot_index, ages, temperatures, ageSteps)
+                linterp1s!(TStepsₚ, knot_index, ages, temperatures, ageSteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
-                (maxdiff(TSteps) < dTmax) && break
+                (maxdiff(TStepsₚ) < dTmax) && break
                 end
             elseif (r < move+birth) && (nPointsₚ < maxPoints)
                 # Birth: add a new model point
@@ -205,10 +206,10 @@
                 # Recalculate interpolated proposed t-T path
                 ages = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)::StridedVector{T}
                 temperatures = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)::StridedVector{T}
-                linterp1s!(TSteps, knot_index, ages, temperatures, ageSteps)
+                linterp1s!(TStepsₚ, knot_index, ages, temperatures, ageSteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
-                (maxdiff(TSteps) < dTmax) && break
+                (maxdiff(TStepsₚ) < dTmax) && break
                 end
             elseif (r < move+birth+death) && (r >= move+birth) && (nPointsₚ > minPoints)
                 # Death: remove a model point
@@ -221,10 +222,10 @@
                 # Recalculate interpolated proposed t-T path
                 ages = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)::StridedVector{T}
                 temperatures = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)::StridedVector{T}
-                linterp1s!(TSteps, knot_index, ages, temperatures, ageSteps)
+                linterp1s!(TStepsₚ, knot_index, ages, temperatures, ageSteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
-                (maxdiff(TSteps) < dTmax) && break
+                (maxdiff(TStepsₚ) < dTmax) && break
                 end
             else
                 # Move boundary conditions
@@ -241,22 +242,22 @@
                 # Recalculate interpolated proposed t-T path
                 ages = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)::StridedVector{T}
                 temperatures = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)::StridedVector{T}
-                linterp1s!(TSteps, knot_index, ages, temperatures, ageSteps)
+                linterp1s!(TStepsₚ, knot_index, ages, temperatures, ageSteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
-                (maxdiff(TSteps) < dTmax) && break
+                (maxdiff(TStepsₚ) < dTmax) && break
                 end
             end
 
             ages = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)::StridedVector{T}
             temperatures = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)::StridedVector{T}
-            linterp1s!(TSteps, knot_index, ages, temperatures, ageSteps)
+            linterp1s!(TStepsₚ, knot_index, ages, temperatures, ageSteps)
 
              # Calculate model ages for each grain
-            anneal!(pr, Teq, dt, tSteps, TSteps, ZRDAAM())
+            anneal!(pr, Teq, dt, tSteps, TStepsₚ, ZRDAAM())
             for i=1:length(zircons)
                 first_index = 1 + floor(Int64,(tInit - CrystAge[i])/dt)
-                calcHeAgesₚ[i] = HeAgeSpherical(zircons[i], @views(TSteps[first_index:end]), @views(pr[first_index:end,first_index:end]), diffusionmodel)::T
+                calcHeAgesₚ[i] = HeAgeSpherical(zircons[i], @views(TStepsₚ[first_index:end]), @views(pr[first_index:end,first_index:end]), diffusionmodel)::T
             end
 
             # Calculate log likelihood of proposal
@@ -283,6 +284,7 @@
                 copyto!(calcHeAges, calcHeAgesₚ)
 
                 # This is saved for ouput, but not critical to the function of the MCMC loop
+                copyto!(TSteps, TStepsₚ)
                 acceptancedist[n] = true
             end
 
