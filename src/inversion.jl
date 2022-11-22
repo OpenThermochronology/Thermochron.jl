@@ -256,7 +256,7 @@
             anneal!(pr, Teq, dt, tSteps, TSteps, ZRDAAM())
             for i=1:length(zircons)
                 first_index = 1 + floor(Int64,(tInit - CrystAge[i])/dt)
-                calcHeAgesₚ[i] = HeAgeSpherical(zircons[i], @views(TSteps[first_index:end]), @views(pr[first_index:end,first_index:end]), diffusionmodel)::T
+                calcHeAgesₚ[i] = HeAgeSpherical(zircons[i], TSteps[first_index:end], pr[first_index:end,first_index:end], diffusionmodel)::T
             end
 
             # Calculate log likelihood of proposal
