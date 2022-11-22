@@ -305,8 +305,12 @@
 
                 # Update jumping distribution based on size of last accepted move
                 if r < move
-                    σⱼt = 3 * abs(agePointsₚ[k] - agePoints[k])
-                    σⱼT = 3 * abs(TPointsₚ[k] - TPoints[k])
+                    if agePointsₚ[k] != agePoints[k]
+                        σⱼt = 3 * abs(agePointsₚ[k] - agePoints[k])
+                    end
+                    if TPointsₚ[k] != TPoints[k]
+                        σⱼT = 3 * abs(TPointsₚ[k] - TPoints[k])
+                    end
                 end
 
                 # Not critical to the function of the MCMC loop, but critical for recording stationary distribution!
