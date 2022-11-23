@@ -53,6 +53,21 @@
         end
         return δₘ
     end
+    function mindiff(x::AbstractVector)
+        i₀ = firstindex(x)
+        δₘ = x[i₀+1] - x[i₀]
+        if length(x) > 2
+            last = x[i₀+1]
+            @inbounds for i ∈ (i₀+2):(i₀+length(x)-1)
+                δᵢ = x[i] - last
+                if δᵢ < δₘ
+                    δₘ = δᵢ
+                end
+                last = x[i]
+            end
+        end
+        return δₘ
+    end
 
     # Check if point k is distinct from other points in list within ± δ
     function isdistinct(points::DenseArray, npoints::Int, k::Int, δ::Number)
@@ -216,7 +231,7 @@
                 linterp1s!(TStepsₚ, knot_index, ages, temperatures, ageSteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agePointsₚ, nPointsₚ, k, dt) && maxdiff(TStepsₚ) < dTmax
+                if isdistinct(agePointsₚ, nPointsₚ, k, 2dt) && maxdiff(TStepsₚ) < dTmax
                     break
                 end
                 # Copy last accepted solution to re-modify if we don't break
@@ -244,7 +259,7 @@
                 linterp1s!(TStepsₚ, knot_index, ages, temperatures, ageSteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agePointsₚ, nPointsₚ, nPointsₚ, dt) && maxdiff(TStepsₚ) < dTmax
+                if isdistinct(agePointsₚ, nPointsₚ, nPointsₚ, 2dt) && maxdiff(TStepsₚ) < dTmax
                     break
                 end
                 if attempt == nattempts

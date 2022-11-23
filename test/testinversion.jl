@@ -19,3 +19,4 @@ c = rand(2)
 # Test maxdiff
 a = rand(1000)
 @test Thermochron.maxdiff(a) === maximum(diff(a))
+@test Thermochron.mindiff(a) === minimum(diff(a))
