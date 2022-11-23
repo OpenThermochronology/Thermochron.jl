@@ -207,23 +207,27 @@
 
                 # Move the age of one model point
                 agePointsₚ[k] += randn() * σⱼt
-                if agePointsₚ[k] < (0 + dt)
-                    # Reflecting boundary condition at (0 + dt)
-                    agePointsₚ[k] = (0 + dt) - (agePointsₚ[k] - (0 + dt))
-                elseif agePointsₚ[k] > (tInit - dt)
-                    # Reflecting boundary condition at (tInit - dt)
-                    agePointsₚ[k] = (tInit - dt) - (agePointsₚ[k] - (tInit - dt))
-                end
+                # if agePointsₚ[k] < (0 + dt)
+                #     # Reflecting boundary condition at (0 + dt)
+                #     agePointsₚ[k] = (0 + dt) - (agePointsₚ[k] - (0 + dt))
+                # elseif agePointsₚ[k] > (tInit - dt)
+                #     # Reflecting boundary condition at (tInit - dt)
+                #     agePointsₚ[k] = (tInit - dt) - (agePointsₚ[k] - (tInit - dt))
+                # end
 
                 # Move the Temperature of one model point
                 TPointsₚ[k] += randn() * σⱼT
-                if TPointsₚ[k] < TNow
-                    # Reflecting boundary conditions at TNow (0)
-                    TPointsₚ[k] = TNow - (TPointsₚ[k] - TNow)
-                elseif TPointsₚ[k] > TInit
-                    # Reflecting boundary conditions at TInit
-                    TPointsₚ[k] = TInit - (TPointsₚ[k] - TInit)
-                end
+                # if TPointsₚ[k] < TNow
+                #     # Reflecting boundary conditions at TNow (0)
+                #     TPointsₚ[k] = TNow - (TPointsₚ[k] - TNow)
+                # elseif TPointsₚ[k] > TInit
+                #     # Reflecting boundary conditions at TInit
+                #     TPointsₚ[k] = TInit - (TPointsₚ[k] - TInit)
+                # end
+
+                # Fallback to ensure we stay within bounds
+                agePointsₚ[k] = mod(agePointsₚ[k], tInit)
+                TPointsₚ[k] = mod(TPointsₚ[k]-TNow, TInit-TNow) + TNow
 
                 # Recalculate interpolated proposed t-T path
                 ages = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)::StridedVector{T}
@@ -368,15 +372,15 @@
             # (Fast cooling should not be a problem, however)
             if log(rand()) < (llₚ - llₗ)
 
-                # # Update jumping distribution based on size of current accepted move
-                # if r < move
-                #     if agePointsₚ[k] != agePoints[k]
-                #         σⱼt = 3 * abs(agePointsₚ[k] - agePoints[k])
-                #     end
-                #     if TPointsₚ[k] != TPoints[k]
-                #         σⱼT = 3 * abs(TPointsₚ[k] - TPoints[k])
-                #     end
-                # end
+                # Update jumping distribution based on size of current accepted move
+                if r < move
+                    if agePointsₚ[k] != agePoints[k]
+                        σⱼt = 3 * abs(agePointsₚ[k] - agePoints[k])
+                    end
+                    if TPointsₚ[k] != TPoints[k]
+                        σⱼT = 3 * abs(TPointsₚ[k] - TPoints[k])
+                    end
+                end
 
                 # Update the currently accepted proposal
                 ll = llₚ
