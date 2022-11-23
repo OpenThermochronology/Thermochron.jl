@@ -312,6 +312,16 @@
                 end
             end
 
+            if any(isnan, view(agePointsₚ, 1:nPointsₚ)) ||  any(isnan, view(TPointsₚ, 1:nPointsₚ))
+                @warn """`NaN`s detected!
+                ages: $(agePointsₚ[1:nPointsₚ])
+                temperatures: $(TPointsₚ[1:nPointsₚ])
+                σⱼt: $(σⱼt)
+                σⱼT: $(σⱼT)
+                r: $r
+                """
+            end
+
             # ages = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)::StridedVector{T}
             # temperatures = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)::StridedVector{T}
             # linterp1s!(TStepsₚ, knot_index, ages, temperatures, ageSteps)
