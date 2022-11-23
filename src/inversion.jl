@@ -331,16 +331,8 @@
             # if maximum proposed heating rate is greater than 25C per timestep.
             # (Fast cooling should not be a problem, however)
             if log(rand()) < (llₚ - llₗ)
-                ll = llₚ
-                nPoints = nPointsₚ
-                copyto!(agePoints, agePointsₚ)
-                copyto!(TPoints, TPointsₚ)
-                copyto!(unconf.agePoints, unconf.agePointsₚ)
-                copyto!(unconf.TPoints, unconf.TPointsₚ)
-                copyto!(boundary.TPoints, boundary.TPointsₚ)
-                copyto!(calcHeAges, calcHeAgesₚ)
 
-                # Update jumping distribution based on size of last accepted move
+                # Update jumping distribution based on size of current accepted move
                 if r < move
                     if agePointsₚ[k] != agePoints[k]
                         σⱼt = 3 * abs(agePointsₚ[k] - agePoints[k])
@@ -349,6 +341,16 @@
                         σⱼT = 3 * abs(TPointsₚ[k] - TPoints[k])
                     end
                 end
+
+                # Update the currently accepted proposal
+                ll = llₚ
+                nPoints = nPointsₚ
+                copyto!(agePoints, agePointsₚ)
+                copyto!(TPoints, TPointsₚ)
+                copyto!(unconf.agePoints, unconf.agePointsₚ)
+                copyto!(unconf.TPoints, unconf.TPointsₚ)
+                copyto!(boundary.TPoints, boundary.TPointsₚ)
+                copyto!(calcHeAges, calcHeAgesₚ)
 
                 # Not critical to the function of the MCMC loop, but critical for recording stationary distribution!
                 copyto!(TSteps, TStepsₚ)
