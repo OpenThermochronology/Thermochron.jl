@@ -244,8 +244,10 @@
             else
                 # Move boundary conditions
                 for attempt ∈ 1:nattempts
-                # Move the temperatures of the starting and ending boundaries
-                @. boundary.TPointsₚ = boundary.T₀ + rand()*boundary.ΔT
+                # Move the temperatures of the starting or ending boundaries
+                # @. boundary.TPointsₚ = boundary.T₀ + rand()*boundary.ΔT
+                k = rand(1:length(boundary.TPointsₚ))
+                boundary.TPointsₚ[k] = boundary.T₀[k] + rand()*boundary.ΔT[k]
 
                 # If there's an imposed unconformity, adjust within parameters
                 if length(unconf.agePoints) > 0
