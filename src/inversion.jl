@@ -220,15 +220,15 @@
                 if (attempt == nattempts)
                     @info """Warning: `move` proposals failed to satisfy reheating rate limit
                     maxdiff: $(maxdiff(TStepsₚ))
-                    ages: $(agePointsₚ)
-                    temperatures: $(TPointsₚ)
+                    ages: $(agePointsₚ[1:nPointsₚ])
+                    temperatures: $(TPointsₚ[1:nPointsₚ])
                     σⱼt: $(σⱼt)
                     σⱼT: $(σⱼT)"""
                 end
                 end
             elseif (r < move+birth) && (nPointsₚ < maxPoints)
                 # Birth: add a new model point
-                nPointsₚ += 1
+                nPointsₚ = nPoints + 1
                 for attempt ∈ 1:nattempts
                 agePointsₚ[nPointsₚ] = 0 + rand()*(tInit-0)
                 TPointsₚ[nPointsₚ] = TNow + rand()*(TInit-TNow)
@@ -245,13 +245,13 @@
                 if (attempt == nattempts)
                     @info """Warning: new point proposals failed to satisfy reheating rate limit
                     maxdiff: $(maxdiff(TStepsₚ))
-                    ages: $(agePointsₚ)
-                    temperatures: $(TPointsₚ)"""
+                    ages: $(agePointsₚ[1:nPointsₚ])
+                    temperatures: $(TPointsₚ[1:nPointsₚ])"""
                 end
                 end
             elseif (r < move+birth+death) && (r >= move+birth) && (nPointsₚ > minPoints)
                 # Death: remove a model point
-                nPointsₚ -= 1 # Delete last point in array from proposal
+                nPointsₚ = nPoints - 1 # Delete last point in array from proposal
                 for attempt ∈ 1:nattempts
                 k = ceil(Int, rand()*nPoints) # Choose point to delete
                 agePointsₚ[k] = agePointsₚ[nPoints]
@@ -267,8 +267,8 @@
                 if (attempt == nattempts)
                     @info """Warning: point removal proposals failed to satisfy reheating rate limit
                     maxdiff: $(maxdiff(TStepsₚ))
-                    ages: $(agePointsₚ)
-                    temperatures: $(TPointsₚ)"""
+                    ages: $(agePointsₚ[1:nPointsₚ])
+                    temperatures: $(TPointsₚ[1:nPointsₚ])"""
                 end
                 end
             else
@@ -300,8 +300,8 @@
                 if (attempt == nattempts)
                     @info """Warning: `movebounds` proposals failed to satisfy reheating rate limit
                     maxdiff: $(maxdiff(TStepsₚ))
-                    ages: $(agePointsₚ)
-                    temperatures: $(TPointsₚ)"""
+                    ages: $(agePointsₚ[1:nPointsₚ])
+                    temperatures: $(TPointsₚ[1:nPointsₚ])"""
                 end
                 end
             end
