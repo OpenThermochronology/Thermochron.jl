@@ -272,6 +272,7 @@
             # ages = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)::StridedVector{T}
             # temperatures = collectto!(TPointBuffer, view(TPointsₚ, 1:nPointsₚ), boundary.TPointsₚ, unconf.TPointsₚ)::StridedVector{T}
             # linterp1s!(TStepsₚ, knot_index, ages, temperatures, ageSteps)
+            println(boundary.TPointsₚ)
 
              # Calculate model ages for each grain
             anneal!(pr, Teq, dt, tSteps, TStepsₚ, ZRDAAM())
