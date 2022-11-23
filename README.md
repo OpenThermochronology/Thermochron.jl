@@ -19,7 +19,7 @@ Thermochron.jl can be installed in the same ways you would install any other reg
 at the Julia REPL, or alternatively
 ```julia
 using Pkg
-Pkg.add("StaticCompiler")
+Pkg.add("Thermochron")
 ```
 
 ## Usage
