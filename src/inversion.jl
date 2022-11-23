@@ -178,11 +178,11 @@
                 # Move the age of one model point
                 agePointsₚ[k] += randn() * σⱼt
                 if agePointsₚ[k] < (0 + dt)
-                    # Don't let any point get too close to 0
-                    agePointsₚ[k] = 0 + dt
+                    # Reflecting boundary condition at (0 + dt)
+                    agePointsₚ[k] = (0 + dt) - (agePointsₚ[k] - (0 + dt))
                 elseif agePointsₚ[k] > (tInit - dt)
-                    # Don't let any point get too close to tInit
-                    agePointsₚ[k] = tInit - dt
+                    # Reflecting boundary condition at (tInit - dt)
+                    agePointsₚ[k] = (tInit - dt) - (agePointsₚ[k] - (tInit - dt))
                 end
 
                 # Move the Temperature of one model point
