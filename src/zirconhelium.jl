@@ -42,7 +42,7 @@ anneal!(ρᵣ::Matrix, dt::Number, tSteps::Vector, TSteps::Vector, [model::Damag
 In-place version of `anneal`
 """
 anneal!(ρᵣ::DenseMatrix, Teq::DenseVector, dt::Number, tSteps::DenseVector, TSteps::DenseVector) = anneal!(ρᵣ, Teq, dt, tSteps, TSteps, ZRDAAM())
-function anneal!(ρᵣ::DenseMatrix{T}, Teq::DenseVector{T}, dt::Number, tSteps::DenseVector, TSteps::DenseVector, ::ZRDAAM) where T <: Number
+function anneal!(ρᵣ::DenseMatrix{T}, Teq::DenseVector{T}, dt::Number, tSteps::DenseVector, TSteps::DenseVector, ::ZRDAAM) where T <: AbstractFloat
     # Annealing model constants
     B=-0.05721
     C0=6.24534
@@ -106,7 +106,7 @@ Calculate the precdicted U-Th/He age of a zircon that has experienced a given t-
 (specified by `zircon.ageSteps` for time and `TSteps` for temperature, at a time resolution of `zircon.dt`)
 using a Crank-Nicholson diffusion solution for a spherical grain of radius `zircon.r` at spatial resolution `zircon.dr`.
 """
-function HeAgeSpherical(zircon::Zircon{T}, TSteps::StridedVector{T}, ρᵣ::StridedMatrix{T}, diffusionmodel) where T <: Number
+function HeAgeSpherical(zircon::Zircon{T}, TSteps::StridedVector{T}, ρᵣ::StridedMatrix{T}, diffusionmodel) where T <: AbstractFloat
 
     # Diffusion constants
     # DzEa = 165.0 # kJ/mol

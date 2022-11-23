@@ -6,7 +6,7 @@ Calculate the fraction of the surface area of a sphere s2 with radius `r₂`
 that intersects the interior of a sphere s1 of radius `r₁` if the two are
 separated by distance `d`. Assumptions: `r₁`>0, `r₂`>0, `d`>=0
 """
-function intersectionfraction(r₁::T, r₂::T, d::T) where T <: Number
+function intersectionfraction(r₁::T, r₂::T, d::T) where T <: AbstractFloat
     dmax = r₁+r₂
     dmin = abs(r₁-r₂)
     if d > dmax ## If separated by more than dmax, there is no intersection
@@ -43,11 +43,11 @@ stopping sphere of radius `ralpha` with each concentric shell (with shell edges
 `rEdges` and relative volumes `rVolumes`) of a spherical crystal where the
 two are separated by distance `d`
 """
-function intersectiondensity(rEdges::Vector{T}, rVolumes::Vector{T}, ralpha::T, d::T) where T <: Number
+function intersectiondensity(rEdges::Vector{T}, rVolumes::Vector{T}, ralpha::T, d::T) where T <: AbstractFloat
     dInt = Array{T}(undef, length(rEdges) - 1)
     intersectiondensity!(dInt, rEdges, rVolumes, ralpha, d)
 end
-function intersectiondensity!(dInt::Vector{T}, rEdges::Vector{T}, rVolumes::Vector{T}, ralpha::T, d::T) where T <: Number
+function intersectiondensity!(dInt::Vector{T}, rEdges::Vector{T}, rVolumes::Vector{T}, ralpha::T, d::T) where T <: AbstractFloat
     n = length(rEdges) - 1
     fIntLast = intersectionfraction(first(rEdges),ralpha,d)
     @inbounds for i ∈ 1:n

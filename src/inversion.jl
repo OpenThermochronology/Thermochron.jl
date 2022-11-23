@@ -15,7 +15,7 @@
         sigma = sqrt(sigma_analytical^2 + sigma_annealing^2)
 
     """
-    function simannealsigma(n::Number, sigma_analytical::Number; simannealmodel::NamedTuple=(σModel=25.0, σAnnealing=35.0, λAnnealing=10/10^5))
+    function simannealsigma(n::Integer, sigma_analytical::AbstractFloat; simannealmodel::NamedTuple=(σModel=25.0, σAnnealing=35.0, λAnnealing=10/10^5))
         mdl = simannealmodel
         sigma_combined = mdl.σAnnealing * exp(-mdl.λAnnealing*n) + mdl.σModel
         return sqrt(sigma_analytical^2 + sigma_combined^2)
@@ -64,7 +64,7 @@
     TStepdist, HeAgedist, ndist, lldist, acceptancedist = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary)
     ```
     """
-    function MCMC_vartcryst(data::NamedTuple, model::NamedTuple, nPoints::Int, agePoints::DenseVector{T}, TPoints::DenseVector{T}, unconf::NamedTuple, boundary::NamedTuple) where T <: Number
+    function MCMC_vartcryst(data::NamedTuple, model::NamedTuple, nPoints::Int, agePoints::DenseVector{T}, TPoints::DenseVector{T}, unconf::NamedTuple, boundary::NamedTuple) where T <: AbstractFloat
         # Sanitize inputs
         @assert firstindex(agePoints) === 1
         @assert firstindex(TPoints) === 1
