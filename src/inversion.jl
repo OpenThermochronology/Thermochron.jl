@@ -164,7 +164,7 @@
         # Number of times to attempt to satisfy reheating rate: # Should be large
         # enough that proposal probabilities are unchanged, but low enough to prevent
         # infinite loop
-        nattempts = 10_000
+        nattempts = 100_000
 
         progress = Progress(nsteps, dt=1, desc="Running MCMC ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
@@ -215,15 +215,15 @@
                     break
                 end
                 # Copy last accepted solution to re-modify if we don't break
-                copyto!(agePointsₚ, agePoints)
-                copyto!(TPointsₚ, TPoints)
-                (attempt == nattempts) && println("Warning: `move` proposals failed to satisfy reheating rate limit")
+                # copyto!(agePointsₚ, agePoints)
+                # copyto!(TPointsₚ, TPoints)
+                (attempt == nattempts) && @info "Warning: `move` proposals failed to satisfy reheating rate limit"
                 end
             elseif (r < move+birth) && (nPointsₚ < maxPoints)
                 # Birth: add a new model point
                 nPointsₚ += 1
                 for attempt ∈ 1:nattempts
-                agePointsₚ[nPointsₚ] = rand()*tInit
+                agePointsₚ[nPointsₚ] = 0 + rand()*(tInit-0)
                 TPointsₚ[nPointsₚ] = TNow + rand()*(TInit-TNow)
 
                 # Recalculate interpolated proposed t-T path
@@ -235,7 +235,7 @@
                 if isdistinct(agePointsₚ, nPointsₚ, k, dt) && maxdiff(TStepsₚ) < dTmax
                     break
                 end
-                (attempt == nattempts) && println("Warning: new point proposals failed to satisfy reheating rate limit")
+                (attempt == nattempts) && @info "Warning: new point proposals failed to satisfy reheating rate limit"
                 end
             elseif (r < move+birth+death) && (r >= move+birth) && (nPointsₚ > minPoints)
                 # Death: remove a model point
@@ -252,7 +252,7 @@
 
                 # Retry unless we have satisfied the maximum reheating rate
                 (maxdiff(TStepsₚ) < dTmax) && break
-                (attempt == nattempts) && println("Warning: point removal proposals failed to satisfy reheating rate limit")
+                (attempt == nattempts) && @info "Warning: point removal proposals failed to satisfy reheating rate limit"
                 end
             else
                 # Move boundary conditions
@@ -280,7 +280,7 @@
                 copyto!(unconf.agePointsₚ, unconf.agePoints)
                 copyto!(unconf.TPointsₚ, unconf.TPoints)
                 copyto!(boundary.TPointsₚ, boundary.TPoints)
-                (attempt == nattempts) && println("Warning: `movebounds` proposals failed to satisfy reheating rate limit")
+                (attempt == nattempts) && @info "Warning: `movebounds` proposals failed to satisfy reheating rate limit"
                 end
             end
 
