@@ -137,10 +137,10 @@
         # Variables to hold proposals
         llₚ = ll
         nPointsₚ = nPoints
-        agePointsₚ = similar(agePoints)::DenseVector{T}
-        TPointsₚ = similar(TPoints)::DenseVector{T}
-        calcHeAgesₚ = similar(calcHeAges)::DenseVector{T}
-        TStepsₚ = similar(TSteps)::DenseVector{T}
+        agePointsₚ = copy(agePoints)::DenseVector{T}
+        TPointsₚ = copy(TPoints)::DenseVector{T}
+        calcHeAgesₚ = copy(calcHeAges)::DenseVector{T}
+        TStepsₚ = copy(TSteps)::DenseVector{T}
 
         # distributions to populate
         HeAgedist = Array{T}(undef, length(HeAge), nsteps)
@@ -201,7 +201,7 @@
                     # Reflecting boundary conditions at TNow (0)
                     TPointsₚ[k] = TNow - (TPointsₚ[k] - TNow)
                 elseif TPointsₚ[k] > TInit
-                    # Reflecting boundary conditions at TInit (0)
+                    # Reflecting boundary conditions at TInit
                     TPointsₚ[k] = TInit - (TPointsₚ[k] - TInit)
                 end
 
