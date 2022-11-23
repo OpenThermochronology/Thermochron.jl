@@ -348,15 +348,15 @@
             # (Fast cooling should not be a problem, however)
             if log(rand()) < (llₚ - llₗ)
 
-                # Update jumping distribution based on size of current accepted move
-                if r < move
-                    if agePointsₚ[k] != agePoints[k]
-                        σⱼt = 3 * abs(agePointsₚ[k] - agePoints[k])
-                    end
-                    if TPointsₚ[k] != TPoints[k]
-                        σⱼT = 3 * abs(TPointsₚ[k] - TPoints[k])
-                    end
-                end
+                # # Update jumping distribution based on size of current accepted move
+                # if r < move
+                #     if agePointsₚ[k] != agePoints[k]
+                #         σⱼt = 3 * abs(agePointsₚ[k] - agePoints[k])
+                #     end
+                #     if TPointsₚ[k] != TPoints[k]
+                #         σⱼT = 3 * abs(TPointsₚ[k] - TPoints[k])
+                #     end
+                # end
 
                 # Update the currently accepted proposal
                 ll = llₚ
