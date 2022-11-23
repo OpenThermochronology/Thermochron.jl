@@ -51,6 +51,16 @@
         return δₘ
     end
 
+    # Check if point k is distinct from other points in list within ± δ
+    function isdistinct(points::DenseArray, npoints::Int, k::Int, δ::Number)
+        @inbounds for i = 1:npoints
+            if i!=k && abs(points[i] - points[k]) < δ
+                return false
+            end
+        end
+        return true
+    end
+
     """
     ```julia
     MCMC_vartcryst(data::NamedTuple, model::NamedTuple, nPoints::Int, agePoints::Vector, TPoints::Vector, unconf::NamedTuple, boundary::NamedTuple)
@@ -201,8 +211,9 @@
                 linterp1s!(TStepsₚ, knot_index, ages, temperatures, ageSteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
-                (maxdiff(TStepsₚ) < dTmax) && break
-
+                if isdistinct(agePointsₚ, nPointsₚ, k, dt) && maxdiff(TStepsₚ) < dTmax
+                    break
+                end
                 # Copy last accepted solution to re-modify if we don't break
                 copyto!(agePointsₚ, agePoints)
                 copyto!(TPointsₚ, TPoints)
@@ -221,7 +232,9 @@
                 linterp1s!(TStepsₚ, knot_index, ages, temperatures, ageSteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
-                (maxdiff(TStepsₚ) < dTmax) && break
+                if isdistinct(agePointsₚ, nPointsₚ, k, dt) && maxdiff(TStepsₚ) < dTmax
+                    break
+                end
                 (attempt == nattempts) && println("Warning: new point proposals failed to satisfy reheating rate limit")
                 end
             elseif (r < move+birth+death) && (r >= move+birth) && (nPointsₚ > minPoints)
