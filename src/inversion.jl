@@ -163,8 +163,8 @@
 
         # Number of times to attempt to satisfy reheating rate: # Should be large
         # enough that proposal probabilities are unchanged, but low enough to prevent
-        # infinite loop
-        nattempts = 100_000
+        # an infinite loop
+        nattempts = 10_000
 
         progress = Progress(nsteps, dt=1, desc="Running MCMC ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
@@ -217,8 +217,8 @@
                 # Copy last accepted solution to re-modify if we don't break
                 copyto!(agePointsₚ, agePoints)
                 copyto!(TPointsₚ, TPoints)
-                if (attempt == nattempts)
-                    @info """Warning: `move` proposals failed to satisfy reheating rate limit
+                if attempt == nattempts
+                    @warn """`move` proposals failed to satisfy reheating rate limit
                     maxdiff: $(maxdiff(TStepsₚ))
                     ages: $(agePointsₚ[1:nPointsₚ])
                     temperatures: $(TPointsₚ[1:nPointsₚ])
@@ -242,8 +242,8 @@
                 if isdistinct(agePointsₚ, nPointsₚ, nPointsₚ, dt) && maxdiff(TStepsₚ) < dTmax
                     break
                 end
-                if (attempt == nattempts)
-                    @info """Warning: new point proposals failed to satisfy reheating rate limit
+                if attempt == nattempts
+                    @warn """new point proposals failed to satisfy reheating rate limit
                     maxdiff: $(maxdiff(TStepsₚ))
                     ages: $(agePointsₚ[1:nPointsₚ])
                     temperatures: $(TPointsₚ[1:nPointsₚ])
@@ -266,8 +266,8 @@
 
                 # Retry unless we have satisfied the maximum reheating rate
                 (maxdiff(TStepsₚ) < dTmax) && break
-                if (attempt == nattempts)
-                    @info """Warning: point removal proposals failed to satisfy reheating rate limit
+                if attempt == nattempts
+                    @warn """point removal proposals failed to satisfy reheating rate limit
                     maxdiff: $(maxdiff(TStepsₚ))
                     ages: $(agePointsₚ[1:nPointsₚ])
                     temperatures: $(TPointsₚ[1:nPointsₚ])
@@ -301,8 +301,8 @@
                 copyto!(unconf.agePointsₚ, unconf.agePoints)
                 copyto!(unconf.TPointsₚ, unconf.TPoints)
                 copyto!(boundary.TPointsₚ, boundary.TPoints)
-                if (attempt == nattempts)
-                    @info """Warning: `movebounds` proposals failed to satisfy reheating rate limit
+                if attempt == nattempts
+                    @warn """`movebounds` proposals failed to satisfy reheating rate limit
                     maxdiff: $(maxdiff(TStepsₚ))
                     ages: $(agePointsₚ[1:nPointsₚ])
                     temperatures: $(TPointsₚ[1:nPointsₚ])
