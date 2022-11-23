@@ -246,7 +246,9 @@
                     @info """Warning: new point proposals failed to satisfy reheating rate limit
                     maxdiff: $(maxdiff(TStepsₚ))
                     ages: $(agePointsₚ[1:nPointsₚ])
-                    temperatures: $(TPointsₚ[1:nPointsₚ])"""
+                    temperatures: $(TPointsₚ[1:nPointsₚ])
+                    σⱼt: $(σⱼt)
+                    σⱼT: $(σⱼT)"""
                 end
                 end
             elseif (r < move+birth+death) && (r >= move+birth) && (nPointsₚ > minPoints)
@@ -268,7 +270,9 @@
                     @info """Warning: point removal proposals failed to satisfy reheating rate limit
                     maxdiff: $(maxdiff(TStepsₚ))
                     ages: $(agePointsₚ[1:nPointsₚ])
-                    temperatures: $(TPointsₚ[1:nPointsₚ])"""
+                    temperatures: $(TPointsₚ[1:nPointsₚ])
+                    σⱼt: $(σⱼt)
+                    σⱼT: $(σⱼT)"""
                 end
                 end
             else
@@ -301,7 +305,9 @@
                     @info """Warning: `movebounds` proposals failed to satisfy reheating rate limit
                     maxdiff: $(maxdiff(TStepsₚ))
                     ages: $(agePointsₚ[1:nPointsₚ])
-                    temperatures: $(TPointsₚ[1:nPointsₚ])"""
+                    temperatures: $(TPointsₚ[1:nPointsₚ])
+                    σⱼt: $(σⱼt)
+                    σⱼT: $(σⱼT)"""
                 end
                 end
             end
