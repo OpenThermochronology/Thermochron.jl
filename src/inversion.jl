@@ -215,9 +215,14 @@
                     break
                 end
                 # Copy last accepted solution to re-modify if we don't break
-                # copyto!(agePointsₚ, agePoints)
-                # copyto!(TPointsₚ, TPoints)
-                (attempt == nattempts) && @info "Warning: `move` proposals failed to satisfy reheating rate limit"
+                copyto!(agePointsₚ, agePoints)
+                copyto!(TPointsₚ, TPoints)
+                if (attempt == nattempts)
+                    @info """Warning: `move` proposals failed to satisfy reheating rate limit
+                    maxdiff: $(maxdiff(TStepsₚ))
+                    ages: $ages
+                    temperatures: $temperatures"""
+                end
                 end
             elseif (r < move+birth) && (nPointsₚ < maxPoints)
                 # Birth: add a new model point
@@ -235,7 +240,14 @@
                 if isdistinct(agePointsₚ, nPointsₚ, k, dt) && maxdiff(TStepsₚ) < dTmax
                     break
                 end
-                (attempt == nattempts) && @info "Warning: new point proposals failed to satisfy reheating rate limit"
+                if (attempt == nattempts)
+                    @info """Warning: new point proposals failed to satisfy reheating rate limit
+                    maxdiff: $(maxdiff(TStepsₚ))
+                    ages: $ages
+                    temperatures: $temperatures
+                    σⱼt: $(σⱼt)
+                    σⱼT: $(σⱼT)"""
+                end
                 end
             elseif (r < move+birth+death) && (r >= move+birth) && (nPointsₚ > minPoints)
                 # Death: remove a model point
@@ -252,7 +264,12 @@
 
                 # Retry unless we have satisfied the maximum reheating rate
                 (maxdiff(TStepsₚ) < dTmax) && break
-                (attempt == nattempts) && @info "Warning: point removal proposals failed to satisfy reheating rate limit"
+                if (attempt == nattempts)
+                    @info """Warning: point removal proposals failed to satisfy reheating rate limit
+                    maxdiff: $(maxdiff(TStepsₚ))
+                    ages: $ages
+                    temperatures: $temperatures"""
+                end
                 end
             else
                 # Move boundary conditions
@@ -280,7 +297,12 @@
                 copyto!(unconf.agePointsₚ, unconf.agePoints)
                 copyto!(unconf.TPointsₚ, unconf.TPoints)
                 copyto!(boundary.TPointsₚ, boundary.TPoints)
-                (attempt == nattempts) && @info "Warning: `movebounds` proposals failed to satisfy reheating rate limit"
+                if (attempt == nattempts)
+                    @info """Warning: `movebounds` proposals failed to satisfy reheating rate limit
+                    maxdiff: $(maxdiff(TStepsₚ))
+                    ages: $ages
+                    temperatures: $temperatures"""
+                end
                 end
             end
 
