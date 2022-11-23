@@ -1,7 +1,8 @@
 
     """
     ```julia
-    simannealsigma(n, sigma_analytical; [simannealmodel::NamedTuple])
+    simannealsigma(n, σAnalytical; [simannealmodel::NamedTuple])
+    simannealsigma(n::Integer, σAnalytical::Number, σModel::Number, σAnnealing::Number, λAnnealing::Number)
     ```
     To avoid getting stuck in local optima, decrease uncertainty slowly by
     simulated annealing. Parameters are specified as a tuple `simannealmodel` of the
@@ -11,15 +12,17 @@
     Returns the annealing uncertainty added in quadrature with analytical
     uncertainty, or in other words
 
-        sigma_annealing = σᵢ*exp(-λ*n) + σₘ
-        sigma = sqrt(sigma_analytical^2 + sigma_annealing^2)
+        sigma = sqrt(σAnalytical^2 + (σᵢ*exp(-λ*n) + σₘ)^2)
 
     """
-    function simannealsigma(n::Integer, sigma_analytical::AbstractFloat; simannealmodel::NamedTuple=(σModel=25.0, σAnnealing=35.0, λAnnealing=10/10^5))
-        mdl = simannealmodel
-        sigma_combined = mdl.σAnnealing * exp(-mdl.λAnnealing*n) + mdl.σModel
-        return sqrt(sigma_analytical^2 + sigma_combined^2)
+    function simannealsigma(n::Integer, σAnalytical::Number; simannealmodel::NamedTuple=(σModel=25.0, σAnnealing=35.0, λAnnealing=10/10^5))
+        simannealsigma(n, σAnalytical, simannealmodel.σModel, simannealmodel.σAnnealing, simannealmodel.λAnnealing)
     end
+    function simannealsigma(n::Integer, σAnalytical::Number, σModel::Number, σAnnealing::Number, λAnnealing::Number)
+        σCombined = σAnnealing * exp(-λAnnealing*n) + σModel
+        return sqrt(σAnalytical^2 + σCombined^2)
+    end
+
     export simannealsigma
 
     # Utility function for agePoint and TPoint buffers
@@ -97,6 +100,9 @@
         TNow = T(model.TNow)::T
         dt = T(model.dt)::T
         dr = T(model.dr)::T
+        σModel = T(model.σModel)::T
+        σAnnealing = T(model.σAnnealing)::T
+        λAnnealing = T(model.λAnnealing)::T
 
         # Calculate number of boundary and unconformity points and allocate buffer for interpolating
         extraPoints = length(boundary.agePoints) + length(unconf.agePoints)
@@ -124,9 +130,8 @@
         end
 
         # Simulated annealing of uncertainty
-        simannealmodel = (σModel=T(model.σModel), σAnnealing=T(model.σAnnealing), λAnnealing=T(model.λAnnealing))
-        σₐ = simannealsigma.(1, HeAge_sigma; simannealmodel)::DenseVector{T}
-        σ = sqrt.(T(model.σModel)^2 .+ HeAge_sigma.^2)
+        σₐ = simannealsigma.(1, HeAge_sigma, σModel, σAnnealing, λAnnealing)::DenseVector{T}
+        σ = sqrt.(HeAge_sigma.^2 .+ σModel^2)
 
         # Log-likelihood for initial proposal
         ll = normpdf_ll(HeAge, σₐ, calcHeAges)
@@ -334,7 +339,7 @@
             end
 
             # Calculate log likelihood of proposal
-            σₐ .= simannealsigma.(n, HeAge_sigma; simannealmodel)
+            σₐ .= simannealsigma.(n, HeAge_sigma, σModel, σAnnealing, λAnnealing)
             llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ)
             llₗ = normpdf_ll(HeAge, σₐ, calcHeAges) # Recalulate last one too with new σₐ
             if simplified # slightly penalize more complex t-T paths

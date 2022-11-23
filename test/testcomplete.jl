@@ -5,6 +5,9 @@ using StatGeochem
 datapath = joinpath("..", "examples", "minnesota.csv")
 ds = importdataset(datapath, ',', importas=:Tuple);
 
+using LinearAlgebra
+BLAS.get_num_threads() > 2 && BLAS.set_num_threads(2)
+
 ## --- Prepare problem
 
 model = (
