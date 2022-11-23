@@ -225,8 +225,8 @@
                 #     TPointsₚ[k] = TInit - (TPointsₚ[k] - TInit)
                 # end
 
-                # Fallback to ensure we stay within bounds
-                agePointsₚ[k] = mod(agePointsₚ[k], tInit)
+                # Circular boundary conditions
+                agePointsₚ[k] = mod(agePointsₚ[k]-dt, tInit-2dt) + dt
                 TPointsₚ[k] = mod(TPointsₚ[k]-TNow, TInit-TNow) + TNow
 
                 # Recalculate interpolated proposed t-T path
