@@ -220,8 +220,10 @@
                 if (attempt == nattempts)
                     @info """Warning: `move` proposals failed to satisfy reheating rate limit
                     maxdiff: $(maxdiff(TStepsₚ))
-                    ages: $ages
-                    temperatures: $temperatures"""
+                    ages: $(agePointsₚ)
+                    temperatures: $(TPointsₚ)
+                    σⱼt: $(σⱼt)
+                    σⱼT: $(σⱼT)"""
                 end
                 end
             elseif (r < move+birth) && (nPointsₚ < maxPoints)
@@ -243,10 +245,8 @@
                 if (attempt == nattempts)
                     @info """Warning: new point proposals failed to satisfy reheating rate limit
                     maxdiff: $(maxdiff(TStepsₚ))
-                    ages: $ages
-                    temperatures: $temperatures
-                    σⱼt: $(σⱼt)
-                    σⱼT: $(σⱼT)"""
+                    ages: $(agePointsₚ)
+                    temperatures: $(TPointsₚ)"""
                 end
                 end
             elseif (r < move+birth+death) && (r >= move+birth) && (nPointsₚ > minPoints)
@@ -267,8 +267,8 @@
                 if (attempt == nattempts)
                     @info """Warning: point removal proposals failed to satisfy reheating rate limit
                     maxdiff: $(maxdiff(TStepsₚ))
-                    ages: $ages
-                    temperatures: $temperatures"""
+                    ages: $(agePointsₚ)
+                    temperatures: $(TPointsₚ)"""
                 end
                 end
             else
@@ -300,8 +300,8 @@
                 if (attempt == nattempts)
                     @info """Warning: `movebounds` proposals failed to satisfy reheating rate limit
                     maxdiff: $(maxdiff(TStepsₚ))
-                    ages: $ages
-                    temperatures: $temperatures"""
+                    ages: $(agePointsₚ)
+                    temperatures: $(TPointsₚ)"""
                 end
                 end
             end
