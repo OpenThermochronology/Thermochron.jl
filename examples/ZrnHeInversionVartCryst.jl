@@ -25,7 +25,7 @@
 
     using LinearAlgebra
     # Diminishing returns with more than ~3 threads
-    BLAS.get_num_threads() > 3 && BLAS.set_num_threads(3)
+    BLAS.get_num_threads() > 4 && BLAS.set_num_threads(4)
 
     # Make sure we're running in the directory where the script is located
     cd(@__DIR__)
@@ -38,18 +38,18 @@
 
 ## --- Prepare problem
 
-    burnin = 350_000
+    burnin = 1_000_000
     model = (
-        nsteps = 500_000, # How many steps of the Markov chain should we run?
+        nsteps = 1_500_000, # How many steps of the Markov chain should we run?
         burnin = burnin, # How long should we wait for MC to converge (become stationary)
         dr = 1.0,    # Radius step, in microns
         dt = 10.0,   # time step size in Myr
-        dTmax = 15.0, # Maximum reheating/burial per model timestep
+        dTmax = 25.0, # Maximum reheating/burial per model timestep
         TInit = 400.0, # Initial model temperature (in C) (i.e., crystallization temperature)
         ΔTInit = -50.0, # TInit can vary from TInit to TInit+ΔTinit
         TNow = 0.0, # Current surface temperature (in C)
-        ΔTNow = 10.0, # TNow may vary from TNow to TNow+ΔTNow
-        tInitMax = 4000.0, # Ma -- forbid anything older than this
+        ΔTNow = 20.0, # TNow may vary from TNow to TNow+ΔTNow
+        tInitMax = 3500.0, # Ma -- forbid anything older than this
         minPoints = 10,  # Minimum allowed number of t-T points
         maxPoints = 50, # Maximum allowed number of t-T points
         simplified = false, # Prefer simpler tT paths?
@@ -63,7 +63,7 @@
         # Here we add (in quadrature) a blanket model uncertainty of 25 Ma.
         σModel = 25.0, # Ma
         σAnnealing = 35.0, # Initial annealing uncertainty [Ma]
-        λAnnealing = 10 ./ burnin # Annealing decay [1/n]
+        λAnnealing = 10 ./ 300_000 # Annealing decay [1/n]
     )
 
 
@@ -164,9 +164,9 @@
     TPoints = Array{Float64}(undef, model.maxPoints) # Array of fixed size to hold all optional age points
 
     # Fill some intermediate points to give the MCMC something to work with
-    Tr = 250 # Residence temperature
-    nPoints = 5
-    agePoints[1:nPoints] .= (model.tInit/30, model.tInit/4, model.tInit/2, model.tInit-model.tInit/4, model.tInit-model.tInit/30) # Ma
+    Tr = 150 # Residence temperature
+    nPoints = 7
+    agePoints[1:nPoints] .= (model.tInit/60, model.tInit/30, model.tInit/4, model.tInit/2, model.tInit-model.tInit/4, model.tInit-model.tInit/30, model.tInit-model.tInit/60) # Ma
     TPoints[1:nPoints] .= Tr  # Degrees C
 
     # # (Optional) Initialize with something close to the expected path
@@ -226,8 +226,8 @@
 
     # Plot image with colorscale in first subplot
     A = imsc(reverse(tTimage,dims=2), ylcn, 0, nanpctile(tTimage[:],98.5))
-    plot!(k[1], xlabel="Time (Ma)",ylabel="Temperature (°C)",yticks=0:50:400,xticks=0:500:3500,yminorticks=5,xminorticks=5,tick_dir=:out,framestyle=:box)
-    plot!(k[1],xq,cntr(ybinedges),A,yflip=true,xflip=true,legend=false,aspectratio=3500/400/1.5,xlims=(0,3500),ylims=(0,400))
+    plot!(k[1], xlabel="Time (Ma)", ylabel="Temperature (°C)", yticks=0:50:400, xticks=0:500:3500, yminorticks=5, xminorticks=5, tick_dir=:out, framestyle=:box)
+    plot!(k[1], xq, cntr(ybinedges), A, yflip=true, xflip=true, legend=false, aspectratio=model.tInit/model.TInit/1.5, xlims=(0,model.tInit), ylims=(0,400))
 
     # Add colorbar in second subplot
     cb = imsc(repeat(0:100, 1, 10), ylcn, 0, 100)
