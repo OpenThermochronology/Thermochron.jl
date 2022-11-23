@@ -187,12 +187,12 @@
 
                 # Move the Temperature of one model point
                 TPointsₚ[k] += randn() * σⱼT
-                if TPointsₚ[k] < 0
-                    # Don't allow T<0
-                    TPointsₚ[k] = 0
+                if TPointsₚ[k] < TNow
+                    # Reflecting boundary conditions at TNow (0)
+                    TPointsₚ[k] = TNow - (TPointsₚ[k] - TNow)
                 elseif TPointsₚ[k] > TInit
-                    # Don't allow T>TInit
-                    TPointsₚ[k] = TInit
+                    # Reflecting boundary conditions at TInit (0)
+                    TPointsₚ[k] = TInit - (TPointsₚ[k] - TInit)
                 end
 
                 # Recalculate interpolated proposed t-T path
