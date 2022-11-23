@@ -239,7 +239,7 @@
                 linterp1s!(TStepsₚ, knot_index, ages, temperatures, ageSteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agePointsₚ, nPointsₚ, k, dt) && maxdiff(TStepsₚ) < dTmax
+                if isdistinct(agePointsₚ, nPointsₚ, nPointsₚ, dt) && maxdiff(TStepsₚ) < dTmax
                     break
                 end
                 if (attempt == nattempts)
