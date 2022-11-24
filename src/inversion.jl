@@ -497,6 +497,8 @@
         HeAgedist = Array{T}(undef, length(HeAge), nsteps)
         TStepdist = Array{T}(undef, length(tSteps), nsteps)
         lldist = Array{T}(undef, nsteps)
+        σⱼtdist = Array{T}(undef, nsteps)
+        σⱼTdist = Array{T}(undef, nsteps)
         ndist = zeros(Int, nsteps)
         acceptancedist = zeros(Bool, nsteps)
 
@@ -734,7 +736,8 @@
             # Record results for analysis and troubleshooting
             lldist[n] = normpdf_ll(HeAge, σ, calcHeAges) # Recalculated to constant baseline
             ndist[n] = nPoints # distribution of # of points
-            HeAgedist[:,n] .= calcHeAges # distribution of He ages
+            σⱼtdist[n] = σⱼt
+            σⱼTdist[n] = σⱼT
 
             # This is the actual output we want -- the distribution of t-T paths (t path is always identical)
             TStepdist[:,n] .= TSteps # distribution of T paths
@@ -742,5 +745,5 @@
             # Update progress meter every `progress_interval` steps
             (mod(n, progress_interval) == 0) && update!(progress, n)
         end
-        return (TStepdist, HeAgedist, ndist, lldist, acceptancedist)
+        return (TStepdist, HeAgedist, ndist, lldist, acceptancedist, σⱼtdist, σⱼTdist)
     end

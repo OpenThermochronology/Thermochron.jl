@@ -38,9 +38,9 @@
 
 ## --- Prepare problem
 
-    burnin = 100_000
+    burnin = 500_000
     model = (
-        nsteps = 150_000, # How many steps of the Markov chain should we run?
+        nsteps = 1_500_000, # How many steps of the Markov chain should we run?
         burnin = burnin, # How long should we wait for MC to converge (become stationary)
         dr = 1.0,    # Radius step, in microns
         dt = 10.0,   # time step size in Myr
@@ -50,8 +50,8 @@
         TNow = 0.0, # Current surface temperature (in C)
         ΔTNow = 20.0, # TNow may vary from TNow to TNow+ΔTNow
         tInitMax = 3500.0, # Ma -- forbid anything older than this
-        minPoints = 5,  # Minimum allowed number of t-T points
-        maxPoints = 50, # Maximum allowed number of t-T points
+        minPoints = 1,  # Minimum allowed number of t-T points
+        maxPoints = 40, # Maximum allowed number of t-T points
         simplified = false, # Prefer simpler tT paths?
         # Diffusion parameters
         DzEa = 165.0, # kJ/mol
@@ -101,7 +101,7 @@
     detail = (
         agemin = 0, # Youngest end of detail interval
         agemax = 541, # Oldest end of detail interval
-        minpoints = 5, # Minimum number of points in detail interval
+        minpoints = 6, # Minimum number of points in detail interval
     )
 
     # # Uncomment this section if you wish to impose an unconformity at any point in the record
@@ -184,7 +184,7 @@
     # TPoints[1:nPoints]  =  Float64[            Tr+T0, Tr+T0,  T0,  70] # Temp. (C)
 
     # Run Markov Chain
-    @time (TStepdist, HeAgedist, ndist, lldist, acceptancedist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary, detail)
+    @time (TStepdist, HeAgedist, ndist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary, detail)
 
     # # Save results using JLD
     @save string(name, ".jld") TStepdist HeAgedist lldist acceptancedist model
