@@ -37,7 +37,7 @@
         return view(buffer, firstindex(buffer):i₀-1)
     end
 
-    # Utility function for checking maximum reheating rate
+    # Utility functions for checking maximum reheating or cooling rate
     function maxdiff(x::AbstractVector)
         i₀ = firstindex(x)
         δₘ = x[i₀+1] - x[i₀]
@@ -61,6 +61,21 @@
             @inbounds for i ∈ (i₀+2):(i₀+length(x)-1)
                 δᵢ = x[i] - last
                 if δᵢ < δₘ
+                    δₘ = δᵢ
+                end
+                last = x[i]
+            end
+        end
+        return δₘ
+    end
+    function maxabsdiff(x::AbstractVector)
+        i₀ = firstindex(x)
+        δₘ = abs(x[i₀+1] - x[i₀])
+        if length(x) > 2
+            last = x[i₀+1]
+            @inbounds for i ∈ (i₀+2):(i₀+length(x)-1)
+                δᵢ = abs(x[i] - last)
+                if δᵢ > δₘ
                     δₘ = δᵢ
                 end
                 last = x[i]

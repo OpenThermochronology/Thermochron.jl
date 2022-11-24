@@ -17,6 +17,9 @@ c = rand(2)
 @test Thermochron.collectto!(buffer, a, b, c) == vcat(a,b,c)
 
 # Test maxdiff
-a = rand(1000)
-@test Thermochron.maxdiff(a) === maximum(diff(a))
-@test Thermochron.mindiff(a) === minimum(diff(a))
+for i=1:10
+    a = rand(100)
+    @test Thermochron.maxdiff(a) === maximum(diff(a))
+    @test Thermochron.mindiff(a) === minimum(diff(a))
+    @test Thermochron.maxabsdiff(a) === maximum(abs.(diff(a)))
+end
