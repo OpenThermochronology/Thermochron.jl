@@ -108,7 +108,7 @@ abserr = abs(sum(nanmean(HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/le
 @test isa(ndist, AbstractVector{Int})
 @test minimum(ndist) >= 0
 @test maximum(ndist) <= model.maxPoints
-@info "Mean npoints: $(mean(ndist))"
+@info "Mean npoints: $(mean(ndist[model.burnin:end]))"
 
 @test isa(lldist, AbstractVector)
 llmean = mean(@view(lldist[model.burnin:end]))
@@ -117,7 +117,7 @@ llmean = mean(@view(lldist[model.burnin:end]))
 
 @test isa(acceptancedist, AbstractVector{Bool})
 @test isapprox(mean(acceptancedist), 0.5, atol=0.3)
-@info "Mean acceptance: $(mean(acceptancedist))"
+@info "Mean acceptance rate: $(mean(acceptancedist[model.burnin:end]))"
 
 ## ---
 detail = (
@@ -139,7 +139,7 @@ abserr = abs(sum(nanmean(HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/le
 @test isa(ndist, AbstractVector{Int})
 @test minimum(ndist) >= 0
 @test maximum(ndist) <= model.maxPoints
-@info "Mean npoints: $(mean(ndist))"
+@info "Mean npoints: $(mean(ndist[model.burnin:end]))"
 
 @test isa(lldist, AbstractVector)
 llmean = mean(@view(lldist[model.burnin:end]))
@@ -148,6 +148,6 @@ llmean = mean(@view(lldist[model.burnin:end]))
 
 @test isa(acceptancedist, AbstractVector{Bool})
 @test isapprox(mean(acceptancedist), 0.5, atol=0.3)
-@info "Mean acceptance rate: $(mean(acceptancedist))"
-@info "Mean σⱼₜ: $(mean(σⱼtdist))"
-@info "Mean σⱼT: $(mean(σⱼTdist))"
+@info "Mean acceptance rate: $(mean(acceptancedist[model.burnin:end]))"
+@info "Mean σⱼₜ: $(mean(σⱼtdist[model.burnin:end]))"
+@info "Mean σⱼT: $(mean(σⱼTdist[model.burnin:end]))"
