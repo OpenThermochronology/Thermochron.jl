@@ -330,7 +330,7 @@
                 for attempt ∈ 1:nattempts
                 # Move the temperatures of the starting or ending boundaries
                 # @. boundary.TPointsₚ = boundary.T₀ + rand()*boundary.ΔT
-                k = rand(1:length(boundary.TPointsₚ))
+                k = rand(1:boundary.npoints)
                 boundary.TPointsₚ[k] = boundary.T₀[k] + rand()*boundary.ΔT[k]
 
                 # If there's an imposed unconformity, adjust within parameters
@@ -657,7 +657,7 @@
                 for attempt ∈ 1:nattempts
                 # Move the temperatures of the starting or ending boundaries
                 # @. boundary.TPointsₚ = boundary.T₀ + rand()*boundary.ΔT
-                k = rand(1:length(boundary.TPointsₚ))
+                k = rand(1:boundary.npoints)
                 boundary.TPointsₚ[k] = boundary.T₀[k] + rand()*boundary.ΔT[k]
 
                 # If there's an imposed unconformity, adjust within parameters

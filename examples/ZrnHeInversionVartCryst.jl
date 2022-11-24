@@ -52,6 +52,7 @@
         minPoints = 10,  # Minimum allowed number of t-T points
         maxPoints = 50, # Maximum allowed number of t-T points
         simplified = false, # Prefer simpler tT paths?
+        dynamicjumping = false, # Update the t and T jumping (proposal) distributions based on previously accepted jumps
         # Diffusion parameters
         DzEa = 165.0, # kJ/mol
         DzD0 = 193188.0, # cm^2/sec
@@ -78,12 +79,15 @@
 
     # Sort out crystallization ages and start time
     map!(x->max(x, model.tInitMax), data.CrystAge, data.CrystAge)
+    tInit = ceil(maximum(data.CrystAge)/model.dt) * model.dt
     model = (model...,
-        tInit = ceil(maximum(data.CrystAge)/model.dt) * model.dt,
-    )
+        tInit = tInit,
+        ageSteps = Array{Float64}(tInit-model.dt/2 : -model.dt : 0+model.dt/2),
+        tSteps = Array{Float64}(0+model.dt/2 : model.dt : tInit-model.dt/2),
+    );
 
     # Boundary conditions (e.g. 10C at present and 650 C at the time of zircon formation).
-    boundary = (
+    boundary = Boundary(
         agePoints = Float64[model.TNow, model.tInit],  # Ma
         TPoints = Float64[model.TNow, model.TInit],    # Degrees C
         T₀ = Float64[model.TNow, model.TInit],
@@ -91,21 +95,11 @@
     )
 
     # Default: No unconformity is imposed
-    unconf = (
-        agePoints = Float64[],  # Ma
-        TPoints = Float64[],    # Degrees C
-    )
-
-    # A time interval in which the model should look for more complexity
-    detail = (
-        agemin = 0, # Youngest end of detail interval
-        agemax = 541, # Oldest end of detail interval
-        minpoints = 7, # Minimum number of points in detail interval
-    )
+    unconf = Unconformity()
 
     # # Uncomment this section if you wish to impose an unconformity at any point in the record
     # # Uniform distributions from Age₀ to Age₀+ΔAge, T₀ to T₀+ΔT,
-    # unconf = (
+    # unconf = Unconformity(
     #     agePoints = Float64[550.0,],  # Ma
     #     TPoints = Float64[20.0,],     # Degrees C
     #     Age₀ = Float64[500,],
@@ -114,19 +108,11 @@
     #     ΔT = Float64[40,],
     # )
 
-    # Add additional vectors for proposed unconformity and boundary points
-    unconf = (unconf...,
-        agePointsₚ = similar(unconf.agePoints),
-        TPointsₚ = similar(unconf.TPoints),
+    detail = DetailInterval(
+        agemin = 0, # Youngest end of detail interval
+        agemax = 541, # Oldest end of detail interval
+        minpoints = 5, # Minimum number of points in detail interval
     )
-    boundary = (boundary...,
-        agePointsₚ = similar(boundary.agePoints),
-        TPointsₚ = similar(boundary.TPoints),
-    )
-    model = (model...,
-        ageSteps = Array{Float64}(model.tInit-model.dt/2 : -model.dt : 0+model.dt/2),
-        tSteps = Array{Float64}(0+model.dt/2 : model.dt : model.tInit-model.dt/2),
-    );
 
 ## --- Test proscribed t-T paths with Neoproterozoic exhumation step
 
@@ -138,7 +124,7 @@
     # TSteps = linterp1s(agePoints,TPoints,model.ageSteps)
     #
     # # Plot t-T path
-    # plot(model.ageSteps,TSteps,xflip=true)
+    # plot(model.ageSteps,TSteps,xflip=true,framestyle=:box)
     #
     # # Calculate model ages
     # calcHeAges = Array{Float64}(undef, size(data.HeAge))
@@ -153,7 +139,7 @@
     #
     # # Plot Comparison of results
     # eU = data.U+.238*data.Th # Used only for plotting
-    # p2 = plot(eU, calcHeAges, seriestype=:scatter,label="Model")
+    # p2 = plot(eU, calcHeAges, seriestype=:scatter, label="Model", framestyle=:box)
     # plot!(p2, eU, data.HeAge, yerror=data.HeAge_sigma*2, seriestype=:scatter, label="Data")
     # xlabel!(p2,"eU"); ylabel!(p2,"Age (Ma)")
     # display(p2)
@@ -183,7 +169,7 @@
     # TPoints[1:nPoints]  =  Float64[            Tr+T0, Tr+T0,  T0,  70] # Temp. (C)
 
     # Run Markov Chain
-    @time (TStepdist, HeAgedist, ndist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary, detail)
+    @time (TStepdist, HeAgedist, ndist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints,  boundary, unconf, detail)
     @info """$(size(TStepdist)) TStepdist collected.
     Mean log-likelihood: $(mean(lldist[model.burnin:end]))
     Mean acceptance rate: $(mean(acceptancedist[model.burnin:end]))
@@ -198,7 +184,7 @@
     # @load "filename.jld"
 
     # Plot log likelihood distribution
-    h = plot(lldist, xlabel="Step number", ylabel="Log likelihood", label="")
+    h = plot(lldist, xlabel="Step number", ylabel="Log likelihood", label="", framestyle=:box)
     savefig(h, name*"_lldist.pdf")
     display(h)
 
