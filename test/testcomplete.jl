@@ -105,11 +105,6 @@ abserr = abs(sum(nanmean(HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/le
 @test 1 < abserr < 50
 @info "Mean absolute error: $abserr"
 
-@test isa(ndist, AbstractVector{Int})
-@test minimum(ndist) >= 0
-@test maximum(ndist) <= model.maxPoints
-@info "Mean npoints: $(mean(ndist[model.burnin:end]))"
-
 @test isa(lldist, AbstractVector)
 llmean = mean(@view(lldist[model.burnin:end]))
 @test -100 < llmean < 0
@@ -119,13 +114,18 @@ llmean = mean(@view(lldist[model.burnin:end]))
 @test isapprox(mean(acceptancedist), 0.5, atol=0.3)
 @info "Mean acceptance rate: $(mean(acceptancedist[model.burnin:end]))"
 
+@test isa(ndist, AbstractVector{Int})
+@test minimum(ndist) >= 0
+@test maximum(ndist) <= model.maxPoints
+@info "Mean npoints: $(mean(ndist[model.burnin:end]))"
+
 ## ---
 detail = (
     agemin = 0, # Youngest end of detail interval
     agemax = 541, # Oldest end of detail interval
     minpoints = 5, # Minimum number of points in detail interval
 )
-@time "Running MCMC_vartcryst with Detail interval" (TStepdist, HeAgedist, ndist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary, detail)
+@time "MCMC_vartcryst with Detail interval" (TStepdist, HeAgedist, ndist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary, detail)
 
 @test isa(TStepdist, AbstractMatrix)
 @test maximum(TStepdist) <= model.TInit
@@ -136,10 +136,37 @@ abserr = abs(sum(nanmean(HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/le
 @test 1 < abserr < 50
 @info "Mean absolute error: $abserr"
 
+@test isa(lldist, AbstractVector)
+llmean = mean(@view(lldist[model.burnin:end]))
+@test -100 < llmean < 0
+@info "Mean ll: $llmean"
+
+@test isa(acceptancedist, AbstractVector{Bool})
+@test isapprox(mean(acceptancedist), 0.5, atol=0.3)
+@info "Mean acceptance rate: $(mean(acceptancedist[model.burnin:end]))"
+
 @test isa(ndist, AbstractVector{Int})
 @test minimum(ndist) >= 0
 @test maximum(ndist) <= model.maxPoints
 @info "Mean npoints: $(mean(ndist[model.burnin:end]))"
+
+@info "Mean σⱼₜ: $(mean(σⱼtdist[model.burnin:end]))"
+@info "Mean σⱼT: $(mean(σⱼTdist[model.burnin:end]))"
+
+## ---
+model = (model...,
+    dynamicjumping=true
+)
+@time "MCMC_vartcryst with Detail interval & dynamicjumping" (TStepdist, HeAgedist, ndist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary, detail)
+
+@test isa(TStepdist, AbstractMatrix)
+@test maximum(TStepdist) <= model.TInit
+@test minimum(TStepdist) >= model.TNow
+
+@test isa(HeAgedist, AbstractMatrix)
+abserr = abs(sum(nanmean(HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
+@test 1 < abserr < 50
+@info "Mean absolute error: $abserr"
 
 @test isa(lldist, AbstractVector)
 llmean = mean(@view(lldist[model.burnin:end]))
@@ -149,5 +176,11 @@ llmean = mean(@view(lldist[model.burnin:end]))
 @test isa(acceptancedist, AbstractVector{Bool})
 @test isapprox(mean(acceptancedist), 0.5, atol=0.3)
 @info "Mean acceptance rate: $(mean(acceptancedist[model.burnin:end]))"
+
+@test isa(ndist, AbstractVector{Int})
+@test minimum(ndist) >= 0
+@test maximum(ndist) <= model.maxPoints
+@info "Mean npoints: $(mean(ndist[model.burnin:end]))"
+
 @info "Mean σⱼₜ: $(mean(σⱼtdist[model.burnin:end]))"
 @info "Mean σⱼT: $(mean(σⱼTdist[model.burnin:end]))"
