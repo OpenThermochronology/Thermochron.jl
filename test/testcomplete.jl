@@ -15,7 +15,7 @@ model = (
     burnin = 300, # How long should we wait for MC to converge (become stationary)
     dr = 1.0,    # Radius step, in microns
     dt = 10.0,   # time step size in Myr
-    dTmax = 10.0, # Maximum reheating/burial per model timestep
+    dTmax = 25.0, # Maximum reheating/burial per model timestep
     TInit = 400.0, # Initial model temperature (in C) (i.e., crystallization temperature)
     ΔTInit = -50.0, # TInit can vary from TInit to TInit+ΔTinit
     TNow = 0.0, # Current surface temperature (in C)
@@ -101,38 +101,53 @@ TPoints[1:nPoints] .= Tr  # Degrees C
 @test minimum(TStepdist) >= model.TNow
 
 @test isa(HeAgedist, AbstractMatrix)
-@test abs(sum(nanmean(HeAgedist, dims=2) - data.HeAge)/length(data.HeAge)) < 300
+abserr = abs(sum(nanmean(HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
+@test 1 < abserr < 50
+@info "Mean absolute error: $abserr"
 
 @test isa(ndist, AbstractVector{Int})
 @test minimum(ndist) >= 0
 @test maximum(ndist) <= model.maxPoints
+@info "Mean npoints: $(mean(ndist))"
 
 @test isa(lldist, AbstractVector)
-@test -100 < mean(@view(lldist[model.burnin:end])) < 0
+llmean = mean(@view(lldist[model.burnin:end]))
+@test -100 < llmean < 0
+@info "Mean ll: $llmean"
 
 @test isa(acceptancedist, AbstractVector{Bool})
-@test isapprox(mean(acceptancedist), 0.5, atol=0.35)
+@test isapprox(mean(acceptancedist), 0.5, atol=0.3)
+@info "Mean acceptance: $(mean(acceptancedist))"
 
+## ---
 detail = (
     agemin = 0, # Youngest end of detail interval
     agemax = 541, # Oldest end of detail interval
-    minpoints = 6, # Minimum number of points in detail interval
+    minpoints = 5, # Minimum number of points in detail interval
 )
-@time "Running MCMC_vartcryst with Detail interval" (TStepdist, HeAgedist, ndist, lldist, acceptancedist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary, detail)
+@time "Running MCMC_vartcryst with Detail interval" (TStepdist, HeAgedist, ndist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary, detail)
 
 @test isa(TStepdist, AbstractMatrix)
 @test maximum(TStepdist) <= model.TInit
 @test minimum(TStepdist) >= model.TNow
 
 @test isa(HeAgedist, AbstractMatrix)
-@test abs(sum(nanmean(HeAgedist, dims=2) - data.HeAge)/length(data.HeAge)) < 300
+abserr = abs(sum(nanmean(HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
+@test 1 < abserr < 50
+@info "Mean absolute error: $abserr"
 
 @test isa(ndist, AbstractVector{Int})
 @test minimum(ndist) >= 0
 @test maximum(ndist) <= model.maxPoints
+@info "Mean npoints: $(mean(ndist))"
 
 @test isa(lldist, AbstractVector)
-@test -100 < mean(@view(lldist[model.burnin:end])) < 0
+llmean = mean(@view(lldist[model.burnin:end]))
+@test -100 < llmean < 0
+@info "Mean ll: $llmean"
 
 @test isa(acceptancedist, AbstractVector{Bool})
-@test isapprox(mean(acceptancedist), 0.5, atol=0.35)
+@test isapprox(mean(acceptancedist), 0.5, atol=0.3)
+@info "Mean acceptance rate: $(mean(acceptancedist))"
+@info "Mean σⱼₜ: $(mean(σⱼtdist))"
+@info "Mean σⱼT: $(mean(σⱼTdist))"

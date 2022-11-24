@@ -188,9 +188,9 @@
         TStepsₚ = copy(TSteps)::DenseVector{T}
 
         # distributions to populate
-        HeAgedist = Array{T}(undef, length(HeAge), nsteps)
-        TStepdist = Array{T}(undef, length(tSteps), nsteps)
-        lldist = Array{T}(undef, nsteps)
+        HeAgedist = zeros(T, length(HeAge), nsteps)
+        TStepdist = zeros(T, length(tSteps), nsteps)
+        lldist = zeros(T, nsteps)
         ndist = zeros(Int, nsteps)
         acceptancedist = zeros(Bool, nsteps)
 
@@ -251,8 +251,8 @@
                 # end
 
                 # Circular boundary conditions
-                agePointsₚ[k] = mod(agePointsₚ[k]-dt, tInit-2dt) + dt
-                TPointsₚ[k] = mod(TPointsₚ[k]-TNow, TInit-TNow) + TNow
+                agePointsₚ[k] = min(max(mod(agePointsₚ[k]-dt, tInit-2dt) + dt, dt), tInit-dt)
+                TPointsₚ[k] = min(max(mod(TPointsₚ[k]-TNow, TInit-TNow) + TNow, TNow), TInit-TNow)
 
                 # Recalculate interpolated proposed t-T path
                 ages = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)::StridedVector{T}
@@ -260,7 +260,7 @@
                 linterp1s!(TStepsₚ, knot_index, ages, temperatures, ageSteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agePointsₚ, nPointsₚ, k, 2dt) && maxdiff(TStepsₚ) < dTmax
+                if isdistinct(agePointsₚ, nPointsₚ, k, dt) && maxdiff(TStepsₚ) < dTmax
                     break
                 end
                 # Copy last accepted solution to re-modify if we don't break
@@ -288,7 +288,7 @@
                 linterp1s!(TStepsₚ, knot_index, ages, temperatures, ageSteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agePointsₚ, nPointsₚ, nPointsₚ, 2dt) && maxdiff(TStepsₚ) < dTmax
+                if isdistinct(agePointsₚ, nPointsₚ, nPointsₚ, dt) && maxdiff(TStepsₚ) < dTmax
                     break
                 end
                 if attempt == nattempts
@@ -397,15 +397,15 @@
             # (Fast cooling should not be a problem, however)
             if log(rand()) < (llₚ - llₗ)
 
-                # Update jumping distribution based on size of current accepted move
-                if r < move
-                    if agePointsₚ[k] != agePoints[k]
-                        σⱼt = 3 * abs(agePointsₚ[k] - agePoints[k])
-                    end
-                    if TPointsₚ[k] != TPoints[k]
-                        σⱼT = 3 * abs(TPointsₚ[k] - TPoints[k])
-                    end
-                end
+                # # Update jumping distribution based on size of current accepted move
+                # if r < move
+                #     if agePointsₚ[k] != agePoints[k]
+                #         σⱼt = 3 * abs(agePointsₚ[k] - agePoints[k])
+                #     end
+                #     if TPointsₚ[k] != TPoints[k]
+                #         σⱼT = 3 * abs(TPointsₚ[k] - TPoints[k])
+                #     end
+                # end
 
                 # Update the currently accepted proposal
                 ll = llₚ
@@ -509,11 +509,11 @@
         TStepsₚ = copy(TSteps)::DenseVector{T}
 
         # distributions to populate
-        HeAgedist = Array{T}(undef, length(HeAge), nsteps)
-        TStepdist = Array{T}(undef, length(tSteps), nsteps)
-        lldist = Array{T}(undef, nsteps)
-        σⱼtdist = Array{T}(undef, nsteps)
-        σⱼTdist = Array{T}(undef, nsteps)
+        HeAgedist = zeros(T, length(HeAge), nsteps)
+        TStepdist = zeros(T, length(tSteps), nsteps)
+        lldist = zeros(T, nsteps)
+        σⱼtdist = zeros(T, nsteps)
+        σⱼTdist = zeros(T, nsteps)
         ndist = zeros(Int, nsteps)
         acceptancedist = zeros(Bool, nsteps)
 
@@ -575,8 +575,10 @@
                 # end
 
                 # Circular boundary conditions
-                agePointsₚ[k] = mod(agePointsₚ[k]-dt, tInit-2dt) + dt
-                TPointsₚ[k] = mod(TPointsₚ[k]-TNow, TInit-TNow) + TNow
+                # agePointsₚ[k] = mod(agePointsₚ[k]-dt, tInit-2dt) + dt
+                # TPointsₚ[k] = mod(TPointsₚ[k]-TNow, TInit-TNow) + TNow
+                agePointsₚ[k] = min(max(mod(agePointsₚ[k]-dt, tInit-2dt) + dt, dt), tInit-dt)
+                TPointsₚ[k] = min(max(mod(TPointsₚ[k]-TNow, TInit-TNow) + TNow, TNow), TInit-TNow)
 
                 # Recalculate interpolated proposed t-T path
                 ages = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)::StridedVector{T}
@@ -584,7 +586,7 @@
                 linterp1s!(TStepsₚ, knot_index, ages, temperatures, ageSteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agePointsₚ, nPointsₚ, k, 2dt) && maxdiff(TStepsₚ) < dTmax
+                if isdistinct(agePointsₚ, nPointsₚ, k, dt) && maxdiff(TStepsₚ) < dTmax
                     if pointsininterval(agePointsₚ, nPointsₚ, detail.agemin, detail.agemax) >= enoughpoints
                         break
                     end
@@ -614,7 +616,7 @@
                 linterp1s!(TStepsₚ, knot_index, ages, temperatures, ageSteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agePointsₚ, nPointsₚ, nPointsₚ, 2dt) && maxdiff(TStepsₚ) < dTmax
+                if isdistinct(agePointsₚ, nPointsₚ, nPointsₚ, dt) && maxdiff(TStepsₚ) < dTmax
                     break
                 end
                 if attempt == nattempts
@@ -753,6 +755,7 @@
             ndist[n] = nPoints # distribution of # of points
             σⱼtdist[n] = σⱼt
             σⱼTdist[n] = σⱼT
+            HeAgedist[:,n] .= calcHeAges # distribution of He ages
 
             # This is the actual output we want -- the distribution of t-T paths (t path is always identical)
             TStepdist[:,n] .= TSteps # distribution of T paths
