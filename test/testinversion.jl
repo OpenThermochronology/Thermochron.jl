@@ -18,7 +18,7 @@ c = rand(2)
 
 # Test maxdiff
 for i=1:10
-    a = rand(100)
+    local a = rand(100)
     @test Thermochron.maxdiff(a) === maximum(diff(a))
     @test Thermochron.mindiff(a) === minimum(diff(a))
     @test Thermochron.maxabsdiff(a) === maximum(abs.(diff(a)))

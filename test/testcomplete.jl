@@ -111,4 +111,28 @@ TPoints[1:nPoints] .= Tr  # Degrees C
 @test -100 < mean(@view(lldist[model.burnin:end])) < 0
 
 @test isa(acceptancedist, AbstractVector{Bool})
-@test isapprox(mean(acceptancedist), 0.58, atol=0.3)
+@test isapprox(mean(acceptancedist), 0.5, atol=0.35)
+
+detail = (
+    agemin = 0, # Youngest end of detail interval
+    agemax = 541, # Oldest end of detail interval
+    minpoints = 6, # Minimum number of points in detail interval
+)
+@time "Running MCMC_vartcryst with Detail interval" (TStepdist, HeAgedist, ndist, lldist, acceptancedist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary, detail)
+
+@test isa(TStepdist, AbstractMatrix)
+@test maximum(TStepdist) <= model.TInit
+@test minimum(TStepdist) >= model.TNow
+
+@test isa(HeAgedist, AbstractMatrix)
+@test abs(sum(nanmean(HeAgedist, dims=2) - data.HeAge)/length(data.HeAge)) < 300
+
+@test isa(ndist, AbstractVector{Int})
+@test minimum(ndist) >= 0
+@test maximum(ndist) <= model.maxPoints
+
+@test isa(lldist, AbstractVector)
+@test -100 < mean(@view(lldist[model.burnin:end])) < 0
+
+@test isa(acceptancedist, AbstractVector{Bool})
+@test isapprox(mean(acceptancedist), 0.5, atol=0.35)

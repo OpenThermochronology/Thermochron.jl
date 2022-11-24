@@ -97,7 +97,7 @@
     function pointsininterval(points::DenseArray, npoints::Int, min::Number, max::Number)
         n = 0
         @inbounds for i = 1:npoints
-            if  min < points[n] < max
+            if  min < points[i] < max
                 n += 1
             end
         end
