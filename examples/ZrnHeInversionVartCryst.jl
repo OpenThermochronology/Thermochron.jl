@@ -38,19 +38,19 @@
 
 ## --- Prepare problem
 
-    burnin = 1_000_000
+    burnin = 100_000
     model = (
-        nsteps = 1_500_000, # How many steps of the Markov chain should we run?
+        nsteps = 150_000, # How many steps of the Markov chain should we run?
         burnin = burnin, # How long should we wait for MC to converge (become stationary)
         dr = 1.0,    # Radius step, in microns
         dt = 10.0,   # time step size in Myr
-        dTmax = 25.0, # Maximum reheating/burial per model timestep
+        dTmax = 25.0, # Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
         TInit = 400.0, # Initial model temperature (in C) (i.e., crystallization temperature)
         ΔTInit = -50.0, # TInit can vary from TInit to TInit+ΔTinit
         TNow = 0.0, # Current surface temperature (in C)
         ΔTNow = 20.0, # TNow may vary from TNow to TNow+ΔTNow
         tInitMax = 3500.0, # Ma -- forbid anything older than this
-        minPoints = 10,  # Minimum allowed number of t-T points
+        minPoints = 5,  # Minimum allowed number of t-T points
         maxPoints = 50, # Maximum allowed number of t-T points
         simplified = false, # Prefer simpler tT paths?
         # Diffusion parameters
@@ -97,15 +97,22 @@
         TPoints = Float64[],    # Degrees C
     )
 
+    # A time interval in which the model should look for more complexity
+    detail = (
+        agemin = 0, # Youngest end of detail interval
+        agemax = 541, # Oldest end of detail interval
+        minpoints = 5, # Minimum number of points in detail interval
+    )
+
     # # Uncomment this section if you wish to impose an unconformity at any point in the record
     # # Uniform distributions from Age₀ to Age₀+ΔAge, T₀ to T₀+ΔT,
-    # unconf = (;
-    #     agePoints = Float64[560.0,],  # Ma
+    # unconf = (
+    #     agePoints = Float64[550.0,],  # Ma
     #     TPoints = Float64[20.0,],     # Degrees C
     #     Age₀ = Float64[500,],
     #     ΔAge = Float64[80,],
     #     T₀ = Float64[0,],
-    #     ΔT = Float64[50,],
+    #     ΔT = Float64[40,],
     # )
 
     # Add additional vectors for proposed unconformity and boundary points
@@ -160,8 +167,8 @@
 ## --- Invert for maximum likelihood t-T path
 
     # This is where the "transdimensional" part comes in
-    agePoints = Array{Float64}(undef, model.maxPoints) # Array of fixed size to hold all optional age points
-    TPoints = Array{Float64}(undef, model.maxPoints) # Array of fixed size to hold all optional age points
+    agePoints = zeros(Float64, model.maxPoints) # Array of fixed size to hold all optional age points
+    TPoints = zeros(Float64, model.maxPoints) # Array of fixed size to hold all optional age points
 
     # Fill some intermediate points to give the MCMC something to work with
     Tr = 150 # Residence temperature
@@ -177,7 +184,7 @@
     # TPoints[1:nPoints]  =  Float64[            Tr+T0, Tr+T0,  T0,  70] # Temp. (C)
 
     # Run Markov Chain
-    @time (TStepdist, HeAgedist, ndist, lldist, acceptancedist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary)
+    @time (TStepdist, HeAgedist, ndist, lldist, acceptancedist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary, detail)
 
     # # Save results using JLD
     @save string(name, ".jld") TStepdist HeAgedist lldist acceptancedist model
