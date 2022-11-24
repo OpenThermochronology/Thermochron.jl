@@ -24,7 +24,7 @@
     using Thermochron
 
     using LinearAlgebra
-    # Diminishing returns with more than ~3 threads
+    # Diminishing returns with more than ~4 threads
     BLAS.get_num_threads() > 4 && BLAS.set_num_threads(4)
 
     # Make sure we're running in the directory where the script is located
@@ -33,7 +33,7 @@
     # # # # # # # # # # Choice of regional thermochron data # # # # # # # # # #
 
     # Literature samples from Guenthner et al. 2013 (AJS), Minnesota
-    name = "Minnesota-zrdaam"
+    name = "Minnesota_zrdaam"
     ds = importdataset("minnesota.csv", ',', importas=:Tuple);
 
 ## --- Prepare problem
@@ -184,10 +184,13 @@
 
     # Run Markov Chain
     @time (TStepdist, HeAgedist, ndist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary, detail)
-    @info "Mean acceptance rate: $(mean(acceptancedist[model.burnin:end]))"
-    @info "Mean σⱼₜ: $(mean(σⱼtdist[model.burnin:end]))"
-    @info "Mean σⱼT: $(mean(σⱼTdist[model.burnin:end]))"
-    @info "Mean npoints: $(mean(ndist[model.burnin:end]))"
+    @info """$(size(TStepdist)) TStepdist collected.
+    Mean log-likelihood: $(mean(lldist[model.burnin:end]))
+    Mean acceptance rate: $(mean(acceptancedist[model.burnin:end]))
+    Mean npoints: $(mean(ndist[model.burnin:end]))
+    Mean σⱼₜ: $(mean(σⱼtdist[model.burnin:end]))"
+    Mean σⱼT: $(mean(σⱼTdist[model.burnin:end]))"
+    """
 
     # # Save results using JLD
     @save string(name, ".jld") TStepdist HeAgedist lldist acceptancedist model
@@ -202,12 +205,15 @@
 ## ---  Plot sample age-eU correlations
 
     eU = data.U+.238*data.Th # Used only for plotting
-    h = scatter(eU,HeAgedist[:,model.burnin:model.burnin+50], label="")
-    plot!(h, eU, data.HeAge, yerror=data.HeAge_sigma, seriestype=:scatter, label="Data")
+    h = scatter(eU, data.HeAge, yerror=2*data.HeAge_sigma, label="Data (2σ)", color=:black, framestyle=:box)
+    m = nanmean(HeAgedist[:,model.burnin:end], dims=2)
+    l = nanpctile(HeAgedist[:,model.burnin:end], 2.5, dims=2)
+    u = nanpctile(HeAgedist[:,model.burnin:end], 97.5, dims=2)
+    scatter!(h, eU, m, yerror=(m-l, u-m), label="Model + 95%CI", color=:blue, msc=:blue)
+
     xlabel!(h,"eU (ppm)"); ylabel!(h,"Age (Ma)")
     savefig(h, name*"_Age-eU.pdf")
     display(h)
-
 
 ## --- Create image of paths
 
@@ -249,7 +255,7 @@
     #plot!([635.5, 650.0, 650.0, 635.5, 635.5],[0, 0, 650, 650, 0], fill=true, color=:white, alpha=0.6) #Marinoan glacial
     #plot!([480, 640, 640, 480, 480],[0, 0, 50, 50, 0], linestyle = :dot, color=:black, linewidth=1.25) # t-T box 640 to 480 Ma, 0-50°C
 
-    savefig(k, name*"_mcmc.pdf")
+    savefig(k, name*"_tT.pdf")
     display(k)
 
 ## ---
