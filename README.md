@@ -32,12 +32,12 @@ When using model results derived from Thermochron.jl, you may cite this package 
 > Keller, C.B., McDannell, K.T., Guenthner, W.R., and Shuster, D.L. (2022). *Thermochron.jl: Open-source time-Temperature inversion of thermochronometric data.* https://doi.org/10.17605/osf.io/wq2U5
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
-[docs-stable-url]: https://brenhinkeller.github.io/Thermochron.jl/stable/
+[docs-stable-url]: https://OpenThermochronology.github.io/Thermochron.jl/stable/
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
-[docs-dev-url]: https://brenhinkeller.github.io/Thermochron.jl/dev/
-[ci-img]: https://github.com/brenhinkeller/Thermochron.jl/actions/workflows/CI.yml/badge.svg?branch=main
-[ci-url]: https://github.com/brenhinkeller/Thermochron.jl/actions/workflows/CI.yml
-[ci-nightly-img]: https://github.com/brenhinkeller/Thermochron.jl/workflows/CI%20(Julia%20nightly)/badge.svg
-[ci-nightly-url]: https://github.com/brenhinkeller/Thermochron.jl/actions/workflows/CI-julia-nightly.yml
-[codecov-img]: http://codecov.io/github/brenhinkeller/Thermochron.jl/coverage.svg?branch=main
-[codecov-url]: http://codecov.io/github/brenhinkeller/Thermochron.jl?branch=main
+[docs-dev-url]: https://OpenThermochronology.github.io/Thermochron.jl/dev/
+[ci-img]: https://github.com/OpenThermochronology/Thermochron.jl/actions/workflows/CI.yml/badge.svg?branch=main
+[ci-url]: https://github.com/OpenThermochronology/Thermochron.jl/actions/workflows/CI.yml
+[ci-nightly-img]: https://github.com/OpenThermochronology/Thermochron.jl/workflows/CI%20(Julia%20nightly)/badge.svg
+[ci-nightly-url]: https://github.com/OpenThermochronology/Thermochron.jl/actions/workflows/CI-julia-nightly.yml
+[codecov-img]: http://codecov.io/github/OpenThermochronology/Thermochron.jl/coverage.svg?branch=main
+[codecov-url]: http://codecov.io/github/OpenThermochronology/Thermochron.jl?branch=main
