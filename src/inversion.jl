@@ -209,7 +209,7 @@
         # Number of times to attempt to satisfy reheating rate: # Should be large
         # enough that proposal probabilities are unchanged, but low enough to prevent
         # an infinite loop
-        nattempts = 10_000
+        nattempts = 100_000
 
         progress = Progress(nsteps, dt=1, desc="Running MCMC ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
@@ -260,12 +260,9 @@
                 linterp1s!(TStepsₚ, knot_index, ages, temperatures, ageSteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agePointsₚ, nPointsₚ, k, dt) && maxdiff(TStepsₚ) < dTmax
+                if isdistinct(agePointsₚ, nPointsₚ, k, 2dt) && maxdiff(TStepsₚ) < dTmax
                     break
                 end
-                # Copy last accepted solution to re-modify if we don't break
-                copyto!(agePointsₚ, agePoints)
-                copyto!(TPointsₚ, TPoints)
                 if attempt == nattempts
                     @warn """`move` proposals failed to satisfy reheating rate limit
                     maxdiff: $(maxdiff(TStepsₚ))
@@ -274,6 +271,9 @@
                     σⱼt: $(σⱼt)
                     σⱼT: $(σⱼT)"""
                 end
+                # Copy last accepted solution to re-modify if we don't break
+                copyto!(agePointsₚ, agePoints)
+                copyto!(TPointsₚ, TPoints)
                 end
             elseif (r < move+birth) && (nPointsₚ < maxPoints)
                 # Birth: add a new model point
@@ -288,7 +288,7 @@
                 linterp1s!(TStepsₚ, knot_index, ages, temperatures, ageSteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agePointsₚ, nPointsₚ, nPointsₚ, dt) && maxdiff(TStepsₚ) < dTmax
+                if isdistinct(agePointsₚ, nPointsₚ, nPointsₚ, 2dt) && maxdiff(TStepsₚ) < dTmax
                     break
                 end
                 if attempt == nattempts
@@ -345,11 +345,6 @@
 
                 # Retry unless we have satisfied the maximum reheating rate
                 (maxdiff(TStepsₚ) < dTmax) && break
-
-                # Copy last accepted solution to re-modify if we don't break
-                copyto!(unconf.agePointsₚ, unconf.agePoints)
-                copyto!(unconf.TPointsₚ, unconf.TPoints)
-                copyto!(boundary.TPointsₚ, boundary.TPoints)
                 if attempt == nattempts
                     @warn """`movebounds` proposals failed to satisfy reheating rate limit
                     maxdiff: $(maxdiff(TStepsₚ))
@@ -358,6 +353,10 @@
                     σⱼt: $(σⱼt)
                     σⱼT: $(σⱼT)"""
                 end
+                # Copy last accepted solution to re-modify if we don't break
+                copyto!(unconf.agePointsₚ, unconf.agePoints)
+                copyto!(unconf.TPointsₚ, unconf.TPoints)
+                copyto!(boundary.TPointsₚ, boundary.TPoints)
                 end
             end
 
@@ -452,7 +451,8 @@
         nsteps = model.nsteps::Int
         maxPoints = model.maxPoints::Int
         minPoints = (haskey(model, :minPoints) ? model.minPoints : 1)::Int
-        simplified = model.simplified::Bool
+        simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
+        dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
         dTmax = T(model.dTmax)::T
         ageSteps = T.(model.ageSteps)::DenseVector{T}
         tSteps = T.(model.tSteps)::DenseVector{T}
@@ -532,7 +532,7 @@
         # Number of times to attempt to satisfy reheating rate: # Should be large
         # enough that proposal probabilities are unchanged, but low enough to prevent
         # an infinite loop
-        nattempts = 10_000
+        nattempts = 100_000
 
         progress = Progress(nsteps, dt=1, desc="Running MCMC ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
@@ -586,7 +586,7 @@
                 linterp1s!(TStepsₚ, knot_index, ages, temperatures, ageSteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agePointsₚ, nPointsₚ, k, dt) && maxdiff(TStepsₚ) < dTmax
+                if isdistinct(agePointsₚ, nPointsₚ, k, 2dt) && maxdiff(TStepsₚ) < dTmax
                     if pointsininterval(agePointsₚ, nPointsₚ, detail.agemin, detail.agemax) >= enoughpoints
                         break
                     end
@@ -616,7 +616,7 @@
                 linterp1s!(TStepsₚ, knot_index, ages, temperatures, ageSteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agePointsₚ, nPointsₚ, nPointsₚ, dt) && maxdiff(TStepsₚ) < dTmax
+                if isdistinct(agePointsₚ, nPointsₚ, nPointsₚ, 2dt) && maxdiff(TStepsₚ) < dTmax
                     break
                 end
                 if attempt == nattempts
@@ -726,12 +726,12 @@
             if log(rand()) < (llₚ - llₗ)
 
                 # Update jumping distribution based on size of current accepted move
-                if r < move
+                if dynamicjumping && r < move
                     if agePointsₚ[k] != agePoints[k]
-                        σⱼt = 3 * abs(agePointsₚ[k] - agePoints[k])
+                        σⱼt = ℯ * abs(agePointsₚ[k] - agePoints[k])
                     end
                     if TPointsₚ[k] != TPoints[k]
-                        σⱼT = 3 * abs(TPointsₚ[k] - TPoints[k])
+                        σⱼT = ℯ * abs(TPointsₚ[k] - TPoints[k])
                     end
                 end
 

@@ -33,15 +33,14 @@
     # # # # # # # # # # Choice of regional thermochron data # # # # # # # # # #
 
     # Literature samples from Guenthner et al. 2013 (AJS), Minnesota
-    name = "Minnesota"
+    name = "Minnesota-zrdaam"
     ds = importdataset("minnesota.csv", ',', importas=:Tuple);
 
 ## --- Prepare problem
 
-    burnin = 500_000
     model = (
-        nsteps = 1_500_000, # How many steps of the Markov chain should we run?
-        burnin = burnin, # How long should we wait for MC to converge (become stationary)
+        nsteps = 150_000, # How many steps of the Markov chain should we run?
+        burnin = 100_000, # How long should we wait for MC to converge (become stationary)
         dr = 1.0,    # Radius step, in microns
         dt = 10.0,   # time step size in Myr
         dTmax = 25.0, # Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
@@ -50,8 +49,8 @@
         TNow = 0.0, # Current surface temperature (in C)
         ΔTNow = 20.0, # TNow may vary from TNow to TNow+ΔTNow
         tInitMax = 3500.0, # Ma -- forbid anything older than this
-        minPoints = 1,  # Minimum allowed number of t-T points
-        maxPoints = 40, # Maximum allowed number of t-T points
+        minPoints = 10,  # Minimum allowed number of t-T points
+        maxPoints = 50, # Maximum allowed number of t-T points
         simplified = false, # Prefer simpler tT paths?
         # Diffusion parameters
         DzEa = 165.0, # kJ/mol
@@ -63,7 +62,7 @@
         # Here we add (in quadrature) a blanket model uncertainty of 25 Ma.
         σModel = 25.0, # Ma
         σAnnealing = 35.0, # Initial annealing uncertainty [Ma]
-        λAnnealing = 10 ./ 300_000 # Annealing decay [1/n]
+        λAnnealing = 10 ./ 100_000 # Annealing decay [1/n]
     )
 
 
@@ -101,7 +100,7 @@
     detail = (
         agemin = 0, # Youngest end of detail interval
         agemax = 541, # Oldest end of detail interval
-        minpoints = 6, # Minimum number of points in detail interval
+        minpoints = 7, # Minimum number of points in detail interval
     )
 
     # # Uncomment this section if you wish to impose an unconformity at any point in the record
@@ -185,6 +184,10 @@
 
     # Run Markov Chain
     @time (TStepdist, HeAgedist, ndist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary, detail)
+    @info "Mean acceptance rate: $(mean(acceptancedist[model.burnin:end]))"
+    @info "Mean σⱼₜ: $(mean(σⱼtdist[model.burnin:end]))"
+    @info "Mean σⱼT: $(mean(σⱼTdist[model.burnin:end]))"
+    @info "Mean npoints: $(mean(ndist[model.burnin:end]))"
 
     # # Save results using JLD
     @save string(name, ".jld") TStepdist HeAgedist lldist acceptancedist model
@@ -211,12 +214,13 @@
     # Desired rsolution of resulting image
     xresolution = 2000
     yresolution = 1000
+    burnin = model.burnin
 
     # Resize the post-burnin part of the stationary distribution
-    tTdist = Array{Float64}(undef, xresolution, size(TStepdist,2)-model.burnin)
+    tTdist = Array{Float64}(undef, xresolution, size(TStepdist,2)-burnin)
     xq = range(0,model.tInit,length=xresolution)
-    @time @inbounds for i = 1:size(TStepdist,2)-model.burnin
-        linterp1!(view(tTdist,:,i), model.tSteps, view(TStepdist,:,i+model.burnin), xq)
+    @time @inbounds for i = 1:size(TStepdist,2)-burnin
+        linterp1!(view(tTdist,:,i), model.tSteps, view(TStepdist,:,i+burnin), xq)
     end
 
     # Calculate composite image
@@ -245,7 +249,7 @@
     #plot!([635.5, 650.0, 650.0, 635.5, 635.5],[0, 0, 650, 650, 0], fill=true, color=:white, alpha=0.6) #Marinoan glacial
     #plot!([480, 640, 640, 480, 480],[0, 0, 50, 50, 0], linestyle = :dot, color=:black, linewidth=1.25) # t-T box 640 to 480 Ma, 0-50°C
 
-    savefig(k, name*"mcmc-zrdaam.pdf")
+    savefig(k, name*"_mcmc.pdf")
     display(k)
 
 ## ---
