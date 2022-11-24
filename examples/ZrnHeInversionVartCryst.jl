@@ -42,15 +42,15 @@
         nsteps = 150_000, # How many steps of the Markov chain should we run?
         burnin = 100_000, # How long should we wait for MC to converge (become stationary)
         dr = 1.0,    # Radius step, in microns
-        dt = 10.0,   # time step size in Myr
+        dt = 10.0,   # Time step size in Myr
         dTmax = 25.0, # Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
-        TInit = 400.0, # Initial model temperature (in C) (i.e., crystallization temperature)
-        ΔTInit = -50.0, # TInit can vary from TInit to TInit+ΔTinit
-        TNow = 0.0, # Current surface temperature (in C)
-        ΔTNow = 20.0, # TNow may vary from TNow to TNow+ΔTNow
-        tInitMax = 3500.0, # Ma -- forbid anything older than this
-        minPoints = 10,  # Minimum allowed number of t-T points
-        maxPoints = 50, # Maximum allowed number of t-T points
+        Tinit = 400.0, # Initial model temperature (in C) (i.e., crystallization temperature)
+        ΔTinit = -50.0, # Tinit can vary from Tinit to Tinit+ΔTinit
+        Tnow = 0.0, # Current surface temperature (in C)
+        ΔTnow = 20.0, # Tnow may vary from Tnow to Tnow+ΔTnow
+        tinitMax = 3500.0, # Ma -- forbid anything older than this
+        minpoints = 10,  # Minimum allowed number of t-T points
+        maxpoints = 50, # Maximum allowed number of t-T points
         simplified = false, # Prefer simpler tT paths?
         dynamicjumping = false, # Update the t and T jumping (proposal) distributions based on previously accepted jumps
         # Diffusion parameters
@@ -61,9 +61,9 @@
         # Model uncertainty is not well known (depends on annealing parameters,
         # decay constants, diffusion parameters, etc.), but is certainly non-zero.
         # Here we add (in quadrature) a blanket model uncertainty of 25 Ma.
-        σModel = 25.0, # Ma
-        σAnnealing = 35.0, # Initial annealing uncertainty [Ma]
-        λAnnealing = 10 ./ 100_000 # Annealing decay [1/n]
+        σmodel = 25.0, # Ma
+        σannealing = 35.0, # initial annealing uncertainty [Ma]
+        λannealing = 10 ./ 100_000 # annealing decay [1/n]
     )
 
 
@@ -74,24 +74,24 @@
         Th = ds.Th232_ppm,                      # Th concentration, in PPM
         HeAge = ds.HeAge_Ma_raw,                # He age, in Ma
         HeAge_sigma = ds.HeAge_Ma_sigma_raw,    # He age uncertainty (1-sigma), in Ma
-        CrystAge = ds.CrystAge_Ma,              # Crystallization age, in Ma
+        crystAge = ds.CrystAge_Ma,              # Crystallization age, in Ma
     )
 
     # Sort out crystallization ages and start time
-    map!(x->max(x, model.tInitMax), data.CrystAge, data.CrystAge)
-    tInit = ceil(maximum(data.CrystAge)/model.dt) * model.dt
+    map!(x->max(x, model.tinitMax), data.crystAge, data.crystAge)
+    tinit = ceil(maximum(data.crystAge)/model.dt) * model.dt
     model = (model...,
-        tInit = tInit,
-        ageSteps = Array{Float64}(tInit-model.dt/2 : -model.dt : 0+model.dt/2),
-        tSteps = Array{Float64}(0+model.dt/2 : model.dt : tInit-model.dt/2),
+        tinit = tinit,
+        agesteps = Array{Float64}(tinit-model.dt/2 : -model.dt : 0+model.dt/2),
+        tsteps = Array{Float64}(0+model.dt/2 : model.dt : tinit-model.dt/2),
     );
 
     # Boundary conditions (e.g. 10C at present and 650 C at the time of zircon formation).
     boundary = Boundary(
-        agePoints = Float64[model.TNow, model.tInit],  # Ma
-        TPoints = Float64[model.TNow, model.TInit],    # Degrees C
-        T₀ = Float64[model.TNow, model.TInit],
-        ΔT = Float64[model.ΔTNow, model.ΔTInit],
+        agepoints = Float64[model.Tnow, model.tinit],  # Ma
+        Tpoints = Float64[model.Tnow, model.Tinit],    # Degrees C
+        T₀ = Float64[model.Tnow, model.Tinit],
+        ΔT = Float64[model.ΔTnow, model.ΔTinit],
     )
 
     # Default: No unconformity is imposed
@@ -100,8 +100,8 @@
     # # Uncomment this section if you wish to impose an unconformity at any point in the record
     # # Uniform distributions from Age₀ to Age₀+ΔAge, T₀ to T₀+ΔT,
     # unconf = Unconformity(
-    #     agePoints = Float64[550.0,],  # Ma
-    #     TPoints = Float64[20.0,],     # Degrees C
+    #     agepoints = Float64[550.0,],  # Ma
+    #     Tpoints = Float64[20.0,],     # Degrees C
     #     Age₀ = Float64[500,],
     #     ΔAge = Float64[80,],
     #     T₀ = Float64[0,],
@@ -119,22 +119,22 @@
     # # Generate T path to test
     # Tr = 150
     # T0 = 30
-    # agePoints = Float64[model.tInit, model.tInit*29/30,   720, 580, 250,  0] # Age (Ma)
-    # TPoints  =  Float64[model.TInit,        Tr+T0, Tr+T0,  T0,  70, 10] # Temp. (C)
-    # TSteps = linterp1s(agePoints,TPoints,model.ageSteps)
+    # agepoints = Float64[model.tinit, model.tinit*29/30,   720, 580, 250,  0] # Age (Ma)
+    # Tpoints  =  Float64[model.Tinit,        Tr+T0, Tr+T0,  T0,  70, 10] # Temp. (C)
+    # Tsteps = linterp1s(agepoints,Tpoints,model.agesteps)
     #
     # # Plot t-T path
-    # plot(model.ageSteps,TSteps,xflip=true,framestyle=:box)
+    # plot(model.agesteps,Tsteps,xflip=true,framestyle=:box)
     #
     # # Calculate model ages
     # calcHeAges = Array{Float64}(undef, size(data.HeAge))
-    # @time pr = anneal(model.dt, model.tSteps, TSteps, :zrdaam)
+    # @time pr = anneal(model.dt, model.tsteps, Tsteps, :zrdaam)
     # zircons = Array{Zircon{Float64}}(undef, length(data.halfwidth))
     # @time for i=1:length(zircons)
     #     # Iterate through each grain, calculate the modeled age for each
-    #     first_index = 1 + floor(Int64,(model.tInit - data.CrystAge[i])/model.dt)
-    #     zircons[i] = Zircon(data.halfwidth[i], model.dr, data.U[i], data.Th[i], model.dt, model.ageSteps[first_index:end])
-    #     calcHeAges[i] = HeAgeSpherical(zircons[i], @views(TSteps[first_index:end]), @views(pr[first_index:end,first_index:end]), model)
+    #     first_index = 1 + floor(Int64,(model.tinit - data.crystAge[i])/model.dt)
+    #     zircons[i] = Zircon(data.halfwidth[i], model.dr, data.U[i], data.Th[i], model.dt, model.agesteps[first_index:end])
+    #     calcHeAges[i] = HeAgeSpherical(zircons[i], @views(Tsteps[first_index:end]), @views(pr[first_index:end,first_index:end]), model)
     # end
     #
     # # Plot Comparison of results
@@ -152,24 +152,24 @@
 ## --- Invert for maximum likelihood t-T path
 
     # This is where the "transdimensional" part comes in
-    agePoints = zeros(Float64, model.maxPoints) # Array of fixed size to hold all optional age points
-    TPoints = zeros(Float64, model.maxPoints) # Array of fixed size to hold all optional age points
+    agepoints = zeros(Float64, model.maxpoints) # Array of fixed size to hold all optional age points
+    Tpoints = zeros(Float64, model.maxpoints) # Array of fixed size to hold all optional age points
 
     # Fill some intermediate points to give the MCMC something to work with
     Tr = 150 # Residence temperature
-    nPoints = 7
-    agePoints[1:nPoints] .= (model.tInit/60, model.tInit/30, model.tInit/4, model.tInit/2, model.tInit-model.tInit/4, model.tInit-model.tInit/30, model.tInit-model.tInit/60) # Ma
-    TPoints[1:nPoints] .= Tr  # Degrees C
+    npoints = 7
+    agepoints[1:npoints] .= (model.tinit/60, model.tinit/30, model.tinit/4, model.tinit/2, model.tinit-model.tinit/4, model.tinit-model.tinit/30, model.tinit-model.tinit/60) # Ma
+    Tpoints[1:npoints] .= Tr  # Degrees C
 
-    # # (Optional) Initialize with something close to the expected path
+    # # (Optional) initialize with something close to the expected path
     # Tr = 150
     # T0 = 30
-    # nPoints = 4
-    # agePoints[1:nPoints] = Float64[model.tInit*29/30,   720, 510, 250] # Age (Ma)
-    # TPoints[1:nPoints]  =  Float64[            Tr+T0, Tr+T0,  T0,  70] # Temp. (C)
+    # npoints = 4
+    # agepoints[1:npoints] = Float64[model.tinit*29/30,   720, 510, 250] # Age (Ma)
+    # Tpoints[1:npoints]  =  Float64[            Tr+T0, Tr+T0,  T0,  70] # Temp. (C)
 
     # Run Markov Chain
-    @time (TStepdist, HeAgedist, ndist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints,  boundary, unconf, detail)
+    @time (TStepdist, HeAgedist, ndist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_vartcryst(data, model, npoints, agepoints, Tpoints,  boundary, unconf, detail)
     @info """$(size(TStepdist)) TStepdist collected.
     Mean log-likelihood: $(mean(lldist[model.burnin:end]))
     Mean acceptance rate: $(mean(acceptancedist[model.burnin:end]))
@@ -210,13 +210,13 @@
 
     # Resize the post-burnin part of the stationary distribution
     tTdist = Array{Float64}(undef, xresolution, size(TStepdist,2)-burnin)
-    xq = range(0,model.tInit,length=xresolution)
+    xq = range(0,model.tinit,length=xresolution)
     @time @inbounds for i = 1:size(TStepdist,2)-burnin
-        linterp1!(view(tTdist,:,i), model.tSteps, view(TStepdist,:,i+burnin), xq)
+        linterp1!(view(tTdist,:,i), model.tsteps, view(TStepdist,:,i+burnin), xq)
     end
 
     # Calculate composite image
-    ybinedges = range(model.TNow, model.TInit, length=yresolution+1)
+    ybinedges = range(model.Tnow, model.Tinit, length=yresolution+1)
     tTimage = zeros(yresolution, size(tTdist,1))
     @time @inbounds for i=1:size(tTdist,1)
         histcounts!(view(tTimage,:,i), view(tTdist,i,:), ybinedges)
@@ -230,7 +230,7 @@
     # Plot image with colorscale in first subplot
     A = imsc(reverse(tTimage,dims=2), ylcn, 0, nanpctile(tTimage[:],98.5))
     plot!(k[1], xlabel="Time (Ma)", ylabel="Temperature (°C)", yticks=0:50:400, xticks=0:500:3500, yminorticks=5, xminorticks=5, tick_dir=:out, framestyle=:box)
-    plot!(k[1], xq, cntr(ybinedges), A, yflip=true, xflip=true, legend=false, aspectratio=model.tInit/model.TInit/1.5, xlims=(0,model.tInit), ylims=(0,400))
+    plot!(k[1], xq, cntr(ybinedges), A, yflip=true, xflip=true, legend=false, aspectratio=model.tinit/model.Tinit/1.5, xlims=(0,model.tinit), ylims=(0,400))
 
     # Add colorbar in second subplot
     cb = imsc(repeat(0:100, 1, 10), ylcn, 0, 100)

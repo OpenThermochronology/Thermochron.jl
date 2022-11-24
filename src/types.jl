@@ -1,42 +1,42 @@
 
 struct Boundary{T<:AbstractFloat}
-    agePoints::Vector{T} # Ma
-    TPoints::Vector{T}   # Degrees C
-    TPointsₚ::Vector{T}   # Degrees C
+    agepoints::Vector{T} # Ma
+    Tpoints::Vector{T}   # Degrees C
+    Tpointsₚ::Vector{T}   # Degrees C
     T₀::Vector{T}
     ΔT::Vector{T}
     npoints::Int
 end
-function Boundary(T::Type=Float64; agePoints, TPoints, T₀, ΔT)
-    agePoints = T.(agePoints)
-    TPoints =  T.(TPoints)
+function Boundary(T::Type=Float64; agepoints, Tpoints, T₀, ΔT)
+    agepoints = T.(agepoints)
+    Tpoints =  T.(Tpoints)
     T₀ = T.(T₀)
     ΔT = T.(ΔT)
-    @assert length(agePoints) == length(TPoints) == length(T₀) == length(ΔT)
-    Boundary(agePoints, TPoints, copy(TPoints), T₀, ΔT, length(agePoints))
+    @assert length(agepoints) == length(Tpoints) == length(T₀) == length(ΔT)
+    Boundary(agepoints, Tpoints, copy(Tpoints), T₀, ΔT, length(agepoints))
 end
 export Boundary
 
 struct Unconformity{T<:AbstractFloat}
-    agePoints::Vector{T} # Ma
-    TPoints::Vector{T}   # Degrees C
-    agePointsₚ::Vector{T} # Ma
-    TPointsₚ::Vector{T}   # Degrees C
+    agepoints::Vector{T} # Ma
+    Tpoints::Vector{T}   # Degrees C
+    agepointsₚ::Vector{T} # Ma
+    Tpointsₚ::Vector{T}   # Degrees C
     Age₀::Vector{T}
     ΔAge::Vector{T}
     T₀::Vector{T}
     ΔT::Vector{T}
     npoints::Int
 end
-function Unconformity(T::Type=Float64; agePoints=Float64[], TPoints=Float64[], Age₀=Float64[], ΔAge=Float64[], T₀=Float64[], ΔT=Float64[])
-    agePoints = T.(agePoints)
-    TPoints = T.(TPoints)
+function Unconformity(T::Type=Float64; agepoints=Float64[], Tpoints=Float64[], Age₀=Float64[], ΔAge=Float64[], T₀=Float64[], ΔT=Float64[])
+    agepoints = T.(agepoints)
+    Tpoints = T.(Tpoints)
     Age₀ = T.(Age₀)
     ΔAge = T.(ΔAge)
     T₀ = T.(T₀)
     ΔT = T.(ΔT)
-    @assert length(agePoints) == length(TPoints) == length(Age₀) == length(ΔAge) == length(T₀) == length(ΔT)
-    Unconformity(agePoints, TPoints, copy(agePoints), copy(TPoints), Age₀, ΔAge, T₀, ΔT, length(agePoints))
+    @assert length(agepoints) == length(Tpoints) == length(Age₀) == length(ΔAge) == length(T₀) == length(ΔT)
+    Unconformity(agepoints, Tpoints, copy(agepoints), copy(Tpoints), Age₀, ΔAge, T₀, ΔT, length(agepoints))
 end
 export Unconformity
 

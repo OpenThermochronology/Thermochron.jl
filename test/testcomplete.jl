@@ -16,13 +16,13 @@ model = (
     dr = 1.0,    # Radius step, in microns
     dt = 10.0,   # time step size in Myr
     dTmax = 25.0, # Maximum reheating/burial per model timestep
-    TInit = 400.0, # Initial model temperature (in C) (i.e., crystallization temperature)
-    ΔTInit = -50.0, # TInit can vary from TInit to TInit+ΔTinit
-    TNow = 0.0, # Current surface temperature (in C)
-    ΔTNow = 10.0, # TNow may vary from TNow to TNow+ΔTNow
-    tInitMax = 4000.0, # Ma -- forbid anything older than this
-    minPoints = 1,  # Minimum allowed number of t-T points
-    maxPoints = 40, # Maximum allowed number of t-T points
+    Tinit = 400.0, # initial model temperature (in C) (i.e., crystallization temperature)
+    ΔTinit = -50.0, # Tinit can vary from Tinit to Tinit+ΔTinit
+    Tnow = 0.0, # Current surface temperature (in C)
+    ΔTnow = 10.0, # Tnow may vary from Tnow to Tnow+ΔTnow
+    tinitMax = 4000.0, # Ma -- forbid anything older than this
+    minpoints = 1,  # Minimum allowed number of t-T points
+    maxpoints = 40, # Maximum allowed number of t-T points
     simplified = false, # Prefer simpler tT paths?
     # Diffusion parameters
     DzEa = 165.0, # kJ/mol
@@ -32,9 +32,9 @@ model = (
     # Model uncertainty is not well known (depends on annealing parameters,
     # decay constants, diffusion parameters, etc.), but is certainly non-zero.
     # Here we add (in quadrature) a blanket model uncertainty of 25 Ma.
-    σModel = 25.0, # Ma
-    σAnnealing = 35.0, # Initial annealing uncertainty [Ma]
-    λAnnealing = 10 ./ 200 # Annealing decay [1/n]
+    σmodel = 25.0, # Ma
+    σannealing = 35.0, # initial annealing uncertainty [Ma]
+    λannealing = 10 ./ 200 # annealing decay [1/n]
 )
 
 # Populate data NamedTuple from imported dataset
@@ -44,24 +44,24 @@ data = (
     Th = ds.Th232_ppm,                      # Th concentration, in PPM
     HeAge = ds.HeAge_Ma_raw,                # He age, in Ma
     HeAge_sigma = ds.HeAge_Ma_sigma_raw,    # He age uncertainty (1-sigma), in Ma
-    CrystAge = ds.CrystAge_Ma,              # Crystallization age, in Ma
+    crystAge = ds.CrystAge_Ma,              # Crystallization age, in Ma
 )
 
 # Sort out crystallization ages and start time
-map!(x->max(x, model.tInitMax), data.CrystAge, data.CrystAge)
-tInit = ceil(maximum(data.CrystAge)/model.dt) * model.dt
+map!(x->max(x, model.tinitMax), data.crystAge, data.crystAge)
+tinit = ceil(maximum(data.crystAge)/model.dt) * model.dt
 model = (model...,
-    tInit = tInit,
-    ageSteps = Array{Float64}(tInit-model.dt/2 : -model.dt : 0+model.dt/2),
-    tSteps = Array{Float64}(0+model.dt/2 : model.dt : tInit-model.dt/2),
+    tinit = tinit,
+    agesteps = Array{Float64}(tinit-model.dt/2 : -model.dt : 0+model.dt/2),
+    tsteps = Array{Float64}(0+model.dt/2 : model.dt : tinit-model.dt/2),
 )
 
 # Boundary conditions (e.g. 10C at present and 650 C at the time of zircon formation).
 boundary = Boundary(
-    agePoints = Float64[model.TNow, model.tInit],  # Ma
-    TPoints = Float64[model.TNow, model.TInit],    # Degrees C
-    T₀ = Float64[model.TNow, model.TInit],
-    ΔT = Float64[model.ΔTNow, model.ΔTInit],
+    agepoints = Float64[model.Tnow, model.tinit],  # Ma
+    Tpoints = Float64[model.Tnow, model.Tinit],    # Degrees C
+    T₀ = Float64[model.Tnow, model.Tinit],
+    ΔT = Float64[model.ΔTnow, model.ΔTinit],
 )
 
 # Default: No unconformity is imposed
@@ -71,21 +71,21 @@ unconf = Unconformity()
 ## --- Invert for maximum likelihood t-T path
 
 # This is where the "transdimensional" part comes in
-agePoints = Array{Float64}(undef, model.maxPoints+1) # Array of fixed size to hold all optional age points
-TPoints = Array{Float64}(undef, model.maxPoints+1) # Array of fixed size to hold all optional age points
+agepoints = Array{Float64}(undef, model.maxpoints+1) # Array of fixed size to hold all optional age points
+Tpoints = Array{Float64}(undef, model.maxpoints+1) # Array of fixed size to hold all optional age points
 # Fill some intermediate points to give the MCMC something to work with
 Tr = 250 # Residence temperature
-nPoints = 5
-agePoints[1:nPoints] .= (model.tInit/30,model.tInit/4,model.tInit/2,model.tInit-model.tInit/4,model.tInit-model.tInit/30) # Ma
-TPoints[1:nPoints] .= Tr  # Degrees C
+npoints = 5
+agepoints[1:npoints] .= (model.tinit/30,model.tinit/4,model.tinit/2,model.tinit-model.tinit/4,model.tinit-model.tinit/30) # Ma
+Tpoints[1:npoints] .= Tr  # Degrees C
 
 # Run Markov Chain
-@time "Compiling MCMC_vartcryst" MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, boundary, unconf)
-@time "Running MCMC_vartcryst" (TStepdist, HeAgedist, ndist, lldist, acceptancedist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, boundary, unconf)
+@time "Compiling MCMC_vartcryst" MCMC_vartcryst(data, model, npoints, agepoints, Tpoints, boundary, unconf)
+@time "Running MCMC_vartcryst" (Tstepdist, HeAgedist, ndist, lldist, acceptancedist) = MCMC_vartcryst(data, model, npoints, agepoints, Tpoints, boundary, unconf)
 
-@test isa(TStepdist, AbstractMatrix)
-@test maximum(TStepdist) <= model.TInit
-@test minimum(TStepdist) >= model.TNow
+@test isa(Tstepdist, AbstractMatrix)
+@test maximum(Tstepdist) <= model.Tinit
+@test minimum(Tstepdist) >= model.Tnow
 
 @test isa(HeAgedist, AbstractMatrix)
 abserr = abs(sum(nanmean(HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
@@ -103,7 +103,7 @@ llmean = mean(@view(lldist[model.burnin:end]))
 
 @test isa(ndist, AbstractVector{Int})
 @test minimum(ndist) >= 0
-@test maximum(ndist) <= model.maxPoints
+@test maximum(ndist) <= model.maxpoints
 @info "Mean npoints: $(mean(ndist[model.burnin:end]))"
 
 ## ---
@@ -112,11 +112,11 @@ detail = DetailInterval(
     agemax = 541, # Oldest end of detail interval
     minpoints = 5, # Minimum number of points in detail interval
 )
-@time "MCMC_vartcryst with Detail interval" (TStepdist, HeAgedist, ndist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, boundary, unconf, detail)
+@time "MCMC_vartcryst with Detail interval" (Tstepdist, HeAgedist, ndist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_vartcryst(data, model, npoints, agepoints, Tpoints, boundary, unconf, detail)
 
-@test isa(TStepdist, AbstractMatrix)
-@test maximum(TStepdist) <= model.TInit
-@test minimum(TStepdist) >= model.TNow
+@test isa(Tstepdist, AbstractMatrix)
+@test maximum(Tstepdist) <= model.Tinit
+@test minimum(Tstepdist) >= model.Tnow
 
 @test isa(HeAgedist, AbstractMatrix)
 abserr = abs(sum(nanmean(HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
@@ -134,7 +134,7 @@ llmean = mean(@view(lldist[model.burnin:end]))
 
 @test isa(ndist, AbstractVector{Int})
 @test minimum(ndist) >= 0
-@test maximum(ndist) <= model.maxPoints
+@test maximum(ndist) <= model.maxpoints
 @info "Mean npoints: $(mean(ndist[model.burnin:end]))"
 
 @info "Mean σⱼₜ: $(mean(σⱼtdist[model.burnin:end]))"
@@ -144,11 +144,11 @@ llmean = mean(@view(lldist[model.burnin:end]))
 model = (model...,
     dynamicjumping=true
 )
-@time "MCMC_vartcryst with Detail interval & dynamicjumping" (TStepdist, HeAgedist, ndist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, boundary, unconf, detail)
+@time "MCMC_vartcryst with Detail interval & dynamicjumping" (Tstepdist, HeAgedist, ndist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_vartcryst(data, model, npoints, agepoints, Tpoints, boundary, unconf, detail)
 
-@test isa(TStepdist, AbstractMatrix)
-@test maximum(TStepdist) <= model.TInit
-@test minimum(TStepdist) >= model.TNow
+@test isa(Tstepdist, AbstractMatrix)
+@test maximum(Tstepdist) <= model.Tinit
+@test minimum(Tstepdist) >= model.Tnow
 
 @test isa(HeAgedist, AbstractMatrix)
 abserr = abs(sum(nanmean(HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
@@ -166,7 +166,7 @@ llmean = mean(@view(lldist[model.burnin:end]))
 
 @test isa(ndist, AbstractVector{Int})
 @test minimum(ndist) >= 0
-@test maximum(ndist) <= model.maxPoints
+@test maximum(ndist) <= model.maxpoints
 @info "Mean npoints: $(mean(ndist[model.burnin:end]))"
 
 @info "Mean σⱼₜ: $(mean(σⱼtdist[model.burnin:end]))"

@@ -67,14 +67,14 @@ abstract type Mineral end
 
 struct Zircon{T<:Number} <: Mineral
     dt::T
-    ageSteps::Vector{T}
-    tSteps::Vector{T}
-    ntSteps::Int
+    agesteps::Vector{T}
+    tsteps::Vector{T}
+    ntsteps::Int
     dr::T
-    rSteps::Vector{T}
+    rsteps::Vector{T}
     rEdges::Vector{T}
     relVolumes::Vector{T}
-    nrSteps::Int
+    nrsteps::Int
     r238U::Vector{T}
     r235U::Vector{T}
     r232Th::Vector{T}
@@ -93,16 +93,16 @@ struct Zircon{T<:Number} <: Mineral
     y::Vector{T}
 end
 
-function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, ageSteps::AbstractVector{T}) where T<:Number
+function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number
 
     # Temporal discretization
-    tSteps = reverse(ageSteps)
-    ntSteps = length(tSteps) # Number of time steps
+    tsteps = reverse(agesteps)
+    ntsteps = length(tsteps) # Number of time steps
 
-    # Crystal size and spatial discretization
-    rSteps = Array{T}(0+dr/2 : dr: r-dr/2)
+    # crystal size and spatial discretization
+    rsteps = Array{T}(0+dr/2 : dr: r-dr/2)
     rEdges = Array{T}(0 : dr : r) # Edges of each radius element
-    nrSteps = length(rSteps)+2 # number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
+    nrsteps = length(rsteps)+2 # number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
     relVolumes = (rEdges[2:end].^3 - rEdges[1:end-1].^3)/rEdges[end]^3 # Relative volume fraction of spherical shell corresponding to each radius element
 
     # Alpha stopping distances for each isotope in each decay chain, from
@@ -117,9 +117,9 @@ function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, ageSteps::Abstr
     λ232Th = log(2)/(1.405*10^10)*10^6 # [1/Myr]
 
     # Observed radial HPE profiles at present day
-    r238U = Uppm.*ones(T, size(rSteps)) # PPM
+    r238U = Uppm.*ones(T, size(rsteps)) # PPM
     r235U = T.(r238U/137.818) #PPM
-    r232Th = Thppm .* ones(T, size(rSteps)) #PPM
+    r232Th = Thppm .* ones(T, size(rsteps)) #PPM
 
     # Convert to atoms per gram
     r238U *= 6.022E23 / 1E6 / 238
@@ -132,30 +132,30 @@ function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, ageSteps::Abstr
 
     #238U
     r238UHe = zeros(size(r238U))
-    @inbounds for ri = 1:length(rSteps)
+    @inbounds for ri = 1:length(rsteps)
         for i=1:length(alphaRadii238U)
             # Effective radial alpha deposition from 238U
-            intersectiondensity!(dInt,rEdges,relVolumes,alphaRadii238U[i],rSteps[ri])
+            intersectiondensity!(dInt,rEdges,relVolumes,alphaRadii238U[i],rsteps[ri])
             @turbo @. r238UHe += relVolumes[ri] * dInt * r238U[ri]
         end
     end
 
     #235U
     r235UHe = zeros(size(r235U))
-    @inbounds for ri = 1:length(rSteps)
+    @inbounds for ri = 1:length(rsteps)
         for i=1:length(alphaRadii235U)
             # Effective radial alpha deposition from 235U
-            intersectiondensity!(dInt, rEdges,relVolumes,alphaRadii235U[i],rSteps[ri])
+            intersectiondensity!(dInt, rEdges,relVolumes,alphaRadii235U[i],rsteps[ri])
             @turbo @. r235UHe += relVolumes[ri] * dInt * r235U[ri]
         end
     end
 
     #232Th
     r232ThHe = zeros(size(r232Th))
-    @inbounds for ri = 1:length(rSteps)
+    @inbounds for ri = 1:length(rsteps)
         for i=1:length(alphaRadii232Th)
             # Effective radial alpha deposition from 232Th
-            intersectiondensity!(dInt, rEdges,relVolumes,alphaRadii232Th[i],rSteps[ri])
+            intersectiondensity!(dInt, rEdges,relVolumes,alphaRadii232Th[i],rsteps[ri])
             @turbo @. r232ThHe += relVolumes[ri] * dInt * r232Th[ri]
         end
     end
@@ -167,25 +167,25 @@ function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, ageSteps::Abstr
 
     # Calculate corrected alpha deposition and recoil damage each time step for each radius
     dt_2 = dt/2
-    decay = Array{T}(undef, ntSteps)
-    buffer = zeros(T, ntSteps, nrSteps-2)
+    decay = Array{T}(undef, ntsteps)
+    buffer = zeros(T, ntsteps, nrsteps-2)
     # Allocate deposition and damage arrays
-    alphaDeposition = zeros(T, ntSteps, nrSteps-2)
-    alphaDamage = zeros(T, ntSteps, nrSteps-2)
+    alphaDeposition = zeros(T, ntsteps, nrsteps-2)
+    alphaDamage = zeros(T, ntsteps, nrsteps-2)
     # 238U
-    @turbo @. decay = exp(λ238U*(ageSteps + dt_2)) - exp(λ238U*(ageSteps - dt_2))
+    @turbo @. decay = exp(λ238U*(agesteps + dt_2)) - exp(λ238U*(agesteps - dt_2))
     mul!(buffer, decay, r238UHe')
     @turbo @. alphaDeposition += buffer
     mul!(buffer, decay, r238Udam')
     @turbo @. alphaDamage += buffer
     # 235U
-    @turbo @. decay = exp(λ235U*(ageSteps + dt_2)) - exp(λ235U*(ageSteps - dt_2))
+    @turbo @. decay = exp(λ235U*(agesteps + dt_2)) - exp(λ235U*(agesteps - dt_2))
     mul!(buffer, decay, r235UHe')
     @turbo @. alphaDeposition += buffer
     mul!(buffer, decay, r235Udam')
     @turbo @. alphaDamage += buffer
     # 232Th
-    @turbo @. decay = exp(λ232Th*(ageSteps + dt_2)) - exp(λ232Th*(ageSteps - dt_2))
+    @turbo @. decay = exp(λ232Th*(agesteps + dt_2)) - exp(λ232Th*(agesteps - dt_2))
     mul!(buffer, decay, r232ThHe')
     @turbo @. alphaDeposition += buffer
     mul!(buffer, decay, r232Thdam')
@@ -193,38 +193,38 @@ function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, ageSteps::Abstr
 
     # Allocate additional variables that will be needed for Crank-Nicholson
     annealedDamage = similar(alphaDamage)
-    β = Array{T}(undef, nrSteps) # First row of annealedDamage
+    β = Array{T}(undef, nrsteps) # First row of annealedDamage
 
     # Allocate arrays for diffusivities
-    Dz = Array{T}(undef, ntSteps)
-    DN17 = Array{T}(undef, ntSteps)
+    Dz = Array{T}(undef, ntsteps)
+    DN17 = Array{T}(undef, ntsteps)
 
     # Allocate output matrix for all timesteps
-    u = Array{T}(undef, nrSteps, ntSteps)
+    u = Array{T}(undef, nrsteps, ntsteps)
 
     # Allocate variables for tridiagonal matrix and RHS
-    dl = ones(T, nrSteps-1)    # Sub-diagonal row
-    d = ones(T, nrSteps)       # Diagonal
-    du = ones(T, nrSteps-1)    # Supra-diagonal row
-    du2 = ones(T, nrSteps-2)   # sup-sup-diagonal row for pivoting
-    ipiv = Vector{LinearAlgebra.BlasInt}(undef, nrSteps) # For pivoting
+    dl = ones(T, nrsteps-1)    # Sub-diagonal row
+    d = ones(T, nrsteps)       # Diagonal
+    du = ones(T, nrsteps-1)    # Supra-diagonal row
+    du2 = ones(T, nrsteps-2)   # sup-sup-diagonal row for pivoting
+    ipiv = Vector{LinearAlgebra.BlasInt}(undef, nrsteps) # For pivoting
 
     # Tridiagonal matrix for LHS of Crank-Nicholson equation with regular grid cells
     A = Tridiagonal(dl, d, du, du2)
 
     # Vector for RHS of Crank-Nicholson equation with regular grid cells
-    y = Array{T}(undef, nrSteps)
+    y = Array{T}(undef, nrsteps)
 
     return Zircon{T}(
         dt,
-        ageSteps,
-        tSteps,
-        ntSteps,
+        agesteps,
+        tsteps,
+        ntsteps,
         dr,
-        rSteps,
+        rsteps,
         rEdges,
         relVolumes,
-        nrSteps,
+        nrsteps,
         r238U,
         r235U,
         r232Th,

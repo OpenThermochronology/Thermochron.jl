@@ -20,29 +20,29 @@ export ZRDAAM
 
 """
 ```julia
-ρᵣ = anneal(dt::Number, tSteps::Vector, TSteps::Matrix, [model::DamageModel=ZRDAAM()])
+ρᵣ = anneal(dt::Number, tsteps::Vector, Tsteps::Matrix, [model::DamageModel=ZRDAAM()])
 ```
 Zircon damage annealing model as in Guenthner et al. 2013 (AJS)
 """
-function anneal(dt::Number, tSteps::DenseVector, TSteps::DenseVector, model::DamageModel=ZRDAAM())
+function anneal(dt::Number, tsteps::DenseVector, Tsteps::DenseVector, model::DamageModel=ZRDAAM())
     # Allocate matrix to hold reduced track lengths for all previous timesteps
-    ntSteps = length(tSteps)
-    ρᵣ = zeros(ntSteps,ntSteps)
-    Teq = zeros(ntSteps)
+    ntsteps = length(tsteps)
+    ρᵣ = zeros(ntsteps,ntsteps)
+    Teq = zeros(ntsteps)
     # In=-place version
-    anneal!(ρᵣ, Teq, dt, tSteps, TSteps, model)
+    anneal!(ρᵣ, Teq, dt, tsteps, Tsteps, model)
     return ρᵣ, Teq
 end
 export anneal
 
 """
 ```julia
-anneal!(ρᵣ::Matrix, dt::Number, tSteps::Vector, TSteps::Vector, [model::DamageModel=ZRDAAM()])
+anneal!(ρᵣ::Matrix, dt::Number, tsteps::Vector, Tsteps::Vector, [model::DamageModel=ZRDAAM()])
 ```
 In-place version of `anneal`
 """
-anneal!(ρᵣ::DenseMatrix, Teq::DenseVector, dt::Number, tSteps::DenseVector, TSteps::DenseVector) = anneal!(ρᵣ, Teq, dt, tSteps, TSteps, ZRDAAM())
-function anneal!(ρᵣ::DenseMatrix{T}, Teq::DenseVector{T}, dt::Number, tSteps::DenseVector, TSteps::DenseVector, ::ZRDAAM) where T <: AbstractFloat
+anneal!(ρᵣ::DenseMatrix, Teq::DenseVector, dt::Number, tsteps::DenseVector, Tsteps::DenseVector) = anneal!(ρᵣ, Teq, dt, tsteps, Tsteps, ZRDAAM())
+function anneal!(ρᵣ::DenseMatrix{T}, Teq::DenseVector{T}, dt::Number, tsteps::DenseVector, Tsteps::DenseVector, ::ZRDAAM) where T <: AbstractFloat
     # Annealing model constants
     B=-0.05721
     C0=6.24534
@@ -51,17 +51,17 @@ function anneal!(ρᵣ::DenseMatrix{T}, Teq::DenseVector{T}, dt::Number, tSteps:
     C3=-14.2868
 
     ∅ = zero(T)
-    ntSteps = length(tSteps)
-    @assert size(ρᵣ) === (ntSteps, ntSteps)
-    @assert size(Teq) === (ntSteps,)
+    ntsteps = length(tsteps)
+    @assert size(ρᵣ) === (ntsteps, ntsteps)
+    @assert size(Teq) === (ntsteps,)
     @turbo @. Teq = ∅
 
     # First timestep
-    ρᵣ[1,1] = 1 / ((C0 + C1*(log(dt)-C2)/(log(1 / (TSteps[1]+273.15))-C3))^(1/B)+1)
+    ρᵣ[1,1] = 1 / ((C0 + C1*(log(dt)-C2)/(log(1 / (Tsteps[1]+273.15))-C3))^(1/B)+1)
 
     # All subsequent timesteps
-    @inbounds for i=2:ntSteps
-        lᵢ = log(1 / (TSteps[i]+273.15)) - C3
+    @inbounds for i=2:ntsteps
+        lᵢ = log(1 / (Tsteps[i]+273.15)) - C3
 
         # Convert any existing track length reduction for damage from
         # all previous timestep to an equivalent annealing time at the
@@ -100,13 +100,13 @@ export anneal!
 
 """
 ```julia
-HeAge = HeAgeSpherical(zircon::Zircon, TSteps::Vector, ρᵣ::Matrix, diffusionmodel)
+HeAge = HeAgeSpherical(zircon::Zircon, Tsteps::Vector, ρᵣ::Matrix, diffusionmodel)
 ```
 Calculate the precdicted U-Th/He age of a zircon that has experienced a given t-T path
-(specified by `zircon.ageSteps` for time and `TSteps` for temperature, at a time resolution of `zircon.dt`)
+(specified by `zircon.agesteps` for time and `Tsteps` for temperature, at a time resolution of `zircon.dt`)
 using a Crank-Nicholson diffusion solution for a spherical grain of radius `zircon.r` at spatial resolution `zircon.dr`.
 """
-function HeAgeSpherical(zircon::Zircon{T}, TSteps::StridedVector{T}, ρᵣ::StridedMatrix{T}, diffusionmodel) where T <: AbstractFloat
+function HeAgeSpherical(zircon::Zircon{T}, Tsteps::StridedVector{T}, ρᵣ::StridedMatrix{T}, diffusionmodel) where T <: AbstractFloat
 
     # Diffusion constants
     # DzEa = 165.0 # kJ/mol
@@ -128,20 +128,20 @@ function HeAgeSpherical(zircon::Zircon{T}, TSteps::StridedVector{T}, ρᵣ::Stri
     # Diffusivities of crystalline and amorphous endmembers
     Dz = zircon.Dz::DenseVector{T}
     DN17 = zircon.DN17::DenseVector{T}
-    @assert length(Dz) == length(DN17) == length(TSteps)
+    @assert length(Dz) == length(DN17) == length(Tsteps)
     @turbo for i ∈ eachindex(Dz)
-        Dzᵢ = DzD0 * exp(-DzEa / R / (TSteps[i] + 273.15)) # cm^2/s
+        Dzᵢ = DzD0 * exp(-DzEa / R / (Tsteps[i] + 273.15)) # cm^2/s
         Dz[i] = Dzᵢ * 10000^2*(1E6*365.25*24*3600) # Convert to micron^2/Myr
-        DN17ᵢ = DN17D0 * exp(-DN17Ea / R / (TSteps[i] + 273.15)) # cm^2/s
+        DN17ᵢ = DN17D0 * exp(-DN17Ea / R / (Tsteps[i] + 273.15)) # cm^2/s
         DN17[i] = DN17ᵢ * 10000^2*(1E6*365.25*24*3600) # Convert to micron^2/Myr
     end
 
     # Get time and radius discretization
     dr = zircon.dr
-    rSteps = zircon.rSteps
-    nrSteps = zircon.nrSteps
+    rsteps = zircon.rsteps
+    nrsteps = zircon.nrsteps
     dt = zircon.dt
-    ntSteps = zircon.ntSteps
+    ntsteps = zircon.ntsteps
     alphaDeposition = zircon.alphaDeposition::DenseMatrix{T}
     alphaDamage = zircon.alphaDamage::DenseMatrix{T}
 
@@ -154,7 +154,7 @@ function HeAgeSpherical(zircon::Zircon{T}, TSteps::StridedVector{T}, ρᵣ::Stri
 
     # Calculate initial alpha damage
     β = zircon.β::DenseVector{T}
-    @turbo for k = 1:(nrSteps-2)
+    @turbo for k = 1:(nrsteps-2)
         fₐ = 1-exp(-Bα*annealedDamage[1,k]*Phi)
         τ = (lint0/(4.2 / ((1-exp(-Bα*annealedDamage[1,k])) * SV) - 2.5))^2
         De = 1 / ((1-fₐ)^3 / (Dz[1]/τ) + fₐ^3 / DN17[1])
@@ -167,7 +167,7 @@ function HeAgeSpherical(zircon::Zircon{T}, TSteps::StridedVector{T}, ρᵣ::Stri
     # u = v*r is the coordinate transform (u-substitution) for the Crank-
     # Nicholson equations where v is the He profile and r is radius
     u = zircon.u::DenseMatrix{T}
-    @turbo @. u = 0 # Initial u = v = 0 everywhere
+    @turbo @. u = 0 # initial u = v = 0 everywhere
 
     # Vector for RHS of Crank-Nicholson equation with regular grid cells
     y = zircon.y
@@ -184,13 +184,13 @@ function HeAgeSpherical(zircon::Zircon{T}, TSteps::StridedVector{T}, ρᵣ::Stri
     A.du[1] = 1
 
     # Dirichlet outer boundary condition (u(i,end) = u(i-1,end))
-    A.dl[nrSteps-1] = 0
-    A.d[nrSteps] = 1
+    A.dl[nrsteps-1] = 0
+    A.d[nrsteps] = 1
 
-    @inbounds for i=2:ntSteps
+    @inbounds for i=2:ntsteps
 
         # Calculate alpha damage
-        @turbo for k = 1:(nrSteps-2)
+        @turbo for k = 1:(nrsteps-2)
             fₐ = 1-exp(-Bα*annealedDamage[i,k]*Phi)
             τ = (lint0/(4.2 / ((1-exp(-Bα*annealedDamage[i,k])) * SV) - 2.5))^2
             De = 1 / ((1-fₐ)^3 / (Dz[i]/τ) + fₐ^3 / DN17[i])
@@ -210,15 +210,15 @@ function HeAgeSpherical(zircon::Zircon{T}, TSteps::StridedVector{T}, ρᵣ::Stri
         y[1] = 0
 
         # Dirichlet outer boundary condition (u(i,end) = u(i-1,end))
-        A.dl[nrSteps-1] = 0
-        A.d[nrSteps] = 1
-        y[nrSteps] = u[nrSteps,i-1]
+        A.dl[nrsteps-1] = 0
+        A.d[nrsteps] = 1
+        y[nrsteps] = u[nrsteps,i-1]
 
         # RHS of tridiagonal Crank-Nicholson equation for regular grid cells.
         # From Ketcham, 2005
-        @turbo for k = 2:nrSteps-1
+        @turbo for k = 2:nrsteps-1
             𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i-1], u[k-1, i-1], u[k+1, i-1]
-            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - alphaDeposition[i, k-1]*rSteps[k-1]*β[k]
+            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - alphaDeposition[i, k-1]*rsteps[k-1]*β[k]
         end
 
         # Invert using tridiagonal matrix algorithm
@@ -230,7 +230,7 @@ function HeAgeSpherical(zircon::Zircon{T}, TSteps::StridedVector{T}, ρᵣ::Stri
 
     # Convert from u (coordinate-transform'd conc.) to v (real He conc.)
     vFinal = @views u[2:end-1,end]
-    vFinal ./= rSteps
+    vFinal ./= rsteps
     μHe = vmean(vFinal) # Atoms/gram
 
     # Raw Age (i.e., as measured)
@@ -260,7 +260,7 @@ function lu!(A::Tridiagonal{T,V}, ipiv::Vector{BlasInt}, pivot::Union{RowMaximum
     n = size(A, 1)
     @assert length(ipiv) == n
 
-    # Initialize variables
+    # initialize variables
     info = 0
     dl = A.dl
     d = A.d
