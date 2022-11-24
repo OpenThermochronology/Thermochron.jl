@@ -106,7 +106,7 @@
 
     """
     ```julia
-    MCMC_vartcryst(data::NamedTuple, model::NamedTuple, nPoints::Int, agePoints::Vector, TPoints::Vector, unconf::NamedTuple, boundary::NamedTuple)
+    MCMC_vartcryst(data::NamedTuple, model::NamedTuple, nPoints::Int, agePoints::Vector, TPoints::Vector, unconf::Unconformity, boundary::Boundary)
     ```
     Markov chain Monte Carlo time-Temperature inversion of the data specified in `data` and model parameters specified by `model`.
 
@@ -117,7 +117,7 @@
     TStepdist, HeAgedist, ndist, lldist, acceptancedist = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary)
     ```
     """
-    function MCMC_vartcryst(data::NamedTuple, model::NamedTuple, nPoints::Int, agePoints::DenseVector{T}, TPoints::DenseVector{T}, unconf::NamedTuple, boundary::NamedTuple) where T <: AbstractFloat
+    function MCMC_vartcryst(data::NamedTuple, model::NamedTuple, nPoints::Int, agePoints::DenseVector{T}, TPoints::DenseVector{T}, boundary::Boundary{T}, unconf::Unconformity{T}) where T <: AbstractFloat
         # Sanitize inputs
         @assert firstindex(agePoints) === 1
         @assert firstindex(TPoints) === 1
@@ -145,9 +145,8 @@
         λAnnealing = T(model.λAnnealing)::T
 
         # Calculate number of boundary and unconformity points and allocate buffer for interpolating
-        extraPoints = length(boundary.agePoints) + length(unconf.agePoints)
-        agePointBuffer = similar(agePoints, maxPoints+extraPoints)::DenseVector{T}
-        TPointBuffer = similar(agePoints, maxPoints+extraPoints)::DenseVector{T}
+        agePointBuffer = similar(agePoints, maxPoints+boundary.npoints+unconf.npoints)::DenseVector{T}
+        TPointBuffer = similar(agePoints, maxPoints+boundary.npoints+unconf.npoints)::DenseVector{T}
         knot_index = similar(ageSteps, Int)::DenseVector{Int}
 
         # Calculate model ages for initial proposal
@@ -251,8 +250,10 @@
                 # end
 
                 # Circular boundary conditions
-                agePointsₚ[k] = min(max(mod(agePointsₚ[k]-dt, tInit-2dt) + dt, dt), tInit-dt)
-                TPointsₚ[k] = min(max(mod(TPointsₚ[k]-TNow, TInit-TNow) + TNow, TNow), TInit-TNow)
+                agePointsₚ[k] = mod(agePointsₚ[k]-dt, tInit-2dt) + dt
+                TPointsₚ[k] = mod(TPointsₚ[k]-TNow, TInit-TNow) + TNow
+                # agePointsₚ[k] = min(max(agePointsₚ[k], dt), tInit)
+                # TPointsₚ[k] = min(max(TPointsₚ[k], TNow), TInit)
 
                 # Recalculate interpolated proposed t-T path
                 ages = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)::StridedVector{T}
@@ -333,7 +334,7 @@
                 boundary.TPointsₚ[k] = boundary.T₀[k] + rand()*boundary.ΔT[k]
 
                 # If there's an imposed unconformity, adjust within parameters
-                if length(unconf.agePoints) > 0
+                if unconf.npoints > 0
                     @. unconf.agePointsₚ = unconf.Age₀ + rand()*unconf.ΔAge
                     @. unconf.TPointsₚ = unconf.T₀ + rand()*unconf.ΔT
                 end
@@ -437,7 +438,7 @@
     export MCMC_vartcryst
 
 
-    function MCMC_vartcryst(data::NamedTuple, model::NamedTuple, nPoints::Int, agePoints::DenseVector{T}, TPoints::DenseVector{T}, unconf::NamedTuple, boundary::NamedTuple, detail::NamedTuple) where T <: AbstractFloat
+    function MCMC_vartcryst(data::NamedTuple, model::NamedTuple, nPoints::Int, agePoints::DenseVector{T}, TPoints::DenseVector{T}, boundary::Boundary{T}, unconf::Unconformity{T}, detail::DetailInterval{T}) where T <: AbstractFloat
         # Sanitize inputs
         @assert firstindex(agePoints) === 1
         @assert firstindex(TPoints) === 1
@@ -466,9 +467,8 @@
         λAnnealing = T(model.λAnnealing)::T
 
         # Calculate number of boundary and unconformity points and allocate buffer for interpolating
-        extraPoints = length(boundary.agePoints) + length(unconf.agePoints)
-        agePointBuffer = similar(agePoints, maxPoints+extraPoints)::DenseVector{T}
-        TPointBuffer = similar(agePoints, maxPoints+extraPoints)::DenseVector{T}
+        agePointBuffer = similar(agePoints, maxPoints+boundary.npoints+unconf.npoints)::DenseVector{T}
+        TPointBuffer = similar(agePoints, maxPoints+boundary.npoints+unconf.npoints)::DenseVector{T}
         knot_index = similar(ageSteps, Int)::DenseVector{Int}
 
         # Calculate model ages for initial proposal
@@ -575,10 +575,10 @@
                 # end
 
                 # Circular boundary conditions
-                # agePointsₚ[k] = mod(agePointsₚ[k]-dt, tInit-2dt) + dt
-                # TPointsₚ[k] = mod(TPointsₚ[k]-TNow, TInit-TNow) + TNow
-                agePointsₚ[k] = min(max(mod(agePointsₚ[k]-dt, tInit-2dt) + dt, dt), tInit-dt)
-                TPointsₚ[k] = min(max(mod(TPointsₚ[k]-TNow, TInit-TNow) + TNow, TNow), TInit-TNow)
+                agePointsₚ[k] = mod(agePointsₚ[k]-dt, tInit-2dt) + dt
+                TPointsₚ[k] = mod(TPointsₚ[k]-TNow, TInit-TNow) + TNow
+                # agePointsₚ[k] = min(max(agePointsₚ[k], dt), tInit)
+                # TPointsₚ[k] = min(max(TPointsₚ[k], TNow), TInit)
 
                 # Recalculate interpolated proposed t-T path
                 ages = collectto!(agePointBuffer, view(agePointsₚ, 1:nPointsₚ), boundary.agePoints, unconf.agePointsₚ)::StridedVector{T}
@@ -591,9 +591,6 @@
                         break
                     end
                 end
-                # Copy last accepted solution to re-modify if we don't break
-                copyto!(agePointsₚ, agePoints)
-                copyto!(TPointsₚ, TPoints)
                 if attempt == nattempts
                     @warn """`move` proposals failed to satisfy reheating rate limit
                     maxdiff: $(maxdiff(TStepsₚ))
@@ -602,6 +599,9 @@
                     σⱼt: $(σⱼt)
                     σⱼT: $(σⱼT)"""
                 end
+                # Copy last accepted solution to re-modify if we don't break
+                copyto!(agePointsₚ, agePoints)
+                copyto!(TPointsₚ, TPoints)
                 end
             elseif (r < move+birth) && (nPointsₚ < maxPoints)
                 # Birth: add a new model point
@@ -661,7 +661,7 @@
                 boundary.TPointsₚ[k] = boundary.T₀[k] + rand()*boundary.ΔT[k]
 
                 # If there's an imposed unconformity, adjust within parameters
-                if length(unconf.agePoints) > 0
+                if unconf.npoints > 0
                     @. unconf.agePointsₚ = unconf.Age₀ + rand()*unconf.ΔAge
                     @. unconf.TPointsₚ = unconf.T₀ + rand()*unconf.ΔT
                 end
@@ -675,9 +675,6 @@
                 (maxdiff(TStepsₚ) < dTmax) && break
 
                 # Copy last accepted solution to re-modify if we don't break
-                copyto!(unconf.agePointsₚ, unconf.agePoints)
-                copyto!(unconf.TPointsₚ, unconf.TPoints)
-                copyto!(boundary.TPointsₚ, boundary.TPoints)
                 if attempt == nattempts
                     @warn """`movebounds` proposals failed to satisfy reheating rate limit
                     maxdiff: $(maxdiff(TStepsₚ))
@@ -686,6 +683,9 @@
                     σⱼt: $(σⱼt)
                     σⱼT: $(σⱼT)"""
                 end
+                copyto!(unconf.agePointsₚ, unconf.agePoints)
+                copyto!(unconf.TPointsₚ, unconf.TPoints)
+                copyto!(boundary.TPointsₚ, boundary.TPoints)
                 end
             end
 
@@ -728,10 +728,10 @@
                 # Update jumping distribution based on size of current accepted move
                 if dynamicjumping && r < move
                     if agePointsₚ[k] != agePoints[k]
-                        σⱼt = ℯ * abs(agePointsₚ[k] - agePoints[k])
+                        σⱼt = max(ℯ * abs(agePointsₚ[k] - agePoints[k]), dt)
                     end
                     if TPointsₚ[k] != TPoints[k]
-                        σⱼT = ℯ * abs(TPointsₚ[k] - TPoints[k])
+                        σⱼT = max(ℯ * abs(TPointsₚ[k] - TPoints[k]), one(T))
                     end
                 end
 

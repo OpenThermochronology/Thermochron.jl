@@ -49,12 +49,15 @@ data = (
 
 # Sort out crystallization ages and start time
 map!(x->max(x, model.tInitMax), data.CrystAge, data.CrystAge)
+tInit = ceil(maximum(data.CrystAge)/model.dt) * model.dt
 model = (model...,
-    tInit = ceil(maximum(data.CrystAge)/model.dt) * model.dt,
+    tInit = tInit,
+    ageSteps = Array{Float64}(tInit-model.dt/2 : -model.dt : 0+model.dt/2),
+    tSteps = Array{Float64}(0+model.dt/2 : model.dt : tInit-model.dt/2),
 )
 
 # Boundary conditions (e.g. 10C at present and 650 C at the time of zircon formation).
-boundary = (
+boundary = Boundary(
     agePoints = Float64[model.TNow, model.tInit],  # Ma
     TPoints = Float64[model.TNow, model.TInit],    # Degrees C
     T₀ = Float64[model.TNow, model.TInit],
@@ -62,24 +65,8 @@ boundary = (
 )
 
 # Default: No unconformity is imposed
-unconf = (
-    agePoints = Float64[],  # Ma
-    TPoints = Float64[],    # Degrees C
-)
+unconf = Unconformity()
 
-# Add additional vectors for proposed unconformity and boundary points
-unconf = (unconf...,
-    agePointsₚ = similar(unconf.agePoints),
-    TPointsₚ = similar(unconf.TPoints),
-)
-boundary = (boundary...,
-    agePointsₚ = similar(boundary.agePoints),
-    TPointsₚ = similar(boundary.TPoints),
-)
-model = (model...,
-    ageSteps = Array{Float64}(model.tInit-model.dt/2 : -model.dt : 0+model.dt/2),
-    tSteps = Array{Float64}(0+model.dt/2 : model.dt : model.tInit-model.dt/2),
-)
 
 ## --- Invert for maximum likelihood t-T path
 
@@ -93,8 +80,8 @@ agePoints[1:nPoints] .= (model.tInit/30,model.tInit/4,model.tInit/2,model.tInit-
 TPoints[1:nPoints] .= Tr  # Degrees C
 
 # Run Markov Chain
-@time "Compiling MCMC_vartcryst" MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary)
-@time "Running MCMC_vartcryst" (TStepdist, HeAgedist, ndist, lldist, acceptancedist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary)
+@time "Compiling MCMC_vartcryst" MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, boundary, unconf)
+@time "Running MCMC_vartcryst" (TStepdist, HeAgedist, ndist, lldist, acceptancedist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, boundary, unconf)
 
 @test isa(TStepdist, AbstractMatrix)
 @test maximum(TStepdist) <= model.TInit
@@ -120,12 +107,12 @@ llmean = mean(@view(lldist[model.burnin:end]))
 @info "Mean npoints: $(mean(ndist[model.burnin:end]))"
 
 ## ---
-detail = (
+detail = DetailInterval(
     agemin = 0, # Youngest end of detail interval
     agemax = 541, # Oldest end of detail interval
     minpoints = 5, # Minimum number of points in detail interval
 )
-@time "MCMC_vartcryst with Detail interval" (TStepdist, HeAgedist, ndist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary, detail)
+@time "MCMC_vartcryst with Detail interval" (TStepdist, HeAgedist, ndist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, boundary, unconf, detail)
 
 @test isa(TStepdist, AbstractMatrix)
 @test maximum(TStepdist) <= model.TInit
@@ -157,7 +144,7 @@ llmean = mean(@view(lldist[model.burnin:end]))
 model = (model...,
     dynamicjumping=true
 )
-@time "MCMC_vartcryst with Detail interval & dynamicjumping" (TStepdist, HeAgedist, ndist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary, detail)
+@time "MCMC_vartcryst with Detail interval & dynamicjumping" (TStepdist, HeAgedist, ndist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, boundary, unconf, detail)
 
 @test isa(TStepdist, AbstractMatrix)
 @test maximum(TStepdist) <= model.TInit
