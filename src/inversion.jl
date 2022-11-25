@@ -328,6 +328,9 @@
                     σⱼt: $(σⱼt)
                     σⱼT: $(σⱼT)"""
                 end
+                # Copy last accepted solution to re-modify if we don't break
+                copyto!(agepointsₚ, agepoints)
+                copyto!(Tpointsₚ, Tpoints)
                 end
             else
                 # Move boundary conditions
@@ -374,10 +377,6 @@
                 r: $r
                 """
             end
-
-            # ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
-            # temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
-            # linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
 
              # Calculate model ages for each grain
             anneal!(pr, Teq, dt, tsteps, Tstepsₚ, ZRDAAM())
@@ -637,7 +636,7 @@
                     σⱼT: $(σⱼT)"""
                 end
                 end
-            elseif (r < move+birth+death) && (r >= move+birth) && (npointsₚ > minpoints) && (enoughpoints == detail.minpoints)
+            elseif (r < move+birth+death) && (r >= move+birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
                 npointsₚ = npoints - 1 # Delete last point in array from proposal
                 for attempt ∈ 1:nattempts
@@ -651,7 +650,11 @@
                 linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
-                (maxdiff(Tstepsₚ) < dTmax) && break
+                if maxdiff(Tstepsₚ) < dTmax
+                    if pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax) >= enoughpoints
+                        break
+                    end
+                end
                 if attempt == nattempts
                     @warn """point removal proposals failed to satisfy reheating rate limit
                     maxdiff: $(maxdiff(Tstepsₚ))
@@ -660,6 +663,9 @@
                     σⱼt: $(σⱼt)
                     σⱼT: $(σⱼT)"""
                 end
+                # Copy last accepted solution to re-modify if we don't break
+                copyto!(agepointsₚ, agepoints)
+                copyto!(Tpointsₚ, Tpoints)
                 end
             else
                 # Move boundary conditions
@@ -707,10 +713,6 @@
                 r: $r
                 """
             end
-
-            # ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
-            # temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
-            # linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
 
              # Calculate model ages for each grain
             anneal!(pr, Teq, dt, tsteps, Tstepsₚ, ZRDAAM())
