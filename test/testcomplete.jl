@@ -102,13 +102,16 @@ llmean = mean(@view(lldist[model.burnin:end]))
 @info "Mean ll: $llmean"
 
 @test isa(acceptancedist, AbstractVector{Bool})
-@test isapprox(mean(acceptancedist), 0.5, atol=0.3)
+@test isapprox(mean(acceptancedist), 0.58, atol=0.3)
 @info "Mean acceptance rate: $(mean(acceptancedist[model.burnin:end]))"
 
 @test isa(ndist, AbstractVector{Int})
 @test minimum(ndist) >= 0
 @test maximum(ndist) <= model.maxpoints
 @info "Mean npoints: $(mean(ndist[model.burnin:end]))"
+
+@info "Mean σⱼₜ: $(mean(σⱼtdist[model.burnin:end]))"
+@info "Mean σⱼT: $(mean(σⱼTdist[model.burnin:end]))"
 
 ## ---
 detail = DetailInterval(
@@ -173,7 +176,7 @@ llmean = mean(@view(lldist[model.burnin:end]))
 @info "Mean ll: $llmean"
 
 @test isa(acceptancedist, AbstractVector{Bool})
-@test isapprox(mean(acceptancedist), 0.5, atol=0.3)
+@test isapprox(mean(acceptancedist), 0.58, atol=0.3)
 @info "Mean acceptance rate: $(mean(acceptancedist[model.burnin:end]))"
 
 @test isa(ndist, AbstractVector{Int})
