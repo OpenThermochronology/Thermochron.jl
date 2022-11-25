@@ -33,7 +33,7 @@
     # # # # # # # # # # Choice of regional thermochron data # # # # # # # # # #
 
     # Literature samples from Guenthner et al. 2013 (AJS), Minnesota
-    name = "Minnesota_zrdaam"
+    name = "Minnesota_highff"
     ds = importdataset("minnesota.csv", ',', importas=:Tuple)
 
     # Populate data NamedTuple from imported dataset
@@ -63,11 +63,11 @@
         maxpoints = 50, # Maximum allowed number of t-T points
         simplified = false, # Prefer simpler tT paths?
         dynamicjumping = true, # Update the t and t jumping (proposal) distributions based on previously accepted jumps
-        # Diffusion parameters
-        DzEa = 165.0, # kJ/mol
-        DzD0 = 193188.0, # cm^2/sec
-        DN17Ea = 71.0, # kJ/mol
-        DN17D0 = 0.0034, #6.367E-3 # cm^2/sec
+        # Diffusion parameters (High FF)
+        DzEa = 149.756087043, # kJ/mol
+        DzD0 = 10.0^4.130064, # cm^2/sec
+        DN17Ea = 129.224284308, # kJ/mol
+        DN17D0 = 10.0^4.000427, # cm^2/sec
         # Model uncertainty is not well known (depends on annealing parameters,
         # decay constants, diffusion parameters, etc.), but is certainly non-zero.
         # Here we add (in quadrature) a blanket model uncertainty of 25 Ma.
