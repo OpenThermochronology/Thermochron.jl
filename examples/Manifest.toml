@@ -1308,9 +1308,9 @@ uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [[deps.Thermochron]]
 deps = ["LinearAlgebra", "LoopVectorization", "ProgressMeter", "StatGeochemBase", "Statistics", "VectorizedStatistics"]
-git-tree-sha1 = "bfc222bcf8c29390490fcf34836c8577717c3ecd"
+git-tree-sha1 = "95cb1bfcac26f762a60000e978e72d6c7a6c603d"
 uuid = "b9a8379e-ee1a-4388-b7ca-7852af1cef08"
-version = "0.4.7"
+version = "0.5.0"
 
 [[deps.ThreadingUtilities]]
 deps = ["ManualMemory"]
