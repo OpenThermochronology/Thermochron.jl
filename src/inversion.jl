@@ -189,10 +189,11 @@
         Tstepsₚ = copy(Tsteps)::DenseVector{T}
 
         # distributions to populate
-        # Tstepdist = zeros(T, length(tsteps), nsteps)
         tpointdist = zeros(T, totalpoints, nsteps)
         Tpointdist = zeros(T, totalpoints, nsteps)
         HeAgedist = zeros(T, length(HeAge), nsteps)
+        σⱼtdist = zeros(T, nsteps)
+        σⱼTdist = zeros(T, nsteps)
         lldist = zeros(T, nsteps)
         ndist = zeros(Int, nsteps)
         acceptancedist = zeros(Bool, nsteps)
@@ -400,15 +401,15 @@
             # (Fast cooling should not be a problem, however)
             if log(rand()) < (llₚ - llₗ)
 
-                # # Update jumping distribution based on size of current accepted move
-                # if r < move
-                #     if agepointsₚ[k] != agepoints[k]
-                #         σⱼt = 3 * abs(agepointsₚ[k] - agepoints[k])
-                #     end
-                #     if Tpointsₚ[k] != Tpoints[k]
-                #         σⱼT = 3 * abs(Tpointsₚ[k] - Tpoints[k])
-                #     end
-                # end
+                # Update jumping distribution based on size of current accepted move
+                if dynamicjumping && r < move
+                    if agepointsₚ[k] != agepoints[k]
+                        σⱼt = max(ℯ * abs(agepointsₚ[k] - agepoints[k]), dt)
+                    end
+                    if Tpointsₚ[k] != Tpoints[k]
+                        σⱼT = max(ℯ * abs(Tpointsₚ[k] - Tpoints[k]), one(T))
+                    end
+                end
 
                 # Update the currently accepted proposal
                 ll = llₚ
@@ -428,17 +429,18 @@
             # Record results for analysis and troubleshooting
             lldist[n] = normpdf_ll(HeAge, σ, calcHeAges) # Recalculated to constant baseline
             ndist[n] = npoints # distribution of # of points
+            σⱼtdist[n] = σⱼt
+            σⱼTdist[n] = σⱼT
             HeAgedist[:,n] .= calcHeAges # distribution of He ages
 
             # This is the actual output we want -- the distribution of t-T paths (t path is always identical)
-            # Tstepdist[:,n] .= Tsteps # distribution of T paths
             collectto!(view(tpointdist, :, n), view(agepoints, 1:npoints), boundary.agepoints, unconf.agepoints)
             collectto!(view(Tpointdist, :, n), view(Tpoints, 1:npoints), boundary.Tpoints, unconf.Tpoints)
 
             # Update progress meter every `progress_interval` steps
             (mod(n, progress_interval) == 0) && update!(progress, n)
         end
-        return (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist)
+        return (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist)
     end
     export MCMC_vartcryst
 
@@ -515,13 +517,12 @@
         Tstepsₚ = copy(Tsteps)::DenseVector{T}
 
         # distributions to populate
-        # Tstepdist = zeros(T, length(tsteps), nsteps)
         tpointdist = zeros(T, totalpoints, nsteps)
         Tpointdist = zeros(T, totalpoints, nsteps)
         HeAgedist = zeros(T, length(HeAge), nsteps)
-        lldist = zeros(T, nsteps)
         σⱼtdist = zeros(T, nsteps)
         σⱼTdist = zeros(T, nsteps)
+        lldist = zeros(T, nsteps)
         ndist = zeros(Int, nsteps)
         acceptancedist = zeros(Bool, nsteps)
 
@@ -769,7 +770,6 @@
             HeAgedist[:,n] .= calcHeAges # distribution of He ages
 
             # This is the actual output we want -- the distribution of t-T paths (t path is always identical)
-            # Tstepdist[:,n] .= Tsteps # distribution of T paths
             collectto!(view(tpointdist, :, n), view(agepoints, 1:npoints), boundary.agepoints, unconf.agepoints)
             collectto!(view(Tpointdist, :, n), view(Tpoints, 1:npoints), boundary.Tpoints, unconf.Tpoints)
 
