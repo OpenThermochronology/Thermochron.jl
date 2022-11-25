@@ -110,11 +110,11 @@
     ```
     Markov chain Monte Carlo time-Temperature inversion of the data specified in `data` and model parameters specified by `model`.
 
-    Returns a tuple of distributions `(Tstepdist, HeAgedist, ndist, lldist, acceptancedist)`
+    Returns a tuple of distributions `(tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist)`
 
     ## Examples
     ```julia
-    Tstepdist, HeAgedist, ndist, lldist, acceptancedist = MCMC_vartcryst(data, model, npoints, agepoints, Tpoints, unconf, boundary)
+    tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist = MCMC_vartcryst(data, model, npoints, agepoints, Tpoints, unconf, boundary)
     ```
     """
     function MCMC_vartcryst(data::NamedTuple, model::NamedTuple, npoints::Int, agepoints::DenseVector{T}, Tpoints::DenseVector{T}, boundary::Boundary{T}, unconf::Unconformity{T}) where T <: AbstractFloat
@@ -131,7 +131,9 @@
         nsteps = model.nsteps::Int
         maxpoints = model.maxpoints::Int
         minpoints = (haskey(model, :minpoints) ? model.minpoints : 1)::Int
-        simplified = model.simplified::Bool
+        totalpoints = maxpoints + boundary.npoints + unconf.npoints::Int
+        simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
+        dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
         dTmax = T(model.dTmax)::T
         agesteps = T.(model.agesteps)::DenseVector{T}
         tsteps = T.(model.tsteps)::DenseVector{T}
@@ -145,8 +147,8 @@
         λannealing = T(model.λannealing)::T
 
         # Calculate number of boundary and unconformity points and allocate buffer for interpolating
-        agepointbuffer = similar(agepoints, maxpoints+boundary.npoints+unconf.npoints)::DenseVector{T}
-        Tpointbuffer = similar(agepoints, maxpoints+boundary.npoints+unconf.npoints)::DenseVector{T}
+        agepointbuffer = similar(agepoints, totalpoints)::DenseVector{T}
+        Tpointbuffer = similar(agepoints, totalpoints)::DenseVector{T}
         knot_index = similar(agesteps, Int)::DenseVector{Int}
 
         # Calculate model ages for initial proposal
@@ -187,8 +189,10 @@
         Tstepsₚ = copy(Tsteps)::DenseVector{T}
 
         # distributions to populate
+        # Tstepdist = zeros(T, length(tsteps), nsteps)
+        tpointdist = zeros(T, totalpoints, nsteps)
+        Tpointdist = zeros(T, totalpoints, nsteps)
         HeAgedist = zeros(T, length(HeAge), nsteps)
-        Tstepdist = zeros(T, length(tsteps), nsteps)
         lldist = zeros(T, nsteps)
         ndist = zeros(Int, nsteps)
         acceptancedist = zeros(Bool, nsteps)
@@ -428,12 +432,14 @@
             HeAgedist[:,n] .= calcHeAges # distribution of He ages
 
             # This is the actual output we want -- the distribution of t-T paths (t path is always identical)
-            Tstepdist[:,n] .= Tsteps # distribution of T paths
+            # Tstepdist[:,n] .= Tsteps # distribution of T paths
+            collectto!(view(tpointdist, :, n), view(agepoints, 1:npoints), boundary.agepoints, unconf.agepoints)
+            collectto!(view(Tpointdist, :, n), view(Tpoints, 1:npoints), boundary.Tpoints, unconf.Tpoints)
 
             # Update progress meter every `progress_interval` steps
             (mod(n, progress_interval) == 0) && update!(progress, n)
         end
-        return (Tstepdist, HeAgedist, ndist, lldist, acceptancedist)
+        return (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist)
     end
     export MCMC_vartcryst
 
@@ -452,6 +458,7 @@
         nsteps = model.nsteps::Int
         maxpoints = model.maxpoints::Int
         minpoints = (haskey(model, :minpoints) ? model.minpoints : 1)::Int
+        totalpoints = maxpoints + boundary.npoints + unconf.npoints::Int
         simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
         dTmax = T(model.dTmax)::T
@@ -467,8 +474,8 @@
         λannealing = T(model.λannealing)::T
 
         # Calculate number of boundary and unconformity points and allocate buffer for interpolating
-        agepointbuffer = similar(agepoints, maxpoints+boundary.npoints+unconf.npoints)::DenseVector{T}
-        Tpointbuffer = similar(agepoints, maxpoints+boundary.npoints+unconf.npoints)::DenseVector{T}
+        agepointbuffer = similar(agepoints, totalpoints)::DenseVector{T}
+        Tpointbuffer = similar(agepoints, totalpoints)::DenseVector{T}
         knot_index = similar(agesteps, Int)::DenseVector{Int}
 
         # Calculate model ages for initial proposal
@@ -509,8 +516,10 @@
         Tstepsₚ = copy(Tsteps)::DenseVector{T}
 
         # distributions to populate
+        # Tstepdist = zeros(T, length(tsteps), nsteps)
+        tpointdist = zeros(T, totalpoints, nsteps)
+        Tpointdist = zeros(T, totalpoints, nsteps)
         HeAgedist = zeros(T, length(HeAge), nsteps)
-        Tstepdist = zeros(T, length(tsteps), nsteps)
         lldist = zeros(T, nsteps)
         σⱼtdist = zeros(T, nsteps)
         σⱼTdist = zeros(T, nsteps)
@@ -758,10 +767,12 @@
             HeAgedist[:,n] .= calcHeAges # distribution of He ages
 
             # This is the actual output we want -- the distribution of t-T paths (t path is always identical)
-            Tstepdist[:,n] .= Tsteps # distribution of T paths
+            # Tstepdist[:,n] .= Tsteps # distribution of T paths
+            collectto!(view(tpointdist, :, n), view(agepoints, 1:npoints), boundary.agepoints, unconf.agepoints)
+            collectto!(view(Tpointdist, :, n), view(Tpoints, 1:npoints), boundary.Tpoints, unconf.Tpoints)
 
             # Update progress meter every `progress_interval` steps
             (mod(n, progress_interval) == 0) && update!(progress, n)
         end
-        return (Tstepdist, HeAgedist, ndist, lldist, acceptancedist, σⱼtdist, σⱼTdist)
+        return (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist)
     end

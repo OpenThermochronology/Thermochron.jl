@@ -81,11 +81,15 @@ Tpoints[1:npoints] .= Tr  # Degrees C
 
 # Run Markov Chain
 @time "Compiling MCMC_vartcryst" MCMC_vartcryst(data, model, npoints, agepoints, Tpoints, boundary, unconf)
-@time "Running MCMC_vartcryst" (Tstepdist, HeAgedist, ndist, lldist, acceptancedist) = MCMC_vartcryst(data, model, npoints, agepoints, Tpoints, boundary, unconf)
+@time "Running MCMC_vartcryst" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist) = MCMC_vartcryst(data, model, npoints, agepoints, Tpoints, boundary, unconf)
 
-@test isa(Tstepdist, AbstractMatrix)
-@test maximum(Tstepdist) <= model.Tinit
-@test minimum(Tstepdist) >= model.Tnow
+@test isa(Tpointdist, AbstractMatrix)
+@test maximum(Tpointdist) <= model.Tinit
+@test minimum(Tpointdist) >= model.Tnow
+
+@test isa(tpointdist, AbstractMatrix)
+@test maximum(tpointdist) <= model.tinit
+@test minimum(tpointdist) >= 0
 
 @test isa(HeAgedist, AbstractMatrix)
 abserr = abs(sum(nanmean(HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
@@ -112,11 +116,15 @@ detail = DetailInterval(
     agemax = 541, # Oldest end of detail interval
     minpoints = 5, # Minimum number of points in detail interval
 )
-@time "MCMC_vartcryst with Detail interval" (Tstepdist, HeAgedist, ndist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_vartcryst(data, model, npoints, agepoints, Tpoints, boundary, unconf, detail)
+@time "MCMC_vartcryst with Detail interval" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_vartcryst(data, model, npoints, agepoints, Tpoints, boundary, unconf, detail)
 
-@test isa(Tstepdist, AbstractMatrix)
-@test maximum(Tstepdist) <= model.Tinit
-@test minimum(Tstepdist) >= model.Tnow
+@test isa(Tpointdist, AbstractMatrix)
+@test maximum(Tpointdist) <= model.Tinit
+@test minimum(Tpointdist) >= model.Tnow
+
+@test isa(tpointdist, AbstractMatrix)
+@test maximum(tpointdist) <= model.tinit
+@test minimum(tpointdist) >= 0
 
 @test isa(HeAgedist, AbstractMatrix)
 abserr = abs(sum(nanmean(HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
@@ -144,11 +152,15 @@ llmean = mean(@view(lldist[model.burnin:end]))
 model = (model...,
     dynamicjumping=true
 )
-@time "MCMC_vartcryst with Detail interval & dynamicjumping" (Tstepdist, HeAgedist, ndist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_vartcryst(data, model, npoints, agepoints, Tpoints, boundary, unconf, detail)
+@time "MCMC_vartcryst with Detail interval & dynamicjumping" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_vartcryst(data, model, npoints, agepoints, Tpoints, boundary, unconf, detail)
 
-@test isa(Tstepdist, AbstractMatrix)
-@test maximum(Tstepdist) <= model.Tinit
-@test minimum(Tstepdist) >= model.Tnow
+@test isa(Tpointdist, AbstractMatrix)
+@test maximum(Tpointdist) <= model.Tinit
+@test minimum(Tpointdist) >= model.Tnow
+
+@test isa(tpointdist, AbstractMatrix)
+@test maximum(tpointdist) <= model.tinit
+@test minimum(tpointdist) >= 0
 
 @test isa(HeAgedist, AbstractMatrix)
 abserr = abs(sum(nanmean(HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
