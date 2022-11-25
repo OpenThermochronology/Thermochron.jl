@@ -17,11 +17,8 @@
 #                                                                               #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 ## ---  Load required packages
-    using StatGeochem
-    using JLD: @load, @save
-    using Plots
-
     using Thermochron
+    using StatGeochem, Plots
 
     using LinearAlgebra
     # Diminishing returns with more than ~4 threads
@@ -111,7 +108,8 @@
     #     ΔAge = Float64[80,],
     #     T₀ = Float64[0,],
     #     ΔT = Float64[40,],
-    # );
+    # )
+    # name *= "_unconf"
 
 ## --- Invert for maximum likelihood t-T path
 
@@ -135,10 +133,35 @@
     Mean σⱼT: $(nanmean(view(σⱼTdist, model.burnin:end)))
     """
 
-    # # Save results using JLD
-    @save string(name, ".jld") tpointdist Tpointdist ndist HeAgedist lldist acceptancedist model
-    # To read in from file, equivalently
+    # Save results using JLD
+    # Compressed:
+    using JLD
+    jldopen("$name.jld", "w", compress=true) do file
+        @write file tpointdist
+        @write file Tpointdist
+        @write file ndist
+        @write file HeAgedist
+        @write file lldist
+        @write file model
+    end
+    # Uncompresed:
+    # @save "$name.jld" tpointdist Tpointdist ndist HeAgedist lldist acceptancedist model
+    # To read all variables from file to local workspace:
     # @load "filename.jld"
+
+    # Alternatively, save as MAT file
+    using MAT
+    matwrite("$name.mat", Dict(
+        "tpointdist"=>tpointdist,
+        "Tpointdist"=>Tpointdist,
+        "ndist"=>ndist,
+        "HeAgedist"=>HeAgedist,
+        "lldist"=>lldist,
+        "acceptancedist"=>acceptancedist,
+        "model"=>Dict(
+            replace.(string.(keys(model)), "σ"=>"sigma", "λ"=>"lambda", "Δ"=>"Delta") .=> values(model)
+        )
+    ), compress=true)
 
     # Plot log likelihood distribution
     h = plot(lldist, xlabel="Step number", ylabel="Log likelihood", label="", framestyle=:box)

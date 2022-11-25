@@ -21,11 +21,7 @@
     using JLD: @load, @save
     using Plots
 
-    using Thermochron
-
-    using LinearAlgebra
-    # Diminishing returns with more than ~4 threads
-    BLAS.get_num_threads() > 4 && BLAS.set_num_threads(4)
+    using Thermochron # Version 0.4.6
 
     # Make sure we're running in the directory where the script is located
     cd(@__DIR__)
@@ -33,8 +29,38 @@
     # # # # # # # # # # Choice of regional thermochron data # # # # # # # # # #
 
     # Literature samples from Guenthner et al. 2013 (AJS), Minnesota
-    name = "Minnesota_lowff"
-    ds = importdataset("minnesota.csv", ',', importas=:Tuple)
+    name = "Minnesota_LowFF"
+    ds = importdataset("minnesota.csv", ',', importas=:Tuple);
+
+## --- Prepare problem
+
+    model = (
+        burnin = 1_000_000, # How long should we wait for MC to converge (become stationary)
+        nsteps = 1_500_000, # How many steps of the Markov chain should we run?
+        dr = 1.0,    # Radius step, in microns
+        dt = 10.0,   # time step size in Myr
+        dTmax = 10.0, # Maximum reheating/burial per model timestep
+        TInit = 400.0, # Initial model temperature (in C) (i.e., crystallization temperature)
+        ΔTInit = -50.0, # TInit can vary from TInit to TInit+ΔTinit
+        TNow = 0.0, # Current surface temperature (in C)
+        ΔTNow = 10.0, # TNow may vary from TNow to TNow+ΔTNow
+        tInitMax = 4000.0, # Ma -- forbid anything older than this
+        minPoints = 4, # Minimum allowed number of t-T points
+        maxPoints = 40, # Maximum allowed number of t-T points
+        simplified = false, # Prefer simpler tT paths?
+        # Diffusion parameters (Low FF)
+        DzEa = 137.904535009, # kJ/mol
+        DzD0 = 10^3.253373, # cm^2/sec
+        DN17Ea = 42.388297312, # kJ/mol
+        DN17D0 = 10^-5.000653 , # cm^2/sec
+        # Model uncertainty is not well known (depends on annealing parameters,
+        # decay constants, diffusion parameters, etc.), but is certainly non-zero.
+        # Here we add (in quadrature) a blanket model uncertainty of 25 Ma.
+        σModel = 25.0, # Ma
+        σAnnealing = 35.0, # Initial annealing uncertainty [Ma]
+        λAnnealing = 10 ./ 300_000 # Annealing decay [1/n]
+    )
+
 
     # Populate data NamedTuple from imported dataset
     data = (
@@ -43,137 +69,102 @@
         Th = ds.Th232_ppm,                      # Th concentration, in PPM
         HeAge = ds.HeAge_Ma_raw,                # He age, in Ma
         HeAge_sigma = ds.HeAge_Ma_sigma_raw,    # He age uncertainty (1-sigma), in Ma
-        crystAge = ds.CrystAge_Ma,              # Crystallization age, in Ma
-    );
-
-## --- Prepare problem
-
-    model = (
-        nsteps = 2_000_000, # How many steps of the Markov chain should we run?
-        burnin = 1_000_000, # How long should we wait for MC to converge (become stationary)
-        dr = 1.0,    # Radius step, in microns
-        dt = 10.0,   # Time step size in Myr
-        dTmax = 25.0, # Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
-        Tinit = 400.0, # Initial model temperature (in C) (i.e., crystallization temperature)
-        ΔTinit = -50.0, # Tinit can vary from Tinit to Tinit+ΔTinit
-        Tnow = 0.0, # Current surface temperature (in C)
-        ΔTnow = 20.0, # Tnow may vary from Tnow to Tnow+ΔTnow
-        tinitMax = 3500.0, # Ma -- forbid anything older than this
-        minpoints = 20, # Minimum allowed number of t-T points
-        maxpoints = 50, # Maximum allowed number of t-T points
-        simplified = false, # Prefer simpler tT paths?
-        dynamicjumping = true, # Update the t and t jumping (proposal) distributions based on previously accepted jumps
-        # Diffusion parameters (Low FF)
-        DzEa = 137.904535009, # kJ/mol
-        DzD0 = 10.0^3.253373, # cm^2/sec
-        DN17Ea = 42.388297312, # kJ/mol
-        DN17D0 = 10.9^-5.000653, # cm^2/sec
-        # Model uncertainty is not well known (depends on annealing parameters,
-        # decay constants, diffusion parameters, etc.), but is certainly non-zero.
-        # Here we add (in quadrature) a blanket model uncertainty of 25 Ma.
-        σmodel = 25.0, # Ma
-        σannealing = 35.0, # initial annealing uncertainty [Ma]
-        λannealing = 10 ./ 100_000 # annealing decay [1/n]
+        CrystAge = ds.CrystAge_Ma,              # Crystallization age, in Ma
     )
 
     # Sort out crystallization ages and start time
-    map!(x->max(x, model.tinitMax), data.crystAge, data.crystAge)
-    tinit = ceil(maximum(data.crystAge)/model.dt) * model.dt
+    map!(x->max(x, model.tInitMax), data.CrystAge, data.CrystAge)
     model = (model...,
-        tinit = tinit,
-        agesteps = Array{Float64}(tinit-model.dt/2 : -model.dt : 0+model.dt/2),
-        tsteps = Array{Float64}(0+model.dt/2 : model.dt : tinit-model.dt/2),
-    )
-
-    detail = DetailInterval(
-        agemin = 0.0, # Youngest end of detail interval
-        agemax = 541.0, # Oldest end of detail interval
-        minpoints = 7, # Minimum number of points in detail interval
+        tInit = ceil(maximum(data.CrystAge)/model.dt) * model.dt,
     )
 
     # Boundary conditions (e.g. 10C at present and 650 C at the time of zircon formation).
-    boundary = Boundary(
-        agepoints = Float64[model.Tnow, model.tinit],  # Ma
-        Tpoints = Float64[model.Tnow, model.Tinit],    # Degrees C
-        T₀ = Float64[model.Tnow, model.Tinit],
-        ΔT = Float64[model.ΔTnow, model.ΔTinit],
+    boundary = (
+        agePoints = Float64[model.TNow, model.tInit],  # Ma
+        TPoints = Float64[model.TNow, model.TInit],    # Degrees C
+        T₀ = Float64[model.TNow, model.TInit],
+        ΔT = Float64[model.ΔTNow, model.ΔTInit],
     )
 
     # Default: No unconformity is imposed
-    unconf = Unconformity();
+    unconf = (
+        agePoints = Float64[],  # Ma
+        TPoints = Float64[],    # Degrees C
+    )
 
     # # Uncomment this section if you wish to impose an unconformity at any point in the record
     # # Uniform distributions from Age₀ to Age₀+ΔAge, T₀ to T₀+ΔT,
-    # unconf = Unconformity(
-    #     agepoints = Float64[550.0,],  # Ma
-    #     Tpoints = Float64[20.0,],     # Degrees C
+    # unconf = (;
+    #     agePoints = Float64[560.0,],  # Ma
+    #     TPoints = Float64[20.0,],     # Degrees C
     #     Age₀ = Float64[500,],
     #     ΔAge = Float64[80,],
     #     T₀ = Float64[0,],
-    #     ΔT = Float64[40,],
-    # );
+    #     ΔT = Float64[50,],
+    # )
+
+    # Add additional vectors for proposed unconformity and boundary points
+    unconf = (unconf...,
+        agePointsₚ = similar(unconf.agePoints),
+        TPointsₚ = similar(unconf.TPoints),
+    )
+    boundary = (boundary...,
+        agePointsₚ = similar(boundary.agePoints),
+        TPointsₚ = similar(boundary.TPoints),
+    )
+    model = (model...,
+        ageSteps = Array{Float64}(model.tInit-model.dt/2 : -model.dt : 0+model.dt/2),
+        tSteps = Array{Float64}(0+model.dt/2 : model.dt : model.tInit-model.dt/2),
+    );
 
 ## --- Invert for maximum likelihood t-T path
 
     # This is where the "transdimensional" part comes in
-    agepoints = zeros(Float64, model.maxpoints) # Array of fixed size to hold all optional age points
-    Tpoints = zeros(Float64, model.maxpoints) # Array of fixed size to hold all optional age points
+    agePoints = Array{Float64}(undef, model.maxPoints) # Array of fixed size to hold all optional age points
+    TPoints = Array{Float64}(undef, model.maxPoints) # Array of fixed size to hold all optional age points
 
     # Fill some intermediate points to give the MCMC something to work with
-    Tr = 150 # Residence temperature
-    npoints = model.minpoints
-    agepoints[1:npoints] .= range(0, model.tinit, npoints)
-    Tpoints[1:npoints] .= Tr  # Degrees C
+    Tr = 250 # Residence temperature
+    nPoints = 5
+    agePoints[1:nPoints] .= (model.tInit/30, model.tInit/4, model.tInit/2, model.tInit-model.tInit/4, model.tInit-model.tInit/30) # Ma
+    TPoints[1:nPoints] .= Tr  # Degrees C
 
     # Run Markov Chain
-    @time (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_vartcryst(data, model, npoints, agepoints, Tpoints, boundary, unconf, detail)
-    @info """tpointdist & Tpointdist collected, size: $(size(Tpointdist))
-    Mean log-likelihood: $(nanmean(view(lldist, model.burnin:end)))
-    Mean acceptance rate: $(nanmean(view(acceptancedist, model.burnin:end)))
-    Mean npoints: $(nanmean(view(ndist, model.burnin:end)))
-    Mean σⱼₜ: $(nanmean(view(σⱼtdist,model.burnin:end)))
-    Mean σⱼT: $(nanmean(view(σⱼTdist, model.burnin:end)))
-    """
+    @time (TStepdist, HeAgedist, ndist, lldist, acceptancedist) = MCMC_vartcryst(data, model, nPoints, agePoints, TPoints, unconf, boundary)
 
     # # Save results using JLD
-    @save string(name, ".jld") tpointdist Tpointdist ndist HeAgedist lldist acceptancedist model
-    # To read in from file, equivalently
-    # @load "filename.jld"
+    @save string(name, ".jld") TStepdist HeAgedist lldist acceptancedist model
 
     # Plot log likelihood distribution
-    h = plot(lldist, xlabel="Step number", ylabel="Log likelihood", label="", framestyle=:box)
+    h = plot(lldist, xlabel="Step number", ylabel="Log likelihood", label="")
     savefig(h, name*"_lldist.pdf")
     display(h)
 
 ## ---  Plot sample age-eU correlations
 
     eU = data.U+.238*data.Th # Used only for plotting
-    h = scatter(eU, data.HeAge, yerror=2*data.HeAge_sigma, label="Data (2σ)", color=:black, framestyle=:box)
-    m = nanmean(HeAgedist[:,model.burnin:end], dims=2)
-    l = nanpctile(HeAgedist[:,model.burnin:end], 2.5, dims=2)
-    u = nanpctile(HeAgedist[:,model.burnin:end], 97.5, dims=2)
-    scatter!(h, eU, m, yerror=(m-l, u-m), label="Model + 95%CI", color=:blue, msc=:blue)
-
+    h = scatter(eU,HeAgedist[:,model.burnin:model.burnin+50], label="")
+    plot!(h, eU, data.HeAge, yerror=data.HeAge_sigma, seriestype=:scatter, label="Data")
     xlabel!(h,"eU (ppm)"); ylabel!(h,"Age (Ma)")
     savefig(h, name*"_Age-eU.pdf")
     display(h)
+
 
 ## --- Create image of paths
 
     # Desired rsolution of resulting image
     xresolution = 2000
     yresolution = 1000
-    burnin = model.burnin
 
     # Resize the post-burnin part of the stationary distribution
-    tTdist = Array{Float64}(undef, xresolution, model.nsteps-burnin)
-    xq = range(0, model.tinit, length=xresolution)
-    @time @inbounds for i = 1:model.nsteps-burnin
-        linterp1s!(view(tTdist,:,i), view(tpointdist,:,i+burnin), view(Tpointdist,:,i+burnin), xq)
+    tTdist = Array{Float64}(undef, xresolution, size(TStepdist,2)-model.burnin)
+    xq = range(0,model.tInit,length=xresolution)
+    @time @inbounds for i = 1:size(TStepdist,2)-model.burnin
+        linterp1!(view(tTdist,:,i), model.tSteps, view(TStepdist,:,i+model.burnin), xq)
     end
 
     # Calculate composite image
-    ybinedges = range(model.Tnow, model.Tinit, length=yresolution+1)
+    ybinedges = range(model.TNow, model.TInit, length=yresolution+1)
     tTimage = zeros(yresolution, size(tTdist,1))
     @time @inbounds for i=1:size(tTdist,1)
         histcounts!(view(tTimage,:,i), view(tTdist,i,:), ybinedges)
@@ -185,9 +176,9 @@
     k = plot(layout = grid(1,2, widths=[0.94, 0.06]), framestyle=:box)
 
     # Plot image with colorscale in first subplot
-    A = imsc(tTimage, ylcn, 0, nanpctile(tTimage[:],98.5))
-    plot!(k[1], xlabel="Time (Ma)", ylabel="Temperature (°C)", yticks=0:50:400, xticks=0:500:3500, yminorticks=5, xminorticks=5, tick_dir=:out, framestyle=:box)
-    plot!(k[1], xq, cntr(ybinedges), A, yflip=true, xflip=true, legend=false, aspectratio=model.tinit/model.Tinit/1.5, xlims=(0,model.tinit), ylims=(0,400))
+    A = imsc(reverse(tTimage,dims=2), ylcn, 0, nanpctile(tTimage[:],98.5))
+    plot!(k[1], xlabel="Time (Ma)",ylabel="Temperature (°C)",yticks=0:50:400,xticks=0:500:3500,yminorticks=5,xminorticks=5,tick_dir=:out,framestyle=:box)
+    plot!(k[1],xq,cntr(ybinedges),A,yflip=true,xflip=true,legend=false,aspectratio=3500/400/1.5,xlims=(0,3500),ylims=(0,400))
 
     # Add colorbar in second subplot
     cb = imsc(repeat(0:100, 1, 10), ylcn, 0, 100)
@@ -198,7 +189,7 @@
     #plot!([635.5, 650.0, 650.0, 635.5, 635.5],[0, 0, 650, 650, 0], fill=true, color=:white, alpha=0.6) #Marinoan glacial
     #plot!([480, 640, 640, 480, 480],[0, 0, 50, 50, 0], linestyle = :dot, color=:black, linewidth=1.25) # t-T box 640 to 480 Ma, 0-50°C
 
-    savefig(k, name*"_tT.pdf")
+    savefig(k, name*"mcmc-zrdaam.pdf")
     display(k)
 
 ## ---
