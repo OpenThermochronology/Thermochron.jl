@@ -395,7 +395,7 @@
                         σⱼt = max(ℯ * abs(agepointsₚ[k] - agepoints[k]), dt)
                     end
                     if Tpointsₚ[k] != Tpoints[k]
-                        σⱼT = max(ℯ * abs(Tpointsₚ[k] - Tpoints[k]), one(T))
+                        σⱼT = max(ℯ * abs(Tpointsₚ[k] - Tpoints[k]), (Tinit-Tnow)/100)
                     end
                 end
 
@@ -718,7 +718,7 @@
                         σⱼt = max(ℯ * abs(agepointsₚ[k] - agepoints[k]), dt)
                     end
                     if Tpointsₚ[k] != Tpoints[k]
-                        σⱼT = max(ℯ * abs(Tpointsₚ[k] - Tpoints[k]), one(T))
+                        σⱼT = max(ℯ * abs(Tpointsₚ[k] - Tpoints[k]), (Tinit-Tnow)/100)
                     end
                 end
 
