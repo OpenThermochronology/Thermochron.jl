@@ -257,8 +257,6 @@
                 # Circular boundary conditions
                 agepointsₚ[k] = mod(agepointsₚ[k]-dt, tinit-2dt) + dt
                 Tpointsₚ[k] = mod(Tpointsₚ[k]-Tnow, Tinit-Tnow) + Tnow
-                # agepointsₚ[k] = min(max(agepointsₚ[k], dt), tinit)
-                # Tpointsₚ[k] = min(max(Tpointsₚ[k], Tnow), Tinit)
 
                 # Recalculate interpolated proposed t-T path
                 ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
@@ -367,16 +365,6 @@
                 copyto!(unconf.Tpointsₚ, unconf.Tpoints)
                 copyto!(boundary.Tpointsₚ, boundary.Tpoints)
                 end
-            end
-
-            if any(isnan, view(agepointsₚ, 1:npointsₚ)) ||  any(isnan, view(Tpointsₚ, 1:npointsₚ))
-                @warn """`NaN`s detected!
-                ages: $(agepointsₚ[1:npointsₚ])
-                temperatures: $(Tpointsₚ[1:npointsₚ])
-                σⱼt: $(σⱼt)
-                σⱼT: $(σⱼT)
-                r: $r
-                """
             end
 
              # Calculate model ages for each grain
@@ -586,8 +574,6 @@
                 # Circular boundary conditions
                 agepointsₚ[k] = mod(agepointsₚ[k]-dt, tinit-2dt) + dt
                 Tpointsₚ[k] = mod(Tpointsₚ[k]-Tnow, Tinit-Tnow) + Tnow
-                # agepointsₚ[k] = min(max(agepointsₚ[k], dt), tinit)
-                # Tpointsₚ[k] = min(max(Tpointsₚ[k], Tnow), Tinit)
 
                 # Recalculate interpolated proposed t-T path
                 ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
@@ -689,8 +675,6 @@
 
                 # Retry unless we have satisfied the maximum reheating rate
                 (maxdiff(Tstepsₚ) < dTmax) && break
-
-                # Copy last accepted solution to re-modify if we don't break
                 if attempt == nattempts
                     @warn """`movebounds` proposals failed to satisfy reheating rate limit
                     maxdiff: $(maxdiff(Tstepsₚ))
@@ -699,20 +683,11 @@
                     σⱼt: $(σⱼt)
                     σⱼT: $(σⱼT)"""
                 end
+                # Copy last accepted solution to re-modify if we don't break
                 copyto!(unconf.agepointsₚ, unconf.agepoints)
                 copyto!(unconf.Tpointsₚ, unconf.Tpoints)
                 copyto!(boundary.Tpointsₚ, boundary.Tpoints)
                 end
-            end
-
-            if any(isnan, view(agepointsₚ, 1:npointsₚ)) ||  any(isnan, view(Tpointsₚ, 1:npointsₚ))
-                @warn """`NaN`s detected!
-                ages: $(agepointsₚ[1:npointsₚ])
-                temperatures: $(Tpointsₚ[1:npointsₚ])
-                σⱼt: $(σⱼt)
-                σⱼT: $(σⱼT)
-                r: $r
-                """
             end
 
              # Calculate model ages for each grain
