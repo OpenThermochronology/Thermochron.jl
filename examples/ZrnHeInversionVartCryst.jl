@@ -60,7 +60,7 @@
         maxpoints = 50, # Maximum allowed number of t-T points
         simplified = false, # Prefer simpler tT paths?
         dynamicjumping = true, # Update the t and t jumping (proposal) distributions based on previously accepted jumps
-        # Diffusion parameters
+        # Diffusion parameters (ZRDAAM standard)
         DzEa = 165.0, # kJ/mol
         DzD0 = 193188.0, # cm^2/sec
         DN17Ea = 71.0, # kJ/mol
@@ -136,6 +136,7 @@
     # Save results using JLD
     # Compressed:
     using JLD
+    using JLD: @write
     jldopen("$name.jld", "w", compress=true) do file
         @write file tpointdist
         @write file Tpointdist
@@ -179,6 +180,13 @@
 
     xlabel!(h,"eU (ppm)"); ylabel!(h,"Age (Ma)")
     savefig(h, name*"_Age-eU.pdf")
+    display(h)
+
+## --- Plot moving average of acceptance distribution
+
+    h = plot(movmean(acceptancedist,100), label="", framestyle=:box)
+    plot!(xlabel="Step number", ylabel="acceptance probability (mean of 100)")
+    savefig(h, name*"_acceptance.pdf")
     display(h)
 
 ## --- Create image of paths

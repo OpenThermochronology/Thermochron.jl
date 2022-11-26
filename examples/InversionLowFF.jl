@@ -185,7 +185,7 @@
 ## --- Plot moving average of acceptance distribution
 
     h = plot(movmean(acceptancedist,100), label="", framestyle=:box)
-    plot!(xlabel="Step number", ylabel="acceptance probability (mean of 100)")
+    plot!(xlabel="Step number", ylabel="Acceptance probability (mean of 100)")
     savefig(h, name*"_acceptance.pdf")
     display(h)
 
