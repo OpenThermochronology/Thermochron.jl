@@ -126,11 +126,11 @@
     # Run Markov Chain
     @time (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_vartcryst(data, model, npoints, agepoints, Tpoints, boundary, unconf, detail)
     @info """tpointdist & Tpointdist collected, size: $(size(Tpointdist))
-    Mean log-likelihood: $(nanmean(view(lldist, model.burnin:end)))
-    Mean acceptance rate: $(nanmean(view(acceptancedist, model.burnin:end)))
-    Mean npoints: $(nanmean(view(ndist, model.burnin:end)))
-    Mean σⱼₜ: $(nanmean(view(σⱼtdist,model.burnin:end)))
-    Mean σⱼT: $(nanmean(view(σⱼTdist, model.burnin:end)))
+    Mean log-likelihood: $(nanmean(view(lldist, model.burnin:model.nsteps)))
+    Mean acceptance rate: $(nanmean(view(acceptancedist, model.burnin:model.nsteps)))
+    Mean npoints: $(nanmean(view(ndist, model.burnin:model.nsteps)))
+    Mean σⱼₜ: $(nanmean(view(σⱼtdist,model.burnin:model.nsteps)))
+    Mean σⱼT: $(nanmean(view(σⱼTdist, model.burnin:model.nsteps)))
     """
 
     # Save results using JLD
