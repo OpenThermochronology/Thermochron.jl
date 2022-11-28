@@ -43,7 +43,7 @@ data = (
     U = ds.U238_ppm,                        # U concentration, in PPM
     Th = ds.Th232_ppm,                      # Th concentration, in PPM
     HeAge = ds.HeAge_Ma_raw,                # He age, in Ma
-    HeAge_sigma = ds.HeAge_Ma_sigma_raw,    # He age uncertainty (1-sigma), in Ma
+    HeAge_sigma = ds.HeAge_Ma_sigma_10pct,  # He age uncertainty (1-sigma), in Ma
     crystAge = ds.CrystAge_Ma,              # Crystallization age, in Ma
 )
 
