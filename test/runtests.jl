@@ -1,6 +1,5 @@
 using Thermochron
-using LinearAlgebra
-using Statistics
+using LinearAlgebra, Statistics
 using StatGeochem
 using Test
 

@@ -155,9 +155,7 @@
     T0 = 30
     agePoints = Float64[tCryst, tCryst*29/30,   720, 580, 250,  0] # Age (Ma)
     TPoints  =  Float64[TCryst,        Tr+T0, Tr+T0,  T0,  70, 10] # Temp. (C)
-    using StatGeochemBase
     Tsteps = linterp1s(agePoints,TPoints,reverse(tsteps))
-
 
     pr, Teq = anneal(dt, tsteps, Tsteps, ZRDAAM())
     @test size(pr) == (300,300)
