@@ -91,7 +91,7 @@ Tpoints[1:npoints] .= Tr  # Degrees C
 
 @test isa(HeAgedist, AbstractMatrix)
 abserr = abs(sum(nanmean(HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
-@test 1 < abserr < 50
+@test 0 < abserr < 50
 @info "Mean absolute error: $abserr"
 
 @test isa(lldist, AbstractVector)
@@ -129,7 +129,7 @@ detail = DetailInterval(
 
 @test isa(HeAgedist, AbstractMatrix)
 abserr = abs(sum(nanmean(HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
-@test 1 < abserr < 50
+@test 0 < abserr < 50
 @info "Mean absolute error: $abserr"
 
 @test isa(lldist, AbstractVector)
@@ -165,7 +165,7 @@ model = (model...,
 
 @test isa(HeAgedist, AbstractMatrix)
 abserr = abs(sum(nanmean(HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
-@test 1 < abserr < 50
+@test 0 < abserr < 50
 @info "Mean absolute error: $abserr"
 
 @test isa(lldist, AbstractVector)
