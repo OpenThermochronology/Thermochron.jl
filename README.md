@@ -8,8 +8,9 @@
 
 Open-source time-Temperature inversion of thermochronometric data.
 
-Implements a transdimensional Markov chain Monte Carlo (MCMC) time-Temperature inversion with optional Simulated Annealing (e.g., [1](https://en.wikipedia.org/wiki/Simulated_annealing), [2](https://doi.org/10.1007/978-94-015-7744-1_2)).
-Currently supports zircon helium data with the damage and annealing model of [Guenthner et al., 2013](https://doi.org/10.2475/03.2013.01), with additional systems and models expected to be added in future releases.
+Implements a transdimensional Markov chain Monte Carlo (MCMC) time-Temperature inversion with optional Simulated Annealing (e.g., [1](https://en.wikipedia.org/wiki/Simulated_annealing), [2](https://doi.org/10.1007/978-94-015-7744-1_2)) using a Crank-Nicholson diffusion model following the equations of [Ketcham, 2005](https://doi.org/10.2138/rmg.2005.58.11).
+
+This package currently supports zircon helium data with the damage and annealing model of [Guenthner et al., 2013](https://doi.org/10.2475/03.2013.01), with additional systems and models expected to be added in future releases.
 
 ## Installation
 Thermochron.jl can be installed in the same ways you would install any other registered Julia package, i.e.

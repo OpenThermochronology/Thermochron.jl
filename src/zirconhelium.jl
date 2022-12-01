@@ -102,9 +102,16 @@ export anneal!
 ```julia
 HeAge = HeAgeSpherical(zircon::Zircon, Tsteps::Vector, ρᵣ::Matrix, diffusionmodel)
 ```
-Calculate the precdicted U-Th/He age of a zircon that has experienced a given t-T path
-(specified by `zircon.agesteps` for time and `Tsteps` for temperature, at a time resolution of `zircon.dt`)
-using a Crank-Nicholson diffusion solution for a spherical grain of radius `zircon.r` at spatial resolution `zircon.dr`.
+Calculate the precdicted U-Th/He age of a zircon that has experienced a given t-T
+path (specified by `zircon.agesteps` for time and `Tsteps` for temperature, at a
+time resolution of `zircon.dt`) using a Crank-Nicholson diffusion solution for a
+spherical grain of radius `zircon.r` at spatial resolution `zircon.dr`.
+
+Implemented based on the the Crank-Nicholson solution for diffusion out of a
+spherical zircon or apatite crystal in:
+Ketcham, Richard A. (2005) "Forward and Inverse Modeling of Low-Temperature
+Thermochronometry Data" Reviews in Mineralogy and Geochemistry 58 (1), 275–314.
+https://doi.org/10.2138/rmg.2005.58.11
 """
 function HeAgeSpherical(zircon::Zircon{T}, Tsteps::StridedVector{T}, ρᵣ::StridedMatrix{T}, diffusionmodel) where T <: AbstractFloat
 
@@ -215,7 +222,7 @@ function HeAgeSpherical(zircon::Zircon{T}, Tsteps::StridedVector{T}, ρᵣ::Stri
         y[nrsteps] = u[nrsteps,i-1]
 
         # RHS of tridiagonal Crank-Nicholson equation for regular grid cells.
-        # From Ketcham, 2005
+        # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
         @turbo for k = 2:nrsteps-1
             𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i-1], u[k-1, i-1], u[k+1, i-1]
             y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - alphaDeposition[i, k-1]*rsteps[k-1]*β[k]
