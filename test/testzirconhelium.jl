@@ -141,3 +141,37 @@
     for i=1:10
         @test HeAgeSpherical(zircon,Tsteps,pr,diffusionparams) ≈ 777.5627957477788
     end
+
+## Test integrated age program 10 Ma timestep
+
+    tCryst = 3000.0 # Time (in AMyr)
+    TCryst = 600 # C
+    dt = 10 # time step size in Myr
+    dr = 1
+    tsteps = collect(0+dt/2 : dt : tCryst-dt/2)
+
+    # Generate T path to test
+    Tr = 150
+    T0 = 30
+    agePoints = Float64[tCryst, tCryst*29/30,   720, 580, 250,  0] # Age (Ma)
+    TPoints  =  Float64[TCryst,        Tr+T0, Tr+T0,  T0,  70, 10] # Temp. (C)
+    using StatGeochemBase
+    Tsteps = linterp1s(agePoints,TPoints,reverse(tsteps))
+
+
+    pr, Teq = anneal(dt, tsteps, Tsteps, ZRDAAM())
+    @test size(pr) == (300,300)
+    @test mean(pr) ≈ 0.38342687162656836
+
+    diffusionparams = (;
+        DzEa = 165.0, # kJ/mol
+        DzD0 = 193188.0, # cm^2/sec
+        DN17Ea = 71.0, # kJ/mol
+        DN17D0 = 0.0034, #6.367E-3 # cm^2/sec
+    )
+
+    crystalRadius = 59.3
+    Uppm = 462.98
+    Thppm = 177.76
+    zircon = Zircon(crystalRadius,dr,Uppm,Thppm,dt,reverse(tsteps))
+    @test HeAgeSpherical(zircon,Tsteps,pr,diffusionparams) ≈ 175.87865725442353

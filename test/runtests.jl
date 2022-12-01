@@ -1,5 +1,7 @@
 using Thermochron
 using LinearAlgebra
+using Statistics
+using StatGeochem
 using Test
 
 @testset "Zircon helium" begin include("testzirconhelium.jl") end

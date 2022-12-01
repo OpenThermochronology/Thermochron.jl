@@ -1,5 +1,3 @@
-using Statistics
-using StatGeochem
 
 # Read in data from file using StatGeochem
 datapath = joinpath("..", "examples", "minnesota.csv")
