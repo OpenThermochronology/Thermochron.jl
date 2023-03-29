@@ -63,8 +63,10 @@ function intersectiondensity!(dInt::Vector{T}, rEdges::Vector{T}, rVolumes::Vect
 end
 export intersectiondensity
 
+# Abstract type to include any number of mineral chronometers (zircon, apatite, etc.)
 abstract type Mineral end
 
+# Concretely-typed immutable struct to hold information about a single zircon (Helium) crystal
 struct Zircon{T<:Number} <: Mineral
     dt::T
     agesteps::Vector{T}
@@ -92,7 +94,7 @@ struct Zircon{T<:Number} <: Mineral
     ipiv::Vector{LinearAlgebra.BlasInt}
     y::Vector{T}
 end
-
+# Constructor for the Zircon type, given grain radius, U and Th concentrations and t-T discretization information
 function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number
 
     # Temporal discretization
