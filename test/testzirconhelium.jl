@@ -101,18 +101,18 @@
 
 
 # Test whole integrated age program
-    diffusionparams = (;
+    dm = ZRDAAM(
         DzEa = 165.0, # kJ/mol
         DzD0 = 193188.0, # cm^2/sec
         DN17Ea = 71.0, # kJ/mol
         DN17D0 = 0.0034, #6.367E-3 # cm^2/sec
     )
-    HeAgeSpherical(zircon,Tsteps,pr,diffusionparams)
-    @time "Running HeAgeSpherical" age = HeAgeSpherical(zircon,Tsteps,pr,diffusionparams)
+    HeAgeSpherical(zircon,Tsteps,pr,dm)
+    @time "Running HeAgeSpherical" age = HeAgeSpherical(zircon,Tsteps,pr,dm)
     @test age ≈ 520.0297717798045
     # Re-run to ensure internal state does not change
     for i=1:10
-        @test HeAgeSpherical(zircon,Tsteps,pr,diffusionparams) ≈ 520.0297717798045
+        @test HeAgeSpherical(zircon,Tsteps,pr,dm) ≈ 520.0297717798045
     end
 
     crystalRadius = 35.
@@ -121,7 +121,7 @@
     zircon = Zircon(crystalRadius,dr,Uppm,Thppm,dt,reverse(tsteps))
     # Re-run to ensure internal state does not change
     for i=1:10
-        @test HeAgeSpherical(zircon,Tsteps,pr,diffusionparams) ≈ 309.7600561440283
+        @test HeAgeSpherical(zircon,Tsteps,pr,dm) ≈ 309.7600561440283
     end
 
     crystalRadius = 135.
@@ -130,7 +130,7 @@
     zircon = Zircon(crystalRadius,dr,Uppm,Thppm,dt,reverse(tsteps))
     # Re-run to ensure internal state does not change
     for i=1:10
-        @test HeAgeSpherical(zircon,Tsteps,pr,diffusionparams) ≈ 16.02209841621174
+        @test HeAgeSpherical(zircon,Tsteps,pr,dm) ≈ 16.02209841621174
     end
 
     crystalRadius = 135.
@@ -139,7 +139,7 @@
     zircon = Zircon(crystalRadius,dr,Uppm,Thppm,dt,reverse(tsteps))
     # Re-run to ensure internal state does not change
     for i=1:10
-        @test HeAgeSpherical(zircon,Tsteps,pr,diffusionparams) ≈ 777.5627957477788
+        @test HeAgeSpherical(zircon,Tsteps,pr,dm) ≈ 777.5627957477788
     end
 
 ## Test integrated age program 10 Ma timestep
@@ -161,7 +161,7 @@
     @test size(pr) == (300,300)
     @test mean(pr) ≈ 0.38342687162656836
 
-    diffusionparams = (;
+    dm = ZRDAAM(
         DzEa = 165.0, # kJ/mol
         DzD0 = 193188.0, # cm^2/sec
         DN17Ea = 71.0, # kJ/mol
@@ -172,4 +172,4 @@
     Uppm = 462.98
     Thppm = 177.76
     zircon = Zircon(crystalRadius,dr,Uppm,Thppm,dt,reverse(tsteps))
-    @test HeAgeSpherical(zircon,Tsteps,pr,diffusionparams) ≈ 175.87865725442353
+    @test HeAgeSpherical(zircon,Tsteps,pr,dm) ≈ 175.87865725442353

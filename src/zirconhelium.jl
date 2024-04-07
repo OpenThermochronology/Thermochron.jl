@@ -61,13 +61,13 @@ export RDAAM
 ```
 Zircon damage annealing model as in Guenthner et al. 2013 (AJS)
 """
-function anneal(dt::Number, tsteps::DenseVector, Tsteps::DenseVector, model::DamageModel=ZRDAAM())
+function anneal(dt::Number, tsteps::DenseVector, Tsteps::DenseVector, dm::DamageModel=ZRDAAM())
     # Allocate matrix to hold reduced track lengths for all previous timesteps
     ntsteps = length(tsteps)
     ρᵣ = zeros(ntsteps,ntsteps)
     Teq = zeros(ntsteps)
     # In=-place version
-    anneal!(ρᵣ, Teq, dt, tsteps, Tsteps, model)
+    anneal!(ρᵣ, Teq, dt, tsteps, Tsteps, dm)
     return ρᵣ, Teq
 end
 export anneal
@@ -192,17 +192,12 @@ Ketcham, Richard A. (2005) "Forward and Inverse Modeling of Low-Temperature
 Thermochronometry Data" Reviews in Mineralogy and Geochemistry 58 (1), 275–314.
 https://doi.org/10.2138/rmg.2005.58.11
 """
-function HeAgeSpherical(zircon::Zircon{T}, Tsteps::StridedVector{T}, ρᵣ::StridedMatrix{T}, diffusionmodel) where T <: AbstractFloat
+function HeAgeSpherical(zircon::Zircon{T}, Tsteps::StridedVector{T}, ρᵣ::StridedMatrix{T}, dm::ZRDAAM{T}) where T <: AbstractFloat
 
-    # Diffusion constants
-    # DzEa = 165.0 # kJ/mol
-    # DzD0 = 193188.0 # cm^2/sec
-    # DN17Ea = 71.0 # kJ/mol
-    # DN17D0 = 0.0034 #6.367E-3 # cm^2/sec
-    DzEa = diffusionmodel.DzEa::T
-    DzD0 = diffusionmodel.DzD0::T
-    DN17Ea = diffusionmodel.DN17Ea::T
-    DN17D0 = diffusionmodel.DN17D0::T
+    DzEa = dm.DzEa::T
+    DzD0 = dm.DzD0::T
+    DN17Ea = dm.DN17Ea::T
+    DN17D0 = dm.DN17D0::T
 
     # Damage and annealing constants
     lint0 = 45920.0 # nm
