@@ -1,3 +1,4 @@
+const LOG_SEC_MYR = log(1E6*365.25*24*3600)
 
 # Jaffey decay constants
 const λ235U = log(2)/(7.0381*10^8)*10^6 # [1/Myr]
@@ -15,8 +16,44 @@ end
 
 # Define Damage model types
 abstract type DamageModel end
-struct ZRDAAM <: DamageModel end
+Base.@kwdef struct ZRDAAM{T<:AbstractFloat} <: DamageModel 
+    DzEa::T = 165.0 # kJ/mol
+    DzEa_sigma::T = 0.
+    DzD0::T = 193188.0 # cm^2/sec
+    DzD0_sigma::T = 0.
+    DN17Ea::T = 71.0 # kJ/mol
+    DN17Ea_sigma::T = 0.
+    DN17D0::T = 6.367E-3 # cm^2/sec
+    DN17D0_sigma::T = 0.
+    lint0::T = 45920.0 # nm
+    SV::T = 1.669 # 1/nm
+    Bα::T = 5.48E-19 # [g/alpha] mass of amorphous material produced per alpha decay
+    Phi::T = 3.0
+    beta::T=-0.05721
+    C0::T=6.24534
+    C1::T=-0.11977
+    C2::T=-314.937 - LOG_SEC_MYR # Includes conversion factor from seconds to Myr for dt (for performance), in addition to traditional C2 value
+    C3::T=-14.2868
+end
 export ZRDAAM
+
+Base.@kwdef struct RDAAM{T<:AbstractFloat} <: DamageModel 
+    psi::T=1e-13
+    omega::T=1e-22
+    D0L::T=0.6071 # cm2/s
+    EsubL::T=122.3 # kJ/mol
+    EsubTrap::T=34 # kJ/mol
+    etaq::T=0.91  # Durango
+    L::T=0.000815 # cm2
+    beta::T=0.04672 # Originally called alpha, but called beta here for consistency with ZRDAAM
+    C0::T=0.39528
+    C1::T=0.01073
+    C2::T=-65.12969 - LOG_SEC_MYR # Includes conversion factor from seconds to Myr for dt (for performance), in addition to traditional C2 value
+    C3::T=-7.91715
+    rmr0::T=0.83
+    kappa::T=1.04-0.83
+end
+export RDAAM
 
 """
 ```julia
@@ -42,13 +79,8 @@ anneal!(ρᵣ::Matrix, dt::Number, tsteps::Vector, Tsteps::Vector, [model::Damag
 In-place version of `anneal`
 """
 anneal!(ρᵣ::DenseMatrix, Teq::DenseVector, dt::Number, tsteps::DenseVector, Tsteps::DenseVector) = anneal!(ρᵣ, Teq, dt, tsteps, Tsteps, ZRDAAM())
-function anneal!(ρᵣ::DenseMatrix{T}, Teq::DenseVector{T}, dt::Number, tsteps::DenseVector, Tsteps::DenseVector, ::ZRDAAM) where T <: AbstractFloat
-    # Annealing model constants
-    B=-0.05721
-    C0=6.24534
-    C1=-0.11977
-    C2=-314.937 - log(1E6*365.25*24*3600) # Convert from seconds to Myr
-    C3=-14.2868
+
+function anneal!(ρᵣ::DenseMatrix{T}, Teq::DenseVector{T}, dt::Number, tsteps::DenseVector, Tsteps::DenseVector, dm::ZRDAAM{T}) where T <: AbstractFloat
 
     ∅ = zero(T)
     ntsteps = length(tsteps)
@@ -57,40 +89,87 @@ function anneal!(ρᵣ::DenseMatrix{T}, Teq::DenseVector{T}, dt::Number, tsteps:
     @turbo @. Teq = ∅
 
     # First timestep
-    ρᵣ[1,1] = 1 / ((C0 + C1*(log(dt)-C2)/(log(1 / (Tsteps[1]+273.15))-C3))^(1/B)+1)
+    ρᵣ[1,1] = 1 / ((dm.C0 + dm.C1*(log(dt)-dm.C2)/(log(1 / (Tsteps[1]+273.15))-dm.C3))^(1/dm.beta)+1)
 
     # All subsequent timesteps
     @inbounds for i=2:ntsteps
-        lᵢ = log(1 / (Tsteps[i]+273.15)) - C3
+        lᵢ = log(1 / (Tsteps[i]+273.15)) - dm.C3
 
         # Convert any existing track length reduction for damage from
         # all previous timestep to an equivalent annealing time at the
         # current temperature
         pᵣᵢ = view(ρᵣ, i-1, 1:i-1)
-        @turbo @. Teq[1:i-1] = exp(C2 + lᵢ * ((1/pᵣᵢ - 1)^B - C0) / C1)
+        @turbo @. Teq[1:i-1] = exp(dm.C2 + lᵢ * ((1/pᵣᵢ - 1)^dm.beta - dm.C0) / dm.C1)
 
         # Calculate the new reduced track lengths for all previous time steps
         # Accumulating annealing strictly in terms of reduced track length
         Teqᵢ = view(Teq, 1:i)
-        @turbo @. ρᵣ[i,1:i] = 1 / ((C0 + C1 * (log(dt + Teqᵢ) - C2) / lᵢ)^(1/B) + 1)
+        @turbo @. ρᵣ[i,1:i] = 1 / ((dm.C0 + dm.C1 * (log(dt + Teqᵢ) - dm.C2) / lᵢ)^(1/dm.beta) + 1)
     end
 
     # # Guenthner et al conversion
     # map!(x->1.25*(x-0.2), ρᵣ, ρᵣ)
 
-    # # Zero-out any reduced densities below the equivalent total annealing length
+    # # Alternative conversion: Zero-out any reduced densities below the equivalent total annealing length
     # ρᵣ[ρᵣ.<0.36] .= 0
 
-    # # Extrapolate from bottom of data to origin
-    # ρᵣ[ρᵣ.<0.4] .= 5/8*ρᵣ[ρᵣ<0.4]
+    # # Alternative conversion: Extrapolate from bottom of data to origin
+    # map!(x->(x<0.4 ? 5/8x : x), ρᵣ, ρᵣ)
+    
+    # # Alternative conversion: rescale reduced densities based on the equivalent total annealing length
+    # map!(x->(x-0.36)/(1-0.36), ρᵣ, ρᵣ)
 
-    # # Rescale reduced densities based on the equivalent total annealing length
-    # ρᵣ = (ρᵣ-0.36)/(1-0.36)
-
-    # # Remove any negative reduced densities
+    # Remove any negative reduced densities
     @turbo for i ∈ eachindex(ρᵣ)
         ρᵣᵢ = ρᵣ[i]
         ρᵣ[i] = ifelse(ρᵣᵢ < ∅, ∅, ρᵣᵢ)
+    end
+
+    return ρᵣ
+end
+
+function anneal!(ρᵣ::DenseMatrix{T}, Teq::DenseVector{T}, dt::Number, tsteps::DenseVector, Tsteps::DenseVector, dm::RDAAM{T}) where T <: AbstractFloat
+
+    ∅ = zero(T)
+    ntsteps = length(tsteps)
+    @assert size(ρᵣ) === (ntsteps, ntsteps)
+    @assert size(Teq) === (ntsteps,)
+    @turbo @. Teq = ∅
+
+    # First timestep
+    ρᵣ[1,1] = 1 / ((dm.C0 + dm.C1*(log(dt)-dm.C2)/(log(1 / (Tsteps[1]+273.15))-dm.C3))^(1/dm.beta)+1)
+
+    # All subsequent timesteps
+    @inbounds for i=2:ntsteps
+        lᵢ = log(1 / (Tsteps[i]+273.15)) - dm.C3
+
+        # Convert any existing track length reduction for ρᵣ from
+        # all previous timestep to an equivalent annealing time at the
+        # current temperature
+        pᵣᵢ = view(ρᵣ, i-1, 1:i-1)
+        @turbo @. Teq[1:i-1] = exp(dm.C2 + lᵢ * ((1/pᵣᵢ - 1)^dm.beta - dm.C0) / dm.C1)
+
+        # Calculate the new reduced track lengths for all previous time steps
+        # Accumulating annealing strictly in terms of reduced track length
+        Teqᵢ = view(Teq, 1:i)
+        @turbo @. ρᵣ[i,1:i] = 1 / ((dm.C0 + dm.C1 * (log(dt + Teqᵢ) - dm.C2) / lᵢ)^(1/dm.beta) + 1)
+    end
+
+    # Corrections to ρᵣ (conventional, but perhaps worth re-evaluating at some point)
+    @inbounds for i ∈ 1:ntsteps-1
+        for j ∈ 1:i
+            if ρᵣ[i,j] >= rmr0
+                ρᵣ[i,j] = ((ρᵣ[i,j]-ds.rmr0)/(1-ds.rmr0))^ds.kappa
+            else
+                ρᵣ[i,j] = 0.0
+            end
+            
+            if ρᵣ[i,j]>=0.765
+                ρᵣ[i,j] = 1.6*ρᵣ[i,j]-0.6
+            else
+                ρᵣ[i,j] = 9.205*ρᵣ[i,j]*ρᵣ[i,j] - 9.157*ρᵣ[i,j] + 2.269
+            end
+        end
     end
 
     return ρᵣ
