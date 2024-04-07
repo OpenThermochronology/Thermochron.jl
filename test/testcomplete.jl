@@ -26,7 +26,7 @@ model = (
     DzEa = 165.0, # kJ/mol
     DzD0 = 193188.0, # cm^2/sec
     DN17Ea = 71.0, # kJ/mol
-    DN17D0 = 0.0034, #6.367E-3 # cm^2/sec
+    DN17D0 = 6.367E-3, # cm^2/sec
     # Model uncertainty is not well known (depends on annealing parameters,
     # decay constants, diffusion parameters, etc.), but is certainly non-zero.
     # Here we add (in quadrature) a blanket model uncertainty of 25 Ma.
