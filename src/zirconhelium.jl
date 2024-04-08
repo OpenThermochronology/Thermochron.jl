@@ -1,4 +1,6 @@
-const LOG_SEC_MYR = log(1E6*365.25*24*3600)
+# Physical constants
+const SEC_MYR = 1E6*365.25*24*3600
+const LOG_SEC_MYR = log(SEC_MYR)
 
 # Jaffey decay constants
 const λ235U = log(2)/(7.0381*10^8)*10^6 # [1/Myr]
@@ -194,27 +196,24 @@ https://doi.org/10.2138/rmg.2005.58.11
 """
 function HeAgeSpherical(zircon::Zircon{T}, Tsteps::StridedVector{T}, ρᵣ::StridedMatrix{T}, dm::ZRDAAM{T}) where T <: AbstractFloat
 
-    DzEa = dm.DzEa::T
-    DzD0 = dm.DzD0::T
-    DN17Ea = dm.DN17Ea::T
-    DN17D0 = dm.DN17D0::T
-
     # Damage and annealing constants
-    lint0 = 45920.0 # nm
-    SV = 1.669 # 1/nm
-    Bα = 5.48E-19 # [g/alpha] mass of amorphous material produced per alpha decay
-    Phi = 3.0
-    R = 0.008314472 #kJ/(K*mol)
+    DzEa = dm.DzEa::T                           # kJ/mol
+    DzD0 = dm.DzD0*10000^2*SEC_MYR::T           # cm^2/sec, converted to micron^2/Myr  
+    DN17Ea = dm.DN17Ea::T                       # kJ/mol
+    DN17D0 = dm.DN17D0*10000^2*SEC_MYR::T       # cm^2/sec, converted to micron^2/Myr  
+    lint0 = dm.lint0::T                         # nm
+    SV = dm.SV::T                               # 1/nm
+    Bα = dm.Bα::T                               # [g/alpha] mass of amorphous material produced per alpha decay
+    Phi = dm.Phi::T                             # unitless
+    R = 0.008314472                             # kJ/(K*mol)
 
     # Diffusivities of crystalline and amorphous endmembers
     Dz = zircon.Dz::DenseVector{T}
     DN17 = zircon.DN17::DenseVector{T}
     @assert length(Dz) == length(DN17) == length(Tsteps)
     @turbo for i ∈ eachindex(Dz)
-        Dzᵢ = DzD0 * exp(-DzEa / R / (Tsteps[i] + 273.15)) # cm^2/s
-        Dz[i] = Dzᵢ * 10000^2*(1E6*365.25*24*3600) # Convert to micron^2/Myr
-        DN17ᵢ = DN17D0 * exp(-DN17Ea / R / (Tsteps[i] + 273.15)) # cm^2/s
-        DN17[i] = DN17ᵢ * 10000^2*(1E6*365.25*24*3600) # Convert to micron^2/Myr
+        Dz[i] = DzD0 * exp(-DzEa / R / (Tsteps[i] + 273.15)) # micron^2/Myr
+        DN17[i] = DN17D0 * exp(-DN17Ea / R / (Tsteps[i] + 273.15)) # micron^2/Myr
     end
 
     # Get time and radius discretization
