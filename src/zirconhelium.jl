@@ -42,7 +42,7 @@ export ZRDAAM
 Base.@kwdef struct RDAAM{T<:AbstractFloat} <: DamageModel 
     D0L::T=0.6071 # cm2/s
     EaL::T=122.3 # kJ/mol
-    EaTrap::T=34 # kJ/mol
+    EaTrap::T=34.0 # kJ/mol
     psi::T=1e-13
     omega::T=1e-22
     etaq::T=0.91  # Durango ηq
@@ -160,22 +160,22 @@ function anneal!(ρᵣ::DenseMatrix{T}, Teq::DenseVector{T}, dt::Number, tsteps:
         @turbo @. ρᵣ[i,1:i] = 1 / ((dm.C0 + dm.C1 * (log(dt + Teqᵢ) - dm.C2) / lᵢ)^(1/dm.beta) + 1)
     end
 
-    # Corrections to ρᵣ (conventional, but perhaps worth re-evaluating at some point)
-    @inbounds for i ∈ 1:ntsteps-1
-        for j ∈ 1:i
-            if ρᵣ[i,j] >= rmr0
-                ρᵣ[i,j] = ((ρᵣ[i,j]-ds.rmr0)/(1-ds.rmr0))^ds.kappa
-            else
-                ρᵣ[i,j] = 0.0
-            end
-            
-            if ρᵣ[i,j]>=0.765
-                ρᵣ[i,j] = 1.6*ρᵣ[i,j]-0.6
-            else
-                ρᵣ[i,j] = 9.205*ρᵣ[i,j]*ρᵣ[i,j] - 9.157*ρᵣ[i,j] + 2.269
-            end
-        end
-    end
+    # # Corrections to ρᵣ (conventional, but deeply questionable)
+    # @inbounds for i ∈ 1:ntsteps-1
+    #     for j ∈ 1:i
+    #         if ρᵣ[i,j] >= dm.rmr0
+    #             ρᵣ[i,j] = ((ρᵣ[i,j]-dm.rmr0)/(1-dm.rmr0))^dm.kappa
+    #         else
+    #             ρᵣ[i,j] = 0.0
+    #         end
+    #
+    #         if ρᵣ[i,j]>=0.765
+    #             ρᵣ[i,j] = 1.6*ρᵣ[i,j]-0.6
+    #         else
+    #             ρᵣ[i,j] = 9.205*ρᵣ[i,j]*ρᵣ[i,j] - 9.157*ρᵣ[i,j] + 2.269
+    #         end
+    #     end
+    # end
 
     return ρᵣ
 end
@@ -184,12 +184,13 @@ export anneal!
 
 """
 ```julia
-HeAge = HeAgeSpherical(zircon::Zircon, Tsteps::Vector, ρᵣ::Matrix, diffusionmodel)
+HeAgeSpherical(mineral::Zircon, Tsteps::Vector, ρᵣ::Matrix, dm::ZRDAAM)
+HeAgeSpherical(mineral::Apatite, Tsteps::Vector, ρᵣ::Matrix, dm::RDAAM)
 ```
-Calculate the precdicted U-Th/He age of a zircon that has experienced a given t-T
-path (specified by `zircon.agesteps` for time and `Tsteps` for temperature, at a
-time resolution of `zircon.dt`) using a Crank-Nicholson diffusion solution for a
-spherical grain of radius `zircon.r` at spatial resolution `zircon.dr`.
+Calculate the precdicted U-Th/He age of a zircon or apatite that has experienced a given 
+t-T path (specified by `mineral.agesteps` for time and `Tsteps` for temperature, at a
+time resolution of `mineral.dt`) using a Crank-Nicholson diffusion solution for a
+spherical grain of radius `mineral.r` at spatial resolution `mineral.dr`.
 
 Implemented based on the the Crank-Nicholson solution for diffusion out of a
 spherical zircon or apatite crystal in:
@@ -213,7 +214,7 @@ function HeAgeSpherical(zircon::Zircon{T}, Tsteps::StridedVector{T}, ρᵣ::Stri
     # Diffusivities of crystalline and amorphous endmembers
     Dz = zircon.Dz::DenseVector{T}
     DN17 = zircon.DN17::DenseVector{T}
-    @assert length(Dz) == length(DN17) == length(Tsteps)
+    @assert eachindex(Dz) == eachindex(DN17) == eachindex(Tsteps)
     @turbo for i ∈ eachindex(Dz)
         Dz[i] = DzD0 * exp(-DzEa / R / (Tsteps[i] + 273.15)) # micron^2/Myr
         DN17[i] = DN17D0 * exp(-DN17Ea / R / (Tsteps[i] + 273.15)) # micron^2/Myr
@@ -320,6 +321,144 @@ function HeAgeSpherical(zircon::Zircon{T}, Tsteps::StridedVector{T}, ρᵣ::Stri
     μ238U = vmean(zircon.r238U::DenseVector{T}) # Atoms/gram
     μ235U = vmean(zircon.r235U::DenseVector{T})
     μ232Th = vmean(zircon.r232Th::DenseVector{T})
+
+    # Numerically solve for helium age of the grain
+    HeAge = one(T)
+    for i=1:10
+        ∂He∂t = dHe(HeAge, μ238U, μ235U, μ232Th) # Calculate derivative
+        HeAge += (μHe - He(HeAge, μ238U, μ235U, μ232Th))/∂He∂t # Move towards zero (He(HeAge) == μHe)
+    end
+
+    return HeAge
+end
+function HeAgeSpherical(apatite::Apatite{T}, Tsteps::StridedVector{T}, ρᵣ::StridedMatrix{T}, dm::RDAAM{T}) where T <: AbstractFloat
+
+    # Damage and annealing constants
+    D0L = dm.D0L*10000^2*SEC_MYR::T         # cm^2/sec, converted to micron^2/Myr  
+    EaL = dm.EaL::T                         # kJ/mol
+    EaTrap = dm.EaTrap::T                   # kJ/mol
+    etaq = dm.etaq::T                       # Durango ηq
+    psi = dm.psi::T                         # unitless
+    omega = dm.omega::T                     # unitless
+    rhoap = dm.rhoap::T                     # g/cm^3
+    L = dm.L::T                             # cm
+    lambdaf = dm.lambdaf::T                 # 1/time
+    lambdaD = dm.lambdaD::T                 # 1/time
+    R = 0.008314472                         # kJ/(K*mol)
+
+    # Conversion factor from alphas/g to track length cm/cm^3
+    damage_conversion = rhoap*(lambdaf/lambdaD)*etaq*L
+
+    # Diffusivities of crystalline and amorphous endmembers
+    DL = apatite.DL::DenseVector{T}
+    Dtrap = apatite.Dtrap::DenseVector{T}
+    @assert eachindex(DL) == eachindex(Dtrap) == eachindex(Tsteps)
+    @turbo for i ∈ eachindex(DL)
+        DL[i] = D0L * exp(-EaL / R / (Tsteps[i] + 273.15)) # micron^2/Myr
+        Dtrap[i] = exp(-EaTrap / R / (Tsteps[i] + 273.15)) # unitless
+    end
+
+    # Get time and radius discretization
+    dr = apatite.dr
+    rsteps = apatite.rsteps
+    nrsteps = apatite.nrsteps
+    dt = apatite.dt
+    ntsteps = apatite.ntsteps
+    alphaDeposition = apatite.alphaDeposition::DenseMatrix{T}
+    alphaDamage = apatite.alphaDamage::DenseMatrix{T}
+
+    # The annealed damage matrix is the summation of the ρᵣ for each
+    # previous timestep multiplied by the the alpha dose at each
+    # previous timestep; this is a linear combination, which can be
+    # calculated efficiently for all radii by simple matrix multiplication.
+    annealedDamage = apatite.annealedDamage::DenseMatrix{T}
+    mul!(annealedDamage, ρᵣ, alphaDamage)
+
+    # Calculate initial alpha damage
+    β = apatite.β::DenseVector{T}
+    @turbo for k = 1:(nrsteps-2)
+        track_density = annealedDamage[1,k]*damage_conversion # cm/cm3
+        trapDiff = psi*track_density + omega*track_density^3
+        De = DL[1]/(trapDiff*Dtrap[1]+1) # micron^2/Myr
+        β[k+1] = 2 * dr^2 / (De*dt) # Common β factor
+    end
+    β[1] = β[2]
+    β[end] = β[end-1]
+
+    # Output matrix for all timesteps
+    # u = v*r is the coordinate transform (u-substitution) for the Crank-
+    # Nicholson equations where v is the He profile and r is radius
+    u = apatite.u::DenseMatrix{T}
+    @turbo @. u = 0 # initial u = v = 0 everywhere
+
+    # Vector for RHS of Crank-Nicholson equation with regular grid cells
+    y = apatite.y
+
+    # Tridiagonal matrix for LHS of Crank-Nicholson equation with regular grid cells
+    A = apatite.A
+    @turbo @. A.dl = 1         # Sub-diagonal row
+    @turbo @. A.d = -2 - β     # Diagonal
+    @turbo @. A.du = 1         # Supra-diagonal row
+    ipiv = apatite.ipiv         # For pivoting
+
+    # Neumann inner boundary condition (u[i,1] + u[i,2] = 0)
+    A.d[1] = 1
+    A.du[1] = 1
+
+    # Dirichlet outer boundary condition (u[i,end] = u[i-1,end])
+    A.dl[nrsteps-1] = 0
+    A.d[nrsteps] = 1
+
+    @inbounds for i=2:ntsteps
+
+        # Calculate alpha damage
+        @turbo for k = 1:(nrsteps-2)
+            track_density = annealedDamage[i,k]*damage_conversion # cm/cm3
+            trapDiff = psi*track_density + omega*track_density^3
+            De = DL[i]/(trapDiff*Dtrap[i]+1) # micron^2/Myr
+            β[k+1] = 2 * dr^2 / (De*dt) # Common β factor
+        end
+        β[1] = β[2]
+        β[end] = β[end-1]
+
+        # Update tridiagonal matrix
+        @turbo @. A.dl = 1         # Sub-diagonal
+        @turbo @. A.d = -2 - β     # Diagonal
+        @turbo @. A.du = 1         # Supra-diagonal
+
+        # Neumann inner boundary condition (u(i,1) + u(i,2) = 0)
+        A.du[1] = 1
+        A.d[1] = 1
+        y[1] = 0
+
+        # Dirichlet outer boundary condition (u(i,end) = u(i-1,end))
+        A.dl[nrsteps-1] = 0
+        A.d[nrsteps] = 1
+        y[nrsteps] = u[nrsteps,i-1]
+
+        # RHS of tridiagonal Crank-Nicholson equation for regular grid cells.
+        # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
+        @turbo for k = 2:nrsteps-1
+            𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i-1], u[k-1, i-1], u[k+1, i-1]
+            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - alphaDeposition[i, k-1]*rsteps[k-1]*β[k]
+        end
+
+        # Invert using tridiagonal matrix algorithm
+        # equivalent to u[:,i] = A\y
+        F = lu!(A, ipiv)
+        ldiv!(F, y)
+        @turbo @. u[:,i] = y
+    end
+
+    # Convert from u (coordinate-transform'd conc.) to v (real He conc.)
+    vFinal = @views u[2:end-1,end]
+    vFinal ./= rsteps
+    μHe = vmean(vFinal) # Atoms/gram
+
+    # Raw Age (i.e., as measured)
+    μ238U = vmean(apatite.r238U::DenseVector{T}) # Atoms/gram
+    μ235U = vmean(apatite.r235U::DenseVector{T})
+    μ232Th = vmean(apatite.r232Th::DenseVector{T})
 
     # Numerically solve for helium age of the grain
     HeAge = one(T)
