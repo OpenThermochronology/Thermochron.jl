@@ -40,13 +40,16 @@ end
 export ZRDAAM
 
 Base.@kwdef struct RDAAM{T<:AbstractFloat} <: DamageModel 
+    D0L::T=0.6071 # cm2/s
+    EaL::T=122.3 # kJ/mol
+    EaTrap::T=34 # kJ/mol
     psi::T=1e-13
     omega::T=1e-22
-    D0L::T=0.6071 # cm2/s
-    EsubL::T=122.3 # kJ/mol
-    EsubTrap::T=34 # kJ/mol
-    etaq::T=0.91  # Durango
-    L::T=0.000815 # cm2
+    etaq::T=0.91  # Durango ηq
+    rhoap::T=3.19 # g/cm3
+    L::T=0.000815 # etchable track half-length, cm
+    lambdaf::T=0.0000000000000000846
+    lambdaD::T=0.000000000155125
     beta::T=0.04672 # Originally called alpha, but called beta here for consistency with ZRDAAM
     C0::T=0.39528
     C1::T=0.01073

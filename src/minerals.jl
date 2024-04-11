@@ -270,8 +270,8 @@ struct Apatite{T<:Number} <: Mineral
     annealedDamage::Matrix{T}
     u::Matrix{T}
     β::Vector{T}
-    Dcrystalline::Vector{T}
-    Damorphous::Vector{T}
+    DL::Vector{T}
+    Dtrap::Vector{T}
     A::Tridiagonal{T, Vector{T}}
     ipiv::Vector{LinearAlgebra.BlasInt}
     y::Vector{T}
@@ -380,8 +380,8 @@ function Apatite(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, agesteps::Abst
     β = Array{T}(undef, nrsteps) # First row of annealedDamage
 
     # Allocate arrays for diffusivities
-    Dcrystalline = Array{T}(undef, ntsteps)
-    Damorphous = Array{T}(undef, ntsteps)
+    DL = Array{T}(undef, ntsteps)
+    Dtrap = Array{T}(undef, ntsteps)
 
     # Allocate output matrix for all timesteps
     u = Array{T}(undef, nrsteps, ntsteps)
@@ -420,8 +420,8 @@ function Apatite(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, agesteps::Abst
         annealedDamage,
         u,
         β,
-        Dcrystalline,
-        Damorphous,
+        DL,
+        Dtrap,
         A,
         ipiv,
         y,
