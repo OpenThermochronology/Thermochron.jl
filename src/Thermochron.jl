@@ -8,7 +8,7 @@ module Thermochron
 
     include("types.jl")
     include("minerals.jl")
-    include("zirconhelium.jl")
+    include("helium.jl")
     include("inversion.jl")
 
 end
