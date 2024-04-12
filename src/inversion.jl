@@ -78,23 +78,48 @@
         temperatures = collectto!(Tpointbuffer, view(Tpoints, 1:npoints), boundary.Tpoints, unconf.Tpoints)::StridedVector{T}
         Tsteps = linterp1s(ages, temperatures, agesteps)::DenseVector{T}
         calcHeAges = similar(HeAge)::DenseVector{T}
-        pr, Teq = anneal(dt, tsteps, Tsteps, ZRDAAM()) # Damage annealing history
-        pr::DenseMatrix{T}
-        Teq::DenseVector{T}
+
+        # Damage models for each mineral
+        zdm = ZRDAAM()
+        # zdm = ZRDAAM(
+        #     DzEa=T(model.DzEa), 
+        #     DzD0=T(model.DzD0), 
+        #     DN17Ea=T(model.DN17Ea), 
+        #     DN17D0=T(model.DN17D0)
+        # )
+        zpr, zTeq = anneal(dt, tsteps, Tsteps, zdm) # Zircon amage annealing history
+        zpr::DenseMatrix{T}
+        zTeq::DenseVector{T}
+
+        adm = RDAAM()
+        apr, aTeq = anneal(dt, tsteps, Tsteps, adm) # Apatite damage annealing history
+        apr::DenseMatrix{T}
+        aTeq::DenseVector{T}
+
+        # See what minerals we have
+        tzr = containsi.(data.mineral, "zircon")
+        any(tzr) && @info "Inverting for He ages of $(count(tzr)) zircons"
+        tap = containsi.(data.mineral, "apatite")
+        any(tap) && @info "Inverting for He ages of $(count(tap)) apatites"
 
         # Prepare a Mineral object for each analysis
-        dm = ZRDAAM(
-            DzEa=T(model.DzEa), 
-            DzD0=T(model.DzD0), 
-            DN17Ea=T(model.DN17Ea), 
-            DN17D0=T(model.DN17D0)
-        )
-        zircons = Array{Zircon{T}}(undef, length(halfwidth))::Vector{Zircon{T}}
-        for i=1:length(zircons)
+        zircons = Array{Zircon{T}}(undef, count(tzr))::Vector{Zircon{T}}
+        zi = 1
+        for i in findall(tzr)
             # Iterate through each grain, calculate the modeled age for each
             first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-            zircons[i] = Zircon(halfwidth[i], dr, U[i], Th[i], dt, agesteps[first_index:end])
-            calcHeAges[i] = HeAgeSpherical(zircons[i], @views(Tsteps[first_index:end]), @views(pr[first_index:end,first_index:end]), dm)::T
+            zircons[zi] = Zircon(halfwidth[i], dr, U[i], Th[i], dt, agesteps[first_index:end])
+            calcHeAges[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
+            zi += 1
+        end
+        apatites = Array{Apatite{T}}(undef, count(tap))::Vector{Apatite{T}}
+        ai = 1
+        for i in findall(tap)
+            # Iterate through each grain, calculate the modeled age for each
+            first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+            apatites[ai] = Apatite(halfwidth[i], dr, U[i], Th[i], dt, agesteps[first_index:end])
+            calcHeAges[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
+            ai += 1
         end
 
         # Simulated annealing of uncertainty
@@ -294,11 +319,24 @@
                 end
             end
 
-             # Calculate model ages for each grain
-            anneal!(pr, Teq, dt, tsteps, Tstepsₚ, ZRDAAM())
-            for i=1:length(zircons)
+            # Calculate model ages for each grain
+            if any(tzr)
+                anneal!(zpr, zTeq, dt, tsteps, Tstepsₚ, zdm)
+            end
+            if any(tap)
+                anneal!(apr, aTeq, dt, tsteps, Tstepsₚ, adm)
+            end
+            zi = 1
+            for i ∈ findall(tzr)
                 first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                calcHeAgesₚ[i] = HeAgeSpherical(zircons[i], @views(Tstepsₚ[first_index:end]), @views(pr[first_index:end,first_index:end]), dm)::T
+                calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tstepsₚ[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
+                zi += 1
+            end
+            ai = 1
+            for i ∈ findall(tap)
+                first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+                calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tstepsₚ[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
+                ai += 1
             end
 
             # Calculate log likelihood of proposal
@@ -399,23 +437,51 @@
         temperatures = collectto!(Tpointbuffer, view(Tpoints, 1:npoints), boundary.Tpoints, unconf.Tpoints)::StridedVector{T}
         Tsteps = linterp1s(ages, temperatures, agesteps)::DenseVector{T}
         calcHeAges = similar(HeAge)::DenseVector{T}
-        pr, Teq = anneal(dt, tsteps, Tsteps, ZRDAAM()) # Damage annealing history
-        pr::DenseMatrix{T}
-        Teq::DenseVector{T}
+
+        # Damage models for each mineral
+        zdm = if haskey(model, :DzEa) && haskey(model, :DzD0) && haskey(model, :DN17Ea) && haskey(model, :DN17D0)
+            ZRDAAM(
+                DzEa=T(model.DzEa), 
+                DzD0=T(model.DzD0), 
+                DN17Ea=T(model.DN17Ea), 
+                DN17D0=T(model.DN17D0)
+            )
+        else
+            ZRDAAM()
+        end
+        zpr, zTeq = anneal(dt, tsteps, Tsteps, zdm) # Zircon amage annealing history
+        zpr::DenseMatrix{T}
+        zTeq::DenseVector{T}
+
+        adm = RDAAM()
+        apr, aTeq = anneal(dt, tsteps, Tsteps, adm) # Apatite damage annealing history
+        apr::DenseMatrix{T}
+        aTeq::DenseVector{T}
+
+        # See what minerals we have
+        tzr = containsi.(data.mineral, "zircon")
+        any(tzr) && @info "Inverting for He ages of $(count(tzr)) zircons"
+        tap = containsi.(data.mineral, "apatite")
+        any(tap) && @info "Inverting for He ages of $(count(tap)) apatites"
 
         # Prepare a Mineral object for each analysis
-        dm = ZRDAAM(
-            DzEa=T(model.DzEa), 
-            DzD0=T(model.DzD0), 
-            DN17Ea=T(model.DN17Ea), 
-            DN17D0=T(model.DN17D0)
-        )
-        zircons = Array{Zircon{T}}(undef, length(halfwidth))::Vector{Zircon{T}}
-        for i=1:length(zircons)
+        zircons = Array{Zircon{T}}(undef, count(tzr))::Vector{Zircon{T}}
+        zi = 1
+        for i in findall(tzr)
             # Iterate through each grain, calculate the modeled age for each
             first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-            zircons[i] = Zircon(halfwidth[i], dr, U[i], Th[i], dt, agesteps[first_index:end])
-            calcHeAges[i] = HeAgeSpherical(zircons[i], @views(Tsteps[first_index:end]), @views(pr[first_index:end,first_index:end]), dm)::T
+            zircons[zi] = Zircon(halfwidth[i], dr, U[i], Th[i], dt, agesteps[first_index:end])
+            calcHeAges[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
+            zi += 1
+        end
+        apatites = Array{Apatite{T}}(undef, count(tap))::Vector{Apatite{T}}
+        ai = 1
+        for i in findall(tap)
+            # Iterate through each grain, calculate the modeled age for each
+            first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+            apatites[ai] = Apatite(halfwidth[i], dr, U[i], Th[i], dt, agesteps[first_index:end])
+            calcHeAges[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
+            ai += 1
         end
 
         # Simulated annealing of uncertainty
@@ -622,11 +688,24 @@
                 end
             end
 
-             # Calculate model ages for each grain
-            anneal!(pr, Teq, dt, tsteps, Tstepsₚ, ZRDAAM())
-            for i=1:length(zircons)
+            # Calculate model ages for each grain
+            if any(tzr)
+                anneal!(zpr, zTeq, dt, tsteps, Tstepsₚ, zdm)
+            end
+            if any(tap)
+                anneal!(apr, aTeq, dt, tsteps, Tstepsₚ, adm)
+            end
+            zi = 1
+            for i ∈ findall(tzr)
                 first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                calcHeAgesₚ[i] = HeAgeSpherical(zircons[i], @views(Tstepsₚ[first_index:end]), @views(pr[first_index:end,first_index:end]), dm)::T
+                calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tstepsₚ[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
+                zi += 1
+            end
+            ai = 1
+            for i ∈ findall(tap)
+                first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+                calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tstepsₚ[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
+                ai += 1
             end
 
             # Calculate log likelihood of proposal

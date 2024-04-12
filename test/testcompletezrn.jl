@@ -1,6 +1,6 @@
 
 # Read in data from file using StatGeochem
-datapath = joinpath("..", "examples", "minnesota.csv")
+datapath = joinpath("..", "examples", "minnesotazrn.csv")
 ds = importdataset(datapath, ',', importas=:Tuple);
 
 using LinearAlgebra
@@ -87,12 +87,12 @@ Tpoints[1:npoints] .= Tr  # Degrees C
 
 @test isa(HeAgedist, AbstractMatrix)
 abserr = abs(sum(nanmean(HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
-@test 0 < abserr < 100
+@test 0 < abserr < 50
 @info "Mean absolute error: $abserr"
 
 @test isa(lldist, AbstractVector)
 llmean = mean(@view(lldist[model.burnin:end]))
-@test -300 < llmean < 0
+@test -100 < llmean < 0
 @info "Mean ll: $llmean"
 
 @test isa(acceptancedist, AbstractVector{Bool})
@@ -125,12 +125,12 @@ detail = DetailInterval(
 
 @test isa(HeAgedist, AbstractMatrix)
 abserr = abs(sum(nanmean(HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
-@test 0 < abserr < 100
+@test 0 < abserr < 50
 @info "Mean absolute error: $abserr"
 
 @test isa(lldist, AbstractVector)
 llmean = mean(@view(lldist[model.burnin:end]))
-@test -200 < llmean < 0
+@test -100 < llmean < 0
 @info "Mean ll: $llmean"
 
 @test isa(acceptancedist, AbstractVector{Bool})
@@ -161,12 +161,12 @@ model = (model...,
 
 @test isa(HeAgedist, AbstractMatrix)
 abserr = abs(sum(nanmean(HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
-@test 0 < abserr < 100
+@test 0 < abserr < 50
 @info "Mean absolute error: $abserr"
 
 @test isa(lldist, AbstractVector)
 llmean = mean(@view(lldist[model.burnin:end]))
-@test -200 < llmean < 0
+@test -100 < llmean < 0
 @info "Mean ll: $llmean"
 
 @test isa(acceptancedist, AbstractVector{Bool})

@@ -30,7 +30,7 @@
     # # # # # # # # # # Choice of regional thermochron data # # # # # # # # # #
 
     # Literature samples from Guenthner et al. 2013 (AJS), Minnesota
-    name = "Minnesota_zrdaam"
+    name = "Minnesota"
     ds = importdataset("minnesota.csv", ',', importas=:Tuple)
 
     # Populate data NamedTuple from imported dataset
@@ -41,6 +41,7 @@
         HeAge = ds.HeAge_Ma_raw,                # He age, in Ma
         HeAge_sigma = ds.HeAge_Ma_sigma_10pct,  # He age uncertainty (1-sigma), in Ma
         crystAge = ds.CrystAge_Ma,              # Crystallization age, in Ma
+        mineral = ds.Mineral
     );
 
 ## --- Prepare problem
@@ -134,35 +135,35 @@
     """
 
     # Save results using JLD
-    # Compressed:
-    using JLD
-    using JLD: @write
-    jldopen("$name.jld", "w", compress=true) do file
-        @write file tpointdist
-        @write file Tpointdist
-        @write file ndist
-        @write file HeAgedist
-        @write file lldist
-        @write file model
-    end
+    # # Compressed:
+    # using JLD
+    # using JLD: @write
+    # jldopen("$name.jld", "w", compress=true) do file
+    #     @write file tpointdist
+    #     @write file Tpointdist
+    #     @write file ndist
+    #     @write file HeAgedist
+    #     @write file lldist
+    #     @write file model
+    # end
     # Uncompresed:
     # @save "$name.jld" tpointdist Tpointdist ndist HeAgedist lldist acceptancedist model
     # To read all variables from file to local workspace:
     # @load "filename.jld"
 
-    # Alternatively, save as MAT file
-    using MAT
-    matwrite("$name.mat", Dict(
-        "tpointdist"=>tpointdist,
-        "Tpointdist"=>Tpointdist,
-        "ndist"=>ndist,
-        "HeAgedist"=>HeAgedist,
-        "lldist"=>lldist,
-        "acceptancedist"=>acceptancedist,
-        "model"=>Dict(
-            replace.(string.(keys(model)), "σ"=>"sigma", "λ"=>"lambda", "Δ"=>"Delta") .=> values(model)
-        )
-    ), compress=true)
+    # # Alternatively, save as MAT file
+    # using MAT
+    # matwrite("$name.mat", Dict(
+    #     "tpointdist"=>tpointdist,
+    #     "Tpointdist"=>Tpointdist,
+    #     "ndist"=>ndist,
+    #     "HeAgedist"=>HeAgedist,
+    #     "lldist"=>lldist,
+    #     "acceptancedist"=>acceptancedist,
+    #     "model"=>Dict(
+    #         replace.(string.(keys(model)), "σ"=>"sigma", "λ"=>"lambda", "Δ"=>"Delta") .=> values(model)
+    #     )
+    # ), compress=true)
 
     # Plot log likelihood distribution
     h = plot(lldist, xlabel="Step number", ylabel="Log likelihood", label="", framestyle=:box)
