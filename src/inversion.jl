@@ -50,6 +50,7 @@
         HeAge_sigma = T.(data.HeAge_sigma)::DenseVector{T}
         U = T.(data.U)::DenseVector{T}
         Th = T.(data.Th)::DenseVector{T}
+        Sm = (haskey(data, :Sm) ? T.(data.Th) : zeros(T, size(U)))::DenseVector{T}
         nsteps = model.nsteps::Int
         maxpoints = model.maxpoints::Int
         minpoints = (haskey(model, :minpoints) ? model.minpoints : 1)::Int
@@ -108,7 +109,7 @@
         for i in findall(tzr)
             # Iterate through each grain, calculate the modeled age for each
             first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-            zircons[zi] = Zircon(halfwidth[i], dr, U[i], Th[i], dt, agesteps[first_index:end])
+            zircons[zi] = Zircon(halfwidth[i], dr, U[i], Th[i], Sm[i], dt, agesteps[first_index:end])
             calcHeAges[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
             zi += 1
         end
@@ -117,7 +118,7 @@
         for i in findall(tap)
             # Iterate through each grain, calculate the modeled age for each
             first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-            apatites[ai] = Apatite(halfwidth[i], dr, U[i], Th[i], dt, agesteps[first_index:end])
+            apatites[ai] = Apatite(halfwidth[i], dr, U[i], Th[i], Sm[i], dt, agesteps[first_index:end])
             calcHeAges[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
             ai += 1
         end
@@ -409,6 +410,7 @@
         HeAge_sigma = T.(data.HeAge_sigma)::DenseVector{T}
         U = T.(data.U)::DenseVector{T}
         Th = T.(data.Th)::DenseVector{T}
+        Sm = (haskey(data, :Sm) ? T.(data.Th) : zeros(T, size(U)))::DenseVector{T}
         nsteps = model.nsteps::Int
         maxpoints = model.maxpoints::Int
         minpoints = (haskey(model, :minpoints) ? model.minpoints : 1)::Int
@@ -470,7 +472,7 @@
         for i in findall(tzr)
             # Iterate through each grain, calculate the modeled age for each
             first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-            zircons[zi] = Zircon(halfwidth[i], dr, U[i], Th[i], dt, agesteps[first_index:end])
+            zircons[zi] = Zircon(halfwidth[i], dr, U[i], Th[i], Sm[i], dt, agesteps[first_index:end])
             calcHeAges[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
             zi += 1
         end
@@ -479,7 +481,7 @@
         for i in findall(tap)
             # Iterate through each grain, calculate the modeled age for each
             first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-            apatites[ai] = Apatite(halfwidth[i], dr, U[i], Th[i], dt, agesteps[first_index:end])
+            apatites[ai] = Apatite(halfwidth[i], dr, U[i], Th[i], Sm[i], dt, agesteps[first_index:end])
             calcHeAges[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
             ai += 1
         end

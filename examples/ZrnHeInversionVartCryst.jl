@@ -17,6 +17,7 @@
 #                                                                               #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 ## ---  Load required packages
+
     using Thermochron
     using StatGeochem, Plots
 
@@ -37,7 +38,8 @@
     data = (
         halfwidth = ds.Halfwidth_um,            # Crystal half-width, in microns
         U = ds.U238_ppm,                        # U concentration, in PPM
-        Th = ds.Th232_ppm,                      # Th concentration, in PPM
+        Th = ds.Th232_ppm,                      # Th-232 concentration, in PPM
+        Sm = ds.Sm147_ppm,                      # Sm-147 concentration, in PPM (optional)
         HeAge = ds.HeAge_Ma_raw,                # He age, in Ma
         HeAge_sigma = ds.HeAge_Ma_sigma_10pct,  # He age uncertainty (1-sigma), in Ma
         crystAge = ds.CrystAge_Ma,              # Crystallization age, in Ma
@@ -47,8 +49,8 @@
 ## --- Prepare problem
 
     model = (
-        nsteps = 2_000_000, # How many steps of the Markov chain should we run?
-        burnin = 1_000_000, # How long should we wait for MC to converge (become stationary)
+        nsteps = 20_000, # How many steps of the Markov chain should we run?
+        burnin = 10_000, # How long should we wait for MC to converge (become stationary)
         dr = 1.0,    # Radius step, in microns
         dt = 10.0,   # Time step size in Myr
         dTmax = 25.0, # Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
@@ -170,18 +172,58 @@
     savefig(h, name*"_lldist.pdf")
     display(h)
 
-## ---  Plot sample age-eU correlations
+## --- Plot model ages vs observed ages in age-eU space (zircon)
 
     eU = data.U+.238*data.Th # Used only for plotting
-    h = scatter(eU, data.HeAge, yerror=2*data.HeAge_sigma, label="Data (2σ)", color=:black, framestyle=:box)
-    m = nanmean(HeAgedist[:,model.burnin:end], dims=2)
-    l = nanpctile(HeAgedist[:,model.burnin:end], 2.5, dims=2)
-    u = nanpctile(HeAgedist[:,model.burnin:end], 97.5, dims=2)
-    scatter!(h, eU, m, yerror=(m-l, u-m), label="Model + 95%CI", color=:blue, msc=:blue)
+    tz = containsi.(data.mineral, "zircon")
+    if any(tz)
+        h = scatter(eU[tz], data.HeAge[tz], 
+            yerror=2*data.HeAge_sigma[tz], 
+            label="Data (2σ)", 
+            color=:black, 
+            xlabel="eU (ppm)",
+            ylabel="Age (Ma)",
+            framestyle=:box,
+        )
+        zircon_agedist = HeAgedist[tz, model.burnin:end]
+        m = nanmean(zircon_agedist, dims=2)
+        l = nanpctile(zircon_agedist, 2.5, dims=2)
+        u = nanpctile(zircon_agedist, 97.5, dims=2)
+        scatter!(h, eU[tz], m, 
+            yerror=(m-l, u-m), 
+            label="Model + 95%CI", 
+            color=:blue, 
+            msc=:blue,
+        )
+        savefig(h, name*"_zircon_Age-eU.pdf")
+        display(h)
+    end
 
-    xlabel!(h,"eU (ppm)"); ylabel!(h,"Age (Ma)")
-    savefig(h, name*"_Age-eU.pdf")
-    display(h)
+## --- Plot model ages vs observed ages in age-eU space (apatite)
+
+    ta = containsi.(data.mineral, "apatite")
+    if any(ta)
+        h = scatter(eU[ta], data.HeAge[ta], 
+            yerror=2*data.HeAge_sigma[ta], 
+            label="Data (2σ)", 
+            color=:black, 
+            xlabel="eU (ppm)",
+            ylabel="Age (Ma)",
+            framestyle=:box,
+        )
+        apatite_agedist = HeAgedist[ta,model.burnin:end]
+        m = nanmean(apatite_agedist, dims=2)
+        l = nanpctile(apatite_agedist, 2.5, dims=2)
+        u = nanpctile(apatite_agedist, 97.5, dims=2)
+        scatter!(h, eU[ta], m, 
+            yerror=(m-l, u-m), 
+            label="Model + 95%CI", 
+            color=:blue, 
+            msc=:blue,
+        )
+        savefig(h, name*"_apatite_Age-eU.pdf")
+        display(h)
+    end
 
 ## --- Plot moving average of acceptance distribution
 

@@ -97,8 +97,8 @@ struct Zircon{T<:Number} <: Mineral{T}
     y::Vector{T}
 end
 # Constructor for the Zircon type, given grain radius, U and Th concentrations and t-T discretization information
-Zircon(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number = Zircon(r, dr, Uppm, Thppm, zero(T), dt, agesteps)
-function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, Sm147ppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number
+Zircon(r::T, dr::Number, Uppm::T, Th232ppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number = Zircon(r, dr, Uppm, Th232ppm, zero(T), dt, agesteps)
+function Zircon(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number
     
     # Temporal discretization
     tsteps = reverse(agesteps)
@@ -127,7 +127,7 @@ function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, Sm147ppm::T, dt::Number, ag
     # Observed radial HPE profiles at present day
     r238U = Uppm.*ones(T, size(rsteps)) # [PPMw]
     r235U = T.(r238U/137.818) # [PPMw]
-    r232Th = Thppm .* ones(T, size(rsteps)) # [PPMw]
+    r232Th = Th232ppm .* ones(T, size(rsteps)) # [PPMw]
     r147Sm = Sm147ppm .* ones(T, size(rsteps)) # [PPMw]
 
     # Convert to atoms per gram
@@ -140,7 +140,7 @@ function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, Sm147ppm::T, dt::Number, ag
     # stopping distance
     dInt = zeros(T, length(rEdges) - 1)
 
-    #238U
+    
     r238UHe = zeros(size(r238U))
     @inbounds for ri = 1:length(rsteps)
         for i=1:length(alphaRadii238U)
@@ -150,7 +150,7 @@ function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, Sm147ppm::T, dt::Number, ag
         end
     end
 
-    #235U
+    # Effective radial alpha deposition from U-235
     r235UHe = zeros(size(r235U))
     @inbounds for ri = 1:length(rsteps)
         for i=1:length(alphaRadii235U)
@@ -160,7 +160,7 @@ function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, Sm147ppm::T, dt::Number, ag
         end
     end
 
-    #232Th
+    # Effective radial alpha deposition from Th-232
     r232ThHe = zeros(size(r232Th))
     @inbounds for ri = 1:length(rsteps)
         for i=1:length(alphaRadii232Th)
@@ -192,19 +192,19 @@ function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, Sm147ppm::T, dt::Number, ag
     # Allocate deposition and damage arrays
     alphaDeposition = zeros(T, ntsteps, nrsteps-2)
     alphaDamage = zeros(T, ntsteps, nrsteps-2)
-    # 238U
+    # U-238
     @turbo @. decay = exp(λ238U*(agesteps + dt_2)) - exp(λ238U*(agesteps - dt_2))
     mul!(buffer, decay, r238UHe')
     @turbo @. alphaDeposition += buffer
     mul!(buffer, decay, r238Udam')
     @turbo @. alphaDamage += buffer
-    # 235U
+    # U-232
     @turbo @. decay = exp(λ235U*(agesteps + dt_2)) - exp(λ235U*(agesteps - dt_2))
     mul!(buffer, decay, r235UHe')
     @turbo @. alphaDeposition += buffer
     mul!(buffer, decay, r235Udam')
     @turbo @. alphaDamage += buffer
-    # 232Th
+    # Th-232
     @turbo @. decay = exp(λ232Th*(agesteps + dt_2)) - exp(λ232Th*(agesteps - dt_2))
     mul!(buffer, decay, r232ThHe')
     @turbo @. alphaDeposition += buffer
@@ -305,8 +305,8 @@ struct Apatite{T<:Number} <: Mineral{T}
     y::Vector{T}
 end
 # Constructor for the Apatite type, given grain radius, U and Th concentrations and t-T discretization information
-Apatite(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number = Apatite(r, dr, Uppm, Thppm, zero(T), dt, agesteps)
-function Apatite(r::T, dr::Number, Uppm::T, Thppm::T, Sm147ppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number
+Apatite(r::T, dr::Number, Uppm::T, Th232ppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number = Apatite(r, dr, Uppm, Th232ppm, zero(T), dt, agesteps)
+function Apatite(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number
 
     # Temporal discretization
     tsteps = reverse(agesteps)
@@ -335,7 +335,7 @@ function Apatite(r::T, dr::Number, Uppm::T, Thppm::T, Sm147ppm::T, dt::Number, a
     # Observed radial HPE profiles at present day
     r238U = Uppm.*ones(T, size(rsteps)) # PPM
     r235U = T.(r238U/137.818) #PPM
-    r232Th = Thppm .* ones(T, size(rsteps)) #PPM
+    r232Th = Th232ppm .* ones(T, size(rsteps)) #PPM
     r147Sm = Sm147ppm .* ones(T, size(rsteps)) # [PPMw]
 
     # Convert to atoms per gram
@@ -348,7 +348,7 @@ function Apatite(r::T, dr::Number, Uppm::T, Thppm::T, Sm147ppm::T, dt::Number, a
     # stopping distance
     dInt = zeros(T, length(rEdges) - 1)
 
-    #238U
+    # Effective radial alpha deposition from U-238
     r238UHe = zeros(size(r238U))
     @inbounds for ri = 1:length(rsteps)
         for i=1:length(alphaRadii238U)
@@ -358,7 +358,7 @@ function Apatite(r::T, dr::Number, Uppm::T, Thppm::T, Sm147ppm::T, dt::Number, a
         end
     end
 
-    #235U
+    # Effective radial alpha deposition from U-235
     r235UHe = zeros(size(r235U))
     @inbounds for ri = 1:length(rsteps)
         for i=1:length(alphaRadii235U)
@@ -368,7 +368,7 @@ function Apatite(r::T, dr::Number, Uppm::T, Thppm::T, Sm147ppm::T, dt::Number, a
         end
     end
 
-    #232Th
+    # Effective radial alpha deposition from Th-232
     r232ThHe = zeros(size(r232Th))
     @inbounds for ri = 1:length(rsteps)
         for i=1:length(alphaRadii232Th)
@@ -400,19 +400,19 @@ function Apatite(r::T, dr::Number, Uppm::T, Thppm::T, Sm147ppm::T, dt::Number, a
     # Allocate deposition and damage arrays
     alphaDeposition = zeros(T, ntsteps, nrsteps-2)
     alphaDamage = zeros(T, ntsteps, nrsteps-2)
-    # 238U
+    # U-238
     @turbo @. decay = exp(λ238U*(agesteps + dt_2)) - exp(λ238U*(agesteps - dt_2))
     mul!(buffer, decay, r238UHe')
     @turbo @. alphaDeposition += buffer
     mul!(buffer, decay, r238Udam')
     @turbo @. alphaDamage += buffer
-    # 235U
+    # U-232
     @turbo @. decay = exp(λ235U*(agesteps + dt_2)) - exp(λ235U*(agesteps - dt_2))
     mul!(buffer, decay, r235UHe')
     @turbo @. alphaDeposition += buffer
     mul!(buffer, decay, r235Udam')
     @turbo @. alphaDamage += buffer
-    # 232Th
+    # Th-232
     @turbo @. decay = exp(λ232Th*(agesteps + dt_2)) - exp(λ232Th*(agesteps - dt_2))
     mul!(buffer, decay, r232ThHe')
     @turbo @. alphaDeposition += buffer
