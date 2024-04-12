@@ -66,6 +66,13 @@ export intersectiondensity
 # Abstract type to include any number of mineral chronometers (zircon, apatite, etc.)
 abstract type Mineral{T} end
 
+
+"""
+```julia
+Zircon(r, dr, Uppm, Th232ppm, [Sm147ppm], dt, agesteps::AbstractVector)
+```
+Construct a `Zircon` object
+"""
 # Concretely-typed immutable struct to hold information about a single zircon (Helium) crystal
 struct Zircon{T<:Number} <: Mineral{T}
     dt::T
@@ -274,6 +281,12 @@ end
 export Zircon
 
 
+"""
+```julia
+Apatite(r, dr, Uppm, Th232ppm, [Sm147ppm], dt, agesteps::AbstractVector)
+```
+Construct an `Apatite` object
+"""
 # Concretely-typed immutable struct to hold information about a single apatite (Helium) crystal
 struct Apatite{T<:Number} <: Mineral{T}
     dt::T
