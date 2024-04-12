@@ -112,6 +112,8 @@ function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, agesteps::Abstr
     alphaRadii238U = (11.78, 14.09, 13.73, 14.13, 17.32, 16.69, 28.56, 16.48,)
     alphaRadii235U = (12.58, 15.04, 19.36, 18.06, 23.07, 26.87, 22.47,)
     alphaRadii232Th = (10.99, 16.67, 18.16, 17.32, 23.61, 29.19,)
+    # Ketchem et al. (2011), doi: 10.1016/j.gca.2011.10.011
+    alphaRadii147Sm = (4.76,)
 
     # Jaffey decay constants
     λ235U = log(2)/(7.0381*10^8)*10^6 # [1/Myr]
@@ -294,6 +296,8 @@ function Apatite(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, agesteps::Abst
     alphaRadii238U = (13.54, 16.26, 15.84, 16.31, 20.09, 22.89, 33.39, 19.10,)
     alphaRadii235U = (14.48, 17.39, 22.5, 20.97, 26.89, 31.40, 26.18,)
     alphaRadii232Th = (12.60, 19.32, 21.08, 20.09, 27.53, 34.14,)
+    # Ketchem et al. (2011), doi: 10.1016/j.gca.2011.10.011
+    alphaRadii147Sm = (5.93,)
 
     # Jaffey decay constants
     λ235U = log(2)/(7.0381*10^8)*10^6 # [1/Myr]
