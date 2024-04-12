@@ -80,9 +80,11 @@ struct Zircon{T<:Number} <: Mineral{T}
     r238U::Vector{T}
     r235U::Vector{T}
     r232Th::Vector{T}
+    r147Sm::Vector{T}
     r238UHe::Vector{T}
     r235UHe::Vector{T}
     r232ThHe::Vector{T}
+    r147SmHe::Vector{T}
     alphaDeposition::Matrix{T}
     alphaDamage::Matrix{T}
     annealedDamage::Matrix{T}
@@ -95,8 +97,9 @@ struct Zircon{T<:Number} <: Mineral{T}
     y::Vector{T}
 end
 # Constructor for the Zircon type, given grain radius, U and Th concentrations and t-T discretization information
-function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number
-
+Zircon(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number = Zircon(r, dr, Uppm, Thppm, zero(T), dt, agesteps)
+function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, Sm147ppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number
+    
     # Temporal discretization
     tsteps = reverse(agesteps)
     ntsteps = length(tsteps) # Number of time steps
@@ -115,24 +118,27 @@ function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, agesteps::Abstr
     # Ketchem et al. (2011), doi: 10.1016/j.gca.2011.10.011
     alphaRadii147Sm = (4.76,)
 
-    # Jaffey decay constants
-    λ235U = log(2)/(7.0381*10^8)*10^6 # [1/Myr]
-    λ238U = log(2)/(4.4683*10^9)*10^6 # [1/Myr]
+    # Decay constants
+    λ235U = log(2)/(7.0381*10^8)*10^6 # [1/Myr] Jaffey et al. (1971)
+    λ238U = log(2)/(4.4683*10^9)*10^6 # [1/Myr] Jaffey et al. (1971)
     λ232Th = log(2)/(1.405*10^10)*10^6 # [1/Myr]
+    λ147Sm = log(2)/(1.07*10^11)*10^6 # [1/Myr]
 
     # Observed radial HPE profiles at present day
-    r238U = Uppm.*ones(T, size(rsteps)) # PPM
-    r235U = T.(r238U/137.818) #PPM
-    r232Th = Thppm .* ones(T, size(rsteps)) #PPM
+    r238U = Uppm.*ones(T, size(rsteps)) # [PPMw]
+    r235U = T.(r238U/137.818) # [PPMw]
+    r232Th = Thppm .* ones(T, size(rsteps)) # [PPMw]
+    r147Sm = Sm147ppm .* ones(T, size(rsteps)) # [PPMw]
 
     # Convert to atoms per gram
     r238U *= 6.022E23 / 1E6 / 238
     r235U *= 6.022E23 / 1E6 / 235
     r232Th *= 6.022E23 / 1E6 / 232
+    r147Sm *= 6.022E23 / 1E6 / 147
 
     # Calculate effective He deposition for each decay chain, corrected for alpha
     # stopping distance
-    dInt = Array{Float64}(undef, length(rEdges) - 1)
+    dInt = zeros(T, length(rEdges) - 1)
 
     #238U
     r238UHe = zeros(size(r238U))
@@ -164,10 +170,20 @@ function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, agesteps::Abstr
         end
     end
 
+    # Effective radial alpha deposition from Sm-147
+    r147SmHe = zeros(size(r147Sm))
+    @inbounds for ri = 1:length(rsteps)
+        for i=1:length(alphaRadii147Sm)
+            intersectiondensity!(dInt, rEdges,relVolumes,alphaRadii147Sm[i],rsteps[ri])
+            @turbo @. r147SmHe += relVolumes[ri] * dInt * r147Sm[ri]
+        end
+    end    
+
     # Alpha decay recoil damage
     r238Udam = 8*r238U # No smoothing of alpha damage, 8 alphas per 238U
     r235Udam = 7*r235U # No smoothing of alpha damage, 7 alphas per 235U
     r232Thdam = 6*r232Th # No smoothing of alpha damage, 6 alphas per 232 Th
+    r147Smdam = 1*r147Sm # No smoothing of alpha damage, 1 alpha per 147 Sm
 
     # Calculate corrected alpha deposition and recoil damage each time step for each radius
     dt_2 = dt/2
@@ -193,6 +209,12 @@ function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, agesteps::Abstr
     mul!(buffer, decay, r232ThHe')
     @turbo @. alphaDeposition += buffer
     mul!(buffer, decay, r232Thdam')
+    @turbo @. alphaDamage += buffer
+    # Sm-147
+    @turbo @. decay = exp(λ147Sm*(agesteps + dt_2)) - exp(λ147Sm*(agesteps - dt_2))
+    mul!(buffer, decay, r147SmHe')
+    @turbo @. alphaDeposition += buffer
+    mul!(buffer, decay, r147Smdam')
     @turbo @. alphaDamage += buffer
 
     # Allocate additional variables that will be needed for Crank-Nicholson
@@ -232,9 +254,11 @@ function Zircon(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, agesteps::Abstr
         r238U,
         r235U,
         r232Th,
+        r147Sm,
         r238UHe,
         r235UHe,
         r232ThHe,
+        r147SmHe,
         alphaDeposition,
         alphaDamage,
         annealedDamage,
@@ -264,9 +288,11 @@ struct Apatite{T<:Number} <: Mineral{T}
     r238U::Vector{T}
     r235U::Vector{T}
     r232Th::Vector{T}
+    r147Sm::Vector{T}
     r238UHe::Vector{T}
     r235UHe::Vector{T}
     r232ThHe::Vector{T}
+    r147SmHe::Vector{T}
     alphaDeposition::Matrix{T}
     alphaDamage::Matrix{T}
     annealedDamage::Matrix{T}
@@ -279,7 +305,8 @@ struct Apatite{T<:Number} <: Mineral{T}
     y::Vector{T}
 end
 # Constructor for the Apatite type, given grain radius, U and Th concentrations and t-T discretization information
-function Apatite(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number
+Apatite(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number = Apatite(r, dr, Uppm, Thppm, zero(T), dt, agesteps)
+function Apatite(r::T, dr::Number, Uppm::T, Thppm::T, Sm147ppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number
 
     # Temporal discretization
     tsteps = reverse(agesteps)
@@ -303,20 +330,23 @@ function Apatite(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, agesteps::Abst
     λ235U = log(2)/(7.0381*10^8)*10^6 # [1/Myr]
     λ238U = log(2)/(4.4683*10^9)*10^6 # [1/Myr]
     λ232Th = log(2)/(1.405*10^10)*10^6 # [1/Myr]
+    λ147Sm = log(2)/(1.07*10^11)*10^6 # [1/Myr]
 
     # Observed radial HPE profiles at present day
     r238U = Uppm.*ones(T, size(rsteps)) # PPM
     r235U = T.(r238U/137.818) #PPM
     r232Th = Thppm .* ones(T, size(rsteps)) #PPM
+    r147Sm = Sm147ppm .* ones(T, size(rsteps)) # [PPMw]
 
     # Convert to atoms per gram
     r238U *= 6.022E23 / 1E6 / 238
     r235U *= 6.022E23 / 1E6 / 235
     r232Th *= 6.022E23 / 1E6 / 232
+    r147Sm *= 6.022E23 / 1E6 / 147
 
     # Calculate effective He deposition for each decay chain, corrected for alpha
     # stopping distance
-    dInt = Array{Float64}(undef, length(rEdges) - 1)
+    dInt = zeros(T, length(rEdges) - 1)
 
     #238U
     r238UHe = zeros(size(r238U))
@@ -348,10 +378,20 @@ function Apatite(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, agesteps::Abst
         end
     end
 
+    # Effective radial alpha deposition from Sm-147
+    r147SmHe = zeros(size(r147Sm))
+    @inbounds for ri = 1:length(rsteps)
+        for i=1:length(alphaRadii147Sm)
+            intersectiondensity!(dInt, rEdges,relVolumes,alphaRadii147Sm[i],rsteps[ri])
+            @turbo @. r147SmHe += relVolumes[ri] * dInt * r147Sm[ri]
+        end
+    end
+
     # Alpha decay recoil damage
     r238Udam = 8*r238U # No smoothing of alpha damage, 8 alphas per 238U
     r235Udam = 7*r235U # No smoothing of alpha damage, 7 alphas per 235U
     r232Thdam = 6*r232Th # No smoothing of alpha damage, 6 alphas per 232 Th
+    r147Smdam = 1*r147Sm # No smoothing of alpha damage, 1 alpha per 147 Sm
 
     # Calculate corrected alpha deposition and recoil damage each time step for each radius
     dt_2 = dt/2
@@ -377,6 +417,12 @@ function Apatite(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, agesteps::Abst
     mul!(buffer, decay, r232ThHe')
     @turbo @. alphaDeposition += buffer
     mul!(buffer, decay, r232Thdam')
+    @turbo @. alphaDamage += buffer
+    # Sm-147
+    @turbo @. decay = exp(λ147Sm*(agesteps + dt_2)) - exp(λ147Sm*(agesteps - dt_2))
+    mul!(buffer, decay, r147SmHe')
+    @turbo @. alphaDeposition += buffer
+    mul!(buffer, decay, r147Smdam')
     @turbo @. alphaDamage += buffer
 
     # Allocate additional variables that will be needed for Crank-Nicholson
@@ -416,9 +462,11 @@ function Apatite(r::T, dr::Number, Uppm::T, Thppm::T, dt::Number, agesteps::Abst
         r238U,
         r235U,
         r232Th,
+        r147Sm,
         r238UHe,
         r235UHe,
         r232ThHe,
+        r147SmHe,
         alphaDeposition,
         alphaDamage,
         annealedDamage,
