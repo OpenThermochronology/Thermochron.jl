@@ -189,25 +189,25 @@
 
                 # Move the age of one model point
                 agepointsₚ[k] += randn() * σⱼt
-                # if agepointsₚ[k] < (0 + dt)
-                #     # Reflecting boundary condition at (0 + dt)
-                #     agepointsₚ[k] = (0 + dt) - (agepointsₚ[k] - (0 + dt))
-                # elseif agepointsₚ[k] > (tinit - dt)
-                #     # Reflecting boundary condition at (tinit - dt)
-                #     agepointsₚ[k] = (tinit - dt) - (agepointsₚ[k] - (tinit - dt))
-                # end
+                if agepointsₚ[k] < (0 + dt)
+                    # Reflecting boundary condition at (0 + dt)
+                    agepointsₚ[k] = (0 + dt) - (agepointsₚ[k] - (0 + dt))
+                elseif agepointsₚ[k] > (tinit - dt)
+                    # Reflecting boundary condition at (tinit - dt)
+                    agepointsₚ[k] = (tinit - dt) - (agepointsₚ[k] - (tinit - dt))
+                end
 
                 # Move the Temperature of one model point
                 Tpointsₚ[k] += randn() * σⱼT
-                # if Tpointsₚ[k] < Tnow
-                #     # Reflecting boundary conditions at Tnow (0)
-                #     Tpointsₚ[k] = Tnow - (Tpointsₚ[k] - Tnow)
-                # elseif Tpointsₚ[k] > Tinit
-                #     # Reflecting boundary conditions at Tinit
-                #     Tpointsₚ[k] = Tinit - (Tpointsₚ[k] - Tinit)
-                # end
+                if Tpointsₚ[k] < Tnow
+                    # Reflecting boundary conditions at Tnow (0)
+                    Tpointsₚ[k] = Tnow - (Tpointsₚ[k] - Tnow)
+                elseif Tpointsₚ[k] > Tinit
+                    # Reflecting boundary conditions at Tinit
+                    Tpointsₚ[k] = Tinit - (Tpointsₚ[k] - Tinit)
+                end
 
-                # Circular boundary conditions
+                # Circular boundary conditions (in case anything reflected out of bounds)
                 agepointsₚ[k] = mod(agepointsₚ[k]-dt, tinit-2dt) + dt
                 Tpointsₚ[k] = mod(Tpointsₚ[k]-Tnow, Tinit-Tnow) + Tnow
 
@@ -553,25 +553,25 @@
 
                 # Move the age of one model point
                 agepointsₚ[k] += randn() * σⱼt
-                # if agepointsₚ[k] < (0 + dt)
-                #     # Reflecting boundary condition at (0 + dt)
-                #     agepointsₚ[k] = (0 + dt) - (agepointsₚ[k] - (0 + dt))
-                # elseif agepointsₚ[k] > (tinit - dt)
-                #     # Reflecting boundary condition at (tinit - dt)
-                #     agepointsₚ[k] = (tinit - dt) - (agepointsₚ[k] - (tinit - dt))
-                # end
+                if agepointsₚ[k] < (0 + dt)
+                    # Reflecting boundary condition at (0 + dt)
+                    agepointsₚ[k] = (0 + dt) - (agepointsₚ[k] - (0 + dt))
+                elseif agepointsₚ[k] > (tinit - dt)
+                    # Reflecting boundary condition at (tinit - dt)
+                    agepointsₚ[k] = (tinit - dt) - (agepointsₚ[k] - (tinit - dt))
+                end
 
                 # Move the Temperature of one model point
                 Tpointsₚ[k] += randn() * σⱼT
-                # if Tpointsₚ[k] < Tnow
-                #     # Reflecting boundary conditions at Tnow (0)
-                #     Tpointsₚ[k] = Tnow - (Tpointsₚ[k] - Tnow)
-                # elseif Tpointsₚ[k] > Tinit
-                #     # Reflecting boundary conditions at Tinit
-                #     Tpointsₚ[k] = Tinit - (Tpointsₚ[k] - Tinit)
-                # end
+                if Tpointsₚ[k] < Tnow
+                    # Reflecting boundary conditions at Tnow (0)
+                    Tpointsₚ[k] = Tnow - (Tpointsₚ[k] - Tnow)
+                elseif Tpointsₚ[k] > Tinit
+                    # Reflecting boundary conditions at Tinit
+                    Tpointsₚ[k] = Tinit - (Tpointsₚ[k] - Tinit)
+                end
 
-                # Circular boundary conditions
+               # Circular boundary conditions (in case anything reflected out of bounds)
                 agepointsₚ[k] = mod(agepointsₚ[k]-dt, tinit-2dt) + dt
                 Tpointsₚ[k] = mod(Tpointsₚ[k]-Tnow, Tinit-Tnow) + Tnow
 
