@@ -19,44 +19,47 @@ end
 # Define Damage model types
 abstract type DamageModel end
 Base.@kwdef struct ZRDAAM{T<:AbstractFloat} <: DamageModel 
-    DzEa::T = 165.0 # kJ/mol
-    DzEa_sigma::T = 0.
-    DzD0::T = 193188.0 # cm^2/sec
-    DzD0_sigma::T = 0.
-    DN17Ea::T = 71.0 # kJ/mol
-    DN17Ea_sigma::T = 0.
-    DN17D0::T = 6.367E-3 # cm^2/sec
-    DN17D0_sigma::T = 0.
-    lint0::T = 45920.0 # nm
-    SV::T = 1.669 # 1/nm
-    Bα::T = 5.48E-19 # [g/alpha] mass of amorphous material produced per alpha decay
-    Phi::T = 3.0
-    beta::T=-0.05721
-    C0::T=6.24534
-    C1::T=-0.11977
-    C2::T=-314.937 - LOG_SEC_MYR # Includes conversion factor from seconds to Myr for dt (for performance), in addition to traditional C2 value
-    C3::T=-14.2868
+    DzD0::T = 193188.0      # Diffusivity [cm^2/sec], crystalline endmember
+    DzD0_logsigma::T=log(2) # log units (default = log(2) = a factor of 2)
+    DzEa::T=165.0           # Activation energy [kJ/mol], crystalline endmember
+    DzEa_logsigma::T=log(2) # log units (default = log(2) = a factor of 2)
+    DN17D0::T = 6.367E-3    # Diffusivity [cm^2/sec], amorphous endmember
+    DN17D0_sigma::T=log(2)  # log units (default = log(2) = a factor of 2)
+    DN17Ea::T=71.0          # Activation energy [kJ/mol], amorphous endmember
+    DN17Ea_sigma::T=log(2)  # log units (default = log(2) = a factor of 2)
+    lint0::T=45920.0        # [nm]
+    SV::T=1.669             # [1/nm]
+    Bα::T=5.48E-19          # Amorphous material produced per alpha decay [g/alpha]
+    Phi::T=3.0              # unitless
+    beta::T=-0.05721        # Zircon anealing parameter
+    C0::T=6.24534           # Zircon anealing parameter
+    C1::T=-0.11977          # Zircon anealing parameter
+    C2::T=-314.937 - LOG_SEC_MYR # Zircon anealing parameter. Includes conversion factor from seconds to Myr for dt (for performance), in addition to traditional C2 value
+    C3::T=-14.2868          # Zircon anealing parameter
 end
 export ZRDAAM
 
 Base.@kwdef struct RDAAM{T<:AbstractFloat} <: DamageModel 
-    D0L::T=0.6071 # cm2/s
-    EaL::T=122.3 # kJ/mol
-    EaTrap::T=34.0 # kJ/mol
-    psi::T=1e-13
-    omega::T=1e-22
-    etaq::T=0.91  # Durango ηq
-    rhoap::T=3.19 # g/cm3
-    L::T=0.000815 # etchable track half-length, cm
-    lambdaf::T=0.0000000000000000846
-    lambdaD::T=0.000000000155125
-    beta::T=0.04672 # Originally called alpha, but called beta here for consistency with ZRDAAM
-    C0::T=0.39528
-    C1::T=0.01073
-    C2::T=-65.12969 - LOG_SEC_MYR # Includes conversion factor from seconds to Myr for dt (for performance), in addition to traditional C2 value
-    C3::T=-7.91715
-    rmr0::T=0.83
-    kappa::T=1.04-0.83
+    D0L::T=0.6071               # Diffusivity [cm^2/s]
+    D0L_logsigma::T=log(2)      # log units (default = log(2) = a factor of 2)
+    EaL::T=122.3                # Activation energy [kJ/mol]
+    EaL_logsigma::T=log(2)      # log units (default = log(2) = a factor of 2)
+    EaTrap::T=34.0              # Activation energy [kJ/mol]
+    EaTrap_logsigma::T=log(2)   # log units (default = log(2) = a factor of 2)
+    psi::T=1e-13                # empirical polynomial coefficient
+    omega::T=1e-22              # empirical polynomial coefficient
+    etaq::T=0.91                # Durango ηq
+    rhoap::T=3.19               # Density of apatite [g/cm3]
+    L::T=0.000815               # Etchable fission track half-length, cm
+    lambdaf::T=8.46e-17         # 
+    lambdaD::T=1.55125e-10      # 
+    beta::T=0.04672             # Apatite annealing parameter. Also caled alpha, but equivalent to beta in ZRDAAM
+    C0::T=0.39528               # Apatite annealing parameter
+    C1::T=0.01073               # Apatite annealing parameter
+    C2::T=-65.12969 - LOG_SEC_MYR # Apatite annealing parameter. Includes conversion factor from seconds to Myr for dt (for performance), in addition to traditional C2 value
+    C3::T=-7.91715              # Apatite annealing parameter
+    rmr0::T=0.83                # Damage conversion parameter
+    kappa::T=1.04-0.83          # Damage conversion parameter
 end
 export RDAAM
 
