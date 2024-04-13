@@ -158,22 +158,24 @@ function anneal!(ρᵣ::DenseMatrix{T}, Teq::DenseVector{T}, dt::Number, tsteps:
         @turbo @. ρᵣ[i,1:i] = 1 / ((dm.C0 + dm.C1 * (log(dt + Teqᵢ) - dm.C2) / lᵢ)^(1/dm.beta) + 1)
     end
 
-    # # Corrections to ρᵣ (conventional, but deeply questionable)
-    # @inbounds for i ∈ 1:ntsteps-1
-    #     for j ∈ 1:i
-    #         if ρᵣ[i,j] >= dm.rmr0
-    #             ρᵣ[i,j] = ((ρᵣ[i,j]-dm.rmr0)/(1-dm.rmr0))^dm.kappa
-    #         else
-    #             ρᵣ[i,j] = 0.0
-    #         end
-    #
-    #         if ρᵣ[i,j]>=0.765
-    #             ρᵣ[i,j] = 1.6*ρᵣ[i,j]-0.6
-    #         else
-    #             ρᵣ[i,j] = 9.205*ρᵣ[i,j]*ρᵣ[i,j] - 9.157*ρᵣ[i,j] + 2.269
-    #         end
-    #     end
-    # end
+    # Corrections to ρᵣ 
+    @inbounds for i ∈ 1:ntsteps-1
+        for j ∈ 1:i
+            # rmr0 correction
+            if ρᵣ[i,j] >= dm.rmr0
+                ρᵣ[i,j] = ((ρᵣ[i,j]-dm.rmr0)/(1-dm.rmr0))^dm.kappa
+            else
+                ρᵣ[i,j] = 0.0
+            end
+            
+            # # Additional Ketcham correction (questionable, given it does not pass through 0,0)
+            # if ρᵣ[i,j]>=0.765
+            #     ρᵣ[i,j] = 1.6*ρᵣ[i,j]-0.6
+            # else
+            #     ρᵣ[i,j] = 9.205*ρᵣ[i,j]*ρᵣ[i,j] - 9.157*ρᵣ[i,j] + 2.269
+            # end
+        end
+    end
 
     return ρᵣ
 end
