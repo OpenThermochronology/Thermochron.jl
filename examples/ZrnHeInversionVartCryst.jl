@@ -35,22 +35,77 @@
     ds = importdataset("minnesota.csv", ',', importas=:Tuple)
 
     # Populate data NamedTuple from imported dataset
-    data = (
-        halfwidth = ds.Halfwidth_um,            # Crystal half-width, in microns
-        U = ds.U238_ppm,                        # U concentration, in PPM
-        Th = ds.Th232_ppm,                      # Th-232 concentration, in PPM
-        Sm = ds.Sm147_ppm,                      # Sm-147 concentration, in PPM (optional)
-        HeAge = ds.HeAge_Ma_raw,                # He age, in Ma
-        HeAge_sigma = ds.HeAge_Ma_sigma_10pct,  # He age uncertainty (1-sigma), in Ma
-        crystAge = ds.CrystAge_Ma,              # Crystallization age, in Ma
-        mineral = ds.Mineral
+    data = (;
+        halfwidth = copy(ds.Halfwidth_um),            # Crystal half-width, in microns
+        U = copy(ds.U238_ppm),                        # U concentration, in PPM
+        Th = copy(ds.Th232_ppm),                      # Th-232 concentration, in PPM
+        Sm = copy(ds.Sm147_ppm),                      # Sm-147 concentration, in PPM (optional)
+        HeAge = copy(ds.HeAge_Ma_raw),                # He age, in Ma
+        HeAge_sigma = copy(ds.HeAge_Ma_sigma_raw),    # He age uncertainty (1-sigma), in Ma
+        crystAge = copy(ds.CrystAge_Ma),              # Crystallization age, in Ma
+        mineral = copy(ds.Mineral),                   # i.e., "zircon" or "apatite"
     );
+
+    ta = containsi.(data.mineral, "apatite")
+    tz = containsi.(data.mineral, "zircon")
+    eU = data.U+0.238*data.Th # Used for plotting, etc.
+
+## --- Empirical uncertainty estimation
+
+    age =copy(data.HeAge)
+    age_sigma = copy(ds.HeAge_Ma_sigma_raw)
+    age_sigma_empirical = copy(data.HeAge_sigma)
+    min_rel_uncert = 10/100 # 10% minmum relative age uncertainty
+
+    if any(ta)
+        # Standard deviation of a Gaussian kernel in eU space, representing the 
+        # range of eU over which zircons with similar eU should have similar ages
+        σeU = 10
+
+        # Calculate errors
+        for i ∈ findall(ta)
+            W = normpdf.(eU[i], σeU, eU[ta])
+            σ_external = nanstd(age[ta], W) # Weighted standard deviation
+            σ_internal = age_sigma[i]
+            age_sigma_empirical[i] = sqrt(σ_external^2 + σ_internal^2)
+            age_sigma_empirical[i] = max(age_sigma_empirical[i], min_rel_uncert*age[i])
+        end
+
+        h = plot(xlabel="eU", ylabel="Age", framestyle=:box, title="apatite")
+        plot!(eU[ta], age[ta], yerror=age_sigma_empirical[ta], seriestype=:scatter, c=:black, msc=:black, label="empirical")
+        plot!(eU[ta], age[ta], yerror=age_sigma[ta], seriestype=:scatter, c=mineralcolors["apatite"], msc=mineralcolors["apatite"], label="internal")
+        display(h)
+    end
+
+    if any(tz)
+        # Stzndard deviation of a Gaussian kernel in eU space, representing the 
+        # range of eU over which zircons with similar eU should have similar ages
+        σeU = 100
+
+        # Calculate errors
+        for i ∈ findall(tz)
+            W = normpdf.(eU[i], σeU, eU[tz])
+            σ_external = nanstd(age[tz], W) # Weighted stzndard deviation
+            σ_internal = age_sigma[i]
+            age_sigma_empirical[i] = sqrt(σ_external^2 + σ_internal^2)
+            age_sigma_empirical[i] = max(age_sigma_empirical[i], min_rel_uncert*age[i])
+        end
+
+        h = plot(xlabel="eU", ylabel="Age", framestyle=:box, title="zircon")
+        plot!(eU[tz], age[tz], yerror=age_sigma_empirical[tz], seriestype=:scatter, c=:black, msc=:black, label="empirical")
+        plot!(eU[tz], age[tz], yerror=age_sigma[tz], seriestype=:scatter, c=mineralcolors["zircon"], msc=mineralcolors["zircon"], label="internal")
+        display(h)
+    end
 
 ## --- Prepare problem
 
+    # Use empirical ages for zircon, 10 % for apatite
+    data.HeAge_sigma[tz] .= age_sigma_empirical[tz]
+    data.HeAge_sigma[ta] .= ds.HeAge_Ma_sigma_10pct[ta]
+
     model = (
-        nsteps = 20_000, # How many steps of the Markov chain should we run?
-        burnin = 10_000, # How long should we wait for MC to converge (become stationary)
+        nsteps = 100_000, # How many steps of the Markov chain should we run?
+        burnin = 50_000, # How long should we wait for MC to converge (become stationary)
         dr = 1.0,    # Radius step, in microns
         dt = 10.0,   # Time step size in Myr
         dTmax = 25.0, # Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
@@ -174,8 +229,6 @@
 
 ## --- Plot model ages vs observed ages in age-eU space (zircon)
 
-    eU = data.U+.238*data.Th # Used only for plotting
-    tz = containsi.(data.mineral, "zircon")
     if any(tz)
         h = scatter(eU[tz], data.HeAge[tz], 
             yerror=2*data.HeAge_sigma[tz], 
@@ -192,8 +245,8 @@
         scatter!(h, eU[tz], m, 
             yerror=(m-l, u-m), 
             label="Model + 95%CI", 
-            color=:blue, 
-            msc=:blue,
+            color=mineralcolors["zircon"], 
+            msc=mineralcolors["zircon"],
         )
         savefig(h, name*"_zircon_Age-eU.pdf")
         display(h)
@@ -201,7 +254,6 @@
 
 ## --- Plot model ages vs observed ages in age-eU space (apatite)
 
-    ta = containsi.(data.mineral, "apatite")
     if any(ta)
         h = scatter(eU[ta], data.HeAge[ta], 
             yerror=2*data.HeAge_sigma[ta], 
@@ -218,8 +270,8 @@
         scatter!(h, eU[ta], m, 
             yerror=(m-l, u-m), 
             label="Model + 95%CI", 
-            color=:blue, 
-            msc=:blue,
+            color=mineralcolors["apatite"], 
+            msc=mineralcolors["apatite"], 
         )
         savefig(h, name*"_apatite_Age-eU.pdf")
         display(h)
