@@ -63,6 +63,19 @@ Base.@kwdef struct RDAAM{T<:AbstractFloat} <: DamageModel
 end
 export RDAAM
 
+# Specialized ll functions for ZRDAAM and RDAAM
+function loglikelihood(zdmₚ::ZRDAAM, zdm::ZRDAAM)
+    normpdf_ll(log(zdm.DzD0), zdm.DzD0_logsigma, log(zdmₚ.DzD0)) + 
+    normpdf_ll(log(zdm.DzEa), zdm.DzEa_logsigma, log(zdmₚ.DzEa)) + 
+    normpdf_ll(log(zdm.DN17D0), zdm.DN17D0_logsigma, log(zdmₚ.DN17D0)) + 
+    normpdf_ll(log(zdm.DN17Ea), zdm.DN17Ea_logsigma, log(zdmₚ.DN17Ea))
+end
+function loglikelihood(admₚ::RDAAM, adm::RDAAM)
+    normpdf_ll(log(adm.D0L), adm.D0L_logsigma, log(admₚ.D0L)) + 
+    normpdf_ll(log(adm.EaL), adm.EaL_logsigma, log(admₚ.EaL)) + 
+    normpdf_ll(log(adm.EaTrap), adm.EaTrap_logsigma, log(admₚ.EaTrap))
+end
+
 """
 ```julia
 ρᵣ = anneal(dt::Number, tsteps::Vector, Tsteps::Matrix, [model::DamageModel=ZRDAAM()])

@@ -182,7 +182,7 @@
     Tpoints[1:npoints] .= Tr  # Degrees C
 
     # Run Markov Chain
-    @time (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_vartcryst(data, model, npoints, agepoints, Tpoints, boundary, unconf, detail)
+    @time (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, npoints, agepoints, Tpoints, boundary, unconf, detail)
     @info """tpointdist & Tpointdist collected, size: $(size(Tpointdist))
     Mean log-likelihood: $(nanmean(view(lldist, model.burnin:model.nsteps)))
     Mean acceptance rate: $(nanmean(view(acceptancedist, model.burnin:model.nsteps)))
