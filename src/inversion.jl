@@ -882,10 +882,10 @@
 
         # Standard deviations of Gaussian proposal ("jumping") distributions
         # for kinetics
-        σaD0 = adm.D0L_logsigma
-        σaEa = adm.EaL_logsigma
-        σzD0 = (zdm.DzD0_logsigma+zdm.DN17D0_logsigma)
-        σzEa = (zdm.DzEa_logsigma+zdm.DN17Ea_logsigma)
+        σaD0 = adm.D0L_logsigma/10
+        σaEa = adm.EaL_logsigma/10
+        σzD0 = (zdm.DzD0_logsigma+zdm.DN17D0_logsigma)/20
+        σzEa = (zdm.DzEa_logsigma+zdm.DN17Ea_logsigma)/20
         # for temperature and time
         σⱼt = tinit/60
         σⱼT = Tinit/60
@@ -1278,10 +1278,10 @@
     
         # Standard deviations of Gaussian proposal ("jumping") distributions
         # for kinetics
-        σaD0 = adm.D0L_logsigma
-        σaEa = adm.EaL_logsigma
-        σzD0 = (zdm.DzD0_logsigma+zdm.DN17D0_logsigma)
-        σzEa = (zdm.DzEa_logsigma+zdm.DN17Ea_logsigma)
+        σaD0 = adm.D0L_logsigma/10
+        σaEa = adm.EaL_logsigma/10
+        σzD0 = (zdm.DzD0_logsigma+zdm.DN17D0_logsigma)/20
+        σzEa = (zdm.DzEa_logsigma+zdm.DN17Ea_logsigma)/20
         # for temperature and time
         σⱼt = tinit/60
         σⱼT = Tinit/60
