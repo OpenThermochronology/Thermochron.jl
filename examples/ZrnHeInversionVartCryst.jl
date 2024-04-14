@@ -44,15 +44,15 @@
         HeAge_sigma = copy(ds.HeAge_Ma_sigma_raw),    # He age uncertainty (1-sigma), in Ma
         crystAge = copy(ds.CrystAge_Ma),              # Crystallization age, in Ma
         mineral = copy(ds.Mineral),                   # i.e., "zircon" or "apatite"
-    );
+    )
 
     ta = containsi.(data.mineral, "apatite")
     tz = containsi.(data.mineral, "zircon")
-    eU = data.U+0.238*data.Th # Used for plotting, etc.
+    eU = data.U+0.238*data.Th; # Used for plotting, etc.
 
 ## --- Empirical uncertainty estimation
 
-    age =copy(data.HeAge)
+    age = copy(data.HeAge)
     age_sigma = copy(ds.HeAge_Ma_sigma_raw)
     age_sigma_empirical = copy(data.HeAge_sigma)
     min_rel_uncert = 10/100 # 10% minmum relative age uncertainty
@@ -104,8 +104,8 @@
     data.HeAge_sigma[ta] .= ds.HeAge_Ma_sigma_10pct[ta]
 
     model = (
-        nsteps = 100_000,           # How many steps of the Markov chain should we run?
-        burnin = 50_000,            # How long should we wait for MC to converge (become stationary)
+        nsteps = 1_000_000,         # How many steps of the Markov chain should we run?
+        burnin = 500_000,           # How long should we wait for MC to converge (become stationary)
         dr = 1.0,                   # Radius step, in microns
         dt = 10.0,                  # Time step size in Myr
         dTmax = 25.0,               # Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
@@ -183,6 +183,7 @@
 
     # Run Markov Chain
     @time (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, npoints, agepoints, Tpoints, boundary, unconf, detail)
+    # @time (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_varkinetics(data, model, npoints, agepoints, Tpoints, boundary, unconf, detail)
     @info """tpointdist & Tpointdist collected, size: $(size(Tpointdist))
     Mean log-likelihood: $(nanmean(view(lldist, model.burnin:model.nsteps)))
     Mean acceptance rate: $(nanmean(view(acceptancedist, model.burnin:model.nsteps)))
