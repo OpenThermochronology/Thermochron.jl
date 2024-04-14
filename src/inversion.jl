@@ -1088,7 +1088,7 @@
                 zi = 1
                 for i ∈ findall(tzr)
                     first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                    calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tstepsₚ[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
+                    calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tstepsₚ[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdmₚ)::T
                     zi += 1
                 end
             end
@@ -1097,7 +1097,7 @@
                 ai = 1
                 for i ∈ findall(tap)
                     first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                    calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tstepsₚ[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
+                    calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tstepsₚ[first_index:end]), @views(apr[first_index:end,first_index:end]), admₚ)::T
                     ai += 1
                 end
             end
@@ -1456,8 +1456,8 @@
                 end
             else
                 # Adjust kinetic parameters, one at a time
-                rn = rand(1:7)
                 if any(tzr)
+                    rn = rand(1:4)
                     zdmₚ = ZRDAAM(
                         DzEa = (rn==1) ? exp(log(zdm.DzEa)+randn()*σzEa) : zdm.DzEa,
                         DzD0 = (rn==2) ? exp(log(zdm.DzD0)+randn()*σzD0) : zdm.DzD0,
@@ -1466,10 +1466,11 @@
                     )
                 end
                 if any(tap)
+                    rn = rand(1:3)
                     admₚ = RDAAM(
-                        D0L = (rn==5) ? exp(log(adm.D0L)+randn()*σaD0) : adm.D0L,
-                        EaL = (rn==6) ? exp(log(adm.EaL)+randn()*σaEa) : adm.EaL,
-                        EaTrap = (rn==7) ? exp(log(adm.EaTrap)+randn()*σaEa) : adm.EaTrap,
+                        D0L = (rn==1) ? exp(log(adm.D0L)+randn()*σaD0) : adm.D0L,
+                        EaL = (rn==2) ? exp(log(adm.EaL)+randn()*σaEa) : adm.EaL,
+                        EaTrap = (rn==3) ? exp(log(adm.EaTrap)+randn()*σaEa) : adm.EaTrap,
                     )
                 end
             end
@@ -1480,7 +1481,7 @@
                 zi = 1
                 for i ∈ findall(tzr)
                     first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                    calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tstepsₚ[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
+                    calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tstepsₚ[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdmₚ)::T
                     zi += 1
                 end
             end
@@ -1489,7 +1490,7 @@
                 ai = 1
                 for i ∈ findall(tap)
                     first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                    calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tstepsₚ[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
+                    calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tstepsₚ[first_index:end]), @views(apr[first_index:end,first_index:end]), admₚ)::T
                     ai += 1
                 end
             end
