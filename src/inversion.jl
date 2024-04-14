@@ -1066,17 +1066,17 @@
                 # Adjust kinetic parameters
                 if any(tzr)
                     zdmₚ = ZRDAAM(
-                        DzEa = exp(log(zdm.DzEa)+rand()*σzEa),
-                        DzD0 = exp(log(zdm.DzD0)+rand()*σzD0),
-                        DN17Ea = exp(log(zdm.DN17Ea)+rand()*σzEa),
-                        DN17D0 = exp(log(zdm.DN17D0)+rand()*σzD0),
+                        DzEa = exp(log(zdm.DzEa)+randn()*σzEa),
+                        DzD0 = exp(log(zdm.DzD0)+randn()*σzD0),
+                        DN17Ea = exp(log(zdm.DN17Ea)+randn()*σzEa),
+                        DN17D0 = exp(log(zdm.DN17D0)+randn()*σzD0),
                     )
                 end
                 if any(tap)
                     admₚ = RDAAM(
-                        D0L = exp(log(adm.D0L)+rand()*σaD0),
-                        EaL = exp(log(adm.EaL)+rand()*σaEa),
-                        EaTrap = exp(log(adm.EaTrap)+rand()*σaEa),
+                        D0L = exp(log(adm.D0L)+randn()*σaD0),
+                        EaL = exp(log(adm.EaL)+randn()*σaEa),
+                        EaTrap = exp(log(adm.EaTrap)+randn()*σaEa),
                     )
                 end
             end
@@ -1084,21 +1084,21 @@
             # Calculate model ages for each grain
             if any(tzr)
                 anneal!(zpr, zTeq, dt, tsteps, Tstepsₚ, zdmₚ)
+                zi = 1
+                for i ∈ findall(tzr)
+                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+                    calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tstepsₚ[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
+                    zi += 1
+                end
             end
             if any(tap)
                 anneal!(apr, aTeq, dt, tsteps, Tstepsₚ, admₚ)
-            end
-            zi = 1
-            for i ∈ findall(tzr)
-                first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tstepsₚ[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
-                zi += 1
-            end
-            ai = 1
-            for i ∈ findall(tap)
-                first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tstepsₚ[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
-                ai += 1
+                ai = 1
+                for i ∈ findall(tap)
+                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+                    calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tstepsₚ[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
+                    ai += 1
+                end
             end
 
             # Calculate log likelihood of proposal
@@ -1457,17 +1457,17 @@
                 # Adjust kinetic parameters
                 if any(tzr)
                     zdmₚ = ZRDAAM(
-                        DzEa = exp(log(zdm.DzEa)+rand()*σzEa),
-                        DzD0 = exp(log(zdm.DzD0)+rand()*σzD0),
-                        DN17Ea = exp(log(zdm.DN17Ea)+rand()*σzEa),
-                        DN17D0 = exp(log(zdm.DN17D0)+rand()*σzD0),
+                        DzEa = exp(log(zdm.DzEa)+randn()*σzEa),
+                        DzD0 = exp(log(zdm.DzD0)+randn()*σzD0),
+                        DN17Ea = exp(log(zdm.DN17Ea)+randn()*σzEa),
+                        DN17D0 = exp(log(zdm.DN17D0)+randn()*σzD0),
                     )
                 end
                 if any(tap)
                     admₚ = RDAAM(
-                        D0L = exp(log(adm.D0L)+rand()*σaD0),
-                        EaL = exp(log(adm.EaL)+rand()*σaEa),
-                        EaTrap = exp(log(adm.EaTrap)+rand()*σaEa),
+                        D0L = exp(log(adm.D0L)+randn()*σaD0),
+                        EaL = exp(log(adm.EaL)+randn()*σaEa),
+                        EaTrap = exp(log(adm.EaTrap)+randn()*σaEa),
                     )
                 end
             end
@@ -1475,21 +1475,21 @@
             # Calculate model ages for each grain
             if any(tzr)
                 anneal!(zpr, zTeq, dt, tsteps, Tstepsₚ, zdmₚ)
+                zi = 1
+                for i ∈ findall(tzr)
+                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+                    calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tstepsₚ[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
+                    zi += 1
+                end
             end
             if any(tap)
                 anneal!(apr, aTeq, dt, tsteps, Tstepsₚ, admₚ)
-            end
-            zi = 1
-            for i ∈ findall(tzr)
-                first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tstepsₚ[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
-                zi += 1
-            end
-            ai = 1
-            for i ∈ findall(tap)
-                first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tstepsₚ[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
-                ai += 1
+                ai = 1
+                for i ∈ findall(tap)
+                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+                    calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tstepsₚ[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
+                    ai += 1
+                end
             end
     
             # Calculate log likelihood of proposal
