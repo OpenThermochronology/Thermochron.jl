@@ -882,10 +882,10 @@
 
         # Standard deviations of Gaussian proposal ("jumping") distributions
         # for kinetics
-        σaD0 = adm.D0L_logsigma/10
-        σaEa = adm.EaL_logsigma/10
-        σzD0 = (zdm.DzD0_logsigma+zdm.DN17D0_logsigma)/20
-        σzEa = (zdm.DzEa_logsigma+zdm.DN17Ea_logsigma)/20
+        σaD0 = adm.D0L_logsigma
+        σaEa = adm.EaL_logsigma
+        σzD0 = (zdm.DzD0_logsigma+zdm.DN17D0_logsigma)/2
+        σzEa = (zdm.DzEa_logsigma+zdm.DN17Ea_logsigma)/2
         # for temperature and time
         σⱼt = tinit/60
         σⱼT = Tinit/60
@@ -1063,20 +1063,21 @@
                 copyto!(boundary.Tpointsₚ, boundary.Tpoints)
                 end
             else
-                # Adjust kinetic parameters
+                # Adjust kinetic parameters, one at a time
+                rn = rand(1:7)
                 if any(tzr)
                     zdmₚ = ZRDAAM(
-                        DzEa = exp(log(zdm.DzEa)+randn()*σzEa),
-                        DzD0 = exp(log(zdm.DzD0)+randn()*σzD0),
-                        DN17Ea = exp(log(zdm.DN17Ea)+randn()*σzEa),
-                        DN17D0 = exp(log(zdm.DN17D0)+randn()*σzD0),
+                        DzEa = (rn==1) ? exp(log(zdm.DzEa)+randn()*σzEa) : zdm.DzEa,
+                        DzD0 = (rn==2) ? exp(log(zdm.DzD0)+randn()*σzD0) : zdm.DzD0,
+                        DN17Ea = (rn==3) ? exp(log(zdm.DN17Ea)+randn()*σzEa) : zdm.DN17Ea,
+                        DN17D0 = (rn==4) ? exp(log(zdm.DN17D0)+randn()*σzD0) : zdm.DN17D0,
                     )
                 end
                 if any(tap)
                     admₚ = RDAAM(
-                        D0L = exp(log(adm.D0L)+randn()*σaD0),
-                        EaL = exp(log(adm.EaL)+randn()*σaEa),
-                        EaTrap = exp(log(adm.EaTrap)+randn()*σaEa),
+                        D0L = (rn==5) ? exp(log(adm.D0L)+randn()*σaD0) : adm.D0L,
+                        EaL = (rn==6) ? exp(log(adm.EaL)+randn()*σaEa) : adm.EaL,
+                        EaTrap = (rn==7) ? exp(log(adm.EaTrap)+randn()*σaEa) : adm.EaTrap,
                     )
                 end
             end
@@ -1278,10 +1279,10 @@
     
         # Standard deviations of Gaussian proposal ("jumping") distributions
         # for kinetics
-        σaD0 = adm.D0L_logsigma/10
-        σaEa = adm.EaL_logsigma/10
-        σzD0 = (zdm.DzD0_logsigma+zdm.DN17D0_logsigma)/20
-        σzEa = (zdm.DzEa_logsigma+zdm.DN17Ea_logsigma)/20
+        σaD0 = adm.D0L_logsigma
+        σaEa = adm.EaL_logsigma
+        σzD0 = (zdm.DzD0_logsigma+zdm.DN17D0_logsigma)/2
+        σzEa = (zdm.DzEa_logsigma+zdm.DN17Ea_logsigma)/2
         # for temperature and time
         σⱼt = tinit/60
         σⱼT = Tinit/60
@@ -1454,20 +1455,21 @@
                 copyto!(boundary.Tpointsₚ, boundary.Tpoints)
                 end
             else
-                # Adjust kinetic parameters
+                # Adjust kinetic parameters, one at a time
+                rn = rand(1:7)
                 if any(tzr)
                     zdmₚ = ZRDAAM(
-                        DzEa = exp(log(zdm.DzEa)+randn()*σzEa),
-                        DzD0 = exp(log(zdm.DzD0)+randn()*σzD0),
-                        DN17Ea = exp(log(zdm.DN17Ea)+randn()*σzEa),
-                        DN17D0 = exp(log(zdm.DN17D0)+randn()*σzD0),
+                        DzEa = (rn==1) ? exp(log(zdm.DzEa)+randn()*σzEa) : zdm.DzEa,
+                        DzD0 = (rn==2) ? exp(log(zdm.DzD0)+randn()*σzD0) : zdm.DzD0,
+                        DN17Ea = (rn==3) ? exp(log(zdm.DN17Ea)+randn()*σzEa) : zdm.DN17Ea,
+                        DN17D0 = (rn==4) ? exp(log(zdm.DN17D0)+randn()*σzD0) : zdm.DN17D0,
                     )
                 end
                 if any(tap)
                     admₚ = RDAAM(
-                        D0L = exp(log(adm.D0L)+randn()*σaD0),
-                        EaL = exp(log(adm.EaL)+randn()*σaEa),
-                        EaTrap = exp(log(adm.EaTrap)+randn()*σaEa),
+                        D0L = (rn==5) ? exp(log(adm.D0L)+randn()*σaD0) : adm.D0L,
+                        EaL = (rn==6) ? exp(log(adm.EaL)+randn()*σaEa) : adm.EaL,
+                        EaTrap = (rn==7) ? exp(log(adm.EaTrap)+randn()*σaEa) : adm.EaTrap,
                     )
                 end
             end
