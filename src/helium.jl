@@ -101,8 +101,8 @@ anneal!(ρᵣ::Matrix, dt::Number, tsteps::Vector, Tsteps::Vector, [model::Damag
 ```
 In-place version of `anneal`
 """
-anneal!(ρᵣ::DenseMatrix, Teq::DenseVector, dt::Number, tsteps::DenseVector, Tsteps::DenseVector) = anneal!(ρᵣ, Teq, dt, tsteps, Tsteps, ZRDAAM())
-function anneal!(ρᵣ::DenseMatrix{T}, Teq::DenseVector{T}, dt::Number, tsteps::DenseVector, Tsteps::DenseVector, dm::ZRDAAM{T}) where T <: AbstractFloat
+anneal!(ρᵣ::AbstractMatrix, Teq::DenseVector, dt::Number, tsteps::DenseVector, Tsteps::DenseVector) = anneal!(ρᵣ, Teq, dt, tsteps, Tsteps, ZRDAAM())
+function anneal!(ρᵣ::AbstractMatrix{T}, Teq::DenseVector{T}, dt::Number, tsteps::DenseVector, Tsteps::DenseVector, dm::ZRDAAM{T}) where T <: AbstractFloat
 
     ∅ = zero(T)
     ntsteps = length(tsteps)
@@ -150,7 +150,7 @@ function anneal!(ρᵣ::DenseMatrix{T}, Teq::DenseVector{T}, dt::Number, tsteps:
 
     return ρᵣ
 end
-function anneal!(ρᵣ::DenseMatrix{T}, Teq::DenseVector{T}, dt::Number, tsteps::DenseVector, Tsteps::DenseVector, dm::RDAAM{T}) where T <: AbstractFloat
+function anneal!(ρᵣ::AbstractMatrix{T}, Teq::DenseVector{T}, dt::Number, tsteps::DenseVector, Tsteps::DenseVector, dm::RDAAM{T}) where T <: AbstractFloat
 
     ∅ = zero(T)
     ntsteps = length(tsteps)
@@ -206,8 +206,8 @@ export anneal!
 
 """
 ```julia
-HeAgeSpherical(mineral::Zircon, Tsteps::Vector, ρᵣ::Matrix, dm::ZRDAAM)
-HeAgeSpherical(mineral::Apatite, Tsteps::Vector, ρᵣ::Matrix, dm::RDAAM)
+HeAgeSpherical(mineral::Zircon, Tsteps::Vector, ρᵣ::AbstractMatrix, dm::ZRDAAM)
+HeAgeSpherical(mineral::Apatite, Tsteps::Vector, ρᵣ::AbstractMatrix, dm::RDAAM)
 ```
 Calculate the precdicted U-Th/He age of a zircon or apatite that has experienced a given 
 t-T path (specified by `mineral.agesteps` for time and `Tsteps` for temperature, at a
@@ -353,7 +353,7 @@ function HeAgeSpherical(zircon::Zircon{T}, Tsteps::StridedVector{T}, ρᵣ::Stri
 
     return HeAge
 end
-function HeAgeSpherical(apatite::Apatite{T}, Tsteps::StridedVector{T}, ρᵣ::StridedMatrix{T}, dm::RDAAM{T}) where T <: AbstractFloat
+function HeAgeSpherical(apatite::Apatite{T}, Tsteps::StridedVector{T}, ρᵣ::AbstractMatrix{T}, dm::RDAAM{T}) where T <: AbstractFloat
 
     # Damage and annealing constants
     D0L = dm.D0L*10000^2*SEC_MYR::T         # cm^2/sec, converted to micron^2/Myr  
