@@ -36,6 +36,7 @@ Base.@kwdef struct ZRDAAM{T<:AbstractFloat} <: DamageModel
     C1::T=-0.11977              # Zircon anealing parameter
     C2::T=-314.937 - LOG_SEC_MYR # Zircon anealing parameter. Includes conversion factor from seconds to Myr for dt (for performance), in addition to traditional C2 value
     C3::T=-14.2868              # Zircon anealing parameter
+    rmr0::T=0.2                 # Zircon anealing parameter (not normally called this in ZRDAAM context, but effectively the same thing)
 end
 export ZRDAAM
 
@@ -60,6 +61,7 @@ Base.@kwdef struct RDAAM{T<:AbstractFloat} <: DamageModel
     C3::T=-7.91715              # Apatite annealing parameter
     rmr0::T=0.83                # Damage conversion parameter
     kappa::T=1.04-0.83          # Damage conversion parameter
+    kappa_rmr0::T=1.04          # Damage conversion parameter (the sum of kappa and rmr0)
 end
 export RDAAM
 
@@ -127,23 +129,24 @@ function anneal!(ρᵣ::DenseMatrix{T}, Teq::DenseVector{T}, dt::Number, tsteps:
         @turbo @. ρᵣ[i,1:i] = 1 / ((dm.C0 + dm.C1 * (log(dt + Teqᵢ) - dm.C2) / lᵢ)^(1/dm.beta) + 1)
     end
 
-    # # Guenthner et al conversion
-    # map!(x->1.25*(x-0.2), ρᵣ, ρᵣ)
-
-    # # Alternative conversion: Zero-out any reduced densities below the equivalent total annealing length
-    # ρᵣ[ρᵣ.<0.36] .= 0
+    # Guenthner et al conversion volume-length conversion
+    rmr0 = dm.rmr0
+    scale = 1/(1-rmr0)
+    @fastmath @inbounds for j ∈ 1:ntsteps
+        for i ∈ j:ntsteps
+            ρᵣ[i,j] = if ρᵣ[i,j] >= rmr0
+                (ρᵣ[i,j] - rmr0) * scale
+            else
+                zero(T)
+            end
+        end
+    end
 
     # # Alternative conversion: Extrapolate from bottom of data to origin
     # map!(x->(x<0.4 ? 5/8x : x), ρᵣ, ρᵣ)
     
     # # Alternative conversion: rescale reduced densities based on the equivalent total annealing length
     # map!(x->(x-0.36)/(1-0.36), ρᵣ, ρᵣ)
-
-    # Remove any negative reduced densities
-    @turbo for i ∈ eachindex(ρᵣ)
-        ρᵣᵢ = ρᵣ[i]
-        ρᵣ[i] = ifelse(ρᵣᵢ < ∅, ∅, ρᵣᵢ)
-    end
 
     return ρᵣ
 end
@@ -175,13 +178,16 @@ function anneal!(ρᵣ::DenseMatrix{T}, Teq::DenseVector{T}, dt::Number, tsteps:
     end
 
     # Corrections to ρᵣ 
-    @inbounds for i ∈ 1:ntsteps-1
-        for j ∈ 1:i
+    rmr0 = dm.rmr0
+    kappa = dm.kappa
+    scale = 1/(1-rmr0)
+    @fastmath @inbounds for j ∈ 1:ntsteps
+        for i ∈ j:ntsteps
             # rmr0 correction
-            if ρᵣ[i,j] >= dm.rmr0
-                ρᵣ[i,j] = ((ρᵣ[i,j]-dm.rmr0)/(1-dm.rmr0))^dm.kappa
+            ρᵣ[i,j] = if ρᵣ[i,j] >= rmr0
+                ((ρᵣ[i,j]-rmr0)*scale)^kappa
             else
-                ρᵣ[i,j] = 0.0
+                zero(T)
             end
             
             # # Additional Ketcham correction (questionable, given it does not pass through 0,0)

@@ -78,7 +78,7 @@
     # Re-run to ensure internal state does not change
     for i=1:10
         # @test HeAgeSpherical(apatite,Tsteps,pr,dm) ≈ 125.2393082743598  # with no rmr0 correction
-        @test HeAgeSpherical(apatite,Tsteps,pr,dm) ≈ 125.23326253778933  # with rmr0 = 0.83
+        @test HeAgeSpherical(apatite,Tsteps,pr,dm) ≈ 125.2331472062392  # with rmr0 = 0.83
     end
 
     crystalRadius = 35.
@@ -88,7 +88,7 @@
     # Re-run to ensure internal state does not change
     for i=1:10
         # @test HeAgeSpherical(apatite,Tsteps,pr,dm) ≈ 150.6059246264699  # with no rmr0 correction
-        @test HeAgeSpherical(apatite,Tsteps,pr,dm) ≈ 150.38166545706397  # with rmr0 = 0.83
+        @test HeAgeSpherical(apatite,Tsteps,pr,dm) ≈ 150.3786208747766  # with rmr0 = 0.83
     end
 
     crystalRadius = 135.
@@ -98,7 +98,7 @@
     # Re-run to ensure internal state does not change
     for i=1:10
         # @test HeAgeSpherical(apatite,Tsteps,pr,dm) ≈ 266.3624679808305  # with no rmr0 correction
-        @test HeAgeSpherical(apatite,Tsteps,pr,dm) ≈ 263.94029412714264  # with rmr0 = 0.83
+        @test HeAgeSpherical(apatite,Tsteps,pr,dm) ≈ 263.9370169558578  # with rmr0 = 0.83
     end
 
     crystalRadius = 135.
@@ -108,5 +108,5 @@
     # Re-run to ensure internal state does not change
     for i=1:10
         # @test HeAgeSpherical(apatite,Tsteps,pr,dm) ≈ 263.9393563618151  # with no rmr0 correction
-        @test HeAgeSpherical(apatite,Tsteps,pr,dm) ≈ 263.87549475546064  # with rmr0 = 0.83
+        @test HeAgeSpherical(apatite,Tsteps,pr,dm) ≈ 263.87540959714664  # with rmr0 = 0.83
     end
