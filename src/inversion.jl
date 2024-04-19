@@ -28,7 +28,7 @@
 
     """
     ```julia
-    MCMC(data::NamedTuple, model::NamedTuple, npoints::Int, agepoints::Vector, Tpoints::Vector, unconf::Unconformity, boundary::Boundary)
+    MCMC(data::NamedTuple, model::NamedTuple, npoints::Int, agepoints::Vector, Tpoints::Vector, unconf::Unconformity, boundary::Boundary, [detail::DetailInterval])
     ```
     Markov chain Monte Carlo time-Temperature inversion of the data specified in `data` and model parameters specified by `model`.
 
@@ -139,7 +139,6 @@
         agepointsₚ = copy(agepoints)::DenseVector{T}
         Tpointsₚ = copy(Tpoints)::DenseVector{T}
         calcHeAgesₚ = copy(calcHeAges)::DenseVector{T}
-        Tstepsₚ = copy(Tsteps)::DenseVector{T}
 
         # distributions to populate
         tpointdist = zeros(T, totalpoints, nsteps)
@@ -163,11 +162,6 @@
         death = 0.15 # Must equal birth
         movebounds = 0.06
 
-        # Number of times to attempt to satisfy reheating rate: # Should be large
-        # enough that proposal probabilities are unchanged, but low enough to prevent
-        # an infinite loop
-        nattempts = 100_000
-
         progress = Progress(nsteps, dt=1, desc="Running MCMC ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
         for n = 1:nsteps
@@ -185,7 +179,6 @@
             if r < move
                 # Move one t-T point
                 k = ceil(Int, rand() * npoints)
-                for attempt ∈ 1:nattempts
 
                 # Move the age of one model point
                 agepointsₚ[k] += randn() * σⱼt
@@ -207,90 +200,26 @@
                     Tpointsₚ[k] = Tinit - (Tpointsₚ[k] - Tinit)
                 end
 
-                # Circular boundary conditions (in case anything reflected out of bounds)
-                agepointsₚ[k] = mod(agepointsₚ[k]-dt, tinit-2dt) + dt
-                Tpointsₚ[k] = mod(Tpointsₚ[k]-Tnow, Tinit-Tnow) + Tnow
+                # NaN-out anything reflected out-of-bounds
+                (dt < agepointsₚ[k] < tinit-dt) || (agepointsₚ[k] = NaN)
+                (Tnow < Tpointsₚ[k] < Tinit) || (Tpointsₚ[k] = NaN)
 
-                # Recalculate interpolated proposed t-T path
-                ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
-                temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
-                linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
-
-                # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agepointsₚ, npointsₚ, k, dt) && maxdiff(Tstepsₚ) < dTmax
-                    break
-                end
-                if attempt == nattempts
-                    @warn """`move` proposals failed to satisfy reheating rate limit
-                    maxdiff: $(maxdiff(Tstepsₚ))
-                    ages: $(agepointsₚ[1:npointsₚ])
-                    temperatures: $(Tpointsₚ[1:npointsₚ])
-                    σⱼt: $(σⱼt)
-                    σⱼT: $(σⱼT)"""
-                end
-                # Copy last accepted solution to re-modify if we don't break
-                copyto!(agepointsₚ, agepoints)
-                copyto!(Tpointsₚ, Tpoints)
-                end
-            elseif (r < move+birth) && (npointsₚ < maxpoints)
+            elseif (r < move+birth) && (npoints < maxpoints)
                 # Birth: add a new model point
                 npointsₚ = npoints + 1
-                for attempt ∈ 1:nattempts
                 agepointsₚ[npointsₚ] = 0 + rand()*(tinit-0)
                 Tpointsₚ[npointsₚ] = Tnow + rand()*(Tinit-Tnow)
 
-                # Recalculate interpolated proposed t-T path
-                ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
-                temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
-                linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
-
-                # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agepointsₚ, npointsₚ, npointsₚ, dt) && maxdiff(Tstepsₚ) < dTmax
-                    break
-                end
-                if attempt == nattempts
-                    @warn """new point proposals failed to satisfy reheating rate limit
-                    maxdiff: $(maxdiff(Tstepsₚ))
-                    ages: $(agepointsₚ[1:npointsₚ])
-                    temperatures: $(Tpointsₚ[1:npointsₚ])
-                    σⱼt: $(σⱼt)
-                    σⱼT: $(σⱼT)"""
-                end
-                end
-            elseif (r < move+birth+death) && (r >= move+birth) && (npointsₚ > minpoints)
+            elseif (r < move+birth+death) && (r >= move+birth) && (npoints > minpoints)
                 # Death: remove a model point
                 npointsₚ = npoints - 1 # Delete last point in array from proposal
-                for attempt ∈ 1:nattempts
                 k = ceil(Int, rand()*npoints) # Choose point to delete
                 agepointsₚ[k] = agepointsₚ[npoints]
                 Tpointsₚ[k] = Tpointsₚ[npoints]
 
-                # Recalculate interpolated proposed t-T path
-                ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
-                temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
-                linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
-
-                # Retry unless we have satisfied the maximum reheating rate
-                (maxdiff(Tstepsₚ) < dTmax) && break
-                if attempt == nattempts
-                    @warn """point removal proposals failed to satisfy reheating rate limit
-                    maxdiff: $(maxdiff(Tstepsₚ))
-                    ages: $(agepointsₚ[1:npointsₚ])
-                    temperatures: $(Tpointsₚ[1:npointsₚ])
-                    σⱼt: $(σⱼt)
-                    σⱼT: $(σⱼT)"""
-                end
-                # Copy last accepted solution to re-modify if we don't break
-                copyto!(agepointsₚ, agepoints)
-                copyto!(Tpointsₚ, Tpoints)
-                end
             else
-                # Move boundary conditions
-                for attempt ∈ 1:nattempts
-                # Move the temperatures of the starting or ending boundaries
-                # @. boundary.Tpointsₚ = boundary.T₀ + rand()*boundary.ΔT
-                k = rand(1:boundary.npoints)
-                boundary.Tpointsₚ[k] = boundary.T₀[k] + rand()*boundary.ΔT[k]
+                # Move the temperatures of the starting and ending boundaries
+                @. boundary.Tpointsₚ = boundary.T₀ + rand()*boundary.ΔT
 
                 # If there's an imposed unconformity, adjust within parameters
                 if unconf.npoints > 0
@@ -298,61 +227,55 @@
                     @. unconf.Tpointsₚ = unconf.T₀ + rand()*unconf.ΔT
                 end
 
+            end
+
+            if any(isnan, agepointsₚ) || any(isnan, Tpointsₚ)
+                Tsteps .= NaN
+            else
                 # Recalculate interpolated proposed t-T path
                 ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
                 temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
-                linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
+                linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
+            end
 
-                # Retry unless we have satisfied the maximum reheating rate
-                (maxdiff(Tstepsₚ) < dTmax) && break
-                if attempt == nattempts
-                    @warn """`movebounds` proposals failed to satisfy reheating rate limit
-                    maxdiff: $(maxdiff(Tstepsₚ))
-                    ages: $(agepointsₚ[1:npointsₚ])
-                    temperatures: $(Tpointsₚ[1:npointsₚ])
-                    σⱼt: $(σⱼt)
-                    σⱼT: $(σⱼT)"""
+            if maxdiff(Tsteps) <= dTmax
+                # Calculate model ages for each grain
+                if any(tzr)
+                    anneal!(zpr, zTeq, dt, tsteps, Tsteps, zdm)
                 end
-                # Copy last accepted solution to re-modify if we don't break
-                copyto!(unconf.agepointsₚ, unconf.agepoints)
-                copyto!(unconf.Tpointsₚ, unconf.Tpoints)
-                copyto!(boundary.Tpointsₚ, boundary.Tpoints)
+                if any(tap)
+                    anneal!(apr, aTeq, dt, tsteps, Tsteps, adm)
                 end
-            end
+                zi = 1
+                for i ∈ findall(tzr)
+                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+                    calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
+                    zi += 1
+                end
+                ai = 1
+                for i ∈ findall(tap)
+                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+                    calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
+                    ai += 1
+                end
 
-            # Calculate model ages for each grain
-            if any(tzr)
-                anneal!(zpr, zTeq, dt, tsteps, Tstepsₚ, zdm)
-            end
-            if any(tap)
-                anneal!(apr, aTeq, dt, tsteps, Tstepsₚ, adm)
-            end
-            zi = 1
-            for i ∈ findall(tzr)
-                first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tstepsₚ[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
-                zi += 1
-            end
-            ai = 1
-            for i ∈ findall(tap)
-                first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tstepsₚ[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
-                ai += 1
-            end
-
-            # Calculate log likelihood of proposal
-            σₐ .= simannealsigma.(n, HeAge_sigma, σmodel, σannealing, λannealing)
-            llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ)
-            llₗ = normpdf_ll(HeAge, σₐ, calcHeAges) # Recalulate last one too with new σₐ
-            if simplified # slightly penalize more complex t-T paths
-                llₚ -= log(npointsₚ)
-                llₗ -= log(npoints)
+                # Calculate log likelihood of proposal
+                σₐ .= simannealsigma.(n, HeAge_sigma, σmodel, σannealing, λannealing)
+                llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ)
+                llₗ = normpdf_ll(HeAge, σₐ, calcHeAges) # Recalulate last one too with new σₐ
+                if simplified # slightly penalize more complex t-T paths
+                    llₚ -= log(npointsₚ)
+                    llₗ -= log(npoints)
+                end
+            else
+                # Reject proposal if max reheating rate is exceeded or NaN.
+                # To avoid numerical problems with diffusion code, maximum
+                # heating rate should not be greater than ~25C per timestep.
+                # (Fast cooling should not be a problem, however)
+                llₚ = llₗ = NaN
             end
 
             # Accept or reject proposal based on likelihood
-            # To avoid numerical problems with diffusion code, also reject proposal
-            # if maximum proposed heating rate is greater than 25C per timestep.
-            # (Fast cooling should not be a problem, however)
             if log(rand()) < (llₚ - llₗ)
 
                 # Update jumping distribution based on size of current accepted move
@@ -368,15 +291,14 @@
                 # Update the currently accepted proposal
                 ll = llₚ
                 npoints = npointsₚ
-                copyto!(agepoints, agepointsₚ)
-                copyto!(Tpoints, Tpointsₚ)
+                copyto!(agepoints, 1, agepointsₚ, 1, npoints)
+                copyto!(Tpoints, 1, Tpointsₚ, 1, npoints)
                 copyto!(unconf.agepoints, unconf.agepointsₚ)
                 copyto!(unconf.Tpoints, unconf.Tpointsₚ)
                 copyto!(boundary.Tpoints, boundary.Tpointsₚ)
                 copyto!(calcHeAges, calcHeAgesₚ)
 
                 # Not critical to the function of the MCMC loop, but critical for recording stationary distribution!
-                copyto!(Tsteps, Tstepsₚ)
                 acceptancedist[n] = true
             end
 
@@ -499,7 +421,6 @@
         agepointsₚ = copy(agepoints)::DenseVector{T}
         Tpointsₚ = copy(Tpoints)::DenseVector{T}
         calcHeAgesₚ = copy(calcHeAges)::DenseVector{T}
-        Tstepsₚ = copy(Tsteps)::DenseVector{T}
 
         # distributions to populate
         tpointdist = zeros(T, totalpoints, nsteps)
@@ -523,11 +444,6 @@
         death = 0.15 # Must equal birth
         movebounds = 0.06
 
-        # Number of times to attempt to satisfy reheating rate: # Should be large
-        # enough that proposal probabilities are unchanged, but low enough to prevent
-        # an infinite loop
-        nattempts = 100_000
-
         progress = Progress(nsteps, dt=1, desc="Running MCMC ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
         for n = 1:nsteps
@@ -546,7 +462,6 @@
             if r < move
                 # Move one t-T point
                 k = ceil(Int, rand() * npoints)
-                for attempt ∈ 1:nattempts
 
                 # Move the age of one model point
                 agepointsₚ[k] += randn() * σⱼt
@@ -568,158 +483,82 @@
                     Tpointsₚ[k] = Tinit - (Tpointsₚ[k] - Tinit)
                 end
 
-               # Circular boundary conditions (in case anything reflected out of bounds)
-                agepointsₚ[k] = mod(agepointsₚ[k]-dt, tinit-2dt) + dt
-                Tpointsₚ[k] = mod(Tpointsₚ[k]-Tnow, Tinit-Tnow) + Tnow
+                # NaN-out anything reflected out-of-bounds
+                (dt < agepointsₚ[k] < tinit-dt) || (agepointsₚ[k] = NaN)
+                (Tnow < Tpointsₚ[k] < Tinit) || (Tpointsₚ[k] = NaN)
 
-                # Recalculate interpolated proposed t-T path
-                ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
-                temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
-                linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
-
-                # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agepointsₚ, npointsₚ, k, dt) && maxdiff(Tstepsₚ) < dTmax
-                    if pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax) >= enoughpoints
-                        break
-                    end
-                end
-                if attempt == nattempts
-                    @warn """`move` proposals failed to satisfy reheating rate limit
-                    maxdiff: $(maxdiff(Tstepsₚ))
-                    ages: $(agepointsₚ[1:npointsₚ])
-                    temperatures: $(Tpointsₚ[1:npointsₚ])
-                    σⱼt: $(σⱼt)
-                    σⱼT: $(σⱼT)"""
-                end
-                # Copy last accepted solution to re-modify if we don't break
-                copyto!(agepointsₚ, agepoints)
-                copyto!(Tpointsₚ, Tpoints)
-                end
-            elseif (r < move+birth) && (npointsₚ < maxpoints)
+            elseif (r < move+birth) && (npoints < maxpoints)
                 # Birth: add a new model point
                 npointsₚ = npoints + 1
-                for attempt ∈ 1:nattempts
                 agepointsₚ[npointsₚ] = 0 + rand()*(tinit-0)
                 Tpointsₚ[npointsₚ] = Tnow + rand()*(Tinit-Tnow)
 
-                # Recalculate interpolated proposed t-T path
-                ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
-                temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
-                linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
-
-                # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agepointsₚ, npointsₚ, npointsₚ, dt) && maxdiff(Tstepsₚ) < dTmax
-                    break
-                end
-                if attempt == nattempts
-                    @warn """new point proposals failed to satisfy reheating rate limit
-                    maxdiff: $(maxdiff(Tstepsₚ))
-                    ages: $(agepointsₚ[1:npointsₚ])
-                    temperatures: $(Tpointsₚ[1:npointsₚ])
-                    σⱼt: $(σⱼt)
-                    σⱼT: $(σⱼT)"""
-                end
-                end
             elseif (r < move+birth+death) && (r >= move+birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
                 npointsₚ = npoints - 1 # Delete last point in array from proposal
-                for attempt ∈ 1:nattempts
                 k = ceil(Int, rand()*npoints) # Choose point to delete
                 agepointsₚ[k] = agepointsₚ[npoints]
                 Tpointsₚ[k] = Tpointsₚ[npoints]
 
-                # Recalculate interpolated proposed t-T path
-                ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
-                temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
-                linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
-
-                # Retry unless we have satisfied the maximum reheating rate
-                if maxdiff(Tstepsₚ) < dTmax
-                    if pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax) >= enoughpoints
-                        break
-                    end
-                end
-                if attempt == nattempts
-                    @warn """point removal proposals failed to satisfy reheating rate limit
-                    maxdiff: $(maxdiff(Tstepsₚ))
-                    ages: $(agepointsₚ[1:npointsₚ])
-                    temperatures: $(Tpointsₚ[1:npointsₚ])
-                    σⱼt: $(σⱼt)
-                    σⱼT: $(σⱼT)"""
-                end
-                # Copy last accepted solution to re-modify if we don't break
-                copyto!(agepointsₚ, agepoints)
-                copyto!(Tpointsₚ, Tpoints)
-                end
             else
-                # Move boundary conditions
-                for attempt ∈ 1:nattempts
-                # Move the temperatures of the starting or ending boundaries
-                # @. boundary.Tpointsₚ = boundary.T₀ + rand()*boundary.ΔT
-                k = rand(1:boundary.npoints)
-                boundary.Tpointsₚ[k] = boundary.T₀[k] + rand()*boundary.ΔT[k]
+                # Move the temperatures of the starting and ending boundaries
+                @. boundary.Tpointsₚ = boundary.T₀ + rand()*boundary.ΔT
 
                 # If there's an imposed unconformity, adjust within parameters
                 if unconf.npoints > 0
                     @. unconf.agepointsₚ = unconf.Age₀ + rand()*unconf.ΔAge
                     @. unconf.Tpointsₚ = unconf.T₀ + rand()*unconf.ΔT
                 end
+            end
 
+            if any(isnan, agepointsₚ) || any(isnan, Tpointsₚ)
+                Tsteps .= NaN
+            else
                 # Recalculate interpolated proposed t-T path
                 ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
                 temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
-                linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
-
-                # Retry unless we have satisfied the maximum reheating rate
-                (maxdiff(Tstepsₚ) < dTmax) && break
-                if attempt == nattempts
-                    @warn """`movebounds` proposals failed to satisfy reheating rate limit
-                    maxdiff: $(maxdiff(Tstepsₚ))
-                    ages: $(agepointsₚ[1:npointsₚ])
-                    temperatures: $(Tpointsₚ[1:npointsₚ])
-                    σⱼt: $(σⱼt)
-                    σⱼT: $(σⱼT)"""
+                linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
+            end
+            
+            if (maxdiff(Tsteps) <= dTmax) && (pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax) >= enoughpoints)
+                    
+                # Calculate model ages for each grain
+                if any(tzr)
+                    anneal!(zpr, zTeq, dt, tsteps, Tsteps, zdm)
                 end
-                # Copy last accepted solution to re-modify if we don't break
-                copyto!(unconf.agepointsₚ, unconf.agepoints)
-                copyto!(unconf.Tpointsₚ, unconf.Tpoints)
-                copyto!(boundary.Tpointsₚ, boundary.Tpoints)
+                if any(tap)
+                    anneal!(apr, aTeq, dt, tsteps, Tsteps, adm)
                 end
-            end
+                zi = 1
+                for i ∈ findall(tzr)
+                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+                    calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
+                    zi += 1
+                end
+                ai = 1
+                for i ∈ findall(tap)
+                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+                    calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
+                    ai += 1
+                end
 
-            # Calculate model ages for each grain
-            if any(tzr)
-                anneal!(zpr, zTeq, dt, tsteps, Tstepsₚ, zdm)
-            end
-            if any(tap)
-                anneal!(apr, aTeq, dt, tsteps, Tstepsₚ, adm)
-            end
-            zi = 1
-            for i ∈ findall(tzr)
-                first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tstepsₚ[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
-                zi += 1
-            end
-            ai = 1
-            for i ∈ findall(tap)
-                first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tstepsₚ[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
-                ai += 1
-            end
-
-            # Calculate log likelihood of proposal
-            σₐ .= simannealsigma.(n, HeAge_sigma, σmodel, σannealing, λannealing)
-            llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ)
-            llₗ = normpdf_ll(HeAge, σₐ, calcHeAges) # Recalulate last one too with new σₐ
-            if simplified # slightly penalize more complex t-T paths
-                llₚ -= log(npointsₚ)
-                llₗ -= log(npoints)
+                # Calculate log likelihood of proposal
+                σₐ .= simannealsigma.(n, HeAge_sigma, σmodel, σannealing, λannealing)
+                llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ)
+                llₗ = normpdf_ll(HeAge, σₐ, calcHeAges) # Recalulate last one too with new σₐ
+                if simplified # slightly penalize more complex t-T paths
+                    llₚ -= log(npointsₚ)
+                    llₗ -= log(npoints)
+                end
+            else
+                # Reject proposal if max reheating rate is exceeded or NaN.
+                # To avoid numerical problems with diffusion code, maximum
+                # heating rate should not be greater than ~25C per timestep.
+                # (Fast cooling should not be a problem, however)
+                llₚ = llₗ = NaN
             end
 
             # Accept or reject proposal based on likelihood
-            # To avoid numerical problems with diffusion code, also reject proposal
-            # if maximum proposed heating rate is greater than 25C per timestep.
-            # (Fast cooling should not be a problem, however)
             if log(rand()) < (llₚ - llₗ)
 
                 # Update jumping distribution based on size of current accepted move
@@ -735,15 +574,14 @@
                 # Update the currently accepted proposal
                 ll = llₚ
                 npoints = npointsₚ
-                copyto!(agepoints, agepointsₚ)
-                copyto!(Tpoints, Tpointsₚ)
+                copyto!(agepoints, 1, agepointsₚ, 1, npoints)
+                copyto!(Tpoints, 1, Tpointsₚ, 1, npoints)
                 copyto!(unconf.agepoints, unconf.agepointsₚ)
                 copyto!(unconf.Tpoints, unconf.Tpointsₚ)
                 copyto!(boundary.Tpoints, boundary.Tpointsₚ)
                 copyto!(calcHeAges, calcHeAgesₚ)
 
                 # Not critical to the function of the MCMC loop, but critical for recording stationary distribution!
-                copyto!(Tsteps, Tstepsₚ)
                 acceptancedist[n] = true
             end
 
@@ -868,7 +706,6 @@
         agepointsₚ = copy(agepoints)::DenseVector{T}
         Tpointsₚ = copy(Tpoints)::DenseVector{T}
         calcHeAgesₚ = copy(calcHeAges)::DenseVector{T}
-        Tstepsₚ = copy(Tsteps)::DenseVector{T}
 
         # distributions to populate
         tpointdist = zeros(T, totalpoints, nsteps)
@@ -898,11 +735,6 @@
         movebounds = 0.06
         movekinetics = 0.04
 
-        # Number of times to attempt to satisfy reheating rate: # Should be large
-        # enough that proposal probabilities are unchanged, but low enough to prevent
-        # an infinite loop
-        nattempts = 100_000
-
         progress = Progress(nsteps, dt=1, desc="Running MCMC ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
         for n = 1:nsteps
@@ -923,7 +755,6 @@
             if r < move
                 # Move one t-T point
                 k = ceil(Int, rand() * npoints)
-                for attempt ∈ 1:nattempts
 
                 # Move the age of one model point
                 agepointsₚ[k] += randn() * σⱼt
@@ -945,96 +776,26 @@
                     Tpointsₚ[k] = Tinit - (Tpointsₚ[k] - Tinit)
                 end
 
-               # Circular boundary conditions (in case anything reflected out of bounds)
-                agepointsₚ[k] = mod(agepointsₚ[k]-dt, tinit-2dt) + dt
-                Tpointsₚ[k] = mod(Tpointsₚ[k]-Tnow, Tinit-Tnow) + Tnow
+                # NaN-out anything reflected out-of-bounds
+                (dt < agepointsₚ[k] < tinit-dt) || (agepointsₚ[k] = NaN)
+                (Tnow < Tpointsₚ[k] < Tinit) || (Tpointsₚ[k] = NaN)
 
-                # Recalculate interpolated proposed t-T path
-                ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
-                temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
-                linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
-
-                # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agepointsₚ, npointsₚ, k, dt) && maxdiff(Tstepsₚ) < dTmax
-                    if pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax) >= enoughpoints
-                        break
-                    end
-                end
-                if attempt == nattempts
-                    @warn """`move` proposals failed to satisfy reheating rate limit
-                    maxdiff: $(maxdiff(Tstepsₚ))
-                    ages: $(agepointsₚ[1:npointsₚ])
-                    temperatures: $(Tpointsₚ[1:npointsₚ])
-                    σⱼt: $(σⱼt)
-                    σⱼT: $(σⱼT)"""
-                end
-                # Copy last accepted solution to re-modify if we don't break
-                copyto!(agepointsₚ, agepoints)
-                copyto!(Tpointsₚ, Tpoints)
-                end
-            elseif (r < move+birth) && (npointsₚ < maxpoints)
+            elseif (r < move+birth) && (npoints < maxpoints)
                 # Birth: add a new model point
                 npointsₚ = npoints + 1
-                for attempt ∈ 1:nattempts
                 agepointsₚ[npointsₚ] = 0 + rand()*(tinit-0)
                 Tpointsₚ[npointsₚ] = Tnow + rand()*(Tinit-Tnow)
 
-                # Recalculate interpolated proposed t-T path
-                ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
-                temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
-                linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
-
-                # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agepointsₚ, npointsₚ, npointsₚ, dt) && maxdiff(Tstepsₚ) < dTmax
-                    break
-                end
-                if attempt == nattempts
-                    @warn """new point proposals failed to satisfy reheating rate limit
-                    maxdiff: $(maxdiff(Tstepsₚ))
-                    ages: $(agepointsₚ[1:npointsₚ])
-                    temperatures: $(Tpointsₚ[1:npointsₚ])
-                    σⱼt: $(σⱼt)
-                    σⱼT: $(σⱼT)"""
-                end
-                end
             elseif (r < move+birth+death) && (r >= move+birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
                 npointsₚ = npoints - 1 # Delete last point in array from proposal
-                for attempt ∈ 1:nattempts
                 k = ceil(Int, rand()*npoints) # Choose point to delete
                 agepointsₚ[k] = agepointsₚ[npoints]
                 Tpointsₚ[k] = Tpointsₚ[npoints]
 
-                # Recalculate interpolated proposed t-T path
-                ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
-                temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
-                linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
-
-                # Retry unless we have satisfied the maximum reheating rate
-                if maxdiff(Tstepsₚ) < dTmax
-                    if pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax) >= enoughpoints
-                        break
-                    end
-                end
-                if attempt == nattempts
-                    @warn """point removal proposals failed to satisfy reheating rate limit
-                    maxdiff: $(maxdiff(Tstepsₚ))
-                    ages: $(agepointsₚ[1:npointsₚ])
-                    temperatures: $(Tpointsₚ[1:npointsₚ])
-                    σⱼt: $(σⱼt)
-                    σⱼT: $(σⱼT)"""
-                end
-                # Copy last accepted solution to re-modify if we don't break
-                copyto!(agepointsₚ, agepoints)
-                copyto!(Tpointsₚ, Tpoints)
-                end
             elseif (r < move+birth+death+movebounds)
-                # Move boundary conditions
-                for attempt ∈ 1:nattempts
-                # Move the temperatures of the starting or ending boundaries
-                # @. boundary.Tpointsₚ = boundary.T₀ + rand()*boundary.ΔT
-                k = rand(1:boundary.npoints)
-                boundary.Tpointsₚ[k] = boundary.T₀[k] + rand()*boundary.ΔT[k]
+                # Move the temperatures of the starting and ending boundaries
+                @. boundary.Tpointsₚ = boundary.T₀ + rand()*boundary.ΔT
 
                 # If there's an imposed unconformity, adjust within parameters
                 if unconf.npoints > 0
@@ -1042,30 +803,10 @@
                     @. unconf.Tpointsₚ = unconf.T₀ + rand()*unconf.ΔT
                 end
 
-                # Recalculate interpolated proposed t-T path
-                ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
-                temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
-                linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
-
-                # Retry unless we have satisfied the maximum reheating rate
-                (maxdiff(Tstepsₚ) < dTmax) && break
-                if attempt == nattempts
-                    @warn """`movebounds` proposals failed to satisfy reheating rate limit
-                    maxdiff: $(maxdiff(Tstepsₚ))
-                    ages: $(agepointsₚ[1:npointsₚ])
-                    temperatures: $(Tpointsₚ[1:npointsₚ])
-                    σⱼt: $(σⱼt)
-                    σⱼT: $(σⱼT)"""
-                end
-                # Copy last accepted solution to re-modify if we don't break
-                copyto!(unconf.agepointsₚ, unconf.agepoints)
-                copyto!(unconf.Tpointsₚ, unconf.Tpoints)
-                copyto!(boundary.Tpointsₚ, boundary.Tpoints)
-                end
             else
                 # Adjust kinetic parameters, one at a time
-                rn = rand(1:7)
                 if any(tzr)
+                    rn = rand(1:4)
                     zdmₚ = ZRDAAM(
                         DzEa = (rn==1) ? exp(log(zdm.DzEa)+randn()*σzEa) : zdm.DzEa,
                         DzD0 = (rn==2) ? exp(log(zdm.DzD0)+randn()*σzD0) : zdm.DzD0,
@@ -1074,49 +815,61 @@
                     )
                 end
                 if any(tap)
+                    rn = rand(1:3)
                     admₚ = RDAAM(
-                        D0L = (rn==5) ? exp(log(adm.D0L)+randn()*σaD0) : adm.D0L,
-                        EaL = (rn==6) ? exp(log(adm.EaL)+randn()*σaEa) : adm.EaL,
-                        EaTrap = (rn==7) ? exp(log(adm.EaTrap)+randn()*σaEa) : adm.EaTrap,
+                        D0L = (rn==1) ? exp(log(adm.D0L)+randn()*σaD0) : adm.D0L,
+                        EaL = (rn==2) ? exp(log(adm.EaL)+randn()*σaEa) : adm.EaL,
+                        EaTrap = (rn==3) ? exp(log(adm.EaTrap)+randn()*σaEa) : adm.EaTrap,
                     )
                 end
             end
 
-            # Calculate model ages for each grain
-            if any(tzr)
-                anneal!(zpr, zTeq, dt, tsteps, Tstepsₚ, zdmₚ)
-                zi = 1
-                for i ∈ findall(tzr)
-                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                    calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tstepsₚ[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdmₚ)::T
-                    zi += 1
-                end
+            if any(isnan, agepointsₚ) || any(isnan, Tpointsₚ)
+                Tsteps .= NaN
+            else
+                # Recalculate interpolated proposed t-T path
+                ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
+                temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
+                linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
             end
-            if any(tap)
-                anneal!(apr, aTeq, dt, tsteps, Tstepsₚ, admₚ)
-                ai = 1
-                for i ∈ findall(tap)
-                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                    calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tstepsₚ[first_index:end]), @views(apr[first_index:end,first_index:end]), admₚ)::T
-                    ai += 1
+            
+            if (maxdiff(Tsteps) <= dTmax) && (pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax) >= enoughpoints)
+                # Calculate model ages for each grain
+                if any(tzr)
+                    anneal!(zpr, zTeq, dt, tsteps, Tsteps, zdmₚ)
+                    zi = 1
+                    for i ∈ findall(tzr)
+                        first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+                        calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdmₚ)::T
+                        zi += 1
+                    end
                 end
-            end
+                if any(tap)
+                    anneal!(apr, aTeq, dt, tsteps, Tsteps, admₚ)
+                    ai = 1
+                    for i ∈ findall(tap)
+                        first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+                        calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), admₚ)::T
+                        ai += 1
+                    end
+                end
 
-            # Calculate log likelihood of proposal
-            σₐ .= simannealsigma.(n, HeAge_sigma, σmodel, σannealing, λannealing)
-            llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ)
-            llₗ = normpdf_ll(HeAge, σₐ, calcHeAges) # Recalulate last one too with new σₐ
-            if simplified # slightly penalize more complex t-T paths
-                llₚ -= log(npointsₚ)
-                llₗ -= log(npoints)
+                # Calculate log likelihood of proposal
+                σₐ .= simannealsigma.(n, HeAge_sigma, σmodel, σannealing, λannealing)
+                llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ)
+                llₗ = normpdf_ll(HeAge, σₐ, calcHeAges) # Recalulate last one too with new σₐ
+                if simplified # slightly penalize more complex t-T paths
+                    llₚ -= log(npointsₚ)
+                    llₗ -= log(npoints)
+                end
+                llₚ += loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀)
+                llₗ += loglikelihood(adm, adm₀) + loglikelihood(zdm, zdm₀)
+            else
+                # Reject proposal if max reheating rate is exceeded or NaN.
+                llₚ = llₗ = NaN
             end
-            llₚ += loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀)
-            llₗ += loglikelihood(adm, adm₀) + loglikelihood(zdm, zdm₀)
 
             # Accept or reject proposal based on likelihood
-            # To avoid numerical problems with diffusion code, also reject proposal
-            # if maximum proposed heating rate is greater than 25C per timestep.
-            # (Fast cooling should not be a problem, however)
             if log(rand()) < (llₚ - llₗ)
 
                 # Update jumping distribution based on size of current accepted move
@@ -1134,15 +887,14 @@
                 adm = admₚ
                 zdm = zdmₚ
                 npoints = npointsₚ
-                copyto!(agepoints, agepointsₚ)
-                copyto!(Tpoints, Tpointsₚ)
+                copyto!(agepoints, 1, agepointsₚ, 1, npoints)
+                copyto!(Tpoints, 1, Tpointsₚ, 1, npoints)
                 copyto!(unconf.agepoints, unconf.agepointsₚ)
                 copyto!(unconf.Tpoints, unconf.Tpointsₚ)
                 copyto!(boundary.Tpoints, boundary.Tpointsₚ)
                 copyto!(calcHeAges, calcHeAgesₚ)
 
                 # Not critical to the function of the MCMC loop, but critical for recording stationary distribution!
-                copyto!(Tsteps, Tstepsₚ)
                 acceptancedist[n] = true
             end
 
@@ -1265,7 +1017,6 @@
         agepointsₚ = copy(agepoints)::DenseVector{T}
         Tpointsₚ = copy(Tpoints)::DenseVector{T}
         calcHeAgesₚ = copy(calcHeAges)::DenseVector{T}
-        Tstepsₚ = copy(Tsteps)::DenseVector{T}
     
         # distributions to populate
         tpointdist = zeros(T, totalpoints, nsteps)
@@ -1295,11 +1046,6 @@
         movebounds = 0.06
         movekinetics = 0.04
     
-        # Number of times to attempt to satisfy reheating rate: # Should be large
-        # enough that proposal probabilities are unchanged, but low enough to prevent
-        # an infinite loop
-        nattempts = 100_000
-    
         progress = Progress(nsteps, dt=1, desc="Running MCMC ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
         for n = 1:nsteps
@@ -1319,7 +1065,6 @@
             if r < move
                 # Move one t-T point
                 k = ceil(Int, rand() * npoints)
-                for attempt ∈ 1:nattempts
     
                 # Move the age of one model point
                 agepointsₚ[k] += randn() * σⱼt
@@ -1341,119 +1086,33 @@
                     Tpointsₚ[k] = Tinit - (Tpointsₚ[k] - Tinit)
                 end
     
-                # Circular boundary conditions (in case anything reflected out of bounds)
-                agepointsₚ[k] = mod(agepointsₚ[k]-dt, tinit-2dt) + dt
-                Tpointsₚ[k] = mod(Tpointsₚ[k]-Tnow, Tinit-Tnow) + Tnow
-    
-                # Recalculate interpolated proposed t-T path
-                ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
-                temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
-                linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
-    
-                # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agepointsₚ, npointsₚ, k, dt) && maxdiff(Tstepsₚ) < dTmax
-                    break
-                end
-                if attempt == nattempts
-                    @warn """`move` proposals failed to satisfy reheating rate limit
-                    maxdiff: $(maxdiff(Tstepsₚ))
-                    ages: $(agepointsₚ[1:npointsₚ])
-                    temperatures: $(Tpointsₚ[1:npointsₚ])
-                    σⱼt: $(σⱼt)
-                    σⱼT: $(σⱼT)"""
-                end
-                # Copy last accepted solution to re-modify if we don't break
-                copyto!(agepointsₚ, agepoints)
-                copyto!(Tpointsₚ, Tpoints)
-                end
-            elseif (r < move+birth) && (npointsₚ < maxpoints)
+                # NaN-out anything reflected out-of-bounds
+                (dt < agepointsₚ[k] < tinit-dt) || (agepointsₚ[k] = NaN)
+                (Tnow < Tpointsₚ[k] < Tinit) || (Tpointsₚ[k] = NaN)
+                
+            elseif (r < move+birth) && (npoints < maxpoints)
                 # Birth: add a new model point
                 npointsₚ = npoints + 1
-                for attempt ∈ 1:nattempts
                 agepointsₚ[npointsₚ] = 0 + rand()*(tinit-0)
                 Tpointsₚ[npointsₚ] = Tnow + rand()*(Tinit-Tnow)
     
-                # Recalculate interpolated proposed t-T path
-                ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
-                temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
-                linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
-    
-                # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agepointsₚ, npointsₚ, k, dt) && maxdiff(Tstepsₚ) < dTmax
-                    break
-                end
-                if attempt == nattempts
-                    @warn """new point proposals failed to satisfy reheating rate limit
-                    maxdiff: $(maxdiff(Tstepsₚ))
-                    ages: $(agepointsₚ[1:npointsₚ])
-                    temperatures: $(Tpointsₚ[1:npointsₚ])
-                    σⱼt: $(σⱼt)
-                    σⱼT: $(σⱼT)"""
-                end
-                end
             elseif (r < move+birth+death) && (r >= move+birth) && (npoints > minpoints)
                 # Death: remove a model point
                 npointsₚ = npoints - 1 # Delete last point in array from proposal
-                for attempt ∈ 1:nattempts
                 k = ceil(Int, rand()*npoints) # Choose point to delete
                 agepointsₚ[k] = agepointsₚ[npoints]
                 Tpointsₚ[k] = Tpointsₚ[npoints]
     
-                # Recalculate interpolated proposed t-T path
-                ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
-                temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
-                linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
-    
-                # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agepointsₚ, npointsₚ, k, dt) && maxdiff(Tstepsₚ) < dTmax
-                    break
-                end
-                if attempt == nattempts
-                    @warn """point removal proposals failed to satisfy reheating rate limit
-                    maxdiff: $(maxdiff(Tstepsₚ))
-                    ages: $(agepointsₚ[1:npointsₚ])
-                    temperatures: $(Tpointsₚ[1:npointsₚ])
-                    σⱼt: $(σⱼt)
-                    σⱼT: $(σⱼT)"""
-                end
-                # Copy last accepted solution to re-modify if we don't break
-                copyto!(agepointsₚ, agepoints)
-                copyto!(Tpointsₚ, Tpoints)
-                end
             elseif (r < move+birth+death+movebounds)
-                # Move boundary conditions
-                for attempt ∈ 1:nattempts
-                # Move the temperatures of the starting or ending boundaries
-                # @. boundary.Tpointsₚ = boundary.T₀ + rand()*boundary.ΔT
-                k = rand(1:boundary.npoints)
-                boundary.Tpointsₚ[k] = boundary.T₀[k] + rand()*boundary.ΔT[k]
-    
+                # Move the temperatures of the starting and ending boundaries
+                @. boundary.Tpointsₚ = boundary.T₀ + rand()*boundary.ΔT
+
                 # If there's an imposed unconformity, adjust within parameters
                 if unconf.npoints > 0
                     @. unconf.agepointsₚ = unconf.Age₀ + rand()*unconf.ΔAge
                     @. unconf.Tpointsₚ = unconf.T₀ + rand()*unconf.ΔT
                 end
     
-                # Recalculate interpolated proposed t-T path
-                ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
-                temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
-                linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
-    
-                # Retry unless we have satisfied the maximum reheating rate
-                (maxdiff(Tstepsₚ) < dTmax) && break
-                if attempt == nattempts
-                    @warn """`movebounds` proposals failed to satisfy reheating rate limit
-                    maxdiff: $(maxdiff(Tstepsₚ))
-                    ages: $(agepointsₚ[1:npointsₚ])
-                    temperatures: $(Tpointsₚ[1:npointsₚ])
-                    σⱼt: $(σⱼt)
-                    σⱼT: $(σⱼT)"""
-                end
-                # Copy last accepted solution to re-modify if we don't break
-                copyto!(unconf.agepointsₚ, unconf.agepoints)
-                copyto!(unconf.Tpointsₚ, unconf.Tpoints)
-                copyto!(boundary.Tpointsₚ, boundary.Tpoints)
-                end
             else
                 # Adjust kinetic parameters, one at a time
                 if any(tzr)
@@ -1474,42 +1133,56 @@
                     )
                 end
             end
-    
-            # Calculate model ages for each grain
-            if any(tzr)
-                anneal!(zpr, zTeq, dt, tsteps, Tstepsₚ, zdmₚ)
-                zi = 1
-                for i ∈ findall(tzr)
-                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                    calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tstepsₚ[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdmₚ)::T
-                    zi += 1
+
+            if any(isnan, agepointsₚ) || any(isnan, Tpointsₚ)
+                Tsteps .= NaN
+            else
+                # Recalculate interpolated proposed t-T path
+                ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
+                temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
+                linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
+            end
+
+            if (maxdiff(Tsteps) <= dTmax)
+                # Calculate model ages for each grain
+                if any(tzr)
+                    anneal!(zpr, zTeq, dt, tsteps, Tsteps, zdmₚ)
+                    zi = 1
+                    for i ∈ findall(tzr)
+                        first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+                        calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdmₚ)::T
+                        zi += 1
+                    end
                 end
-            end
-            if any(tap)
-                anneal!(apr, aTeq, dt, tsteps, Tstepsₚ, admₚ)
-                ai = 1
-                for i ∈ findall(tap)
-                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                    calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tstepsₚ[first_index:end]), @views(apr[first_index:end,first_index:end]), admₚ)::T
-                    ai += 1
+                if any(tap)
+                    anneal!(apr, aTeq, dt, tsteps, Tsteps, admₚ)
+                    ai = 1
+                    for i ∈ findall(tap)
+                        first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+                        calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), admₚ)::T
+                        ai += 1
+                    end
                 end
+        
+                # Calculate log likelihood of proposal
+                σₐ .= simannealsigma.(n, HeAge_sigma, σmodel, σannealing, λannealing)
+                llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ)
+                llₗ = normpdf_ll(HeAge, σₐ, calcHeAges) # Recalulate last one too with new σₐ
+                if simplified # slightly penalize more complex t-T paths
+                    llₚ -= log(npointsₚ)
+                    llₗ -= log(npoints)
+                end
+                llₚ += loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀)
+                llₗ += loglikelihood(adm, adm₀) + loglikelihood(zdm, zdm₀)
+            else
+                # Reject proposal if max reheating rate is exceeded or NaN.
+                # To avoid numerical problems with diffusion code, maximum
+                # heating rate should not be greater than ~25C per timestep.
+                # (Fast cooling should not be a problem, however)
+                llₚ = llₗ = NaN
             end
-    
-            # Calculate log likelihood of proposal
-            σₐ .= simannealsigma.(n, HeAge_sigma, σmodel, σannealing, λannealing)
-            llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ)
-            llₗ = normpdf_ll(HeAge, σₐ, calcHeAges) # Recalulate last one too with new σₐ
-            if simplified # slightly penalize more complex t-T paths
-                llₚ -= log(npointsₚ)
-                llₗ -= log(npoints)
-            end
-            llₚ += loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀)
-            llₗ += loglikelihood(adm, adm₀) + loglikelihood(zdm, zdm₀)
-    
+                
             # Accept or reject proposal based on likelihood
-            # To avoid numerical problems with diffusion code, also reject proposal
-            # if maximum proposed heating rate is greater than 25C per timestep.
-            # (Fast cooling should not be a problem, however)
             if log(rand()) < (llₚ - llₗ)
     
                 # Update jumping distribution based on size of current accepted move
@@ -1535,7 +1208,6 @@
                 copyto!(calcHeAges, calcHeAgesₚ)
     
                 # Not critical to the function of the MCMC loop, but critical for recording stationary distribution!
-                copyto!(Tsteps, Tstepsₚ)
                 acceptancedist[n] = true
             end
     
