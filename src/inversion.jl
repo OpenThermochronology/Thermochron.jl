@@ -217,7 +217,7 @@
                 linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agepointsₚ, npointsₚ, k, 2dt) && maxdiff(Tstepsₚ) < dTmax
+                if isdistinct(agepointsₚ, npointsₚ, k, dt) && maxdiff(Tstepsₚ) < dTmax
                     break
                 end
                 if attempt == nattempts
@@ -245,7 +245,7 @@
                 linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agepointsₚ, npointsₚ, npointsₚ, 2dt) && maxdiff(Tstepsₚ) < dTmax
+                if isdistinct(agepointsₚ, npointsₚ, npointsₚ, dt) && maxdiff(Tstepsₚ) < dTmax
                     break
                 end
                 if attempt == nattempts
@@ -578,7 +578,7 @@
                 linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agepointsₚ, npointsₚ, k, 2dt) && maxdiff(Tstepsₚ) < dTmax
+                if isdistinct(agepointsₚ, npointsₚ, k, dt) && maxdiff(Tstepsₚ) < dTmax
                     if pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax) >= enoughpoints
                         break
                     end
@@ -608,7 +608,7 @@
                 linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agepointsₚ, npointsₚ, npointsₚ, 2dt) && maxdiff(Tstepsₚ) < dTmax
+                if isdistinct(agepointsₚ, npointsₚ, npointsₚ, dt) && maxdiff(Tstepsₚ) < dTmax
                     break
                 end
                 if attempt == nattempts
@@ -955,7 +955,7 @@
                 linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agepointsₚ, npointsₚ, k, 2dt) && maxdiff(Tstepsₚ) < dTmax
+                if isdistinct(agepointsₚ, npointsₚ, k, dt) && maxdiff(Tstepsₚ) < dTmax
                     if pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax) >= enoughpoints
                         break
                     end
@@ -985,7 +985,7 @@
                 linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
 
                 # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agepointsₚ, npointsₚ, npointsₚ, 2dt) && maxdiff(Tstepsₚ) < dTmax
+                if isdistinct(agepointsₚ, npointsₚ, npointsₚ, dt) && maxdiff(Tstepsₚ) < dTmax
                     break
                 end
                 if attempt == nattempts
@@ -1351,7 +1351,7 @@
                 linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
     
                 # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agepointsₚ, npointsₚ, k, 2dt) && maxdiff(Tstepsₚ) < dTmax
+                if isdistinct(agepointsₚ, npointsₚ, k, dt) && maxdiff(Tstepsₚ) < dTmax
                     break
                 end
                 if attempt == nattempts
@@ -1379,7 +1379,7 @@
                 linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
     
                 # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agepointsₚ, npointsₚ, k, 2dt) && maxdiff(Tstepsₚ) < dTmax
+                if isdistinct(agepointsₚ, npointsₚ, k, dt) && maxdiff(Tstepsₚ) < dTmax
                     break
                 end
                 if attempt == nattempts
@@ -1405,7 +1405,7 @@
                 linterp1s!(Tstepsₚ, knot_index, ages, temperatures, agesteps)
     
                 # Retry unless we have satisfied the maximum reheating rate
-                if isdistinct(agepointsₚ, npointsₚ, k, 2dt) && maxdiff(Tstepsₚ) < dTmax
+                if isdistinct(agepointsₚ, npointsₚ, k, dt) && maxdiff(Tstepsₚ) < dTmax
                     break
                 end
                 if attempt == nattempts

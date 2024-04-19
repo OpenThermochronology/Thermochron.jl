@@ -62,7 +62,7 @@
     # Check if point k is distinct from other points in list within ± δ
     function isdistinct(points::DenseArray, npoints::Int, k::Int, δ::Number)
         @inbounds for i = 1:npoints
-            if i!=k && abs(points[i] - points[k]) < δ
+            if i!=k && abs(points[i] - points[k]) <= δ
                 return false
             end
         end

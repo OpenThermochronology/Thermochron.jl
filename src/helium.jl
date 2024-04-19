@@ -129,7 +129,7 @@ function anneal!(ρᵣ::AbstractMatrix{T}, Teq::DenseVector{T}, dt::Number, tste
         @turbo @. ρᵣ[i,1:i] = 1 / ((dm.C0 + dm.C1 * (log(dt + Teqᵢ) - dm.C2) / lᵢ)^(1/dm.beta) + 1)
     end
 
-    # Guenthner et al conversion volume-length conversion
+    # Guenthner et al volume-length conversion
     rmr0 = dm.rmr0
     scale = 1/(1-rmr0)
     @fastmath @inbounds for j ∈ 1:ntsteps
