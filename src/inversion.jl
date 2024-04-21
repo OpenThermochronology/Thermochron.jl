@@ -57,7 +57,8 @@
         totalpoints = maxpoints + boundary.npoints + unconf.npoints::Int
         simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
-        dTmax = T(model.dTmax)::T
+        dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10.)::T
+        dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : 5.)::T
         agesteps = T.(model.agesteps)::DenseVector{T}
         tsteps = T.(model.tsteps)::DenseVector{T}
         tinit = T(model.tinit)::T
@@ -128,13 +129,10 @@
         σ = sqrt.(HeAge_sigma.^2 .+ σmodel^2)
 
         # Log-likelihood for initial proposal
-        ll = normpdf_ll(HeAge, σₐ, calcHeAges)
-        if simplified
-            ll -= log(npoints)
-        end
+        llna = llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma) + (simplified ? -log(npoints) : zero(T))
+        ll = llₚ =  normpdf_ll(HeAge, σₐ, calcHeAges) + llna
 
         # Variables to hold proposals
-        llₚ = ll
         npointsₚ = npoints
         agepointsₚ = copy(agepoints)::DenseVector{T}
         Tpointsₚ = copy(Tpoints)::DenseVector{T}
@@ -235,7 +233,7 @@
             temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
             linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
 
-            (maxdiff(Tsteps) > dTmax) && @goto restart
+            # (maxdiff(Tsteps) > dTmax) && @goto restart
                
             # Calculate model ages for each grain
             if any(tzr)
@@ -258,13 +256,11 @@
             end
 
             # Calculate log likelihood of proposal
+            llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
+            simplified && (llnaₚ += -log(npointsₚ))
             σₐ .= simannealsigma.(n, HeAge_sigma, σmodel, σannealing, λannealing)
-            llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ)
-            llₗ = normpdf_ll(HeAge, σₐ, calcHeAges) # Recalulate last one too with new σₐ
-            if simplified # slightly penalize more complex t-T paths
-                llₚ -= log(npointsₚ)
-                llₗ -= log(npoints)
-            end
+            llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ) + llnaₚ
+            llₗ = normpdf_ll(HeAge, σₐ, calcHeAges) + llna # Recalulate last one too with new σₐ
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - llₗ)
@@ -281,6 +277,7 @@
 
                 # Update the currently accepted proposal
                 ll = llₚ
+                llna = llnaₚ
                 npoints = npointsₚ
                 copyto!(agepoints, 1, agepointsₚ, 1, npoints)
                 copyto!(Tpoints, 1, Tpointsₚ, 1, npoints)
@@ -294,7 +291,7 @@
             end
 
             # Record results for analysis and troubleshooting
-            lldist[n] = normpdf_ll(HeAge, σ, calcHeAges) # Recalculated to constant baseline
+            lldist[n] = llna + normpdf_ll(HeAge, σ, calcHeAges) # Recalculated to constant baseline
             ndist[n] = npoints # distribution of # of points
             σⱼtdist[n] = σⱼt
             σⱼTdist[n] = σⱼT
@@ -327,7 +324,8 @@
         totalpoints = maxpoints + boundary.npoints + unconf.npoints::Int
         simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
-        dTmax = T(model.dTmax)::T
+        dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10.)::T
+        dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : 5.)::T
         agesteps = T.(model.agesteps)::DenseVector{T}
         tsteps = T.(model.tsteps)::DenseVector{T}
         tinit = T(model.tinit)::T
@@ -401,13 +399,10 @@
         σ = sqrt.(HeAge_sigma.^2 .+ σmodel^2)
 
         # Log-likelihood for initial proposal
-        ll = normpdf_ll(HeAge, σₐ, calcHeAges)
-        if simplified
-            ll -= log(npoints)
-        end
+        llna = llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma) + (simplified ? -log(npoints) : zero(T))
+        ll = llₚ =  normpdf_ll(HeAge, σₐ, calcHeAges) + llna
 
         # Variables to hold proposals
-        llₚ = ll
         npointsₚ = npoints
         agepointsₚ = copy(agepoints)::DenseVector{T}
         Tpointsₚ = copy(Tpoints)::DenseVector{T}
@@ -509,7 +504,7 @@
             temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
             linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
         
-            (maxdiff(Tsteps) > dTmax) && @goto restart
+            # (maxdiff(Tsteps) > dTmax) && @goto restart
             (pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto restart
                     
             # Calculate model ages for each grain
@@ -533,13 +528,11 @@
             end
 
             # Calculate log likelihood of proposal
+            llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
+            simplified && (llnaₚ += -log(npointsₚ))
             σₐ .= simannealsigma.(n, HeAge_sigma, σmodel, σannealing, λannealing)
-            llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ)
-            llₗ = normpdf_ll(HeAge, σₐ, calcHeAges) # Recalulate last one too with new σₐ
-            if simplified # slightly penalize more complex t-T paths
-                llₚ -= log(npointsₚ)
-                llₗ -= log(npoints)
-            end
+            llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ) + llnaₚ
+            llₗ = normpdf_ll(HeAge, σₐ, calcHeAges) + llna # Recalulate last one too with new σₐ
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - llₗ)
@@ -556,6 +549,7 @@
 
                 # Update the currently accepted proposal
                 ll = llₚ
+                llna = llnaₚ
                 npoints = npointsₚ
                 copyto!(agepoints, 1, agepointsₚ, 1, npoints)
                 copyto!(Tpoints, 1, Tpointsₚ, 1, npoints)
@@ -569,7 +563,7 @@
             end
 
             # Record results for analysis and troubleshooting
-            lldist[n] = normpdf_ll(HeAge, σ, calcHeAges) # Recalculated to constant baseline
+            lldist[n] = llna + normpdf_ll(HeAge, σ, calcHeAges) # Recalculated to constant baseline
             ndist[n] = npoints # distribution of # of points
             σⱼtdist[n] = σⱼt
             σⱼTdist[n] = σⱼT
@@ -604,7 +598,8 @@
         totalpoints = maxpoints + boundary.npoints + unconf.npoints::Int
         simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
-        dTmax = T(model.dTmax)::T
+        dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10.)::T
+        dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : 5.)::T
         agesteps = T.(model.agesteps)::DenseVector{T}
         tsteps = T.(model.tsteps)::DenseVector{T}
         tinit = T(model.tinit)::T
@@ -678,13 +673,10 @@
         σ = sqrt.(HeAge_sigma.^2 .+ σmodel^2)
 
         # Log-likelihood for initial proposal
-        ll = normpdf_ll(HeAge, σₐ, calcHeAges)
-        if simplified
-            ll -= log(npoints)
-        end
+        llna = llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma) + loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀) + (simplified ? -log(npoints) : zero(T))
+        ll = llₚ =  normpdf_ll(HeAge, σₐ, calcHeAges) + llna
 
         # Variables to hold proposals
-        llₚ = ll
         npointsₚ = npoints
         agepointsₚ = copy(agepoints)::DenseVector{T}
         Tpointsₚ = copy(Tpoints)::DenseVector{T}
@@ -814,7 +806,7 @@
             temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
             linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
     
-            (maxdiff(Tsteps) > dTmax) && @goto restart
+            # (maxdiff(Tsteps) > dTmax) && @goto restart
             (pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto restart
                
             # Calculate model ages for each grain
@@ -838,15 +830,12 @@
             end
 
             # Calculate log likelihood of proposal
+            llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
+            llnaₚ += loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀)
+            simplified && (llnaₚ += -log(npointsₚ))
             σₐ .= simannealsigma.(n, HeAge_sigma, σmodel, σannealing, λannealing)
-            llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ)
-            llₗ = normpdf_ll(HeAge, σₐ, calcHeAges) # Recalulate last one too with new σₐ
-            if simplified # slightly penalize more complex t-T paths
-                llₚ -= log(npointsₚ)
-                llₗ -= log(npoints)
-            end
-            llₚ += loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀)
-            llₗ += loglikelihood(adm, adm₀) + loglikelihood(zdm, zdm₀)
+            llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ) + llnaₚ
+            llₗ = normpdf_ll(HeAge, σₐ, calcHeAges) + llna # Recalulate last one too with new σₐ
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - llₗ)
@@ -862,9 +851,10 @@
                 end
 
                 # Update the currently accepted proposal
-                ll = llₚ
                 adm = admₚ
                 zdm = zdmₚ
+                ll = llₚ
+                llna = llnaₚ
                 npoints = npointsₚ
                 copyto!(agepoints, 1, agepointsₚ, 1, npoints)
                 copyto!(Tpoints, 1, Tpointsₚ, 1, npoints)
@@ -878,7 +868,7 @@
             end
 
             # Record results for analysis and troubleshooting
-            lldist[n] = normpdf_ll(HeAge, σ, calcHeAges) # Recalculated to constant baseline
+            lldist[n] = llna + normpdf_ll(HeAge, σ, calcHeAges) # Recalculated to constant baseline
             ndist[n] = npoints # distribution of # of points
             σⱼtdist[n] = σⱼt
             σⱼTdist[n] = σⱼT
@@ -911,7 +901,8 @@
         totalpoints = maxpoints + boundary.npoints + unconf.npoints::Int
         simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
-        dTmax = T(model.dTmax)::T
+        dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10.)::T
+        dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : 5.)::T
         agesteps = T.(model.agesteps)::DenseVector{T}
         tsteps = T.(model.tsteps)::DenseVector{T}
         tinit = T(model.tinit)::T
@@ -985,13 +976,10 @@
         σ = sqrt.(HeAge_sigma.^2 .+ σmodel^2)
     
         # Log-likelihood for initial proposal
-        ll = normpdf_ll(HeAge, σₐ, calcHeAges)
-        if simplified
-            ll -= log(npoints)
-        end
+        llna = llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma) + loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀) + (simplified ? -log(npoints) : zero(T))
+        ll = llₚ =  normpdf_ll(HeAge, σₐ, calcHeAges) + llna
     
         # Variables to hold proposals
-        llₚ = ll
         npointsₚ = npoints
         agepointsₚ = copy(agepoints)::DenseVector{T}
         Tpointsₚ = copy(Tpoints)::DenseVector{T}
@@ -1120,7 +1108,7 @@
             temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
             linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
         
-            (maxdiff(Tsteps) > dTmax) && @goto restart
+            # (maxdiff(Tsteps) > dTmax) && @goto restart
 
             # Calculate model ages for each grain
             if any(tzr)
@@ -1143,15 +1131,13 @@
             end
     
             # Calculate log likelihood of proposal
+            llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
+            llnaₚ += loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀)
+            simplified && (llnaₚ += -log(npointsₚ))
             σₐ .= simannealsigma.(n, HeAge_sigma, σmodel, σannealing, λannealing)
-            llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ)
-            llₗ = normpdf_ll(HeAge, σₐ, calcHeAges) # Recalulate last one too with new σₐ
-            if simplified # slightly penalize more complex t-T paths
-                llₚ -= log(npointsₚ)
-                llₗ -= log(npoints)
-            end
-            llₚ += loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀)
-            llₗ += loglikelihood(adm, adm₀) + loglikelihood(zdm, zdm₀)
+            llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ) + llnaₚ
+            llₗ = normpdf_ll(HeAge, σₐ, calcHeAges) + llna # Recalulate last one too with new σₐ
+
                 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - llₗ)
@@ -1167,9 +1153,10 @@
                 end
     
                 # Update the currently accepted proposal
-                ll = llₚ
                 adm = admₚ
                 zdm = zdmₚ
+                ll = llₚ
+                llna = llnaₚ
                 npoints = npointsₚ
                 copyto!(agepoints, agepointsₚ)
                 copyto!(Tpoints, Tpointsₚ)
@@ -1183,7 +1170,7 @@
             end
     
             # Record results for analysis and troubleshooting
-            lldist[n] = normpdf_ll(HeAge, σ, calcHeAges) # Recalculated to constant baseline
+            lldist[n] = llna + normpdf_ll(HeAge, σ, calcHeAges) # Recalculated to constant baseline
             ndist[n] = npoints # distribution of # of points
             σⱼtdist[n] = σⱼt
             σⱼTdist[n] = σⱼT
