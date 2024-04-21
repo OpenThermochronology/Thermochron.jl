@@ -165,6 +165,7 @@
         progress = Progress(nsteps, dt=1, desc="Running MCMC ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
         for n = 1:nsteps
+            @label restart
 
             # Copy proposal from last accepted solution
             npointsₚ = npoints
@@ -226,53 +227,45 @@
                     @. unconf.agepointsₚ = unconf.Age₀ + rand()*unconf.ΔAge
                     @. unconf.Tpointsₚ = unconf.T₀ + rand()*unconf.ΔT
                 end
-
             end
 
-            if any(isnan, agepointsₚ) || any(isnan, Tpointsₚ)
-                Tsteps .= NaN
-            else
-                # Recalculate interpolated proposed t-T path
-                ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
-                temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
-                linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
+            any(isnan, Tpointsₚ) && @goto restart
+            any(isnan, agepointsₚ) && @goto restart
+
+            # Recalculate interpolated proposed t-T path
+            ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
+            temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
+            linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
+
+            (maxdiff(Tsteps) > dTmax) && @goto restart
+               
+            # Calculate model ages for each grain
+            if any(tzr)
+                anneal!(zpr, zTeq, dt, tsteps, Tsteps, zdm)
+            end
+            if any(tap)
+                anneal!(apr, aTeq, dt, tsteps, Tsteps, adm)
+            end
+            zi = 1
+            for i ∈ findall(tzr)
+                first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+                calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
+                zi += 1
+            end
+            ai = 1
+            for i ∈ findall(tap)
+                first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+                calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
+                ai += 1
             end
 
-            if maxdiff(Tsteps) <= dTmax
-                # Calculate model ages for each grain
-                if any(tzr)
-                    anneal!(zpr, zTeq, dt, tsteps, Tsteps, zdm)
-                end
-                if any(tap)
-                    anneal!(apr, aTeq, dt, tsteps, Tsteps, adm)
-                end
-                zi = 1
-                for i ∈ findall(tzr)
-                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                    calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
-                    zi += 1
-                end
-                ai = 1
-                for i ∈ findall(tap)
-                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                    calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
-                    ai += 1
-                end
-
-                # Calculate log likelihood of proposal
-                σₐ .= simannealsigma.(n, HeAge_sigma, σmodel, σannealing, λannealing)
-                llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ)
-                llₗ = normpdf_ll(HeAge, σₐ, calcHeAges) # Recalulate last one too with new σₐ
-                if simplified # slightly penalize more complex t-T paths
-                    llₚ -= log(npointsₚ)
-                    llₗ -= log(npoints)
-                end
-            else
-                # Reject proposal if max reheating rate is exceeded or NaN.
-                # To avoid numerical problems with diffusion code, maximum
-                # heating rate should not be greater than ~25C per timestep.
-                # (Fast cooling should not be a problem, however)
-                llₚ = llₗ = NaN
+            # Calculate log likelihood of proposal
+            σₐ .= simannealsigma.(n, HeAge_sigma, σmodel, σannealing, λannealing)
+            llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ)
+            llₗ = normpdf_ll(HeAge, σₐ, calcHeAges) # Recalulate last one too with new σₐ
+            if simplified # slightly penalize more complex t-T paths
+                llₚ -= log(npointsₚ)
+                llₗ -= log(npoints)
             end
 
             # Accept or reject proposal based on likelihood
@@ -447,6 +440,8 @@
         progress = Progress(nsteps, dt=1, desc="Running MCMC ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
         for n = 1:nsteps
+            enoughpoints = min(pointsininterval(agepoints, npoints, detail.agemin, detail.agemax), detail.minpoints)::Int
+            @label restart
 
             # Copy proposal from last accepted solution
             npointsₚ = npoints
@@ -455,7 +450,6 @@
             copyto!(unconf.agepointsₚ, unconf.agepoints)
             copyto!(unconf.Tpointsₚ, unconf.Tpoints)
             copyto!(boundary.Tpointsₚ, boundary.Tpoints)
-            enoughpoints = min(pointsininterval(agepoints, npoints, detail.agemin, detail.agemax), detail.minpoints)::Int
 
             # Adjust the proposal
             r = rand()
@@ -511,51 +505,44 @@
                 end
             end
 
-            if any(isnan, agepointsₚ) || any(isnan, Tpointsₚ)
-                Tsteps .= NaN
-            else
-                # Recalculate interpolated proposed t-T path
-                ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
-                temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
-                linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
-            end
-            
-            if (maxdiff(Tsteps) <= dTmax) && (pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax) >= enoughpoints)
-                    
-                # Calculate model ages for each grain
-                if any(tzr)
-                    anneal!(zpr, zTeq, dt, tsteps, Tsteps, zdm)
-                end
-                if any(tap)
-                    anneal!(apr, aTeq, dt, tsteps, Tsteps, adm)
-                end
-                zi = 1
-                for i ∈ findall(tzr)
-                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                    calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
-                    zi += 1
-                end
-                ai = 1
-                for i ∈ findall(tap)
-                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                    calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
-                    ai += 1
-                end
+            any(isnan, Tpointsₚ) && @goto restart
+            any(isnan, agepointsₚ) && @goto restart
 
-                # Calculate log likelihood of proposal
-                σₐ .= simannealsigma.(n, HeAge_sigma, σmodel, σannealing, λannealing)
-                llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ)
-                llₗ = normpdf_ll(HeAge, σₐ, calcHeAges) # Recalulate last one too with new σₐ
-                if simplified # slightly penalize more complex t-T paths
-                    llₚ -= log(npointsₚ)
-                    llₗ -= log(npoints)
-                end
-            else
-                # Reject proposal if max reheating rate is exceeded or NaN.
-                # To avoid numerical problems with diffusion code, maximum
-                # heating rate should not be greater than ~25C per timestep.
-                # (Fast cooling should not be a problem, however)
-                llₚ = llₗ = NaN
+            # Recalculate interpolated proposed t-T path
+            ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
+            temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
+            linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
+        
+            (maxdiff(Tsteps) > dTmax) && @goto restart
+            (pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax) < enoughpoints) && @goto restart
+                    
+            # Calculate model ages for each grain
+            if any(tzr)
+                anneal!(zpr, zTeq, dt, tsteps, Tsteps, zdm)
+            end
+            if any(tap)
+                anneal!(apr, aTeq, dt, tsteps, Tsteps, adm)
+            end
+            zi = 1
+            for i ∈ findall(tzr)
+                first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+                calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
+                zi += 1
+            end
+            ai = 1
+            for i ∈ findall(tap)
+                first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+                calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
+                ai += 1
+            end
+
+            # Calculate log likelihood of proposal
+            σₐ .= simannealsigma.(n, HeAge_sigma, σmodel, σannealing, λannealing)
+            llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ)
+            llₗ = normpdf_ll(HeAge, σₐ, calcHeAges) # Recalulate last one too with new σₐ
+            if simplified # slightly penalize more complex t-T paths
+                llₚ -= log(npointsₚ)
+                llₗ -= log(npoints)
             end
 
             # Accept or reject proposal based on likelihood
@@ -738,6 +725,8 @@
         progress = Progress(nsteps, dt=1, desc="Running MCMC ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
         for n = 1:nsteps
+            enoughpoints = min(pointsininterval(agepoints, npoints, detail.agemin, detail.agemax), detail.minpoints)::Int
+            @label restart
 
             # Copy proposal from last accepted solution
             admₚ = adm
@@ -748,7 +737,6 @@
             copyto!(unconf.agepointsₚ, unconf.agepoints)
             copyto!(unconf.Tpointsₚ, unconf.Tpoints)
             copyto!(boundary.Tpointsₚ, boundary.Tpoints)
-            enoughpoints = min(pointsininterval(agepoints, npoints, detail.agemin, detail.agemax), detail.minpoints)::Int
 
             # Adjust the proposal
             r = rand()
@@ -824,50 +812,47 @@
                 end
             end
 
-            if any(isnan, agepointsₚ) || any(isnan, Tpointsₚ)
-                Tsteps .= NaN
-            else
-                # Recalculate interpolated proposed t-T path
-                ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
-                temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
-                linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
-            end
-            
-            if (maxdiff(Tsteps) <= dTmax) && (pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax) >= enoughpoints)
-                # Calculate model ages for each grain
-                if any(tzr)
-                    anneal!(zpr, zTeq, dt, tsteps, Tsteps, zdmₚ)
-                    zi = 1
-                    for i ∈ findall(tzr)
-                        first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                        calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdmₚ)::T
-                        zi += 1
-                    end
-                end
-                if any(tap)
-                    anneal!(apr, aTeq, dt, tsteps, Tsteps, admₚ)
-                    ai = 1
-                    for i ∈ findall(tap)
-                        first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                        calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), admₚ)::T
-                        ai += 1
-                    end
-                end
+            any(isnan, Tpointsₚ) && @goto restart
+            any(isnan, agepointsₚ) && @goto restart
 
-                # Calculate log likelihood of proposal
-                σₐ .= simannealsigma.(n, HeAge_sigma, σmodel, σannealing, λannealing)
-                llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ)
-                llₗ = normpdf_ll(HeAge, σₐ, calcHeAges) # Recalulate last one too with new σₐ
-                if simplified # slightly penalize more complex t-T paths
-                    llₚ -= log(npointsₚ)
-                    llₗ -= log(npoints)
+            # Recalculate interpolated proposed t-T path
+            ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
+            temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
+            linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
+    
+            (maxdiff(Tsteps) > dTmax) && @goto restart
+            (pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax) < enoughpoints) && @goto restart
+               
+            # Calculate model ages for each grain
+            if any(tzr)
+                anneal!(zpr, zTeq, dt, tsteps, Tsteps, zdmₚ)
+                zi = 1
+                for i ∈ findall(tzr)
+                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+                    calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdmₚ)::T
+                    zi += 1
                 end
-                llₚ += loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀)
-                llₗ += loglikelihood(adm, adm₀) + loglikelihood(zdm, zdm₀)
-            else
-                # Reject proposal if max reheating rate is exceeded or NaN.
-                llₚ = llₗ = NaN
             end
+            if any(tap)
+                anneal!(apr, aTeq, dt, tsteps, Tsteps, admₚ)
+                ai = 1
+                for i ∈ findall(tap)
+                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+                    calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), admₚ)::T
+                    ai += 1
+                end
+            end
+
+            # Calculate log likelihood of proposal
+            σₐ .= simannealsigma.(n, HeAge_sigma, σmodel, σannealing, λannealing)
+            llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ)
+            llₗ = normpdf_ll(HeAge, σₐ, calcHeAges) # Recalulate last one too with new σₐ
+            if simplified # slightly penalize more complex t-T paths
+                llₚ -= log(npointsₚ)
+                llₗ -= log(npoints)
+            end
+            llₚ += loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀)
+            llₗ += loglikelihood(adm, adm₀) + loglikelihood(zdm, zdm₀)
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - llₗ)
@@ -1049,6 +1034,7 @@
         progress = Progress(nsteps, dt=1, desc="Running MCMC ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
         for n = 1:nsteps
+            @label restart
     
             # Copy proposal from last accepted solution
             admₚ = adm
@@ -1134,53 +1120,47 @@
                 end
             end
 
-            if any(isnan, agepointsₚ) || any(isnan, Tpointsₚ)
-                Tsteps .= NaN
-            else
-                # Recalculate interpolated proposed t-T path
-                ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
-                temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
-                linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
-            end
+            any(isnan, Tpointsₚ) && @goto restart
+            any(isnan, agepointsₚ) && @goto restart
 
-            if (maxdiff(Tsteps) <= dTmax)
-                # Calculate model ages for each grain
-                if any(tzr)
-                    anneal!(zpr, zTeq, dt, tsteps, Tsteps, zdmₚ)
-                    zi = 1
-                    for i ∈ findall(tzr)
-                        first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                        calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdmₚ)::T
-                        zi += 1
-                    end
-                end
-                if any(tap)
-                    anneal!(apr, aTeq, dt, tsteps, Tsteps, admₚ)
-                    ai = 1
-                    for i ∈ findall(tap)
-                        first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                        calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), admₚ)::T
-                        ai += 1
-                    end
-                end
+            # Recalculate interpolated proposed t-T path
+            ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
+            temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
+            linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
         
-                # Calculate log likelihood of proposal
-                σₐ .= simannealsigma.(n, HeAge_sigma, σmodel, σannealing, λannealing)
-                llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ)
-                llₗ = normpdf_ll(HeAge, σₐ, calcHeAges) # Recalulate last one too with new σₐ
-                if simplified # slightly penalize more complex t-T paths
-                    llₚ -= log(npointsₚ)
-                    llₗ -= log(npoints)
+            (maxdiff(Tsteps) > dTmax) && @goto restart
+              
+
+            # Calculate model ages for each grain
+            if any(tzr)
+                anneal!(zpr, zTeq, dt, tsteps, Tsteps, zdmₚ)
+                zi = 1
+                for i ∈ findall(tzr)
+                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+                    calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdmₚ)::T
+                    zi += 1
                 end
-                llₚ += loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀)
-                llₗ += loglikelihood(adm, adm₀) + loglikelihood(zdm, zdm₀)
-            else
-                # Reject proposal if max reheating rate is exceeded or NaN.
-                # To avoid numerical problems with diffusion code, maximum
-                # heating rate should not be greater than ~25C per timestep.
-                # (Fast cooling should not be a problem, however)
-                llₚ = llₗ = NaN
             end
+            if any(tap)
+                anneal!(apr, aTeq, dt, tsteps, Tsteps, admₚ)
+                ai = 1
+                for i ∈ findall(tap)
+                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+                    calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), admₚ)::T
+                    ai += 1
+                end
+            end
+    
+            # Calculate log likelihood of proposal
+            σₐ .= simannealsigma.(n, HeAge_sigma, σmodel, σannealing, λannealing)
+            llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ)
+            llₗ = normpdf_ll(HeAge, σₐ, calcHeAges) # Recalulate last one too with new σₐ
+            if simplified # slightly penalize more complex t-T paths
+                llₚ -= log(npointsₚ)
+                llₗ -= log(npoints)
+            end
+            llₚ += loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀)
+            llₗ += loglikelihood(adm, adm₀) + loglikelihood(zdm, zdm₀)
                 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - llₗ)
