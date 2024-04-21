@@ -24,6 +24,11 @@ for i=1:10
     @test Thermochron.maxabsdiff(a) === maximum(abs.(diff(a)))
 end
 
+# Test diff_ll
+Thermochron.diff_ll(1:10, 1, 1) === 0.0
+Thermochron.diff_ll(2*(1:10), 1, 1) ≈ -4.5
+Thermochron.diff_ll(2*(1:10), 1, 0.5) ≈ -18.0
+
 # Test other utilities
 @test Thermochron.isdistinct(collect(1:10), 10, 5, 0.5)
 @test !Thermochron.isdistinct(collect(1:10), 10, 5, 1.5)

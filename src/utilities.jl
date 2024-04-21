@@ -15,10 +15,10 @@
     # Utility functions for checking maximum reheating or cooling rate
     function maxdiff(x::AbstractVector)
         i₀ = firstindex(x)
-        δₘ = x[i₀+1] - x[i₀]
-        if length(x) > 2
-            last = x[i₀+1]
-            @inbounds for i ∈ (i₀+2):(i₀+length(x)-1)
+        δₘ = zero(eltype(x))
+        if length(x) > 1
+            last = x[i₀]
+            @inbounds for i ∈ (i₀+1):(i₀+length(x)-1)
                 δᵢ = x[i] - last
                 if δᵢ > δₘ
                     δₘ = δᵢ
@@ -30,10 +30,10 @@
     end
     function mindiff(x::AbstractVector)
         i₀ = firstindex(x)
-        δₘ = x[i₀+1] - x[i₀]
-        if length(x) > 2
-            last = x[i₀+1]
-            @inbounds for i ∈ (i₀+2):(i₀+length(x)-1)
+        δₘ = zero(eltype(x))
+        if length(x) > 1
+            last = x[i₀]
+            @inbounds for i ∈ (i₀+1):(i₀+length(x)-1)
                 δᵢ = x[i] - last
                 if δᵢ < δₘ
                     δₘ = δᵢ
@@ -45,10 +45,10 @@
     end
     function maxabsdiff(x::AbstractVector)
         i₀ = firstindex(x)
-        δₘ = abs(x[i₀+1] - x[i₀])
-        if length(x) > 2
-            last = x[i₀+1]
-            @inbounds for i ∈ (i₀+2):(i₀+length(x)-1)
+        δₘ = zero(eltype(x)) 
+        if length(x) > 1
+            last = x[i₀]
+            @inbounds for i ∈ (i₀+1):(i₀+length(x)-1)
                 δᵢ = abs(x[i] - last)
                 if δᵢ > δₘ
                     δₘ = δᵢ
@@ -57,6 +57,24 @@
             end
         end
         return δₘ
+    end
+
+    function diff_ll(x::AbstractVector, μ::Number, σ::Number)
+        i₀ = firstindex(x)
+        inv_s2 = 1/(2*σ*σ)
+        ll = zero(typeof(inv_s2))
+        if length(x) > 1
+            last = x[i₀]
+            @inbounds for i ∈ (i₀+1):(i₀+length(x)-1)
+                δᵢ = x[i] - last
+                if δᵢ > μ
+                    δμ = δᵢ - μ
+                    ll -= δμ * δμ * inv_s2
+                end
+                last = x[i]
+            end
+        end
+        return ll
     end
 
     # Check if point k is distinct from other points in list within ± δ
