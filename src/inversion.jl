@@ -180,6 +180,7 @@
             if r < move
                 # Move one t-T point
                 k = ceil(Int, rand() * npoints)
+                @label move
 
                 # Move the age of one model point
                 agepointsₚ[k] += randn() * σⱼt
@@ -201,9 +202,9 @@
                     Tpointsₚ[k] = Tinit - (Tpointsₚ[k] - Tinit)
                 end
 
-                # NaN-out anything reflected out-of-bounds
-                (dt < agepointsₚ[k] < tinit-dt) || (agepointsₚ[k] = NaN)
-                (Tnow < Tpointsₚ[k] < Tinit) || (Tpointsₚ[k] = NaN)
+                # Try again if reflected out-of-bounds
+                (dt < agepointsₚ[k] < tinit-dt) || @goto move
+                (Tnow < Tpointsₚ[k] < Tinit) || @goto move
 
             elseif (r < move+birth) && (npoints < maxpoints)
                 # Birth: add a new model point
@@ -229,9 +230,6 @@
                 end
             end
 
-            any(isnan, Tpointsₚ) && @goto restart
-            any(isnan, agepointsₚ) && @goto restart
-
             # Recalculate interpolated proposed t-T path
             ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
             temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
@@ -242,21 +240,21 @@
             # Calculate model ages for each grain
             if any(tzr)
                 anneal!(zpr, zTeq, dt, tsteps, Tsteps, zdm)
+                zi = 1
+                for i ∈ findall(tzr)
+                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+                    calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
+                    zi += 1
+                end
             end
             if any(tap)
                 anneal!(apr, aTeq, dt, tsteps, Tsteps, adm)
-            end
-            zi = 1
-            for i ∈ findall(tzr)
-                first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
-                zi += 1
-            end
-            ai = 1
-            for i ∈ findall(tap)
-                first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
-                ai += 1
+                ai = 1
+                for i ∈ findall(tap)
+                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+                    calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
+                    ai += 1
+                end
             end
 
             # Calculate log likelihood of proposal
@@ -440,7 +438,7 @@
         progress = Progress(nsteps, dt=1, desc="Running MCMC ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
         for n = 1:nsteps
-            enoughpoints = min(pointsininterval(agepoints, npoints, detail.agemin, detail.agemax), detail.minpoints)::Int
+            enoughpoints = min(pointsininterval(agepoints, npoints, detail.agemin, detail.agemax, dt), detail.minpoints)::Int
             @label restart
 
             # Copy proposal from last accepted solution
@@ -456,6 +454,7 @@
             if r < move
                 # Move one t-T point
                 k = ceil(Int, rand() * npoints)
+                @label move
 
                 # Move the age of one model point
                 agepointsₚ[k] += randn() * σⱼt
@@ -477,9 +476,9 @@
                     Tpointsₚ[k] = Tinit - (Tpointsₚ[k] - Tinit)
                 end
 
-                # NaN-out anything reflected out-of-bounds
-                (dt < agepointsₚ[k] < tinit-dt) || (agepointsₚ[k] = NaN)
-                (Tnow < Tpointsₚ[k] < Tinit) || (Tpointsₚ[k] = NaN)
+                # Try again if reflected out-of-bounds
+                (dt < agepointsₚ[k] < tinit-dt) || @goto move
+                (Tnow < Tpointsₚ[k] < Tinit) || @goto move
 
             elseif (r < move+birth) && (npoints < maxpoints)
                 # Birth: add a new model point
@@ -505,35 +504,32 @@
                 end
             end
 
-            any(isnan, Tpointsₚ) && @goto restart
-            any(isnan, agepointsₚ) && @goto restart
-
             # Recalculate interpolated proposed t-T path
             ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
             temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
             linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
         
             (maxdiff(Tsteps) > dTmax) && @goto restart
-            (pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax) < enoughpoints) && @goto restart
+            (pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto restart
                     
             # Calculate model ages for each grain
             if any(tzr)
                 anneal!(zpr, zTeq, dt, tsteps, Tsteps, zdm)
+                zi = 1
+                for i ∈ findall(tzr)
+                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+                    calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
+                    zi += 1
+                end
             end
             if any(tap)
                 anneal!(apr, aTeq, dt, tsteps, Tsteps, adm)
-            end
-            zi = 1
-            for i ∈ findall(tzr)
-                first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
-                zi += 1
-            end
-            ai = 1
-            for i ∈ findall(tap)
-                first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
-                ai += 1
+                ai = 1
+                for i ∈ findall(tap)
+                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+                    calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
+                    ai += 1
+                end
             end
 
             # Calculate log likelihood of proposal
@@ -725,7 +721,7 @@
         progress = Progress(nsteps, dt=1, desc="Running MCMC ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
         for n = 1:nsteps
-            enoughpoints = min(pointsininterval(agepoints, npoints, detail.agemin, detail.agemax), detail.minpoints)::Int
+            enoughpoints = min(pointsininterval(agepoints, npoints, detail.agemin, detail.agemax, dt), detail.minpoints)::Int
             @label restart
 
             # Copy proposal from last accepted solution
@@ -743,6 +739,7 @@
             if r < move
                 # Move one t-T point
                 k = ceil(Int, rand() * npoints)
+                @label move
 
                 # Move the age of one model point
                 agepointsₚ[k] += randn() * σⱼt
@@ -764,9 +761,9 @@
                     Tpointsₚ[k] = Tinit - (Tpointsₚ[k] - Tinit)
                 end
 
-                # NaN-out anything reflected out-of-bounds
-                (dt < agepointsₚ[k] < tinit-dt) || (agepointsₚ[k] = NaN)
-                (Tnow < Tpointsₚ[k] < Tinit) || (Tpointsₚ[k] = NaN)
+                # Try again if reflected out-of-bounds
+                (dt < agepointsₚ[k] < tinit-dt) || @goto move
+                (Tnow < Tpointsₚ[k] < Tinit) || @goto move
 
             elseif (r < move+birth) && (npoints < maxpoints)
                 # Birth: add a new model point
@@ -812,16 +809,13 @@
                 end
             end
 
-            any(isnan, Tpointsₚ) && @goto restart
-            any(isnan, agepointsₚ) && @goto restart
-
             # Recalculate interpolated proposed t-T path
             ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
             temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
             linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
     
             (maxdiff(Tsteps) > dTmax) && @goto restart
-            (pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax) < enoughpoints) && @goto restart
+            (pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto restart
                
             # Calculate model ages for each grain
             if any(tzr)
@@ -1051,6 +1045,7 @@
             if r < move
                 # Move one t-T point
                 k = ceil(Int, rand() * npoints)
+                @label move
     
                 # Move the age of one model point
                 agepointsₚ[k] += randn() * σⱼt
@@ -1072,9 +1067,9 @@
                     Tpointsₚ[k] = Tinit - (Tpointsₚ[k] - Tinit)
                 end
     
-                # NaN-out anything reflected out-of-bounds
-                (dt < agepointsₚ[k] < tinit-dt) || (agepointsₚ[k] = NaN)
-                (Tnow < Tpointsₚ[k] < Tinit) || (Tpointsₚ[k] = NaN)
+                # Try again if reflected out-of-bounds
+                (dt < agepointsₚ[k] < tinit-dt) || @goto move
+                (Tnow < Tpointsₚ[k] < Tinit) || @goto move
                 
             elseif (r < move+birth) && (npoints < maxpoints)
                 # Birth: add a new model point
@@ -1120,16 +1115,12 @@
                 end
             end
 
-            any(isnan, Tpointsₚ) && @goto restart
-            any(isnan, agepointsₚ) && @goto restart
-
             # Recalculate interpolated proposed t-T path
             ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
             temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
             linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
         
             (maxdiff(Tsteps) > dTmax) && @goto restart
-              
 
             # Calculate model ages for each grain
             if any(tzr)

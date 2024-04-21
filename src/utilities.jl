@@ -13,9 +13,9 @@
     end
 
     # Utility functions for checking maximum reheating or cooling rate
-    function maxdiff(x::AbstractVector)
+    function maxdiff(x::AbstractVector{T}) where {T}
         i₀ = firstindex(x)
-        δₘ = zero(eltype(x))
+        δₘ = zero(T)
         if length(x) > 1
             last = x[i₀]
             @inbounds for i ∈ (i₀+1):(i₀+length(x)-1)
@@ -28,9 +28,9 @@
         end
         return δₘ
     end
-    function mindiff(x::AbstractVector)
+    function mindiff(x::AbstractVector{T}) where {T}
         i₀ = firstindex(x)
-        δₘ = zero(eltype(x))
+        δₘ = zero(T)
         if length(x) > 1
             last = x[i₀]
             @inbounds for i ∈ (i₀+1):(i₀+length(x)-1)
@@ -43,9 +43,9 @@
         end
         return δₘ
     end
-    function maxabsdiff(x::AbstractVector)
+    function maxabsdiff(x::AbstractVector{T}) where {T}
         i₀ = firstindex(x)
-        δₘ = zero(eltype(x)) 
+        δₘ = zero(T) 
         if length(x) > 1
             last = x[i₀]
             @inbounds for i ∈ (i₀+1):(i₀+length(x)-1)
@@ -96,8 +96,15 @@
         end
         return n
     end
-
-
+    function pointsininterval(points::DenseArray, npoints::Int, min::Number, max::Number, δ::Number)
+        n = 0
+        @inbounds for i = 1:npoints
+            if  min < points[i] < max
+                n += isdistinct(points, npoints, i, δ)
+            end
+        end
+        return n
+    end
 
 ## --- Modify LinearAlgebra.lu! to reuse du2 for pivoting
 
