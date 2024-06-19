@@ -1,7 +1,7 @@
 name = "Thermochron"
 uuid = "b9a8379e-ee1a-4388-b7ca-7852af1cef08"
 authors = ["C. Brenhin Keller and collaborators"]
-version = "0.9.0"
+version = "0.9.1"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
@@ -14,6 +14,6 @@ VectorizedStatistics = "3b853605-1c98-4422-8364-4bd93ee0529e"
 [compat]
 LoopVectorization = "0.12"
 ProgressMeter = "1"
-StatGeochemBase = "0.4.3, 0.5"
+StatGeochemBase = "0.4.3, 0.5, 0.6"
 VectorizedStatistics = "0.4.6, 0.5"
 julia = "1.8"
