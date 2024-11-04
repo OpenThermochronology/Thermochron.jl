@@ -1,7 +1,7 @@
 
     """
     ```julia
-    MCMC(data::NamedTuple, model::NamedTuple, npoints::Int, agepoints::Vector, Tpoints::Vector, unconf::Unconformity, boundary::Boundary, [detail::DetailInterval])
+    MCMC(data::NamedTuple, model::NamedTuple, npoints::Int, agepoints::Vector, Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval])
     ```
     Markov chain Monte Carlo time-Temperature inversion of the data specified in `data` and model parameters specified by `model`.
 
@@ -9,10 +9,10 @@
 
     ## Examples
     ```julia
-    tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist = MCMC(data, model, npoints, agepoints, Tpoints, unconf, boundary)
+    tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist = MCMC(data, model, npoints, agepoints, Tpoints, constraint, boundary)
     ```
     """
-    function MCMC(data::NamedTuple, model::NamedTuple, npoints::Int, agepoints::DenseVector{T}, Tpoints::DenseVector{T}, boundary::Boundary{T}, unconf::Unconformity{T}=Unconformity(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
+    function MCMC(data::NamedTuple, model::NamedTuple, npoints::Int, agepoints::DenseVector{T}, Tpoints::DenseVector{T}, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
         # Sanitize inputs
         @assert firstindex(agepoints) === 1
         @assert firstindex(Tpoints) === 1
@@ -23,10 +23,10 @@
         U = T.(data.U)::DenseVector{T}
         Th = T.(data.Th)::DenseVector{T}
         Sm = (haskey(data, :Sm) ? T.(data.Th) : zeros(T, size(U)))::DenseVector{T}
-        nsteps = model.nsteps::Int
-        maxpoints = model.maxpoints::Int
+        nsteps = (haskey(model, :nsteps) ? model.nsteps : 10^6)::Int
+        maxpoints = (haskey(model, :maxpoints) ? model.maxpoints : 50)::Int
         minpoints = (haskey(model, :minpoints) ? model.minpoints : 1)::Int
-        totalpoints = maxpoints + boundary.npoints + unconf.npoints::Int
+        totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
         simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
         boundarytype = (haskey(model, :boundarytype) ? model.boundarytype : :hard)::Symbol
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
@@ -50,8 +50,8 @@
         knot_index = similar(agesteps, Int)::DenseVector{Int}
 
         # Calculate model ages for initial proposal
-        ages = collectto!(agepointbuffer, view(agepoints, 1:npoints), boundary.agepoints, unconf.agepoints)::StridedVector{T}
-        temperatures = collectto!(Tpointbuffer, view(Tpoints, 1:npoints), boundary.Tpoints, unconf.Tpoints)::StridedVector{T}
+        ages = collectto!(agepointbuffer, view(agepoints, 1:npoints), boundary.agepoints, constraint.agepoints)::StridedVector{T}
+        temperatures = collectto!(Tpointbuffer, view(Tpoints, 1:npoints), boundary.Tpoints, constraint.Tpoints)::StridedVector{T}
         Tsteps = linterp1s(ages, temperatures, agesteps)::DenseVector{T}
         calcHeAges = similar(HeAge)::DenseVector{T}
 
@@ -149,8 +149,8 @@
             npointsₚ = npoints
             copyto!(agepointsₚ, agepoints)
             copyto!(Tpointsₚ, Tpoints)
-            copyto!(unconf.agepointsₚ, unconf.agepoints)
-            copyto!(unconf.Tpointsₚ, unconf.Tpoints)
+            copyto!(constraint.agepointsₚ, constraint.agepoints)
+            copyto!(constraint.Tpointsₚ, constraint.Tpoints)
             copyto!(boundary.Tpointsₚ, boundary.Tpoints)
 
             # Adjust the proposal
@@ -178,15 +178,15 @@
                 @. boundary.Tpointsₚ = boundary.T₀ + rand()*boundary.ΔT
 
                 # If there's an imposed unconformity, adjust within parameters
-                if unconf.npoints > 0
-                    @. unconf.agepointsₚ = unconf.Age₀ + rand()*unconf.ΔAge
-                    @. unconf.Tpointsₚ = unconf.T₀ + rand()*unconf.ΔT
+                if constraint.npoints > 0
+                    @. constraint.agepointsₚ = constraint.Age₀ + rand()*constraint.ΔAge
+                    @. constraint.Tpointsₚ = constraint.T₀ + rand()*constraint.ΔT
                 end
             end
 
             # Recalculate interpolated proposed t-T path
-            ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
-            temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
+            ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, constraint.agepointsₚ)::StridedVector{T}
+            temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, constraint.Tpointsₚ)::StridedVector{T}
             linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
             
             # Old version of imposing max reheating rate, for reference:
@@ -242,8 +242,8 @@
                 npoints = npointsₚ
                 copyto!(agepoints, 1, agepointsₚ, 1, npoints)
                 copyto!(Tpoints, 1, Tpointsₚ, 1, npoints)
-                copyto!(unconf.agepoints, unconf.agepointsₚ)
-                copyto!(unconf.Tpoints, unconf.Tpointsₚ)
+                copyto!(constraint.agepoints, constraint.agepointsₚ)
+                copyto!(constraint.Tpoints, constraint.Tpointsₚ)
                 copyto!(boundary.Tpoints, boundary.Tpointsₚ)
                 copyto!(calcHeAges, calcHeAgesₚ)
 
@@ -259,8 +259,8 @@
             HeAgedist[:,n] .= calcHeAges # distribution of He ages
 
             # This is the actual output we want -- the distribution of t-T paths (t path is always identical)
-            collectto!(view(tpointdist, :, n), view(agepoints, 1:npoints), boundary.agepoints, unconf.agepoints)
-            collectto!(view(Tpointdist, :, n), view(Tpoints, 1:npoints), boundary.Tpoints, unconf.Tpoints)
+            collectto!(view(tpointdist, :, n), view(agepoints, 1:npoints), boundary.agepoints, constraint.agepoints)
+            collectto!(view(Tpointdist, :, n), view(Tpoints, 1:npoints), boundary.Tpoints, constraint.Tpoints)
 
             # Update progress meter every `progress_interval` steps
             (mod(n, progress_interval) == 0) && update!(progress, n)
@@ -269,7 +269,7 @@
     end
     export MCMC
 
-    function MCMC_varkinetics(data::NamedTuple, model::NamedTuple, npoints::Int, agepoints::DenseVector{T}, Tpoints::DenseVector{T}, boundary::Boundary{T}, unconf::Unconformity{T}=Unconformity(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
+    function MCMC_varkinetics(data::NamedTuple, model::NamedTuple, npoints::Int, agepoints::DenseVector{T}, Tpoints::DenseVector{T}, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
         # Sanitize inputs
         @assert firstindex(agepoints) === 1
         @assert firstindex(Tpoints) === 1
@@ -280,10 +280,10 @@
         U = T.(data.U)::DenseVector{T}
         Th = T.(data.Th)::DenseVector{T}
         Sm = (haskey(data, :Sm) ? T.(data.Th) : zeros(T, size(U)))::DenseVector{T}
-        nsteps = model.nsteps::Int
-        maxpoints = model.maxpoints::Int
+        nsteps = (haskey(model, :nsteps) ? model.nsteps : 10^6)::Int
+        maxpoints = (haskey(model, :maxpoints) ? model.maxpoints : 50)::Int
         minpoints = (haskey(model, :minpoints) ? model.minpoints : 1)::Int
-        totalpoints = maxpoints + boundary.npoints + unconf.npoints::Int
+        totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
         simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
         boundarytype = (haskey(model, :boundarytype) ? model.boundarytype : :hard)::Symbol
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
@@ -307,8 +307,8 @@
         knot_index = similar(agesteps, Int)::DenseVector{Int}
 
         # Calculate model ages for initial proposal
-        ages = collectto!(agepointbuffer, view(agepoints, 1:npoints), boundary.agepoints, unconf.agepoints)::StridedVector{T}
-        temperatures = collectto!(Tpointbuffer, view(Tpoints, 1:npoints), boundary.Tpoints, unconf.Tpoints)::StridedVector{T}
+        ages = collectto!(agepointbuffer, view(agepoints, 1:npoints), boundary.agepoints, constraint.agepoints)::StridedVector{T}
+        temperatures = collectto!(Tpointbuffer, view(Tpoints, 1:npoints), boundary.Tpoints, constraint.Tpoints)::StridedVector{T}
         Tsteps = linterp1s(ages, temperatures, agesteps)::DenseVector{T}
         calcHeAges = similar(HeAge)::DenseVector{T}
 
@@ -409,8 +409,8 @@
             npointsₚ = npoints
             copyto!(agepointsₚ, agepoints)
             copyto!(Tpointsₚ, Tpoints)
-            copyto!(unconf.agepointsₚ, unconf.agepoints)
-            copyto!(unconf.Tpointsₚ, unconf.Tpoints)
+            copyto!(constraint.agepointsₚ, constraint.agepoints)
+            copyto!(constraint.Tpointsₚ, constraint.Tpoints)
             copyto!(boundary.Tpointsₚ, boundary.Tpoints)
 
             # Adjust the proposal
@@ -438,9 +438,9 @@
                 @. boundary.Tpointsₚ = boundary.T₀ + rand()*boundary.ΔT
 
                 # If there's an imposed unconformity, adjust within parameters
-                if unconf.npoints > 0
-                    @. unconf.agepointsₚ = unconf.Age₀ + rand()*unconf.ΔAge
-                    @. unconf.Tpointsₚ = unconf.T₀ + rand()*unconf.ΔT
+                if constraint.npoints > 0
+                    @. constraint.agepointsₚ = constraint.Age₀ + rand()*constraint.ΔAge
+                    @. constraint.Tpointsₚ = constraint.T₀ + rand()*constraint.ΔT
                 end
 
             elseif (r < p_move+p_birth+p_death+p_bounds+p_kinetics)
@@ -451,8 +451,8 @@
             end
 
             # Recalculate interpolated proposed t-T path
-            ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, unconf.agepointsₚ)::StridedVector{T}
-            temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, unconf.Tpointsₚ)::StridedVector{T}
+            ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, constraint.agepointsₚ)::StridedVector{T}
+            temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, constraint.Tpointsₚ)::StridedVector{T}
             linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
     
             # Old version of imposing max reheating rate, for reference:
@@ -512,8 +512,8 @@
                 npoints = npointsₚ
                 copyto!(agepoints, 1, agepointsₚ, 1, npoints)
                 copyto!(Tpoints, 1, Tpointsₚ, 1, npoints)
-                copyto!(unconf.agepoints, unconf.agepointsₚ)
-                copyto!(unconf.Tpoints, unconf.Tpointsₚ)
+                copyto!(constraint.agepoints, constraint.agepointsₚ)
+                copyto!(constraint.Tpoints, constraint.Tpointsₚ)
                 copyto!(boundary.Tpoints, boundary.Tpointsₚ)
                 copyto!(calcHeAges, calcHeAgesₚ)
 
@@ -529,8 +529,8 @@
             HeAgedist[:,n] .= calcHeAges # distribution of He ages
 
             # This is the actual output we want -- the distribution of t-T paths (t path is always identical)
-            collectto!(view(tpointdist, :, n), view(agepoints, 1:npoints), boundary.agepoints, unconf.agepoints)
-            collectto!(view(Tpointdist, :, n), view(Tpoints, 1:npoints), boundary.Tpoints, unconf.Tpoints)
+            collectto!(view(tpointdist, :, n), view(agepoints, 1:npoints), boundary.agepoints, constraint.agepoints)
+            collectto!(view(Tpointdist, :, n), view(Tpoints, 1:npoints), boundary.Tpoints, constraint.Tpoints)
 
             # Update progress meter every `progress_interval` steps
             (mod(n, progress_interval) == 0) && update!(progress, n)

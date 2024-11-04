@@ -1,5 +1,7 @@
-# Define Damage model types
+## --- Define DamageModel types
 abstract type DamageModel end
+export DamageModel
+
 Base.@kwdef struct ZRDAAM{T<:AbstractFloat} <: DamageModel 
     DzD0::T = 193188.0          # Diffusivity [cm^2/sec], crystalline endmember
     DzD0_logsigma::T=log(2)     # log units (default = log(2) = a factor of 2)
@@ -47,6 +49,7 @@ Base.@kwdef struct RDAAM{T<:AbstractFloat} <: DamageModel
 end
 export RDAAM
 
+## --- Define Boundary type to specify the working area
 struct Boundary{T<:AbstractFloat}
     agepoints::Vector{T} # Ma
     Tpoints::Vector{T}   # Degrees C
@@ -67,7 +70,8 @@ function Boundary(T::Type=Float64; agepoints, Tpoints, T₀, ΔT)
 end
 export Boundary
 
-struct Unconformity{T<:AbstractFloat}
+## -- Define Constraint type to specify aribitrary t-T constraint boxes
+struct Constraint{T<:AbstractFloat}
     agepoints::Vector{T} # Ma
     Tpoints::Vector{T}   # Degrees C
     agepointsₚ::Vector{T} # Ma
@@ -78,11 +82,11 @@ struct Unconformity{T<:AbstractFloat}
     ΔT::Vector{T}
     npoints::Int
 end
-function Unconformity(T::Type=Float64; agepoints=Float64[], Tpoints=Float64[], Age₀=Float64[], ΔAge=Float64[], T₀=Float64[], ΔT=Float64[])
+function Constraint(T::Type=Float64; agepoints=Float64[], Tpoints=Float64[], Age₀=Float64[], ΔAge=Float64[], T₀=Float64[], ΔT=Float64[])
     agepoints = isempty(agepoints) ? Age₀ + ΔAge/2 : agepoints
     Tpoints = isempty(Tpoints) ? T₀ + ΔT/2 : Tpoints
     @assert length(agepoints) == length(Tpoints) == length(Age₀) == length(ΔAge) == length(T₀) == length(ΔT)
-    Unconformity{T}(T.(agepoints),
+    Constraint{T}(T.(agepoints),
         T.(Tpoints),
         T.(agepoints), 
         T.(Tpoints), 
@@ -93,8 +97,13 @@ function Unconformity(T::Type=Float64; agepoints=Float64[], Tpoints=Float64[], A
         length(agepoints),
     )
 end
+export Constraint
+
+# For backwards compatibility with old scripts
+const Unconformity = Constraint
 export Unconformity
 
+## --- Define DetailInterval type to specify a minumum number of t-T path nodes within a given time interval
 struct DetailInterval{T<:AbstractFloat}
     agemin::T
     agemax::T

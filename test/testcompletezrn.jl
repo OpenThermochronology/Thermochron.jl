@@ -59,8 +59,8 @@ boundary = Boundary(
     ΔT = Float64[model.ΔTnow, model.ΔTinit],
 )
 
-# Default: No unconformity is imposed
-unconf = Unconformity()
+# Default: No constraint is imposed
+constraint = Constraint()
 
 
 ## --- Invert for maximum likelihood t-T path
@@ -75,8 +75,8 @@ agepoints[1:npoints] .= (model.tinit/30,model.tinit/4,model.tinit/2,model.tinit-
 Tpoints[1:npoints] .= Tr  # Degrees C
 
 # Run Markov Chain
-@time "Compiling MCMC" MCMC(data, model, npoints, agepoints, Tpoints, boundary, unconf)
-@time "Running MCMC" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, npoints, agepoints, Tpoints, boundary, unconf)
+@time "Compiling MCMC" MCMC(data, model, npoints, agepoints, Tpoints, boundary, constraint)
+@time "Running MCMC" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, npoints, agepoints, Tpoints, boundary, constraint)
 
 @test isa(Tpointdist, AbstractMatrix)
 @test maximum(Tpointdist) <= model.Tinit
@@ -114,7 +114,7 @@ detail = DetailInterval(
     agemax = 541, # Oldest end of detail interval
     minpoints = 5, # Minimum number of points in detail interval
 )
-@time "MCMC with Detail interval" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, npoints, agepoints, Tpoints, boundary, unconf, detail)
+@time "MCMC with Detail interval" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, npoints, agepoints, Tpoints, boundary, constraint, detail)
 
 @test isa(Tpointdist, AbstractMatrix)
 @test maximum(Tpointdist) <= model.Tinit
@@ -150,7 +150,7 @@ llmean = mean(@view(lldist[model.burnin:end]))
 model = (model...,
     dynamicjumping=true
 )
-@time "MCMC with Detail interval & dynamicjumping" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, npoints, agepoints, Tpoints, boundary, unconf, detail)
+@time "MCMC with Detail interval & dynamicjumping" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, npoints, agepoints, Tpoints, boundary, constraint, detail)
 
 @test isa(Tpointdist, AbstractMatrix)
 @test maximum(Tpointdist) <= model.Tinit

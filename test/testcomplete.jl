@@ -61,7 +61,7 @@ boundary = Boundary(
 )
 
 # Default: No unconformity is imposed
-unconf = Unconformity()
+unconf = Constraint()
 
 
 ## --- Invert for maximum likelihood t-T path

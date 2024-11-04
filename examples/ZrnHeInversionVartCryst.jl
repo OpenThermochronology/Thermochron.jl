@@ -154,18 +154,16 @@
         ΔT = Float64[model.ΔTnow, model.ΔTinit],
     )
 
-    # Default: No unconformity is imposed
-    unconf = Unconformity();
+    # Default: No constraints are imposed
+    constraint = Constraint()
 
     # # Uncomment this section if you wish to impose an unconformity at any point in the record
     # # Uniform distributions from Age₀ to Age₀+ΔAge, T₀ to T₀+ΔT,
-    # unconf = Unconformity(
-    #     agepoints = Float64[550.0,],  # Ma
-    #     Tpoints = Float64[20.0,],     # Degrees C
-    #     Age₀ = Float64[500,],
-    #     ΔAge = Float64[80,],
-    #     T₀ = Float64[0,],
-    #     ΔT = Float64[40,],
+    # constraint = Constraint(
+    #     Age₀ = Float64[500,],         # [Ma] Minimum age
+    #     ΔAge = Float64[80,],          # [Ma] Duration of age range
+    #     T₀ = Float64[0,],             # [C] Minimum temperature
+    #     ΔT = Float64[40,],            # [C] Width of temperature range
     # )
     # name *= "_unconf"
 
@@ -182,8 +180,8 @@
     Tpoints[1:npoints] .= Tr  # Degrees C
 
     # Run Markov Chain
-    @time (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, npoints, agepoints, Tpoints, boundary, unconf, detail)
-    # @time (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_varkinetics(data, model, npoints, agepoints, Tpoints, boundary, unconf, detail)
+    @time (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, npoints, agepoints, Tpoints, boundary, constraint, detail)
+    # @time (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_varkinetics(data, model, npoints, agepoints, Tpoints, boundary, constraint, detail)
     @info """tpointdist & Tpointdist collected, size: $(size(Tpointdist))
     Mean log-likelihood: $(nanmean(view(lldist, model.burnin:model.nsteps)))
     Mean acceptance rate: $(nanmean(view(acceptancedist, model.burnin:model.nsteps)))
