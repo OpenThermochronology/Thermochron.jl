@@ -100,7 +100,7 @@ struct Zircon{T<:Number} <: Mineral{T}
     Dz::Vector{T}
     DN17::Vector{T}
     A::Tridiagonal{T, Vector{T}}
-    ipiv::Vector{LinearAlgebra.BlasInt}
+    F::LU{Float64, Tridiagonal{Float64, Vector{Float64}}, Vector{Int64}}
     y::Vector{T}
 end
 # Constructor for the Zircon type, given grain radius, U and Th concentrations and t-T discretization information
@@ -240,10 +240,10 @@ function Zircon(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Number,
     d = ones(T, nrsteps)       # Diagonal
     du = ones(T, nrsteps-1)    # Supra-diagonal row
     du2 = ones(T, nrsteps-2)   # sup-sup-diagonal row for pivoting
-    ipiv = Vector{LinearAlgebra.BlasInt}(undef, nrsteps) # For pivoting
 
     # Tridiagonal matrix for LHS of Crank-Nicholson equation with regular grid cells
     A = Tridiagonal(dl, d, du, du2)
+    F = lu(A, allowsingular=true)
 
     # Vector for RHS of Crank-Nicholson equation with regular grid cells
     y = Array{T}(undef, nrsteps)
@@ -274,7 +274,7 @@ function Zircon(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Number,
         Dz,
         DN17,
         A,
-        ipiv,
+        F,
         y,
     )
 end
@@ -314,7 +314,7 @@ struct Apatite{T<:Number} <: Mineral{T}
     DL::Vector{T}
     Dtrap::Vector{T}
     A::Tridiagonal{T, Vector{T}}
-    ipiv::Vector{LinearAlgebra.BlasInt}
+    F::LU{Float64, Tridiagonal{Float64, Vector{Float64}}, Vector{Int64}}
     y::Vector{T}
 end
 # Constructor for the Apatite type, given grain radius, U and Th concentrations and t-T discretization information
@@ -454,10 +454,10 @@ function Apatite(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Number
     d = ones(T, nrsteps)       # Diagonal
     du = ones(T, nrsteps-1)    # Supra-diagonal row
     du2 = ones(T, nrsteps-2)   # sup-sup-diagonal row for pivoting
-    ipiv = Vector{LinearAlgebra.BlasInt}(undef, nrsteps) # For pivoting
 
     # Tridiagonal matrix for LHS of Crank-Nicholson equation with regular grid cells
     A = Tridiagonal(dl, d, du, du2)
+    F = lu(A, allowsingular=true)
 
     # Vector for RHS of Crank-Nicholson equation with regular grid cells
     y = Array{T}(undef, nrsteps)
@@ -488,7 +488,7 @@ function Apatite(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Number
         DL,
         Dtrap,
         A,
-        ipiv,
+        F,
         y,
     )
 end

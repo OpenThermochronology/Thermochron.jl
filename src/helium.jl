@@ -280,10 +280,10 @@ function HeAgeSpherical(zircon::Zircon{T}, Tsteps::StridedVector{T}, ρᵣ::Stri
 
     # Tridiagonal matrix for LHS of Crank-Nicholson equation with regular grid cells
     A = zircon.A
-    @turbo @. A.dl = 1         # Sub-diagonal row
-    @turbo @. A.d = -2 - β     # Diagonal
-    @turbo @. A.du = 1         # Supra-diagonal row
-    ipiv = zircon.ipiv         # For pivoting
+    @turbo @. A.dl = 1          # Sub-diagonal row
+    @turbo @. A.d = -2 - β      # Diagonal
+    @turbo @. A.du = 1          # Supra-diagonal row
+    F = zircon.F                # For LU factorization
 
     # Neumann inner boundary condition (u[i,1] + u[i,2] = 0)
     A.d[1] = 1
@@ -329,7 +329,7 @@ function HeAgeSpherical(zircon::Zircon{T}, Tsteps::StridedVector{T}, ρᵣ::Stri
 
         # Invert using tridiagonal matrix algorithm
         # equivalent to u[:,i] = A\y
-        F = lu!(A, ipiv)
+        lu!(F, A)
         ldiv!(F, y)
         @turbo @. u[:,i] = y
     end
@@ -418,10 +418,10 @@ function HeAgeSpherical(apatite::Apatite{T}, Tsteps::StridedVector{T}, ρᵣ::Ab
 
     # Tridiagonal matrix for LHS of Crank-Nicholson equation with regular grid cells
     A = apatite.A
-    @turbo @. A.dl = 1         # Sub-diagonal row
-    @turbo @. A.d = -2 - β     # Diagonal
-    @turbo @. A.du = 1         # Supra-diagonal row
-    ipiv = apatite.ipiv         # For pivoting
+    @turbo @. A.dl = 1          # Sub-diagonal row
+    @turbo @. A.d = -2 - β      # Diagonal
+    @turbo @. A.du = 1          # Supra-diagonal row
+    F = apatite.F               # For LU factorization
 
     # Neumann inner boundary condition (u[i,1] + u[i,2] = 0)
     A.d[1] = 1
@@ -467,7 +467,7 @@ function HeAgeSpherical(apatite::Apatite{T}, Tsteps::StridedVector{T}, ρᵣ::Ab
 
         # Invert using tridiagonal matrix algorithm
         # equivalent to u[:,i] = A\y
-        F = lu!(A, ipiv)
+        lu!(F, A)
         ldiv!(F, y)
         @turbo @. u[:,i] = y
     end
