@@ -29,14 +29,19 @@ struct Unconformity{T<:AbstractFloat}
     npoints::Int
 end
 function Unconformity(T::Type=Float64; agepoints=Float64[], Tpoints=Float64[], Age₀=Float64[], ΔAge=Float64[], T₀=Float64[], ΔT=Float64[])
-    agepoints = T.(agepoints)
-    Tpoints = T.(Tpoints)
-    Age₀ = T.(Age₀)
-    ΔAge = T.(ΔAge)
-    T₀ = T.(T₀)
-    ΔT = T.(ΔT)
+    agepoints = T.(isempty(agepoints) ? Age₀ + ΔAge/2 : agepoints)
+    Tpoints = T.(isempty(Tpoints) ? T₀ + ΔT/2 : Tpoints)
     @assert length(agepoints) == length(Tpoints) == length(Age₀) == length(ΔAge) == length(T₀) == length(ΔT)
-    Unconformity(agepoints, Tpoints, copy(agepoints), copy(Tpoints), Age₀, ΔAge, T₀, ΔT, length(agepoints))
+    Unconformity{T}(agepoints,
+        Tpoints,
+        copy(agepoints), 
+        copy(Tpoints), 
+        T.(Age₀), 
+        T.(ΔAge), 
+        T.(T₀), 
+        T.(ΔT), 
+        length(agepoints),
+    )
 end
 export Unconformity
 
