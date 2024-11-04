@@ -22,6 +22,7 @@ model = (
     minpoints = 1,  # Minimum allowed number of t-T points
     maxpoints = 40, # Maximum allowed number of t-T points
     simplified = false, # Prefer simpler tT paths?
+    boundarytype = :reflecting, # Reflecting boundary conditions
     # Model uncertainty is not well known (depends on annealing parameters,
     # decay constants, diffusion parameters, etc.), but is certainly non-zero.
     # Here we add (in quadrature) a blanket model uncertainty of 25 Ma.

@@ -105,3 +105,83 @@
         end
         return n
     end
+
+
+    """
+    ```julia
+    simannealsigma(n, σAnalytical; [simannealmodel::NamedTuple])
+    simannealsigma(n::Integer, σAnalytical::Number, σmodel::Number, σannealing::Number, λannealing::Number)
+    ```
+    To avoid getting stuck in local optima, decrease uncertainty slowly by
+    simulated annealing. Parameters are specified as a tuple `simannealmodel` of the
+    form (σₘ, σᵢ, λ), where annealing uncertainty declines from `σᵢ+σₘ` to `σₘ`
+    with a decay constant of λ.
+
+    Returns the annealing uncertainty added in quadrature with analytical
+    uncertainty, or in other words
+
+        sigma = sqrt(σAnalytical^2 + (σᵢ*exp(-λ*n) + σₘ)^2)
+
+    """
+    function simannealsigma(n::Integer, σAnalytical::Number; simannealmodel::NamedTuple=(σmodel=25.0, σannealing=35.0, λannealing=10/10^5))
+        simannealsigma(n, σAnalytical, simannealmodel.σmodel, simannealmodel.σannealing, simannealmodel.λannealing)
+    end
+    function simannealsigma(n::Integer, σAnalytical::Number, σmodel::Number, σannealing::Number, λannealing::Number)
+        σCombined = σannealing * exp(-λannealing*n) + σmodel
+        return sqrt(σAnalytical^2 + σCombined^2)
+    end
+    export simannealsigma
+
+
+    # Move a t-T point and apply boundary conditions
+    function movepoint!(agepointsₚ, Tpointsₚ, k, tmin, tmax, Tmin, Tmax, σⱼt, σⱼT, boundarytype::Symbol=:hard)
+        # Ensure bounds are in proper order
+        tmin < tmax || ((tmin, tmax) = (tmax, tmin))
+        Tmin < Tmax || ((Tmin, Tmax) = (Tmax, Tmin))
+
+        # Move the age of one model point
+        agepointsₚ[k] += randn() * σⱼt
+
+        # Move the Temperature of one model point
+        Tpointsₚ[k] += randn() * σⱼT
+
+        # Reflecting boundary conditions
+        if boundarytype === :reflecting
+            if agepointsₚ[k] < tmin
+                agepointsₚ[k] = tmin - (agepointsₚ[k] - tmin)
+            elseif agepointsₚ[k] > tmax
+                agepointsₚ[k] = tmax - (agepointsₚ[k] - tmax)
+            end
+
+            if Tpointsₚ[k] < Tmin
+                Tpointsₚ[k] = Tmin - (Tpointsₚ[k] - Tmin)
+            elseif Tpointsₚ[k] > Tmax
+                Tpointsₚ[k] = Tmax - (Tpointsₚ[k] - Tmax)
+            end
+        end
+
+        # Hard boundary conditions
+        agepointsₚ[k] = min(max(agepointsₚ[k], tmin), tmax)
+        Tpointsₚ[k] = min(max(Tpointsₚ[k], Tmin),Tmax)
+
+        return  agepointsₚ, Tpointsₚ
+    end
+
+    function movekinetics(zdm::ZRDAAM)
+        rn = rand(1:4)
+        zdmₚ = ZRDAAM(
+            DzEa = (rn==1) ? exp(log(zdm.DzEa)+randn()*zdm.DzEa_logsigma) : zdm.DzEa,
+            DzD0 = (rn==2) ? exp(log(zdm.DzD0)+randn()*zdm.DzD0_logsigma) : zdm.DzD0,
+            DN17Ea = (rn==3) ? exp(log(zdm.DN17Ea)+randn()*zdm.DN17Ea_logsigma) : zdm.DN17Ea,
+            DN17D0 = (rn==4) ? exp(log(zdm.DN17D0)+randn()*zdm.DN17D0_logsigma) : zdm.DN17D0,
+        )
+    end
+    function movekinetics(adm::RDAAM)
+        rn = rand(1:3)
+        RDAAM(
+            D0L = (rn==1) ? exp(log(adm.D0L)+randn()*adm.D0L_logsigma) : adm.D0L,
+            EaL = (rn==2) ? exp(log(adm.EaL)+randn()*adm.EaL_logsigma) : adm.EaL,
+            EaTrap = (rn==3) ? exp(log(adm.EaTrap)+randn()*adm.EaTrap_logsigma) : adm.EaTrap,
+        )
+    end
+    
