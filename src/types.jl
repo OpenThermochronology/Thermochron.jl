@@ -56,12 +56,14 @@ struct Boundary{T<:AbstractFloat}
     npoints::Int
 end
 function Boundary(T::Type=Float64; agepoints, Tpoints, T₀, ΔT)
-    agepoints = T.(agepoints)
-    Tpoints =  T.(Tpoints)
-    T₀ = T.(T₀)
-    ΔT = T.(ΔT)
     @assert length(agepoints) == length(Tpoints) == length(T₀) == length(ΔT)
-    Boundary(agepoints, Tpoints, copy(Tpoints), T₀, ΔT, length(agepoints))
+    Boundary{T}(T.(agepoints), 
+        T.(Tpoints), 
+        T.(Tpoints), 
+        T.(T₀), 
+        T.(ΔT), 
+        length(agepoints)
+    )
 end
 export Boundary
 
@@ -77,13 +79,13 @@ struct Unconformity{T<:AbstractFloat}
     npoints::Int
 end
 function Unconformity(T::Type=Float64; agepoints=Float64[], Tpoints=Float64[], Age₀=Float64[], ΔAge=Float64[], T₀=Float64[], ΔT=Float64[])
-    agepoints = T.(isempty(agepoints) ? Age₀ + ΔAge/2 : agepoints)
-    Tpoints = T.(isempty(Tpoints) ? T₀ + ΔT/2 : Tpoints)
+    agepoints = isempty(agepoints) ? Age₀ + ΔAge/2 : agepoints
+    Tpoints = isempty(Tpoints) ? T₀ + ΔT/2 : Tpoints
     @assert length(agepoints) == length(Tpoints) == length(Age₀) == length(ΔAge) == length(T₀) == length(ΔT)
-    Unconformity{T}(agepoints,
-        Tpoints,
-        copy(agepoints), 
-        copy(Tpoints), 
+    Unconformity{T}(T.(agepoints),
+        T.(Tpoints),
+        T.(agepoints), 
+        T.(Tpoints), 
         T.(Age₀), 
         T.(ΔAge), 
         T.(T₀), 
@@ -98,7 +100,7 @@ struct DetailInterval{T<:AbstractFloat}
     agemax::T
     minpoints::Int
 end
-function DetailInterval(T::Type=Float64; agemin, agemax, minpoints)
-    DetailInterval(T(agemin), T(agemax), Int(minpoints))
+function DetailInterval(T::Type=Float64; agemin=0, agemax=0, minpoints=0)
+    DetailInterval{T}(agemin, agemax, Int(minpoints))
 end
 export DetailInterval

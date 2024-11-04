@@ -12,7 +12,7 @@
     tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist = MCMC(data, model, npoints, agepoints, Tpoints, unconf, boundary)
     ```
     """
-    function MCMC(data::NamedTuple, model::NamedTuple, npoints::Int, agepoints::DenseVector{T}, Tpoints::DenseVector{T}, boundary::Boundary{T}, unconf::Unconformity{T}, detail::DetailInterval{T}=DetailInterval{T}(0,0,0)) where T <: AbstractFloat
+    function MCMC(data::NamedTuple, model::NamedTuple, npoints::Int, agepoints::DenseVector{T}, Tpoints::DenseVector{T}, boundary::Boundary{T}, unconf::Unconformity{T}=Unconformity(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
         # Sanitize inputs
         @assert firstindex(agepoints) === 1
         @assert firstindex(Tpoints) === 1
@@ -269,7 +269,7 @@
     end
     export MCMC
 
-    function MCMC_varkinetics(data::NamedTuple, model::NamedTuple, npoints::Int, agepoints::DenseVector{T}, Tpoints::DenseVector{T}, boundary::Boundary{T}, unconf::Unconformity{T}, detail::DetailInterval{T}=DetailInterval{T}(0,0,0)) where T <: AbstractFloat
+    function MCMC_varkinetics(data::NamedTuple, model::NamedTuple, npoints::Int, agepoints::DenseVector{T}, Tpoints::DenseVector{T}, boundary::Boundary{T}, unconf::Unconformity{T}=Unconformity(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
         # Sanitize inputs
         @assert firstindex(agepoints) === 1
         @assert firstindex(Tpoints) === 1
