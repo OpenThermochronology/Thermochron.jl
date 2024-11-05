@@ -55,7 +55,7 @@
     age = copy(data.HeAge)
     age_sigma = copy(ds.HeAge_Ma_sigma_raw)
     age_sigma_empirical = copy(data.HeAge_sigma)
-    min_rel_uncert = 10/100 # 10% minmum relative age uncertainty
+    min_rel_uncert = 5/100 # 5% minmum relative age uncertainty
 
     if any(ta)
         # Standard deviation of a Gaussian kernel in eU space, representing the 
@@ -66,6 +66,7 @@
         for i ∈ findall(ta)
             W = normpdf.(eU[i], σeU, eU[ta])
             σ_external = nanstd(age[ta], W) # Weighted standard deviation
+            σ_external /= sqrt(2) # Assume half of variance is unknown external uncertainty
             σ_internal = age_sigma[i]
             age_sigma_empirical[i] = sqrt(σ_external^2 + σ_internal^2)
             age_sigma_empirical[i] = max(age_sigma_empirical[i], min_rel_uncert*age[i])
@@ -169,19 +170,9 @@
 
 ## --- Invert for maximum likelihood t-T path
 
-    # This is where the "transdimensional" part comes in
-    agepoints = zeros(Float64, model.maxpoints) # Array of fixed size to hold all optional age points
-    Tpoints = zeros(Float64, model.maxpoints) # Array of fixed size to hold all optional age points
-
-    # Fill some intermediate points to give the MCMC something to work with
-    Tr = 150 # Residence temperature
-    npoints = model.minpoints
-    agepoints[1:npoints] .= range(0, model.tinit, npoints)
-    Tpoints[1:npoints] .= Tr  # Degrees C
-
     # Run Markov Chain
-    @time (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, npoints, agepoints, Tpoints, boundary, constraint, detail)
-    # @time (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_varkinetics(data, model, npoints, agepoints, Tpoints, boundary, constraint, detail)
+    @time (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, boundary, constraint, detail)
+    # @time (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_varkinetics(data, model, boundary, constraint, detail)
     @info """tpointdist & Tpointdist collected, size: $(size(Tpointdist))
     Mean log-likelihood: $(nanmean(view(lldist, model.burnin:model.nsteps)))
     Mean acceptance rate: $(nanmean(view(acceptancedist, model.burnin:model.nsteps)))

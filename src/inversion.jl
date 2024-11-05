@@ -12,10 +12,8 @@
     tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist = MCMC(data, model, npoints, agepoints, Tpoints, constraint, boundary)
     ```
     """
-    function MCMC(data::NamedTuple, model::NamedTuple, npoints::Int, agepoints::DenseVector{T}, Tpoints::DenseVector{T}, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
-        # Sanitize inputs
-        @assert firstindex(agepoints) === 1
-        @assert firstindex(Tpoints) === 1
+    function MCMC(data::NamedTuple, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
+        # Process inputs
         halfwidth = T.(data.halfwidth)::DenseVector{T}
         crystAge = T.(data.crystAge)::DenseVector{T}
         HeAge = T.(data.HeAge)::DenseVector{T}
@@ -24,25 +22,35 @@
         Th = T.(data.Th)::DenseVector{T}
         Sm = (haskey(data, :Sm) ? T.(data.Th) : zeros(T, size(U)))::DenseVector{T}
         nsteps = (haskey(model, :nsteps) ? model.nsteps : 10^6)::Int
-        maxpoints = (haskey(model, :maxpoints) ? model.maxpoints : 50)::Int
         minpoints = (haskey(model, :minpoints) ? model.minpoints : 1)::Int
+        maxpoints = (haskey(model, :maxpoints) ? model.maxpoints : 50)::Int
+        npoints = (haskey(model, :npoints) ? model.npoints : minpoints)::Int
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
         simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
         boundarytype = (haskey(model, :boundarytype) ? model.boundarytype : :hard)::Symbol
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
-        dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10.)::T
-        dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : 5.)::T
+        dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10)::T
+        dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : 5)::T
         agesteps = T.(model.agesteps)::DenseVector{T}
         tsteps = T.(model.tsteps)::DenseVector{T}
         tinit = T(model.tinit)::T
         tnow = zero(T) # It's always time zero today
         Tinit = T(model.Tinit)::T
         Tnow = T(model.Tnow)::T
+        Tr = T(haskey(model, :Tr) ? model.Tr : (Tinit+Tnow)/2)::T
         dt = T(model.dt)::T
         dr = T(model.dr)::T
         σmodel = T(model.σmodel)::T
         σannealing = T(model.σannealing)::T
         λannealing = T(model.λannealing)::T
+
+        # Arrays to hold all t and T points (up to npoints=maxpoints)
+        agepoints = zeros(T, maxpoints) 
+        Tpoints = zeros(T, maxpoints)
+    
+        # Fill some intermediate points to give the MCMC something to work with
+        agepoints[1:npoints] .= range(tnow, tinit, length=npoints)
+        Tpoints[1:npoints] .= Tr # Degrees C
 
         # Calculate number of boundary and unconformity points and allocate buffer for interpolating
         agepointbuffer = similar(agepoints, totalpoints)::DenseVector{T}
@@ -269,10 +277,8 @@
     end
     export MCMC
 
-    function MCMC_varkinetics(data::NamedTuple, model::NamedTuple, npoints::Int, agepoints::DenseVector{T}, Tpoints::DenseVector{T}, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
-        # Sanitize inputs
-        @assert firstindex(agepoints) === 1
-        @assert firstindex(Tpoints) === 1
+    function MCMC_varkinetics(data::NamedTuple, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
+        # Process inputs
         halfwidth = T.(data.halfwidth)::DenseVector{T}
         crystAge = T.(data.crystAge)::DenseVector{T}
         HeAge = T.(data.HeAge)::DenseVector{T}
@@ -281,25 +287,35 @@
         Th = T.(data.Th)::DenseVector{T}
         Sm = (haskey(data, :Sm) ? T.(data.Th) : zeros(T, size(U)))::DenseVector{T}
         nsteps = (haskey(model, :nsteps) ? model.nsteps : 10^6)::Int
-        maxpoints = (haskey(model, :maxpoints) ? model.maxpoints : 50)::Int
         minpoints = (haskey(model, :minpoints) ? model.minpoints : 1)::Int
+        maxpoints = (haskey(model, :maxpoints) ? model.maxpoints : 50)::Int
+        npoints = (haskey(model, :npoints) ? model.npoints : minpoints)::Int
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
         simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
         boundarytype = (haskey(model, :boundarytype) ? model.boundarytype : :hard)::Symbol
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
-        dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10.)::T
-        dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : 5.)::T
+        dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10)::T
+        dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : 5)::T
         agesteps = T.(model.agesteps)::DenseVector{T}
         tsteps = T.(model.tsteps)::DenseVector{T}
         tinit = T(model.tinit)::T
         tnow = zero(T) # It's always time zero today
         Tinit = T(model.Tinit)::T
         Tnow = T(model.Tnow)::T
+        Tr = T(haskey(model, :Tr) ? model.Tr : (Tinit+Tnow)/2)::T
         dt = T(model.dt)::T
         dr = T(model.dr)::T
         σmodel = T(model.σmodel)::T
         σannealing = T(model.σannealing)::T
         λannealing = T(model.λannealing)::T
+
+        # Arrays to hold all t and T points (up to npoints=maxpoints)
+        agepoints = zeros(T, maxpoints) 
+        Tpoints = zeros(T, maxpoints)
+    
+        # Fill some intermediate points to give the MCMC something to work with
+        agepoints[1:npoints] .= range(tnow, tinit, length=npoints)
+        Tpoints[1:npoints] .= Tr # Degrees C
 
         # Calculate number of boundary and unconformity points and allocate buffer for interpolating
         agepointbuffer = similar(agepoints, totalpoints)::DenseVector{T}

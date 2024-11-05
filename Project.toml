@@ -1,7 +1,7 @@
 name = "Thermochron"
 uuid = "b9a8379e-ee1a-4388-b7ca-7852af1cef08"
 authors = ["C. Brenhin Keller and collaborators"]
-version = "0.9.4"
+version = "0.10.0"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
