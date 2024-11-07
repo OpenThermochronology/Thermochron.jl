@@ -155,7 +155,7 @@
     end
 
     # Move a t-T point and apply boundary conditions
-    function movepoint!(agepointsₚ, Tpointsₚ, k, tmin, tmax, Tmin, Tmax, σⱼt, σⱼT, tboundary::Symbol, Tboundary::Symbol)
+    function movepoint!(agepointsₚ::Vector{T}, Tpointsₚ::Vector{T}, k::Int, σⱼt::T, σⱼT::T, boundary::Boundary{T}) where {T}
 
         # Move the age of one model point
         agepointsₚ[k] += randn() * σⱼt
@@ -163,27 +163,45 @@
         # Move the Temperature of one model point
         Tpointsₚ[k] += randn() * σⱼT
 
-        if tboundary === :reflecting
+        # Apply time boundary conditions
+        tmin, tmax = extrema(boundary.agepoints)
+        if boundary.tboundary === :reflecting
             agepointsₚ[k] = reflecting(agepointsₚ[k], tmin, tmax)
-        elseif tboundary === :hard
+        elseif boundary.tboundary === :hard
             agepointsₚ[k] = hard(agepointsₚ[k], tmin, tmax)
-        elseif tboundary === :periodic
+        elseif boundary.tboundary === :periodic
             agepointsₚ[k] = periodic(agepointsₚ[k], tmin, tmax)
         else
             @error "`tboundary` must be either `:reflecting`, `:hard`, or `:periodic`"
         end
 
-        if Tboundary === :reflecting
+        # Apply Temperature boundary conditions
+        Tmin, Tmax = extrema(boundary.T₀)
+        if boundary.Tboundary === :reflecting
             Tpointsₚ[k] = reflecting(Tpointsₚ[k], Tmin, Tmax)
-        elseif Tboundary === :hard
+        elseif boundary.Tboundary === :hard
             Tpointsₚ[k] = hard(Tpointsₚ[k], Tmin, Tmax)
-        elseif Tboundary === :periodic
+        elseif boundary.Tboundary === :periodic
             Tpointsₚ[k] = periodic(Tpointsₚ[k], Tmin, Tmax)
         else
             @error "`Tboundary` must be either `:reflecting`, `:hard`, or `:periodic`"
         end
 
         return agepointsₚ[k], Tpointsₚ[k]
+    end
+
+    function movebounds!(boundary::Boundary)
+        @inbounds for i in eachindex(boundary.Tpointsₚ)
+            boundary.Tpointsₚ[i] = boundary.T₀[i] + rand()*boundary.ΔT[i]
+        end
+        boundary
+    end
+    function movebounds!(constraint::Constraint)
+        @inbounds for i in eachindex(constraint.Tpointsₚ)
+            constraint.agepointsₚ[i] = constraint.Age₀[i] + rand()*constraint.ΔAge[i]
+            constraint.Tpointsₚ[i] = constraint.T₀[i] + rand()*constraint.ΔT[i]
+        end
+        constraint
     end
 
     function movekinetics(zdm::ZRDAAM)

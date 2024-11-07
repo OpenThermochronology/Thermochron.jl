@@ -27,17 +27,13 @@
         npoints = (haskey(model, :npoints) ? model.npoints : minpoints)::Int
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
         simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
-        tboundary = (haskey(model, :tboundary) ? model.tboundary : :reflecting)::Symbol
-        Tboundary = (haskey(model, :Tboundary) ? model.Tboundary : :hard)::Symbol
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
         dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10)::T
         dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : 5)::T
         agesteps = T.(model.agesteps)::DenseVector{T}
         tsteps = T.(model.tsteps)::DenseVector{T}
-        tinit = T(model.tinit)::T
-        tnow = zero(T) # It's always time zero today
-        Tinit = T(model.Tinit)::T
-        Tnow = T(model.Tnow)::T
+        tnow, tinit = extrema(boundary.agepoints)
+        Tnow, Tinit = extrema(boundary.T₀)
         Tr = T(haskey(model, :Tr) ? model.Tr : (Tinit+Tnow)/2)::T
         dt = T(model.dt)::T
         dr = T(model.dr)::T
@@ -169,7 +165,7 @@
             # Adjust the proposal
             if r < p_move
                 # Move one t-T point
-                movepoint!(agepointsₚ, Tpointsₚ, k, tnow+dt, tinit-dt, Tnow, Tinit, σⱼt[k], σⱼT[k], tboundary, Tboundary)
+                movepoint!(agepointsₚ, Tpointsₚ, k, σⱼt[k], σⱼT[k], boundary)
 
             elseif (r < p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point
@@ -187,13 +183,10 @@
 
             elseif (r < p_move+p_birth+p_death+p_bounds)
                 # Move the temperatures of the starting and ending boundaries
-                @. boundary.Tpointsₚ = boundary.T₀ + rand()*boundary.ΔT
+                movebounds!(boundary)
+                # If there's an imposed unconformity or other t-T constraint, adjust within parameters
+                movebounds!(constraint)
 
-                # If there's an imposed unconformity, adjust within parameters
-                if constraint.npoints > 0
-                    @. constraint.agepointsₚ = constraint.Age₀ + rand()*constraint.ΔAge
-                    @. constraint.Tpointsₚ = constraint.T₀ + rand()*constraint.ΔT
-                end
             end
 
             # Recalculate interpolated proposed t-T path
@@ -296,17 +289,13 @@
         npoints = (haskey(model, :npoints) ? model.npoints : minpoints)::Int
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
         simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
-        tboundary = (haskey(model, :tboundary) ? model.tboundary : :reflecting)::Symbol
-        Tboundary = (haskey(model, :Tboundary) ? model.Tboundary : :hard)::Symbol
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
         dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10)::T
         dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : 5)::T
         agesteps = T.(model.agesteps)::DenseVector{T}
         tsteps = T.(model.tsteps)::DenseVector{T}
-        tinit = T(model.tinit)::T
-        tnow = zero(T) # It's always time zero today
-        Tinit = T(model.Tinit)::T
-        Tnow = T(model.Tnow)::T
+        tnow, tinit = extrema(boundary.agepoints)
+        Tnow, Tinit = extrema(boundary.T₀)
         Tr = T(haskey(model, :Tr) ? model.Tr : (Tinit+Tnow)/2)::T
         dt = T(model.dt)::T
         dr = T(model.dr)::T
@@ -441,7 +430,7 @@
             # Adjust the proposal
             if r < p_move
                 # Move one t-T point
-                movepoint!(agepointsₚ, Tpointsₚ, k, tnow+dt, tinit-dt, Tnow, Tinit, σⱼt[k], σⱼT[k], tboundary, Tboundary)
+                movepoint!(agepointsₚ, Tpointsₚ, k, σⱼt[k], σⱼT[k], boundary)
 
             elseif (r < p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point
@@ -459,13 +448,9 @@
 
             elseif (r < p_move+p_birth+p_death+p_bounds)
                 # Move the temperatures of the starting and ending boundaries
-                @. boundary.Tpointsₚ = boundary.T₀ + rand()*boundary.ΔT
-
-                # If there's an imposed unconformity, adjust within parameters
-                if constraint.npoints > 0
-                    @. constraint.agepointsₚ = constraint.Age₀ + rand()*constraint.ΔAge
-                    @. constraint.Tpointsₚ = constraint.T₀ + rand()*constraint.ΔT
-                end
+                movebounds!(boundary)
+                # If there's an imposed unconformity or other t-T constraint, adjust within parameters
+                movebounds!(constraint)
 
             elseif (r < p_move+p_birth+p_death+p_bounds+p_kinetics)
                 # Adjust kinetic parameters, one at a time

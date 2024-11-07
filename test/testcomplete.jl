@@ -18,14 +18,13 @@ model = (
     ΔTinit = -50.0, # Tinit can vary from Tinit to Tinit+ΔTinit
     Tnow = 0.0, # Current surface temperature (in C)
     ΔTnow = 10.0, # Tnow may vary from Tnow to Tnow+ΔTnow
+    tnow = 0.0 ,  # Today
     tinitMax = 4000.0, # Ma -- forbid anything older than this
     minpoints = 1,  # Minimum allowed number of t-T points
     maxpoints = 40, # Maximum allowed number of t-T points
     npoints = 5, # Initial number of t-T points
     Tr = 250., # Residence temperature of initial proposal
     simplified = false, # Prefer simpler tT paths?
-    tboundary = :reflecting, # Reflecting time boundary conditions
-    Tboundary = :reflecting, # Reflecting temperature boundary conditions
     # Model uncertainty is not well known (depends on annealing parameters,
     # decay constants, diffusion parameters, etc.), but is certainly non-zero.
     # Here we add (in quadrature) a blanket model uncertainty of 25 Ma.
@@ -57,10 +56,11 @@ model = (model...,
 
 # Boundary conditions (e.g. 10C at present and 650 C at the time of zircon formation).
 boundary = Boundary(
-    agepoints = Float64[model.Tnow, model.tinit],  # Ma
-    Tpoints = Float64[model.Tnow, model.Tinit],    # Degrees C
-    T₀ = Float64[model.Tnow, model.Tinit],
-    ΔT = Float64[model.ΔTnow, model.ΔTinit],
+    agepoints = [model.tnow, model.tinit],   # [Ma] Final and initial time
+    T₀ = [model.Tnow, model.Tinit],          # [C] Final and initial temperature
+    ΔT = [model.ΔTnow, model.ΔTinit],        # [C] Final and initial temperature range (positive or negative)
+    tboundary = :reflecting, # Reflecting time boundary conditions
+    Tboundary = :reflecting, # Reflecting temperature boundary conditions
 )
 
 # Default: No unconformity is imposed

@@ -50,23 +50,27 @@ end
 export RDAAM
 
 ## --- Define Boundary type to specify the working area
-struct Boundary{T<:AbstractFloat, npoints}
-    agepoints::NTuple{npoints,T} # Ma
-    Tpoints::Vector{T}   # Degrees C
-    Tpointsₚ::Vector{T}   # Degrees C
-    T₀::NTuple{npoints,T}
-    ΔT::NTuple{npoints,T}
+struct Boundary{T<:AbstractFloat}
+    agepoints::NTuple{2,T}  # Ma
+    Tpoints::Vector{T}      # Degrees C
+    Tpointsₚ::Vector{T}     # Degrees C
+    T₀::NTuple{2,T}         # Degrees C
+    ΔT::NTuple{2,T}         # Degrees C
+    tboundary::Symbol
+    Tboundary::Symbol
     npoints::Int
 end
-function Boundary(T::Type=Float64; agepoints, T₀, ΔT, Tpoints=collect(T₀))
-    @assert length(agepoints) == length(T₀) == length(ΔT) == length(Tpoints)
-    npoints = length(agepoints)
-    Boundary{T,npoints}(Tuple(T.(agepoints)), 
-        collect(T.(Tpoints)), 
-        collect(T.(Tpoints)), 
+function Boundary(T::Type=Float64; agepoints, T₀, ΔT, Tpoints=collect(T₀), tboundary=:reflecting, Tboundary=:hard)
+    @assert length(agepoints) == length(T₀) == length(ΔT) == length(Tpoints) == 2
+    Boundary{T}(
+        Tuple(T.(agepoints)), 
+        collect(T, Tpoints), 
+        collect(T, Tpoints), 
         Tuple(T.(T₀)), 
         Tuple(T.(ΔT)), 
-        npoints,
+        Symbol(tboundary),
+        Symbol(Tboundary),
+        2,
     )
 end
 export Boundary
@@ -83,9 +87,7 @@ struct Constraint{T<:AbstractFloat}
     ΔT::Vector{T}
     npoints::Int
 end
-function Constraint(T::Type=Float64; agepoints=T[], Tpoints=T[], Age₀=T[], ΔAge=T[], T₀=T[], ΔT=T[])
-    agepoints = isempty(agepoints) ? Age₀ + ΔAge/2 : agepoints
-    Tpoints = isempty(Tpoints) ? T₀ + ΔT/2 : Tpoints
+function Constraint(T::Type=Float64; Age₀=T[], ΔAge=T[], T₀=T[], ΔT=T[], agepoints=(Age₀ + ΔAge/2), Tpoints=(T₀ + ΔT/2))
     @assert length(agepoints) == length(Tpoints) == length(Age₀) == length(ΔAge) == length(T₀) == length(ΔT)
     Constraint{T}(T.(agepoints),
         T.(Tpoints),

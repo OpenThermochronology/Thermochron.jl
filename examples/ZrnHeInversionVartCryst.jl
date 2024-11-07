@@ -115,6 +115,7 @@
         ΔTinit = -50.0,             # Tinit can vary from Tinit to Tinit+ΔTinit
         Tnow = 0.0,                 # Current surface temperature (in C)
         ΔTnow = 20.0,               # Tnow may vary from Tnow to Tnow+ΔTnow
+        tnow = 0.0,                 # Today
         tinitMax = 3500.0,          # Ma -- forbid anything older than this
         minpoints = 20,             # Minimum allowed number of t-T points
         maxpoints = 50,             # Maximum allowed number of t-T points
@@ -154,10 +155,11 @@
 
     # Boundary conditions (e.g. 10C at present and 650 C at the time of zircon formation).
     boundary = Boundary(
-        agepoints = Float64[model.tnow, model.tinit],  # Ma
-        Tpoints = Float64[model.Tnow, model.Tinit],    # Degrees C
-        T₀ = Float64[model.Tnow, model.Tinit],
-        ΔT = Float64[model.ΔTnow, model.ΔTinit],
+        agepoints = [model.tnow, model.tinit],   # [Ma] Final and initial time
+        T₀ = [model.Tnow, model.Tinit],          # [C] Final and initial temperature
+        ΔT = [model.ΔTnow, model.ΔTinit],        # [C] Final and initial temperature range (positive or negative)
+        tboundary = :reflecting, # Reflecting time boundary conditions
+        Tboundary = :hard, # Hard temperature boundary conditions
     )
 
     # Default: No constraints are imposed
@@ -166,10 +168,10 @@
     # # Uncomment this section if you wish to impose an unconformity at any point in the record
     # # Uniform distributions from Age₀ to Age₀+ΔAge, T₀ to T₀+ΔT,
     # constraint = Constraint(
-    #     Age₀ = Float64[500,],         # [Ma] Minimum age
-    #     ΔAge = Float64[80,],          # [Ma] Duration of age range
-    #     T₀ = Float64[0,],             # [C] Minimum temperature
-    #     ΔT = Float64[40,],            # [C] Width of temperature range
+    #     Age₀ = [500,],         # [Ma] Age
+    #     ΔAge = [80,],          # [Ma] Age range
+    #     T₀ = [0,],             # [C] Temperature
+    #     ΔT = [40,],            # [C] Temperature range
     # )
     # name *= "_unconf"
 
