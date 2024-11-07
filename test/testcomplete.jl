@@ -46,7 +46,7 @@ data = (
 )
 
 # Sort out crystallization ages and start time
-map!(x->max(x, model.tinitMax), data.crystAge, data.crystAge)
+map!(x->min(x, model.tinitMax), data.crystAge, data.crystAge)
 tinit = ceil(maximum(data.crystAge)/model.dt) * model.dt
 model = (model...,
     tinit = tinit,
@@ -99,7 +99,51 @@ llmean = mean(@view(lldist[model.burnin:end]))
 @test maximum(ndist) <= model.maxpoints
 @info "Mean npoints: $(mean(ndist[model.burnin:end]))"
 
+
+@test mean(σⱼtdist[model.burnin:end]) ≈ model.tinit/60
 @info "Mean σⱼₜ: $(mean(σⱼtdist[model.burnin:end]))"
+
+@test mean(σⱼTdist[model.burnin:end]) ≈ model.Tinit/60
+@info "Mean σⱼT: $(mean(σⱼTdist[model.burnin:end]))"
+
+## --- As above, but with variable kinetic parameters
+
+# Run Markov Chain
+@time "Compiling MCMC_varkinetics" MCMC_varkinetics(data, model, boundary, unconf)
+@time "Running MCMC_varkinetics" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, boundary, unconf)
+
+@test isa(Tpointdist, AbstractMatrix)
+@test maximum(Tpointdist) <= model.Tinit
+@test minimum(Tpointdist) >= model.Tnow
+
+@test isa(tpointdist, AbstractMatrix)
+@test maximum(tpointdist) <= model.tinit
+@test minimum(tpointdist) >= 0
+
+@test isa(HeAgedist, AbstractMatrix)
+abserr = abs(sum(nanmean(HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
+@test 0 < abserr < 100
+@info "Mean absolute error: $abserr"
+
+@test isa(lldist, AbstractVector)
+llmean = mean(@view(lldist[model.burnin:end]))
+@test -300 < llmean < 0
+@info "Mean ll: $llmean"
+
+@test isa(acceptancedist, AbstractVector{Bool})
+@test isapprox(mean(acceptancedist), 0.5, atol=0.4)
+@info "Mean acceptance rate: $(mean(acceptancedist[model.burnin:end]))"
+
+@test isa(ndist, AbstractVector{Int})
+@test minimum(ndist) >= 0
+@test maximum(ndist) <= model.maxpoints
+@info "Mean npoints: $(mean(ndist[model.burnin:end]))"
+
+
+@test mean(σⱼtdist[model.burnin:end]) ≈ model.tinit/60
+@info "Mean σⱼₜ: $(mean(σⱼtdist[model.burnin:end]))"
+
+@test mean(σⱼTdist[model.burnin:end]) ≈ model.Tinit/60
 @info "Mean σⱼT: $(mean(σⱼTdist[model.burnin:end]))"
 
 ## ---
@@ -137,87 +181,14 @@ llmean = mean(@view(lldist[model.burnin:end]))
 @test maximum(ndist) <= model.maxpoints
 @info "Mean npoints: $(mean(ndist[model.burnin:end]))"
 
+@test mean(σⱼtdist[model.burnin:end]) ≈ model.tinit/60
 @info "Mean σⱼₜ: $(mean(σⱼtdist[model.burnin:end]))"
+
+@test mean(σⱼTdist[model.burnin:end]) ≈ model.Tinit/60
 @info "Mean σⱼT: $(mean(σⱼTdist[model.burnin:end]))"
 
 ## ---
-model = (model...,
-    dynamicjumping=true
-)
-@time "MCMC with Detail interval & dynamicjumping" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, boundary, unconf, detail)
 
-@test isa(Tpointdist, AbstractMatrix)
-@test maximum(Tpointdist) <= model.Tinit
-@test minimum(Tpointdist) >= model.Tnow
-
-@test isa(tpointdist, AbstractMatrix)
-@test maximum(tpointdist) <= model.tinit
-@test minimum(tpointdist) >= 0
-
-@test isa(HeAgedist, AbstractMatrix)
-abserr = abs(sum(nanmean(HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
-@test 0 < abserr < 100
-@info "Mean absolute error: $abserr"
-
-@test isa(lldist, AbstractVector)
-llmean = mean(@view(lldist[model.burnin:end]))
-@test -200 < llmean < 0
-@info "Mean ll: $llmean"
-
-@test isa(acceptancedist, AbstractVector{Bool})
-@test isapprox(mean(acceptancedist), 0.5, atol=0.4)
-@info "Mean acceptance rate: $(mean(acceptancedist[model.burnin:end]))"
-
-@test isa(ndist, AbstractVector{Int})
-@test minimum(ndist) >= 0
-@test maximum(ndist) <= model.maxpoints
-@info "Mean npoints: $(mean(ndist[model.burnin:end]))"
-
-@info "Mean σⱼₜ: $(mean(σⱼtdist[model.burnin:end]))"
-@info "Mean σⱼT: $(mean(σⱼTdist[model.burnin:end]))"
-
-## --- As above, but with variable kinetic parameters
-
-# Run Markov Chain
-@time "Compiling MCMC_varkinetics" MCMC_varkinetics(data, model, boundary, unconf)
-@time "Running MCMC_varkinetics" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, boundary, unconf)
-
-@test isa(Tpointdist, AbstractMatrix)
-@test maximum(Tpointdist) <= model.Tinit
-@test minimum(Tpointdist) >= model.Tnow
-
-@test isa(tpointdist, AbstractMatrix)
-@test maximum(tpointdist) <= model.tinit
-@test minimum(tpointdist) >= 0
-
-@test isa(HeAgedist, AbstractMatrix)
-abserr = abs(sum(nanmean(HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
-@test 0 < abserr < 100
-@info "Mean absolute error: $abserr"
-
-@test isa(lldist, AbstractVector)
-llmean = mean(@view(lldist[model.burnin:end]))
-@test -300 < llmean < 0
-@info "Mean ll: $llmean"
-
-@test isa(acceptancedist, AbstractVector{Bool})
-@test isapprox(mean(acceptancedist), 0.5, atol=0.4)
-@info "Mean acceptance rate: $(mean(acceptancedist[model.burnin:end]))"
-
-@test isa(ndist, AbstractVector{Int})
-@test minimum(ndist) >= 0
-@test maximum(ndist) <= model.maxpoints
-@info "Mean npoints: $(mean(ndist[model.burnin:end]))"
-
-@info "Mean σⱼₜ: $(mean(σⱼtdist[model.burnin:end]))"
-@info "Mean σⱼT: $(mean(σⱼTdist[model.burnin:end]))"
-
-## ---
-detail = DetailInterval(
-    agemin = 0, # Youngest end of detail interval
-    agemax = 541, # Oldest end of detail interval
-    minpoints = 5, # Minimum number of points in detail interval
-)
 @time "MCMC_varkinetics with Detail interval" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_varkinetics(data, model, boundary, unconf, detail)
 
 @test isa(Tpointdist, AbstractMatrix)
@@ -247,7 +218,11 @@ llmean = mean(@view(lldist[model.burnin:end]))
 @test maximum(ndist) <= model.maxpoints
 @info "Mean npoints: $(mean(ndist[model.burnin:end]))"
 
+
+@test mean(σⱼtdist[model.burnin:end]) ≈ model.tinit/60
 @info "Mean σⱼₜ: $(mean(σⱼtdist[model.burnin:end]))"
+
+@test mean(σⱼTdist[model.burnin:end]) ≈ model.Tinit/60
 @info "Mean σⱼT: $(mean(σⱼTdist[model.burnin:end]))"
 
 ## ---
@@ -283,5 +258,45 @@ llmean = mean(@view(lldist[model.burnin:end]))
 @test maximum(ndist) <= model.maxpoints
 @info "Mean npoints: $(mean(ndist[model.burnin:end]))"
 
+@test model.dt < mean(σⱼtdist[model.burnin:end]) < model.tinit
 @info "Mean σⱼₜ: $(mean(σⱼtdist[model.burnin:end]))"
+
+@test 0 < mean(σⱼTdist[model.burnin:end]) < model.Tinit
+@info "Mean σⱼT: $(mean(σⱼTdist[model.burnin:end]))"
+
+## ---
+
+@time "MCMC_varkinetics with Detail interval & dynamicjumping" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_varkinetics(data, model, boundary, unconf, detail)
+
+@test isa(Tpointdist, AbstractMatrix)
+@test maximum(Tpointdist) <= model.Tinit
+@test minimum(Tpointdist) >= model.Tnow
+
+@test isa(tpointdist, AbstractMatrix)
+@test maximum(tpointdist) <= model.tinit
+@test minimum(tpointdist) >= 0
+
+@test isa(HeAgedist, AbstractMatrix)
+abserr = abs(sum(nanmean(HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
+@test 0 < abserr < 100
+@info "Mean absolute error: $abserr"
+
+@test isa(lldist, AbstractVector)
+llmean = mean(@view(lldist[model.burnin:end]))
+@test -200 < llmean < 0
+@info "Mean ll: $llmean"
+
+@test isa(acceptancedist, AbstractVector{Bool})
+@test isapprox(mean(acceptancedist), 0.5, atol=0.4)
+@info "Mean acceptance rate: $(mean(acceptancedist[model.burnin:end]))"
+
+@test isa(ndist, AbstractVector{Int})
+@test minimum(ndist) >= 0
+@test maximum(ndist) <= model.maxpoints
+@info "Mean npoints: $(mean(ndist[model.burnin:end]))"
+
+@test model.dt < mean(σⱼtdist[model.burnin:end]) < model.tinit
+@info "Mean σⱼₜ: $(mean(σⱼtdist[model.burnin:end]))"
+
+@test 0 < mean(σⱼTdist[model.burnin:end]) < model.Tinit
 @info "Mean σⱼT: $(mean(σⱼTdist[model.burnin:end]))"

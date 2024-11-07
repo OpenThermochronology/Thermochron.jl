@@ -45,7 +45,7 @@ data = (
 )
 
 # Sort out crystallization ages and start time
-map!(x->max(x, model.tinitMax), data.crystAge, data.crystAge)
+map!(x->min(x, model.tinitMax), data.crystAge, data.crystAge)
 tinit = ceil(maximum(data.crystAge)/model.dt) * model.dt
 model = (model...,
     tinit = tinit,
@@ -98,7 +98,10 @@ llmean = mean(@view(lldist[model.burnin:end]))
 @test maximum(ndist) <= model.maxpoints
 @info "Mean npoints: $(mean(ndist[model.burnin:end]))"
 
+@test mean(σⱼtdist[model.burnin:end]) ≈ model.tinit/60
 @info "Mean σⱼₜ: $(mean(σⱼtdist[model.burnin:end]))"
+
+@test mean(σⱼTdist[model.burnin:end]) ≈ model.Tinit/60
 @info "Mean σⱼT: $(mean(σⱼTdist[model.burnin:end]))"
 
 ## ---
@@ -136,7 +139,10 @@ llmean = mean(@view(lldist[model.burnin:end]))
 @test maximum(ndist) <= model.maxpoints
 @info "Mean npoints: $(mean(ndist[model.burnin:end]))"
 
+@test mean(σⱼtdist[model.burnin:end]) ≈ model.tinit/60
 @info "Mean σⱼₜ: $(mean(σⱼtdist[model.burnin:end]))"
+
+@test mean(σⱼTdist[model.burnin:end]) ≈ model.Tinit/60
 @info "Mean σⱼT: $(mean(σⱼTdist[model.burnin:end]))"
 
 ## ---
@@ -172,5 +178,8 @@ llmean = mean(@view(lldist[model.burnin:end]))
 @test maximum(ndist) <= model.maxpoints
 @info "Mean npoints: $(mean(ndist[model.burnin:end]))"
 
+@test model.dt < mean(σⱼtdist[model.burnin:end]) < model.tinit
 @info "Mean σⱼₜ: $(mean(σⱼtdist[model.burnin:end]))"
+
+@test 0 < mean(σⱼTdist[model.burnin:end]) < model.Tinit
 @info "Mean σⱼT: $(mean(σⱼTdist[model.burnin:end]))"

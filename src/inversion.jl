@@ -135,8 +135,8 @@
 
         # Standard deviations of Gaussian proposal ("jumping") distributions
         # for temperature and time
-        σⱼt = tinit/60
-        σⱼT = Tinit/60
+        σⱼt = fill((tinit-tnow)/60, maxpoints)
+        σⱼT = fill((Tinit-Tnow)/60, maxpoints)
         k = 1 # Index of chosen t-T point
 
         # Proposal probabilities (must sum to 1)
@@ -161,23 +161,26 @@
             copyto!(constraint.Tpointsₚ, constraint.Tpoints)
             copyto!(boundary.Tpointsₚ, boundary.Tpoints)
 
-            # Adjust the proposal
+            # Randomly choose an option and point (if applicable) to adjust
             r = rand()
+            k = ceil(Int, rand()*npoints) 
+
+            # Adjust the proposal
             if r < p_move
                 # Move one t-T point
-                k = ceil(Int, rand() * npoints)
-                movepoint!(agepointsₚ, Tpointsₚ, k, tnow+dt, tinit-dt, Tnow, Tinit, σⱼt, σⱼT, boundarytype)
+                movepoint!(agepointsₚ, Tpointsₚ, k, tnow+dt, tinit-dt, Tnow, Tinit, σⱼt[k], σⱼT[k], boundarytype)
 
             elseif (r < p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point
-                npointsₚ = npoints + 1
-                agepointsₚ[npointsₚ] = 0 + rand()*(tinit-0)
-                Tpointsₚ[npointsₚ] = Tnow + rand()*(Tinit-Tnow)
+                k = npointsₚ = npoints + 1
+                agepointsₚ[k] = tnow + rand()*(tinit-tnow)
+                Tpointsₚ[k] = Tnow + rand()*(Tinit-Tnow)
+                σⱼt[k] = (tinit-Tnow)/60
+                σⱼT[k] = (Tinit-Tnow)/60
 
             elseif (r < p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
-                npointsₚ = npoints - 1 # Delete last point in array from proposal
-                k = ceil(Int, rand()*npoints) # Choose point to delete
+                npointsₚ = npoints - 1
                 agepointsₚ[k] = agepointsₚ[npoints]
                 Tpointsₚ[k] = Tpointsₚ[npoints]
 
@@ -237,10 +240,10 @@
                 # Update jumping distribution based on size of current accepted p_move
                 if dynamicjumping && r < p_move
                     if agepointsₚ[k] != agepoints[k]
-                        σⱼt = max(ℯ * abs(agepointsₚ[k] - agepoints[k]), dt)
+                        σⱼt[k] = ℯ * abs(agepointsₚ[k] - agepoints[k])
                     end
                     if Tpointsₚ[k] != Tpoints[k]
-                        σⱼT = max(ℯ * abs(Tpointsₚ[k] - Tpoints[k]), (Tinit-Tnow)/100)
+                        σⱼT[k] = ℯ * abs(Tpointsₚ[k] - Tpoints[k])
                     end
                 end
 
@@ -262,8 +265,8 @@
             # Record results for analysis and troubleshooting
             lldist[n] = llna + normpdf_ll(HeAge, σ, calcHeAges) # Recalculated to constant baseline
             ndist[n] = npoints # distribution of # of points
-            σⱼtdist[n] = σⱼt
-            σⱼTdist[n] = σⱼT
+            σⱼtdist[n] = σⱼt[k]
+            σⱼTdist[n] = σⱼT[k]
             HeAgedist[:,n] .= calcHeAges # distribution of He ages
 
             # This is the actual output we want -- the distribution of t-T paths (t path is always identical)
@@ -400,8 +403,8 @@
 
         # Standard deviations of Gaussian proposal ("jumping") distributions
         # for temperature and time
-        σⱼt = tinit/60
-        σⱼT = Tinit/60
+        σⱼt = fill((tinit-tnow)/60, maxpoints)
+        σⱼT = fill((Tinit-Tnow)/60, maxpoints)
         k = 1 # Index of chosen t-T point
 
         # Proposal probabilities (must sum to 1)
@@ -429,23 +432,26 @@
             copyto!(constraint.Tpointsₚ, constraint.Tpoints)
             copyto!(boundary.Tpointsₚ, boundary.Tpoints)
 
-            # Adjust the proposal
+            # Randomly choose an option and point (if applicable) to adjust
             r = rand()
+            k = ceil(Int, rand()*npoints) 
+
+            # Adjust the proposal
             if r < p_move
                 # Move one t-T point
-                k = ceil(Int, rand() * npoints)
-                movepoint!(agepointsₚ, Tpointsₚ, k, tnow+dt, tinit-dt, Tnow, Tinit, σⱼt, σⱼT, boundarytype)
+                movepoint!(agepointsₚ, Tpointsₚ, k, tnow+dt, tinit-dt, Tnow, Tinit, σⱼt[k], σⱼT[k], boundarytype)
 
             elseif (r < p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point
-                npointsₚ = npoints + 1
-                agepointsₚ[npointsₚ] = 0 + rand()*(tinit-0)
-                Tpointsₚ[npointsₚ] = Tnow + rand()*(Tinit-Tnow)
+                k = npointsₚ = npoints + 1
+                agepointsₚ[k] = tnow + rand()*(tinit-tnow)
+                Tpointsₚ[k] = Tnow + rand()*(Tinit-Tnow)
+                σⱼt[k] = (tinit-Tnow)/60
+                σⱼT[k] = (Tinit-Tnow)/60
 
             elseif (r < p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
-                npointsₚ = npoints - 1 # Delete last point in array from proposal
-                k = ceil(Int, rand()*npoints) # Choose point to delete
+                npointsₚ = npoints - 1
                 agepointsₚ[k] = agepointsₚ[npoints]
                 Tpointsₚ[k] = Tpointsₚ[npoints]
 
@@ -513,10 +519,10 @@
                 # Update jumping distribution based on size of current accepted p_move
                 if dynamicjumping && r < p_move
                     if agepointsₚ[k] != agepoints[k]
-                        σⱼt = max(ℯ * abs(agepointsₚ[k] - agepoints[k]), dt)
+                        σⱼt[k] = ℯ * abs(agepointsₚ[k] - agepoints[k])
                     end
                     if Tpointsₚ[k] != Tpoints[k]
-                        σⱼT = max(ℯ * abs(Tpointsₚ[k] - Tpoints[k]), (Tinit-Tnow)/100)
+                        σⱼT[k] = ℯ * abs(Tpointsₚ[k] - Tpoints[k])
                     end
                 end
 
@@ -540,8 +546,8 @@
             # Record results for analysis and troubleshooting
             lldist[n] = llna + normpdf_ll(HeAge, σ, calcHeAges) # Recalculated to constant baseline
             ndist[n] = npoints # distribution of # of points
-            σⱼtdist[n] = σⱼt
-            σⱼTdist[n] = σⱼT
+            σⱼtdist[n] = σⱼt[k]
+            σⱼTdist[n] = σⱼT[k]
             HeAgedist[:,n] .= calcHeAges # distribution of He ages
 
             # This is the actual output we want -- the distribution of t-T paths (t path is always identical)
