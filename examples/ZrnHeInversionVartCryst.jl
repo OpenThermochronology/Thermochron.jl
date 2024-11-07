@@ -79,14 +79,15 @@
     end
 
     if any(tz)
-        # Stzndard deviation of a Gaussian kernel in eU space, representing the 
+        # Standard deviation of a Gaussian kernel in eU space, representing the 
         # range of eU over which zircons with similar eU should have similar ages
         σeU = 100
 
         # Calculate errors
         for i ∈ findall(tz)
             W = normpdf.(eU[i], σeU, eU[tz])
-            σ_external = nanstd(age[tz], W) # Weighted stzndard deviation
+            σ_external = nanstd(age[tz], W) # Weighted standard deviation
+            σ_external /= sqrt(2) # Assume half of variance is unknown external uncertainty
             σ_internal = age_sigma[i]
             age_sigma_empirical[i] = sqrt(σ_external^2 + σ_internal^2)
             age_sigma_empirical[i] = max(age_sigma_empirical[i], min_rel_uncert*age[i])
@@ -133,7 +134,7 @@
     )
 
     # Sort out crystallization ages and start time
-    map!(x->max(x, model.tinitMax), data.crystAge, data.crystAge)
+    map!(x->min(x, model.tinitMax), data.crystAge, data.crystAge)
     tinit = ceil(maximum(data.crystAge)/model.dt) * model.dt
     model = (model...,
         tinit = tinit,
@@ -141,11 +142,15 @@
         tsteps = Array{Float64}(0+model.dt/2 : model.dt : tinit-model.dt/2),
     )
 
-    detail = DetailInterval(
-        agemin = 0.0, # Youngest end of detail interval
-        agemax = 541.0, # Oldest end of detail interval
-        minpoints = 7, # Minimum number of points in detail interval
-    )
+    # Default: no detail interval
+    detail = DetailInterval()
+
+    # # Uncomment this section to require greater t-T node density in some time interval
+    # detail = DetailInterval(
+    #     agemin = 0.0, # Youngest end of detail interval
+    #     agemax = 541.0, # Oldest end of detail interval
+    #     minpoints = 7, # Minimum number of points in detail interval
+    # )
 
     # Boundary conditions (e.g. 10C at present and 650 C at the time of zircon formation).
     boundary = Boundary(
