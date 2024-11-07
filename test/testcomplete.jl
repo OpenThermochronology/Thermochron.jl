@@ -24,7 +24,8 @@ model = (
     npoints = 5, # Initial number of t-T points
     Tr = 250., # Residence temperature of initial proposal
     simplified = false, # Prefer simpler tT paths?
-    boundarytype = :reflecting, # Reflecting boundary conditions
+    tboundary = :reflecting, # Reflecting time boundary conditions
+    Tboundary = :reflecting, # Reflecting temperature boundary conditions
     # Model uncertainty is not well known (depends on annealing parameters,
     # decay constants, diffusion parameters, etc.), but is certainly non-zero.
     # Here we add (in quadrature) a blanket model uncertainty of 25 Ma.
@@ -69,8 +70,8 @@ unconf = Constraint()
 ## --- Invert for maximum likelihood t-T path
 
 # Run Markov Chain
-@time "Compiling MCMC" MCMC(data, model, boundary, unconf)
-@time "Running MCMC" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, boundary, unconf)
+@time "\nCompiling MCMC" MCMC(data, model, boundary, unconf)
+@time "\nRunning MCMC" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, boundary, unconf)
 
 @test isa(Tpointdist, AbstractMatrix)
 @test maximum(Tpointdist) <= model.Tinit
@@ -109,8 +110,8 @@ llmean = mean(@view(lldist[model.burnin:end]))
 ## --- As above, but with variable kinetic parameters
 
 # Run Markov Chain
-@time "Compiling MCMC_varkinetics" MCMC_varkinetics(data, model, boundary, unconf)
-@time "Running MCMC_varkinetics" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, boundary, unconf)
+@time "\nCompiling MCMC_varkinetics" MCMC_varkinetics(data, model, boundary, unconf)
+@time "\nRunning MCMC_varkinetics" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, boundary, unconf)
 
 @test isa(Tpointdist, AbstractMatrix)
 @test maximum(Tpointdist) <= model.Tinit
@@ -152,7 +153,7 @@ detail = DetailInterval(
     agemax = 541, # Oldest end of detail interval
     minpoints = 5, # Minimum number of points in detail interval
 )
-@time "MCMC with Detail interval" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, boundary, unconf, detail)
+@time "\nMCMC with Detail interval" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, boundary, unconf, detail)
 
 @test isa(Tpointdist, AbstractMatrix)
 @test maximum(Tpointdist) <= model.Tinit
@@ -189,7 +190,7 @@ llmean = mean(@view(lldist[model.burnin:end]))
 
 ## ---
 
-@time "MCMC_varkinetics with Detail interval" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_varkinetics(data, model, boundary, unconf, detail)
+@time "\nMCMC_varkinetics with Detail interval" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_varkinetics(data, model, boundary, unconf, detail)
 
 @test isa(Tpointdist, AbstractMatrix)
 @test maximum(Tpointdist) <= model.Tinit
@@ -229,7 +230,7 @@ llmean = mean(@view(lldist[model.burnin:end]))
 model = (model...,
     dynamicjumping=true
 )
-@time "MCMC with Detail interval & dynamicjumping" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, boundary, unconf, detail)
+@time "\nMCMC with Detail interval & dynamicjumping" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, boundary, unconf, detail)
 
 @test isa(Tpointdist, AbstractMatrix)
 @test maximum(Tpointdist) <= model.Tinit
@@ -266,7 +267,7 @@ llmean = mean(@view(lldist[model.burnin:end]))
 
 ## ---
 
-@time "MCMC_varkinetics with Detail interval & dynamicjumping" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_varkinetics(data, model, boundary, unconf, detail)
+@time "\nMCMC_varkinetics with Detail interval & dynamicjumping" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_varkinetics(data, model, boundary, unconf, detail)
 
 @test isa(Tpointdist, AbstractMatrix)
 @test maximum(Tpointdist) <= model.Tinit

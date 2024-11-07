@@ -154,7 +154,7 @@
 
     # Boundary conditions (e.g. 10C at present and 650 C at the time of zircon formation).
     boundary = Boundary(
-        agepoints = Float64[model.Tnow, model.tinit],  # Ma
+        agepoints = Float64[model.tnow, model.tinit],  # Ma
         Tpoints = Float64[model.Tnow, model.Tinit],    # Degrees C
         T₀ = Float64[model.Tnow, model.Tinit],
         ΔT = Float64[model.ΔTnow, model.ΔTinit],

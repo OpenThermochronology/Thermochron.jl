@@ -133,11 +133,29 @@
     export simannealsigma
 
 
+    # Utitlity functions for dealing with boundary conditions
+    function reflecting(x, xmin, xmax)
+        @assert xmin < xmax
+        Δx = xmax-xmin
+        d,r = divrem(x-xmin, Δx)
+        if isodd(d)
+            xmax - abs(r)
+        else
+            xmin + abs(r)
+        end
+    end
+    function periodic(x, xmin, xmax)
+        @assert xmin < xmax
+        Δx = xmax-xmin
+        xmin + mod(x-xmin, Δx)
+    end
+    function hard(x, xmin, xmax)
+        @assert xmin < xmax
+        min(max(x, xmin), xmax)
+    end
+
     # Move a t-T point and apply boundary conditions
-    function movepoint!(agepointsₚ, Tpointsₚ, k, tmin, tmax, Tmin, Tmax, σⱼt, σⱼT, boundarytype::Symbol=:hard)
-        # Ensure bounds are in proper order
-        tmin < tmax || ((tmin, tmax) = (tmax, tmin))
-        Tmin < Tmax || ((Tmin, Tmax) = (Tmax, Tmin))
+    function movepoint!(agepointsₚ, Tpointsₚ, k, tmin, tmax, Tmin, Tmax, σⱼt, σⱼT, tboundary::Symbol, Tboundary::Symbol)
 
         # Move the age of one model point
         agepointsₚ[k] += randn() * σⱼt
@@ -145,26 +163,27 @@
         # Move the Temperature of one model point
         Tpointsₚ[k] += randn() * σⱼT
 
-        # Reflecting boundary conditions
-        if boundarytype === :reflecting
-            if agepointsₚ[k] < tmin
-                agepointsₚ[k] = tmin - (agepointsₚ[k] - tmin)
-            elseif agepointsₚ[k] > tmax
-                agepointsₚ[k] = tmax - (agepointsₚ[k] - tmax)
-            end
-
-            if Tpointsₚ[k] < Tmin
-                Tpointsₚ[k] = Tmin - (Tpointsₚ[k] - Tmin)
-            elseif Tpointsₚ[k] > Tmax
-                Tpointsₚ[k] = Tmax - (Tpointsₚ[k] - Tmax)
-            end
+        if tboundary === :reflecting
+            agepointsₚ[k] = reflecting(agepointsₚ[k], tmin, tmax)
+        elseif tboundary === :hard
+            agepointsₚ[k] = hard(agepointsₚ[k], tmin, tmax)
+        elseif tboundary === :periodic
+            agepointsₚ[k] = periodic(agepointsₚ[k], tmin, tmax)
+        else
+            @error "`tboundary` must be either `:reflecting`, `:hard`, or `:periodic`"
         end
 
-        # Hard boundary conditions
-        agepointsₚ[k] = min(max(agepointsₚ[k], tmin), tmax)
-        Tpointsₚ[k] = min(max(Tpointsₚ[k], Tmin),Tmax)
+        if Tboundary === :reflecting
+            Tpointsₚ[k] = reflecting(Tpointsₚ[k], Tmin, Tmax)
+        elseif Tboundary === :hard
+            Tpointsₚ[k] = hard(Tpointsₚ[k], Tmin, Tmax)
+        elseif Tboundary === :periodic
+            Tpointsₚ[k] = periodic(Tpointsₚ[k], Tmin, Tmax)
+        else
+            @error "`Tboundary` must be either `:reflecting`, `:hard`, or `:periodic`"
+        end
 
-        return  agepointsₚ, Tpointsₚ
+        return agepointsₚ[k], Tpointsₚ[k]
     end
 
     function movekinetics(zdm::ZRDAAM)

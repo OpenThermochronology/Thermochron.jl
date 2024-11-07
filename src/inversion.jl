@@ -27,7 +27,8 @@
         npoints = (haskey(model, :npoints) ? model.npoints : minpoints)::Int
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
         simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
-        boundarytype = (haskey(model, :boundarytype) ? model.boundarytype : :hard)::Symbol
+        tboundary = (haskey(model, :tboundary) ? model.tboundary : :reflecting)::Symbol
+        Tboundary = (haskey(model, :Tboundary) ? model.Tboundary : :hard)::Symbol
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
         dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10)::T
         dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : 5)::T
@@ -168,7 +169,7 @@
             # Adjust the proposal
             if r < p_move
                 # Move one t-T point
-                movepoint!(agepointsₚ, Tpointsₚ, k, tnow+dt, tinit-dt, Tnow, Tinit, σⱼt[k], σⱼT[k], boundarytype)
+                movepoint!(agepointsₚ, Tpointsₚ, k, tnow+dt, tinit-dt, Tnow, Tinit, σⱼt[k], σⱼT[k], tboundary, Tboundary)
 
             elseif (r < p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point
@@ -295,7 +296,8 @@
         npoints = (haskey(model, :npoints) ? model.npoints : minpoints)::Int
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
         simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
-        boundarytype = (haskey(model, :boundarytype) ? model.boundarytype : :hard)::Symbol
+        tboundary = (haskey(model, :tboundary) ? model.tboundary : :reflecting)::Symbol
+        Tboundary = (haskey(model, :Tboundary) ? model.Tboundary : :hard)::Symbol
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
         dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10)::T
         dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : 5)::T
@@ -439,7 +441,7 @@
             # Adjust the proposal
             if r < p_move
                 # Move one t-T point
-                movepoint!(agepointsₚ, Tpointsₚ, k, tnow+dt, tinit-dt, Tnow, Tinit, σⱼt[k], σⱼT[k], boundarytype)
+                movepoint!(agepointsₚ, Tpointsₚ, k, tnow+dt, tinit-dt, Tnow, Tinit, σⱼt[k], σⱼT[k], tboundary, Tboundary)
 
             elseif (r < p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point

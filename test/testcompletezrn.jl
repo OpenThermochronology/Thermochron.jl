@@ -24,7 +24,8 @@ model = (
     npoints = 5, # Number of initial t-T points
     Tr = 250., # Residence temperature in initial proposal
     simplified = false, # Prefer simpler tT paths?
-    boundarytype = :reflecting, # Reflecting boundary conditions
+    tboundary = :reflecting, # Reflecting time boundary conditions
+    Tboundary = :reflecting, # Reflecting temperature boundary conditions
     # Model uncertainty is not well known (depends on annealing parameters,
     # decay constants, diffusion parameters, etc.), but is certainly non-zero.
     # Here we add (in quadrature) a blanket model uncertainty of 25 Ma.
@@ -68,8 +69,8 @@ constraint = Constraint()
 ## --- Invert for maximum likelihood t-T path
 
 # Run Markov Chain
-@time "Compiling MCMC" MCMC(data, model, boundary, constraint)
-@time "Running MCMC" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, boundary, constraint)
+@time "\nCompiling MCMC" MCMC(data, model, boundary, constraint)
+@time "\nRunning MCMC" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, boundary, constraint)
 
 @test isa(Tpointdist, AbstractMatrix)
 @test maximum(Tpointdist) <= model.Tinit
@@ -110,7 +111,7 @@ detail = DetailInterval(
     agemax = 541, # Oldest end of detail interval
     minpoints = 5, # Minimum number of points in detail interval
 )
-@time "MCMC with Detail interval" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, boundary, constraint, detail)
+@time "\nMCMC with Detail interval" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, boundary, constraint, detail)
 
 @test isa(Tpointdist, AbstractMatrix)
 @test maximum(Tpointdist) <= model.Tinit
@@ -149,7 +150,7 @@ llmean = mean(@view(lldist[model.burnin:end]))
 model = (model...,
     dynamicjumping=true
 )
-@time "MCMC with Detail interval & dynamicjumping" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, boundary, constraint, detail)
+@time "\nMCMC with Detail interval & dynamicjumping" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, boundary, constraint, detail)
 
 @test isa(Tpointdist, AbstractMatrix)
 @test maximum(Tpointdist) <= model.Tinit
