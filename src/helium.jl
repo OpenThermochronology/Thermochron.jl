@@ -288,12 +288,12 @@ function HeAgeSpherical(zircon::Zircon{T}, Tsteps::StridedVector{T}, ρᵣ::Stri
     # Convert from u (coordinate-transform'd conc.) to v (real He conc.)
     vFinal = @views u[2:end-1,end]
     vFinal ./= rsteps
-    μHe = vmean(vFinal) # Atoms/gram
+    μHe = nanmean(vFinal) # Atoms/gram
 
     # Raw Age (i.e., as measured)
-    μ238U = vmean(zircon.r238U::DenseVector{T}) # Atoms/gram
-    μ235U = vmean(zircon.r235U::DenseVector{T})
-    μ232Th = vmean(zircon.r232Th::DenseVector{T})
+    μ238U = nanmean(zircon.r238U::DenseVector{T}) # Atoms/gram
+    μ235U = nanmean(zircon.r235U::DenseVector{T})
+    μ232Th = nanmean(zircon.r232Th::DenseVector{T})
 
     # Numerically solve for helium age of the grain
     HeAge = one(T)
@@ -426,12 +426,12 @@ function HeAgeSpherical(apatite::Apatite{T}, Tsteps::StridedVector{T}, ρᵣ::Ab
     # Convert from u (coordinate-transform'd conc.) to v (real He conc.)
     vFinal = @views u[2:end-1,end]
     vFinal ./= rsteps
-    μHe = vmean(vFinal) # Atoms/gram
+    μHe = nanmean(vFinal) # Atoms/gram
 
     # Raw Age (i.e., as measured)
-    μ238U = vmean(apatite.r238U::DenseVector{T}) # Atoms/gram
-    μ235U = vmean(apatite.r235U::DenseVector{T})
-    μ232Th = vmean(apatite.r232Th::DenseVector{T})
+    μ238U = nanmean(apatite.r238U::DenseVector{T}) # Atoms/gram
+    μ235U = nanmean(apatite.r235U::DenseVector{T})
+    μ232Th = nanmean(apatite.r232Th::DenseVector{T})
 
     # Numerically solve for helium age of the grain
     HeAge = one(T)

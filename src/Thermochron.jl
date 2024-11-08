@@ -2,9 +2,9 @@ module Thermochron
 
     using Reexport
     @reexport using StatGeochemBase
+    @reexport using NaNStatistics
 
     using LinearAlgebra
-    using VectorizedStatistics
     using LoopVectorization
     using ProgressMeter: Progress, update!
 

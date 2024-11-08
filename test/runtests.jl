@@ -1,6 +1,5 @@
 using Thermochron
 using LinearAlgebra, Statistics
-using StatGeochem
 using Test
 
 @testset "Apatite helium" begin include("testapatitehelium.jl") end
