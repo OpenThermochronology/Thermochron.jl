@@ -18,8 +18,7 @@
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 ## ---  Load required packages
 
-    using Thermochron
-    using StatGeochem, Plots
+    using Thermochron, Plots
 
     using LinearAlgebra
     # Diminishing returns with more than ~4 threads

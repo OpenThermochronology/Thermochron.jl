@@ -1,10 +1,12 @@
 module Thermochron
 
+    using Reexport
+    @reexport using StatGeochemBase
+
     using LinearAlgebra
     using VectorizedStatistics
     using LoopVectorization
     using ProgressMeter: Progress, update!
-    using StatGeochemBase
 
     include("types.jl")
     include("utilities.jl")
