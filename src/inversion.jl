@@ -61,7 +61,7 @@
         calcHeAges = similar(HeAge)::DenseVector{T}
 
         # Damage models for each mineral
-        zdm = (haskey(model, :zdm) ? model.adm : ZRDAAM())::ZRDAAM{T}
+        zdm = (haskey(model, :zdm) ? model.zdm : ZRDAAM())::ZRDAAM{T}
         zpr, zTeq = anneal(dt, tsteps, Tsteps, zdm) # Zircon amage annealing history
         zpr::DenseMatrix{T}
         zTeq::DenseVector{T}
@@ -322,7 +322,7 @@
         calcHeAges = similar(HeAge)::DenseVector{T}
 
         # Damage models for each mineral
-        zdm₀ = zdm = zdmₚ = (haskey(model, :zdm) ? model.adm : ZRDAAM())::ZRDAAM{T}
+        zdm₀ = zdm = zdmₚ = (haskey(model, :zdm) ? model.zdm : ZRDAAM())::ZRDAAM{T}
         zpr, zTeq = anneal(dt, tsteps, Tsteps, zdm) # Zircon amage annealing history
         zpr::DenseMatrix{T}
         zTeq::DenseVector{T}
