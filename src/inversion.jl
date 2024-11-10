@@ -121,9 +121,9 @@
         calcHeAgesₚ = copy(calcHeAges)::DenseVector{T}
 
         # distributions to populate
-        tpointdist = zeros(T, totalpoints, nsteps)
-        Tpointdist = zeros(T, totalpoints, nsteps)
-        HeAgedist = zeros(T, length(HeAge), nsteps)
+        tpointdist = fill(T(NaN), totalpoints, nsteps)
+        Tpointdist = fill(T(NaN), totalpoints, nsteps)
+        HeAgedist = fill(T(NaN), length(HeAge), nsteps)
         σⱼtdist = zeros(T, nsteps)
         σⱼTdist = zeros(T, nsteps)
         lldist = zeros(T, nsteps)
@@ -391,9 +391,9 @@
         calcHeAgesₚ = copy(calcHeAges)::DenseVector{T}
 
         # distributions to populate
-        tpointdist = zeros(T, totalpoints, nsteps)
-        Tpointdist = zeros(T, totalpoints, nsteps)
-        HeAgedist = zeros(T, length(HeAge), nsteps)
+        tpointdist = fill(T(NaN), totalpoints, nsteps)
+        Tpointdist = fill(T(NaN), totalpoints, nsteps)
+        HeAgedist = fill(T(NaN), length(HeAge), nsteps)
         σⱼtdist = zeros(T, nsteps)
         σⱼTdist = zeros(T, nsteps)
         lldist = zeros(T, nsteps)
