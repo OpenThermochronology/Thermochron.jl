@@ -207,7 +207,11 @@
                 zi = 1
                 for i ∈ findall(tzr)
                     first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                    calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
+                    if first_index > 1
+                        calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
+                    else
+                        calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], Tsteps, zpr, zdm)::T
+                    end
                     zi += 1
                 end
             end
@@ -216,7 +220,11 @@
                 ai = 1
                 for i ∈ findall(tap)
                     first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                    calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
+                    if first_index > 1
+                        calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
+                    else
+                        calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], Tsteps, apr, adm)::T
+                    end
                     ai += 1
                 end
             end
@@ -478,7 +486,11 @@
                 zi = 1
                 for i ∈ findall(tzr)
                     first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                    calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdmₚ)::T
+                    if first_index > 1
+                        calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdmₚ)::T
+                    else
+                        calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], Tsteps, zpr, zdmₚ)::T
+                    end
                     zi += 1
                 end
             end
@@ -487,7 +499,11 @@
                 ai = 1
                 for i ∈ findall(tap)
                     first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                    calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), admₚ)::T
+                    if first_index > 1
+                        calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), admₚ)::T
+                    else
+                        calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], Tsteps, apr, admₚ)::T
+                    end
                     ai += 1
                 end
             end
