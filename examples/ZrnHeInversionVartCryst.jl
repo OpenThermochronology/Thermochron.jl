@@ -120,11 +120,9 @@
         maxpoints = 50,             # Maximum allowed number of t-T points
         simplified = false,         # Prefer simpler tT paths?
         dynamicjumping = true,      # Update the t and t jumping (proposal) distributions based on previously accepted jumps
-        # Diffusion parameters (ZRDAAM standard)
-        DzEa = 165.0,               # kJ/mol
-        DzD0 = 193188.0,            # cm^2/sec
-        DN17Ea = 71.0,              # kJ/mol
-        DN17D0 = 6.367E-3,          # [cm^2/sec]
+        # Damage and annealing models for diffusivity (specify custom kinetics if desired)
+        adm = RDAAM(),
+        zdm = ZRDAAM(), 
         # Model uncertainty is not well known (depends on annealing parameters,
         # decay constants, diffusion parameters, etc.), but is certainly non-zero.
         # Here we add (in quadrature) a blanket model uncertainty of 25 Ma.

@@ -61,21 +61,12 @@
         calcHeAges = similar(HeAge)::DenseVector{T}
 
         # Damage models for each mineral
-        zdm = if haskey(model, :DzEa) && haskey(model, :DzD0) && haskey(model, :DN17Ea) && haskey(model, :DN17D0)
-            ZRDAAM(
-                DzEa=T(model.DzEa), 
-                DzD0=T(model.DzD0), 
-                DN17Ea=T(model.DN17Ea), 
-                DN17D0=T(model.DN17D0)
-            )
-        else
-            ZRDAAM()
-        end
+        zdm = (haskey(model, :zdm) ? model.adm : ZRDAAM())::ZRDAAM{T}
         zpr, zTeq = anneal(dt, tsteps, Tsteps, zdm) # Zircon amage annealing history
         zpr::DenseMatrix{T}
         zTeq::DenseVector{T}
 
-        adm = RDAAM()
+        adm = (haskey(model, :adm) ? model.adm : RDAAM())::RDAAM{T}
         apr, aTeq = anneal(dt, tsteps, Tsteps, adm) # Apatite damage annealing history
         apr::DenseMatrix{T}
         aTeq::DenseVector{T}
@@ -331,21 +322,12 @@
         calcHeAges = similar(HeAge)::DenseVector{T}
 
         # Damage models for each mineral
-        zdm₀ = zdm = zdmₚ = if haskey(model, :DzEa) && haskey(model, :DzD0) && haskey(model, :DN17Ea) && haskey(model, :DN17D0)
-            ZRDAAM(
-                DzEa=T(model.DzEa), 
-                DzD0=T(model.DzD0), 
-                DN17Ea=T(model.DN17Ea), 
-                DN17D0=T(model.DN17D0)
-            )
-        else
-            ZRDAAM()
-        end
+        zdm₀ = zdm = zdmₚ = (haskey(model, :zdm) ? model.adm : ZRDAAM())::ZRDAAM{T}
         zpr, zTeq = anneal(dt, tsteps, Tsteps, zdm) # Zircon amage annealing history
         zpr::DenseMatrix{T}
         zTeq::DenseVector{T}
 
-        adm₀ = adm = admₚ = RDAAM()
+        adm₀ = adm = admₚ =  (haskey(model, :adm) ? model.adm : RDAAM())::RDAAM{T}
         apr, aTeq = anneal(dt, tsteps, Tsteps, adm) # Apatite damage annealing history
         apr::DenseMatrix{T}
         aTeq::DenseVector{T}
