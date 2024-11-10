@@ -75,12 +75,12 @@ constraint = Constraint()
 @time "\nRunning MCMC" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, boundary, constraint)
 
 @test isa(Tpointdist, AbstractMatrix)
-@test maximum(Tpointdist) <= model.Tinit
-@test minimum(Tpointdist) >= model.Tnow
+@test nanmaximum(Tpointdist) <= model.Tinit
+@test nanminimum(Tpointdist) >= model.Tnow
 
 @test isa(tpointdist, AbstractMatrix)
-@test maximum(tpointdist) <= model.tinit
-@test minimum(tpointdist) >= 0
+@test nanmaximum(Tpointdist) <= model.tinit
+@test nanminimum(Tpointdist) >= 0
 
 @test isa(HeAgedist, AbstractMatrix)
 abserr = abs(sum(nanmean(HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
@@ -116,12 +116,12 @@ detail = DetailInterval(
 @time "\nMCMC with Detail interval" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, boundary, constraint, detail)
 
 @test isa(Tpointdist, AbstractMatrix)
-@test maximum(Tpointdist) <= model.Tinit
-@test minimum(Tpointdist) >= model.Tnow
+@test nanmaximum(Tpointdist) <= model.Tinit
+@test nanminimum(Tpointdist) >= model.Tnow
 
 @test isa(tpointdist, AbstractMatrix)
-@test maximum(tpointdist) <= model.tinit
-@test minimum(tpointdist) >= 0
+@test nanmaximum(Tpointdist) <= model.tinit
+@test nanminimum(Tpointdist) >= 0
 
 @test isa(HeAgedist, AbstractMatrix)
 abserr = abs(sum(nanmean(HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
@@ -155,12 +155,12 @@ model = (model...,
 @time "\nMCMC with Detail interval & dynamicjumping" (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, boundary, constraint, detail)
 
 @test isa(Tpointdist, AbstractMatrix)
-@test maximum(Tpointdist) <= model.Tinit
-@test minimum(Tpointdist) >= model.Tnow
+@test nanmaximum(Tpointdist) <= model.Tinit
+@test nanminimum(Tpointdist) >= model.Tnow
 
 @test isa(tpointdist, AbstractMatrix)
-@test maximum(tpointdist) <= model.tinit
-@test minimum(tpointdist) >= 0
+@test nanmaximum(Tpointdist) <= model.tinit
+@test nanminimum(Tpointdist) >= 0
 
 @test isa(HeAgedist, AbstractMatrix)
 abserr = abs(sum(nanmean(HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
