@@ -54,7 +54,7 @@
         Tpointbuffer = similar(agepoints, totalpoints)::DenseVector{T}
         knot_index = similar(agesteps, Int)::DenseVector{Int}
 
-        # Calculate model ages for initial proposal
+        # Prepare to calculate model ages for initial proposal
         ages = collectto!(agepointbuffer, view(agepoints, 1:npoints), boundary.agepoints, constraint.agepoints)::StridedVector{T}
         temperatures = collectto!(Tpointbuffer, view(Tpoints, 1:npoints), boundary.Tpoints, constraint.Tpoints)::StridedVector{T}
         Tsteps = linterp1s(ages, temperatures, agesteps)::DenseVector{T}
@@ -192,33 +192,10 @@
             if detail.minpoints > 0
                 (pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto restart
             end
+
             # Calculate model ages for each grain
-            if any(tzr)
-                anneal!(zpr, zTeq, dt, tsteps, Tsteps, zdm)
-                zi = 1
-                for i ∈ findall(tzr)
-                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                    if first_index > 1
-                        calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
-                    else
-                        calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], Tsteps, zpr, zdm)::T
-                    end
-                    zi += 1
-                end
-            end
-            if any(tap)
-                anneal!(apr, aTeq, dt, tsteps, Tsteps, adm)
-                ai = 1
-                for i ∈ findall(tap)
-                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                    if first_index > 1
-                        calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
-                    else
-                        calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], Tsteps, apr, adm)::T
-                    end
-                    ai += 1
-                end
-            end
+            mineralages!(calcHeAgesₚ, tzr, zpr, zTeq, dt, tsteps, Tsteps, zdm, zircons)
+            mineralages!(calcHeAgesₚ, tap, apr, aTeq, dt, tsteps, Tsteps, adm, apatites)
 
             # Calculate log likelihood of proposal
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
@@ -315,7 +292,7 @@
         Tpointbuffer = similar(agepoints, totalpoints)::DenseVector{T}
         knot_index = similar(agesteps, Int)::DenseVector{Int}
 
-        # Calculate model ages for initial proposal
+        # Prepare to calculate model ages for initial proposal
         ages = collectto!(agepointbuffer, view(agepoints, 1:npoints), boundary.agepoints, constraint.agepoints)::StridedVector{T}
         temperatures = collectto!(Tpointbuffer, view(Tpoints, 1:npoints), boundary.Tpoints, constraint.Tpoints)::StridedVector{T}
         Tsteps = linterp1s(ages, temperatures, agesteps)::DenseVector{T}
@@ -463,32 +440,8 @@
             end
                
             # Calculate model ages for each grain
-            if any(tzr)
-                anneal!(zpr, zTeq, dt, tsteps, Tsteps, zdmₚ)
-                zi = 1
-                for i ∈ findall(tzr)
-                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                    if first_index > 1
-                        calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdmₚ)::T
-                    else
-                        calcHeAgesₚ[i] = HeAgeSpherical(zircons[zi], Tsteps, zpr, zdmₚ)::T
-                    end
-                    zi += 1
-                end
-            end
-            if any(tap)
-                anneal!(apr, aTeq, dt, tsteps, Tsteps, admₚ)
-                ai = 1
-                for i ∈ findall(tap)
-                    first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-                    if first_index > 1
-                        calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), admₚ)::T
-                    else
-                        calcHeAgesₚ[i] = HeAgeSpherical(apatites[ai], Tsteps, apr, admₚ)::T
-                    end
-                    ai += 1
-                end
-            end
+            mineralages!(calcHeAgesₚ, tzr, zpr, zTeq, dt, tsteps, Tsteps, zdmₚ, zircons)
+            mineralages!(calcHeAgesₚ, tap, apr, aTeq, dt, tsteps, Tsteps, admₚ, apatites)
 
             # Calculate log likelihood of proposal
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
