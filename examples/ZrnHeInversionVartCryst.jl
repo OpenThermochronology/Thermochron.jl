@@ -49,67 +49,109 @@
     tz = containsi.(data.mineral, "zircon")
     eU = data.U+0.238*data.Th; # Used for plotting, etc.
 
-## --- Empirical uncertainty estimation
+## --- Empirical uncertainty estimation (using curve fit)
 
-    age = copy(data.HeAge)
+    using LsqFit: curve_fit
+    function bilinearexponential(x,p)
+        @. p[3:5] = abs(p[3:5])
+        A, loc, scl, shp, skw = p
+        xs = @. (x - loc)/scl # X standardized by location (mean-like) and scale (variance-like)
+        v = @. 1/2 - atan(xs)/3.141592653589793 # Sigmoid (positive on LHS)
+        @. exp(A + shp*skw*xs*v - shp/skw*xs*(1-v))
+    end
     age_sigma = copy(ds.HeAge_Ma_sigma_raw)
-    age_sigma_empirical = copy(data.HeAge_sigma)
-    min_rel_uncert = 5/100 # 5% minmum relative age uncertainty
+    age_sigma_empirical = similar(age_sigma)
 
     if any(ta)
-        # Standard deviation of a Gaussian kernel in eU space, representing the 
-        # range of eU over which zircons with similar eU should have similar ages
-        σeU = 10
-
-        # Calculate errors
-        for i ∈ findall(ta)
-            W = normpdf.(eU[i], σeU, eU[ta])
-            σ_external = nanstd(age[ta], W) # Weighted standard deviation
-            σ_external /= sqrt(2) # Assume half of variance is unknown external uncertainty
-            σ_internal = age_sigma[i]
-            age_sigma_empirical[i] = sqrt(σ_external^2 + σ_internal^2)
-            age_sigma_empirical[i] = max(age_sigma_empirical[i], min_rel_uncert*age[i])
-        end
+        p = [1, nanmean(eU[ta]), nanstd(eU[ta]), 1, 1]
+        fobj = curve_fit(bilinearexponential,eU[ta],data.HeAge[ta],p)
+        σ_external = nanstd(data.HeAge[ta] .- bilinearexponential(eU[ta],fobj.param))
+        σ_external /= sqrt(2) # Assume half of variance is unknown external uncertainty
+        @. age_sigma_empirical[ta] = sqrt(data.HeAge_sigma[ta]^2 + σ_external^2)
 
         h = plot(xlabel="eU", ylabel="Age", framestyle=:box, title="apatite")
-        plot!(eU[ta], age[ta], yerror=age_sigma_empirical[ta], seriestype=:scatter, c=:black, msc=:black, label="empirical")
-        plot!(eU[ta], age[ta], yerror=age_sigma[ta], seriestype=:scatter, c=mineralcolors["apatite"], msc=mineralcolors["apatite"], label="internal")
+        x = range(extrema(eU[ta])..., length=100)
+        plot!(x, bilinearexponential(x,fobj.param), label="trendline")
+        plot!(eU[ta], data.HeAge[ta], yerror=age_sigma_empirical[ta], seriestype=:scatter, c=:black, msc=:black, label="empirical")
+        plot!(eU[ta], data.HeAge[ta], yerror=age_sigma[ta], seriestype=:scatter, c=mineralcolors["zircon"], msc=mineralcolors["zircon"], label="internal")
         display(h)
     end
 
     if any(tz)
-        # Standard deviation of a Gaussian kernel in eU space, representing the 
-        # range of eU over which zircons with similar eU should have similar ages
-        σeU = 100
-
-        # Calculate errors
-        for i ∈ findall(tz)
-            W = normpdf.(eU[i], σeU, eU[tz])
-            σ_external = nanstd(age[tz], W) # Weighted standard deviation
-            σ_external /= sqrt(2) # Assume half of variance is unknown external uncertainty
-            σ_internal = age_sigma[i]
-            age_sigma_empirical[i] = sqrt(σ_external^2 + σ_internal^2)
-            age_sigma_empirical[i] = max(age_sigma_empirical[i], min_rel_uncert*age[i])
-        end
+        p = [1, nanmean(eU[tz]), nanstd(eU[tz]), 1, 1]
+        fobj = curve_fit(bilinearexponential,eU[tz],data.HeAge[tz],p)
+        σ_external = nanstd(data.HeAge[tz] .- bilinearexponential(eU[tz],fobj.param))
+        σ_external /= sqrt(2) # Assume half of variance is unknown external uncertainty
+        @. age_sigma_empirical[tz] = sqrt(data.HeAge_sigma[tz]^2 + σ_external^2)
 
         h = plot(xlabel="eU", ylabel="Age", framestyle=:box, title="zircon")
-        plot!(eU[tz], age[tz], yerror=age_sigma_empirical[tz], seriestype=:scatter, c=:black, msc=:black, label="empirical")
-        plot!(eU[tz], age[tz], yerror=age_sigma[tz], seriestype=:scatter, c=mineralcolors["zircon"], msc=mineralcolors["zircon"], label="internal")
+        x = range(extrema(eU[tz])..., length=100)
+        plot!(x, bilinearexponential(x,fobj.param), label="trendline")
+        plot!(eU[tz], data.HeAge[tz], yerror=age_sigma_empirical[tz], seriestype=:scatter, c=:black, msc=:black, label="empirical")
+        plot!(eU[tz], data.HeAge[tz], yerror=age_sigma[tz], seriestype=:scatter, c=mineralcolors["zircon"], msc=mineralcolors["zircon"], label="internal")
         display(h)
     end
+
+# ## --- Empirical uncertainty estimation (using Gaussian window)
+
+#     age_sigma = copy(ds.HeAge_Ma_sigma_raw)
+#     age_sigma_empirical = similar(age_sigma)
+#     min_rel_uncert = 5/100 # 5% minmum relative age uncertainty
+
+#     if any(ta)
+#         # Standard deviation of a Gaussian kernel in eU space, representing the 
+#         # range of eU over which zircons with similar eU should have similar ages
+#         σeU = 10
+
+#         # Calculate errors
+#         for i ∈ findall(ta)
+#             W = normpdf.(eU[i], σeU, eU[ta])
+#             σ_external = nanstd(data.HeAge[ta], W) # Weighted standard deviation
+#             σ_external /= sqrt(2) # Assume half of variance is unknown external uncertainty
+#             σ_internal = age_sigma[i]
+#             age_sigma_empirical[i] = sqrt(σ_external^2 + σ_internal^2)
+#             age_sigma_empirical[i] = max(age_sigma_empirical[i], min_rel_uncert*age[i])
+#         end
+
+#         h = plot(xlabel="eU", ylabel="Age", framestyle=:box, title="apatite")
+#         plot!(eU[ta], data.HeAge[ta], yerror=age_sigma_empirical[ta], seriestype=:scatter, c=:black, msc=:black, label="empirical")
+#         plot!(eU[ta], data.HeAge[ta], yerror=age_sigma[ta], seriestype=:scatter, c=mineralcolors["apatite"], msc=mineralcolors["apatite"], label="internal")
+#         display(h)
+#     end
+
+#     if any(tz)
+#         # Standard deviation of a Gaussian kernel in eU space, representing the 
+#         # range of eU over which zircons with similar eU should have similar ages
+#         σeU = 100
+
+#         # Calculate errors
+#         for i ∈ findall(tz)
+#             W = normpdf.(eU[i], σeU, eU[tz])
+#             σ_external = nanstd(age[tz], W) # Weighted standard deviation
+#             σ_external /= sqrt(2) # Assume half of variance is unknown external uncertainty
+#             σ_internal = age_sigma[i]
+#             age_sigma_empirical[i] = sqrt(σ_external^2 + σ_internal^2)
+#             age_sigma_empirical[i] = max(age_sigma_empirical[i], min_rel_uncert*age[i])
+#         end
+
+#         h = plot(xlabel="eU", ylabel="Age", framestyle=:box, title="zircon")
+#         plot!(eU[tz], data.HeAge[tz], yerror=age_sigma_empirical[tz], seriestype=:scatter, c=:black, msc=:black, label="empirical")
+#         plot!(eU[tz], data.HeAge[tz], yerror=age_sigma[tz], seriestype=:scatter, c=mineralcolors["zircon"], msc=mineralcolors["zircon"], label="internal")
+#         display(h)
+#     end
 
 ## --- Prepare problem
 
     # Use empirical ages for zircon, 10 % for apatite
     data.HeAge_sigma[tz] .= age_sigma_empirical[tz]
-    data.HeAge_sigma[ta] .= ds.HeAge_Ma_sigma_10pct[ta]
+    data.HeAge_sigma[ta] .= age_sigma_empirical[ta]
 
     model = (
-        nsteps = 1_000_000,         # How many steps of the Markov chain should we run?
-        burnin = 500_000,           # How long should we wait for MC to converge (become stationary)
+        nsteps = 600_000,         # How many steps of the Markov chain should we run?
+        burnin = 350_000,           # How long should we wait for MC to converge (become stationary)
         dr = 1.0,                   # Radius step, in microns
         dt = 10.0,                  # Time step size in Myr
-        dTmax = 25.0,               # Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
+        dTmax = 10.0,               # Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
         Tinit = 400.0,              # Initial model temperature (in C) (i.e., crystallization temperature)
         ΔTinit = -50.0,             # Tinit can vary from Tinit to Tinit+ΔTinit
         Tnow = 0.0,                 # Current surface temperature (in C)
@@ -126,7 +168,7 @@
         # Model uncertainty is not well known (depends on annealing parameters,
         # decay constants, diffusion parameters, etc.), but is certainly non-zero.
         # Here we add (in quadrature) a blanket model uncertainty of 25 Ma.
-        σmodel = 20.0,              # [Ma]
+        σmodel = 0.0,              # [Ma]
         σannealing = 35.0,          # initial annealing uncertainty [Ma]
         λannealing = 10 ./ 100_000  # annealing decay [1/n]
     )
