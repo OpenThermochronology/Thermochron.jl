@@ -190,6 +190,35 @@
         return agepointsₚ[k], Tpointsₚ[k]
     end
 
+    function addpoint!(agepointsₚ::Vector{T}, Tpointsₚ::Vector{T}, k::Int, σⱼt::T, σⱼT::T, boundary::Boundary{T}) where {T}
+        @assert eachindex(agepointsₚ) == eachindex(Tpointsₚ)
+
+        tmin, tmax = extrema(boundary.agepoints)
+        Tmin, Tmax = extrema(boundary.T₀)
+
+        # Pick an age uniformly within the boundaries
+        agepointsₚ[k] = tmin + rand()*(tmax-tmin)
+
+        # Find the closest existing points (if any)
+        ages = view(agepointsₚ, 1:k-1)
+        i₋ = findclosestbelow(agepointsₚ[k], ages)
+        i₊ = findclosestabove(agepointsₚ[k], ages)
+
+        # Pick a temperature by interpolating
+        t₋ = (firstindex(ages) <= i₋ <= lastindex(ages)) ? agepointsₚ[i₋] : tmin
+        T₋ = (firstindex(ages) <= i₋ <= lastindex(ages)) ? Tpointsₚ[i₋] : Tmin
+        t₊ = (firstindex(ages) <= i₊ <= lastindex(ages)) ? agepointsₚ[i₊] : tmax
+        T₊ = (firstindex(ages) <= i₊ <= lastindex(ages)) ? Tpointsₚ[i₊] : Tmax
+
+        f = (agepointsₚ[k] - t₋) / (t₊ - t₋)
+        Tpointsₚ[k] = f*T₊ + (1-f)*T₋
+
+        # Move the point from the interpolated value
+        movepoint!(agepointsₚ, Tpointsₚ, k, σⱼt, σⱼT, boundary)
+
+        return agepointsₚ[k], Tpointsₚ[k]
+    end
+
     function movebounds!(boundary::Boundary)
         @inbounds for i in eachindex(boundary.Tpointsₚ)
             boundary.Tpointsₚ[i] = boundary.T₀[i] + rand()*boundary.ΔT[i]
