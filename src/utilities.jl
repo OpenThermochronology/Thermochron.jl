@@ -190,8 +190,8 @@
         return agepointsₚ[k], Tpointsₚ[k]
     end
 
-    function addpoint!(agepointsₚ::Vector{T}, Tpointsₚ::Vector{T}, k::Int, σⱼt::T, σⱼT::T, boundary::Boundary{T}) where {T}
-        @assert eachindex(agepointsₚ) == eachindex(Tpointsₚ)
+    function addpoint!(agepointsₚ::Vector{T}, Tpointsₚ::Vector{T}, σⱼt::Vector{T}, σⱼT::Vector{T}, k::Int, boundary::Boundary{T}) where {T}
+        @assert eachindex(agepointsₚ) == eachindex(Tpointsₚ) == eachindex(σⱼt) == eachindex(σⱼT)
 
         tmin, tmax = extrema(boundary.agepoints)
         Tmin, Tmax = extrema(boundary.T₀)
@@ -204,17 +204,29 @@
         i₋ = findclosestbelow(agepointsₚ[k], ages)
         i₊ = findclosestabove(agepointsₚ[k], ages)
 
-        # Pick a temperature by interpolating
-        t₋ = (firstindex(ages) <= i₋ <= lastindex(ages)) ? agepointsₚ[i₋] : tmin
-        T₋ = (firstindex(ages) <= i₋ <= lastindex(ages)) ? Tpointsₚ[i₋] : Tmin
-        t₊ = (firstindex(ages) <= i₊ <= lastindex(ages)) ? agepointsₚ[i₊] : tmax
-        T₊ = (firstindex(ages) <= i₊ <= lastindex(ages)) ? Tpointsₚ[i₊] : Tmax
+        # Find values for the closest younger point
+        inbounds₋ = firstindex(ages) <= i₋ <= lastindex(ages)
+        t₋ = inbounds₋ ? agepointsₚ[i₋] : tmin
+        T₋ = inbounds₋ ? Tpointsₚ[i₋] : Tmin
+        σⱼt₋ = inbounds₋ ? σⱼt[i₋] : (tmax-tmin)/60
+        σⱼT₋ = inbounds₋ ? σⱼT[i₋] : (Tmax-Tmin)/60
 
+        # Find values for the closest older point
+        inbounds₊ = firstindex(ages) <= i₊ <= lastindex(ages)
+        t₊ = inbounds₊ ? agepointsₚ[i₊] : tmax
+        T₊ = inbounds₊ ? Tpointsₚ[i₊] : Tmax
+        σⱼt₊ = inbounds₊ ? σⱼt[i₊] : (tmax-tmin)/60
+        σⱼT₊ = inbounds₊ ? σⱼT[i₊] : (Tmax-Tmin)/60
+
+        # Interpolate
         f = (agepointsₚ[k] - t₋) / (t₊ - t₋)
+        f *= !isnan(f)
         Tpointsₚ[k] = f*T₊ + (1-f)*T₋
+        σⱼt[k] = f*σⱼt₊ + (1-f)*σⱼt₋
+        σⱼT[k] = f*σⱼT₊ + (1-f)*σⱼT₋
 
         # Move the point from the interpolated value
-        movepoint!(agepointsₚ, Tpointsₚ, k, σⱼt, σⱼT, boundary)
+        movepoint!(agepointsₚ, Tpointsₚ, k, σⱼt[k], σⱼT[k], boundary)
 
         return agepointsₚ[k], Tpointsₚ[k]
     end
