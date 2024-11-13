@@ -161,7 +161,7 @@
             elseif (r < p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point
                 k = npointsₚ = npoints + 1
-                σⱼt[k] = (tinit-Tnow)/60
+                σⱼt[k] = (tinit-tnow)/60
                 σⱼT[k] = (Tinit-Tnow)/60
                 addpoint!(agepointsₚ, Tpointsₚ, k, σⱼt[k], σⱼT[k], boundary)
 
@@ -401,10 +401,9 @@
             elseif (r < p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point
                 k = npointsₚ = npoints + 1
-                agepointsₚ[k] = tnow + rand()*(tinit-tnow)
-                Tpointsₚ[k] = Tnow + rand()*(Tinit-Tnow)
-                σⱼt[k] = (tinit-Tnow)/60
+                σⱼt[k] = (tinit-tnow)/60
                 σⱼT[k] = (Tinit-Tnow)/60
+                addpoint!(agepointsₚ, Tpointsₚ, k, σⱼt[k], σⱼT[k], boundary)
 
             elseif (r < p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
