@@ -97,6 +97,11 @@
             ai += 1
         end
 
+        # Standard deviations of Gaussian proposal ("jumping") distributions
+        # for temperature and time
+        σⱼt = fill((tinit-tnow)/60, maxpoints)
+        σⱼT = fill((Tinit-Tnow)/60, maxpoints)
+
         # Simulated annealing of uncertainty
         σₐ = simannealsigma.(1, HeAge_sigma, σmodel, σannealing, λannealing)::DenseVector{T}
         σ = sqrt.(HeAge_sigma.^2 .+ σmodel^2)
@@ -110,6 +115,8 @@
         agepointsₚ = copy(agepoints)::DenseVector{T}
         Tpointsₚ = copy(Tpoints)::DenseVector{T}
         calcHeAgesₚ = copy(calcHeAges)::DenseVector{T}
+        σⱼtₚ = copy(σⱼt)
+        σⱼTₚ = copy(σⱼT)
 
         # distributions to populate
         tpointdist = fill(T(NaN), totalpoints, nsteps)
@@ -120,12 +127,6 @@
         lldist = zeros(T, nsteps)
         ndist = zeros(Int, nsteps)
         acceptancedist = zeros(Bool, nsteps)
-
-        # Standard deviations of Gaussian proposal ("jumping") distributions
-        # for temperature and time
-        σⱼt = fill((tinit-tnow)/60, maxpoints)
-        σⱼT = fill((Tinit-Tnow)/60, maxpoints)
-        k = 1 # Index of chosen t-T point
 
         # Proposal probabilities (must sum to 1)
         p_move = 0.64
@@ -148,6 +149,8 @@
             copyto!(constraint.agepointsₚ, constraint.agepoints)
             copyto!(constraint.Tpointsₚ, constraint.Tpoints)
             copyto!(boundary.Tpointsₚ, boundary.Tpoints)
+            copyto!(σⱼtₚ, σⱼt)
+            copyto!(σⱼTₚ, σⱼT)
 
             # Randomly choose an option and point (if applicable) to adjust
             r = rand()
@@ -156,18 +159,20 @@
             # Adjust the proposal
             if r < p_move
                 # Move one t-T point
-                movepoint!(agepointsₚ, Tpointsₚ, k, σⱼt[k], σⱼT[k], boundary)
+                movepoint!(agepointsₚ, Tpointsₚ, k, σⱼtₚ[k], σⱼTₚ[k], boundary)
 
             elseif (r < p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point
                 k = npointsₚ = npoints + 1
-                addpoint!(agepointsₚ, Tpointsₚ, σⱼt, σⱼT, k, boundary)
+                addpoint!(agepointsₚ, Tpointsₚ, σⱼtₚ, σⱼTₚ, k, boundary)
 
             elseif (r < p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
                 npointsₚ = npoints - 1
                 agepointsₚ[k] = agepointsₚ[npoints]
                 Tpointsₚ[k] = Tpointsₚ[npoints]
+                σⱼtₚ[k] = σⱼtₚ[npoints]
+                σⱼTₚ[k] = σⱼTₚ[npoints]
 
             elseif (r < p_move+p_birth+p_death+p_bounds)
                 # Move the temperatures of the starting and ending boundaries
@@ -207,10 +212,10 @@
                 # Update jumping distribution based on size of current accepted p_move
                 if dynamicjumping && r < p_move
                     if agepointsₚ[k] != agepoints[k]
-                        σⱼt[k] = ℯ * abs(agepointsₚ[k] - agepoints[k])
+                        σⱼtₚ[k] = ℯ * abs(agepointsₚ[k] - agepoints[k])
                     end
                     if Tpointsₚ[k] != Tpoints[k]
-                        σⱼT[k] = ℯ * abs(Tpointsₚ[k] - Tpoints[k])
+                        σⱼTₚ[k] = ℯ * abs(Tpointsₚ[k] - Tpoints[k])
                     end
                 end
 
@@ -224,6 +229,8 @@
                 copyto!(constraint.Tpoints, constraint.Tpointsₚ)
                 copyto!(boundary.Tpoints, boundary.Tpointsₚ)
                 copyto!(calcHeAges, calcHeAgesₚ)
+                copyto!(σⱼt, σⱼtₚ)
+                copyto!(σⱼT, σⱼTₚ)
 
                 # Not critical to the function of the MCMC loop, but critical for recording stationary distribution!
                 acceptancedist[n] = true
@@ -332,6 +339,11 @@
             ai += 1
         end
 
+        # Standard deviations of Gaussian proposal ("jumping") distributions
+        # for temperature and time
+        σⱼt = fill((tinit-tnow)/60, maxpoints)
+        σⱼT = fill((Tinit-Tnow)/60, maxpoints)
+
         # Simulated annealing of uncertainty
         σₐ = simannealsigma.(1, HeAge_sigma, σmodel, σannealing, λannealing)::DenseVector{T}
         σ = sqrt.(HeAge_sigma.^2 .+ σmodel^2)
@@ -345,6 +357,8 @@
         agepointsₚ = copy(agepoints)::DenseVector{T}
         Tpointsₚ = copy(Tpoints)::DenseVector{T}
         calcHeAgesₚ = copy(calcHeAges)::DenseVector{T}
+        σⱼtₚ = copy(σⱼt)
+        σⱼTₚ = copy(σⱼT)
 
         # distributions to populate
         tpointdist = fill(T(NaN), totalpoints, nsteps)
@@ -355,12 +369,6 @@
         lldist = zeros(T, nsteps)
         ndist = zeros(Int, nsteps)
         acceptancedist = zeros(Bool, nsteps)
-
-        # Standard deviations of Gaussian proposal ("jumping") distributions
-        # for temperature and time
-        σⱼt = fill((tinit-tnow)/60, maxpoints)
-        σⱼT = fill((Tinit-Tnow)/60, maxpoints)
-        k = 1 # Index of chosen t-T point
 
         # Proposal probabilities (must sum to 1)
         p_move = 0.6
@@ -386,6 +394,8 @@
             copyto!(constraint.agepointsₚ, constraint.agepoints)
             copyto!(constraint.Tpointsₚ, constraint.Tpoints)
             copyto!(boundary.Tpointsₚ, boundary.Tpoints)
+            copyto!(σⱼtₚ, σⱼt)
+            copyto!(σⱼTₚ, σⱼT)
 
             # Randomly choose an option and point (if applicable) to adjust
             r = rand()
@@ -394,18 +404,20 @@
             # Adjust the proposal
             if r < p_move
                 # Move one t-T point
-                movepoint!(agepointsₚ, Tpointsₚ, k, σⱼt[k], σⱼT[k], boundary)
+                movepoint!(agepointsₚ, Tpointsₚ, k, σⱼtₚ[k], σⱼTₚ[k], boundary)
 
             elseif (r < p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point
                 k = npointsₚ = npoints + 1
-                addpoint!(agepointsₚ, Tpointsₚ, σⱼt, σⱼT, k, boundary)
+                addpoint!(agepointsₚ, Tpointsₚ, σⱼtₚ, σⱼTₚ, k, boundary)
 
             elseif (r < p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
                 npointsₚ = npoints - 1
                 agepointsₚ[k] = agepointsₚ[npoints]
                 Tpointsₚ[k] = Tpointsₚ[npoints]
+                σⱼtₚ[k] = σⱼtₚ[npoints]
+                σⱼTₚ[k] = σⱼTₚ[npoints]
 
             elseif (r < p_move+p_birth+p_death+p_bounds)
                 # Move the temperatures of the starting and ending boundaries
@@ -451,10 +463,10 @@
                 # Update jumping distribution based on size of current accepted p_move
                 if dynamicjumping && r < p_move
                     if agepointsₚ[k] != agepoints[k]
-                        σⱼt[k] = ℯ * abs(agepointsₚ[k] - agepoints[k])
+                        σⱼtₚ[k] = ℯ * abs(agepointsₚ[k] - agepoints[k])
                     end
                     if Tpointsₚ[k] != Tpoints[k]
-                        σⱼT[k] = ℯ * abs(Tpointsₚ[k] - Tpoints[k])
+                        σⱼTₚ[k] = ℯ * abs(Tpointsₚ[k] - Tpoints[k])
                     end
                 end
 
@@ -470,6 +482,8 @@
                 copyto!(constraint.Tpoints, constraint.Tpointsₚ)
                 copyto!(boundary.Tpoints, boundary.Tpointsₚ)
                 copyto!(calcHeAges, calcHeAgesₚ)
+                copyto!(σⱼt, σⱼtₚ)
+                copyto!(σⱼT, σⱼTₚ)
 
                 # Not critical to the function of the MCMC loop, but critical for recording stationary distribution!
                 acceptancedist[n] = true
