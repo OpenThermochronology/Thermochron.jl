@@ -21,8 +21,8 @@
     using Thermochron, Plots
 
     using LinearAlgebra
-    # Diminishing returns with more than ~4 threads
-    BLAS.get_num_threads() > 4 && BLAS.set_num_threads(4)
+    # Diminishing returns with more than ~2 threads
+    BLAS.get_num_threads() > 2 && BLAS.set_num_threads(2)
 
     # Make sure we're running in the directory where the script is located
     cd(@__DIR__)
@@ -164,12 +164,12 @@
         dynamicjumping = true,      # Update the t and t jumping (proposal) distributions based on previously accepted jumps
         # Damage and annealing models for diffusivity (specify custom kinetics if desired)
         adm = RDAAM(),
-        zdm = ZRDAAM(), 
+        zdm = ZRDAAM(rmr0=0.0), 
         # Model uncertainty is not well known (depends on annealing parameters,
         # decay constants, diffusion parameters, etc.), but is certainly non-zero.
         # Here we add (in quadrature) a blanket model uncertainty of 25 Ma.
         σmodel = 0.0,              # [Ma]
-        σannealing = 35.0,          # initial annealing uncertainty [Ma]
+        σannealing = 135.0,          # initial annealing uncertainty [Ma]
         λannealing = 10 ./ 100_000  # annealing decay [1/n]
     )
 
@@ -185,12 +185,12 @@
     # Default: no detail interval
     detail = DetailInterval()
 
-    # # Uncomment this section to require greater t-T node density in some time interval
-    # detail = DetailInterval(
-    #     agemin = 0.0, # Youngest end of detail interval
-    #     agemax = 541.0, # Oldest end of detail interval
-    #     minpoints = 7, # Minimum number of points in detail interval
-    # )
+    # Uncomment this section to require greater t-T node density in some time interval
+    detail = DetailInterval(
+        agemin = 0.0, # Youngest end of detail interval
+        agemax = 541.0, # Oldest end of detail interval
+        minpoints = 7, # Minimum number of points in detail interval
+    )
 
     # Boundary conditions (e.g. 10C at present and 650 C at the time of zircon formation).
     boundary = Boundary(
@@ -198,21 +198,22 @@
         T₀ = [model.Tnow, model.Tinit],          # [C] Final and initial temperature
         ΔT = [model.ΔTnow, model.ΔTinit],        # [C] Final and initial temperature range (positive or negative)
         tboundary = :reflecting, # Reflecting time boundary conditions
-        Tboundary = :hard, # Hard temperature boundary conditions
+        Tboundary = :reflecting, # Reflecting temperature boundary conditions
     )
 
     # Default: No constraints are imposed
     constraint = Constraint()
 
-    # # Uncomment this section if you wish to impose an unconformity at any point in the record
-    # # Uniform distributions from Age₀ to Age₀+ΔAge, T₀ to T₀+ΔT,
-    # constraint = Constraint(
-    #     Age₀ = [500,],         # [Ma] Age
-    #     ΔAge = [80,],          # [Ma] Age range
-    #     T₀ = [0,],             # [C] Temperature
-    #     ΔT = [40,],            # [C] Temperature range
-    # )
-    # name *= "_unconf"
+    # Uncomment this section if you wish to impose an unconformity or other constraint
+    # at any point in the record.
+    # Uniform distributions from Age₀ to Age₀+ΔAge, T₀ to T₀+ΔT,
+    constraint = Constraint(
+        Age₀ = [500,],         # [Ma] Age
+        ΔAge = [80,],          # [Ma] Age range
+        T₀ = [0,],             # [C] Temperature
+        ΔT = [40,],            # [C] Temperature range
+    )
+    name *= "_unconf"
 
 ## --- Invert for maximum likelihood t-T path
 
