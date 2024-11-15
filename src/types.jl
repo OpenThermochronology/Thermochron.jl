@@ -60,7 +60,7 @@ struct Boundary{T<:AbstractFloat}
     Tboundary::Symbol
     npoints::Int
 end
-function Boundary(T::Type=Float64; agepoints, T₀, ΔT, Tpoints=collect(T₀), tboundary=:reflecting, Tboundary=:hard)
+function Boundary(T::Type=Float64; agepoints, T₀, ΔT, Tpoints=collect(T₀), tboundary=:reflecting, Tboundary=:reflecting)
     @assert length(agepoints) == length(T₀) == length(ΔT) == length(Tpoints) == 2
     Boundary{T}(
         Tuple(T.(agepoints)), 
