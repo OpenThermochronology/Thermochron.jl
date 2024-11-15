@@ -17,6 +17,7 @@ Grain_Name,Mineral,CrystAge_Ma,Halfwidth_um,HeAge_Ma_raw,HeAge_Ma_sigma_raw,HeAg
 04MT1zD,zircon,3500,80,217,5,10.85,21.7,739,141,0,Miltich 2005
 04MT1zC,zircon,3500,45,193,4,9.65,19.3,980,252,0,Miltich 2005
 04MT1zE,zircon,3500,49,190,4,9.5,19,974,197,0,Miltich 2005
+04SG1zB,zircon,3500,55,72,2,3.6,36,1738,1171,0,Guenthner et al. 2013
 04EQ1zC,zircon,3500,36,57,1.1,2.85,28.5,894,246,0,Guenthner et al. 2013
 04EQ1zE,zircon,3500,35,42,1.1,2.1,21,1107,351,0,Guenthner et al. 2013
 04EQ1zD,zircon,3500,31,29,0.8,1.45,14.5,866,166,0,Guenthner et al. 2013
