@@ -246,23 +246,41 @@
     end
 
     function movekinetics(zdm::ZRDAAM)
-        rn = rand(1:4)
+        rn = rand(1:5)
         zdmₚ = ZRDAAM(
             DzEa = (rn==1) ? exp(log(zdm.DzEa)+randn()*zdm.DzEa_logsigma) : zdm.DzEa,
             DzD0 = (rn==2) ? exp(log(zdm.DzD0)+randn()*zdm.DzD0_logsigma) : zdm.DzD0,
             DN17Ea = (rn==3) ? exp(log(zdm.DN17Ea)+randn()*zdm.DN17Ea_logsigma) : zdm.DN17Ea,
             DN17D0 = (rn==4) ? exp(log(zdm.DN17D0)+randn()*zdm.DN17D0_logsigma) : zdm.DN17D0,
+            rmr0 = (rn==5) ? rand() : zdm.rmr0,
         )
     end
     function movekinetics(adm::RDAAM)
-        rn = rand(1:3)
+        rn = rand(1:4)
+        rmr0 = (rn==4) ? rand() : adm.rmr0
         RDAAM(
             D0L = (rn==1) ? exp(log(adm.D0L)+randn()*adm.D0L_logsigma) : adm.D0L,
             EaL = (rn==2) ? exp(log(adm.EaL)+randn()*adm.EaL_logsigma) : adm.EaL,
             EaTrap = (rn==3) ? exp(log(adm.EaTrap)+randn()*adm.EaTrap_logsigma) : adm.EaTrap,
+            rmr0 = rmr0,
+            kappa = adm.kappa_rmr0 - rmr0,
         )
     end
-    
+
+    # Specialized ll functions for ZRDAAM and RDAAM
+    function loglikelihood(zdmₚ::ZRDAAM, zdm::ZRDAAM)
+        normpdf_ll(log(zdm.DzD0), zdm.DzD0_logsigma, log(zdmₚ.DzD0)) + 
+        normpdf_ll(log(zdm.DzEa), zdm.DzEa_logsigma, log(zdmₚ.DzEa)) + 
+        normpdf_ll(log(zdm.DN17D0), zdm.DN17D0_logsigma, log(zdmₚ.DN17D0)) + 
+        normpdf_ll(log(zdm.DN17Ea), zdm.DN17Ea_logsigma, log(zdmₚ.DN17Ea)) +
+        normpdf_ll(zdm.rmr0, zdm.rmr0_sigma, zdmₚ.rmr0)
+    end
+    function loglikelihood(admₚ::RDAAM, adm::RDAAM)
+        normpdf_ll(log(adm.D0L), adm.D0L_logsigma, log(admₚ.D0L)) + 
+        normpdf_ll(log(adm.EaL), adm.EaL_logsigma, log(admₚ.EaL)) + 
+        normpdf_ll(log(adm.EaTrap), adm.EaTrap_logsigma, log(admₚ.EaTrap))+
+        normpdf_ll(adm.rmr0, adm.rmr0_sigma, admₚ.rmr0)
+    end
 
     # Fill the vector of mineral helium ages in-place
     function mineralages!(calcHeAges, t, pr, Teq, dt, tsteps, Tsteps, dm, minerals)

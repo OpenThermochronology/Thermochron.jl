@@ -20,7 +20,8 @@ Base.@kwdef struct ZRDAAM{T<:AbstractFloat} <: DamageModel
     C1::T=-0.11977              # Zircon anealing parameter
     C2::T=-314.937 - LOG_SEC_MYR # Zircon anealing parameter. Includes conversion factor from seconds to Myr for dt (for performance), in addition to traditional C2 value
     C3::T=-14.2868              # Zircon anealing parameter
-    rmr0::T=0.2                 # Zircon anealing parameter (not normally called this in ZRDAAM context, but effectively the same thing)
+    rmr0::T=0.2                 # Damage conversion parameter (not normally called this in ZRDAAM context, but effectively the same thing)
+    rmr0_sigma::T=0.1           # Damage conversion parameter uncertainty
 end
 export ZRDAAM
 
@@ -44,6 +45,7 @@ Base.@kwdef struct RDAAM{T<:AbstractFloat} <: DamageModel
     C2::T=-65.12969 - LOG_SEC_MYR # Apatite annealing parameter. Includes conversion factor from seconds to Myr for dt (for performance), in addition to traditional C2 value
     C3::T=-7.91715              # Apatite annealing parameter
     rmr0::T=0.83                # Damage conversion parameter
+    rmr0_sigma::T=0.1           # Damage conversion parameter uncertainty
     kappa::T=1.04-0.83          # Damage conversion parameter
     kappa_rmr0::T=1.04          # Damage conversion parameter (the sum of kappa and rmr0)
 end
