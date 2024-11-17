@@ -267,7 +267,7 @@ function HeAgeSpherical(zircon::Zircon{T}, Tsteps::StridedVector{T}, ρᵣ::Stri
 
         # Invert using tridiagonal matrix algorithm
         # equivalent to u[:,i] = A\y
-        lu!(F, A)
+        lu!(F, A, allowsingular=true)
         ldiv!(F, y)
         @turbo @. u[:,i] = y
     end
@@ -405,7 +405,7 @@ function HeAgeSpherical(apatite::Apatite{T}, Tsteps::StridedVector{T}, ρᵣ::Ab
 
         # Invert using tridiagonal matrix algorithm
         # equivalent to u[:,i] = A\y
-        lu!(F, A)
+        lu!(F, A, allowsingular=true)
         ldiv!(F, y)
         @turbo @. u[:,i] = y
     end
