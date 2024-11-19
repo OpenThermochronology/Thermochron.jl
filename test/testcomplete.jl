@@ -284,10 +284,15 @@ rmr0mean = mean(kinetics.zdmdist .|> x-> x.rmr0)
 @test 0 < rmr0mean < 1
 @info "Mean zircon rmr0: $rmr0mean"
 
-## ---
+## --- Add dynamic jumping and a constraint box
 model = (model...,
     dynamicjumping=true
 )
+unconf = Constraint(
+    agedist = [Uniform(500,580),],  # [Ma] Age distribution
+    Tdist =   [   Uniform(0,50),],  # [C] Temperature distribution
+)
+
 @time "\nMCMC with Detail interval & dynamicjumping" tT = MCMC(data, model, boundary, unconf, detail)
 
 @test isa(tT.Tpointdist, AbstractMatrix)

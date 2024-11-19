@@ -88,22 +88,20 @@ struct Constraint{T<:AbstractFloat}
     Tpoints::Vector{T}   # Degrees C
     agepointsₚ::Vector{T} # Ma
     Tpointsₚ::Vector{T}   # Degrees C
-    Age₀::Vector{T}
-    ΔAge::Vector{T}
-    T₀::Vector{T}
-    ΔT::Vector{T}
+    agedist::Vector{<:Union{Uniform{T}, Normal{T}, LogNormal{T}}}
+    Tdist::Vector{<:Union{Uniform{T}, Normal{T}, LogNormal{T}}}
     npoints::Int
 end
-function Constraint(T::Type=Float64; Age₀=T[], ΔAge=T[], T₀=T[], ΔT=T[], agepoints=(Age₀ + ΔAge/2), Tpoints=(T₀ + ΔT/2))
-    @assert length(agepoints) == length(Tpoints) == length(Age₀) == length(ΔAge) == length(T₀) == length(ΔT)
+function Constraint(T::Type=Float64; agedist=Uniform{T}[], Tdist=Uniform{T}[], agepoints=mean.(agedist), Tpoints=mean.(Tdist))
+    @assert length(agepoints) == length(Tpoints) == length(agedist) == length(Tdist)
+    isabstracttype(eltype(agedist)) && (agedist = unionize(agedist))
+    isabstracttype(eltype(Tdist)) && (Tdist = unionize(Tdist))
     Constraint{T}(T.(agepoints),
         T.(Tpoints),
         T.(agepoints), 
         T.(Tpoints), 
-        T.(Age₀), 
-        T.(ΔAge), 
-        T.(T₀), 
-        T.(ΔT), 
+        agedist,
+        Tdist,
         length(agepoints),
     )
 end

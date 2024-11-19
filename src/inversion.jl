@@ -177,8 +177,8 @@
             elseif (r < p_move+p_birth+p_death+p_bounds)
                 # Move the temperatures of the starting and ending boundaries
                 movebounds!(boundary)
-                # If there's an imposed unconformity or other t-T constraint, adjust within parameters
-                movebounds!(constraint)
+                # If there's an imposed unconformity or other t-T constraint, adjust within bounds
+                movebounds!(constraint, boundary)
 
             end
 
@@ -435,8 +435,8 @@
             elseif (r < p_move+p_birth+p_death+p_bounds)
                 # Move the temperatures of the starting and ending boundaries
                 movebounds!(boundary)
-                # If there's an imposed unconformity or other t-T constraint, adjust within parameters
-                movebounds!(constraint)
+                # If there's an imposed unconformity or other t-T constraint, adjust within bounds
+                movebounds!(constraint, boundary)
 
             elseif (r < p_move+p_birth+p_death+p_bounds+p_kinetics)
                 # Adjust kinetic parameters, one at a time

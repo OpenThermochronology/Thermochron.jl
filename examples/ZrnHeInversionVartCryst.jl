@@ -51,94 +51,93 @@
 
 ## --- Empirical uncertainty estimation (using curve fit)
 
-    using LsqFit: curve_fit
-    function bilinearexponential(x,p)
-        @. p[3:5] = abs(p[3:5])
-        A, loc, scl, shp, skw = p
-        xs = @. (x - loc)/scl # X standardized by location (mean-like) and scale (variance-like)
-        v = @. 1/2 - atan(xs)/3.141592653589793 # Sigmoid (positive on LHS)
-        @. exp(A + shp*skw*xs*v - shp/skw*xs*(1-v))
-    end
+    # using LsqFit: curve_fit
+    # function bilinearexponential(x,p)
+    #     @. p[3:5] = abs(p[3:5])
+    #     A, loc, scl, shp, skw = p
+    #     xs = @. (x - loc)/scl # X standardized by location (mean-like) and scale (variance-like)
+    #     v = @. 1/2 - atan(xs)/3.141592653589793 # Sigmoid (positive on LHS)
+    #     @. exp(A + shp*skw*xs*v - shp/skw*xs*(1-v))
+    # end
+    # age_sigma = copy(ds.HeAge_Ma_sigma_raw)
+    # age_sigma_empirical = similar(age_sigma)
+
+    # if any(ta)
+    #     p = [1, nanmean(eU[ta]), nanstd(eU[ta]), 1, 1]
+    #     fobj = curve_fit(bilinearexponential,eU[ta],data.HeAge[ta],p)
+    #     σ_external = nanstd(data.HeAge[ta] .- bilinearexponential(eU[ta],fobj.param))
+    #     σ_external /= sqrt(2) # Assume half of variance is unknown external uncertainty
+    #     @. age_sigma_empirical[ta] = sqrt(data.HeAge_sigma[ta]^2 + σ_external^2)
+
+    #     h = plot(xlabel="eU", ylabel="Age", framestyle=:box, title="apatite")
+    #     x = range(extrema(eU[ta])..., length=100)
+    #     plot!(x, bilinearexponential(x,fobj.param), label="trendline")
+    #     plot!(eU[ta], data.HeAge[ta], yerror=age_sigma_empirical[ta], seriestype=:scatter, c=:black, msc=:black, label="empirical")
+    #     plot!(eU[ta], data.HeAge[ta], yerror=age_sigma[ta], seriestype=:scatter, c=mineralcolors["zircon"], msc=mineralcolors["zircon"], label="internal")
+    #     display(h)
+    # end
+
+    # if any(tz)
+    #     p = [1, nanmean(eU[tz]), nanstd(eU[tz]), 1, 1]
+    #     fobj = curve_fit(bilinearexponential,eU[tz],data.HeAge[tz],p)
+    #     σ_external = nanstd(data.HeAge[tz] .- bilinearexponential(eU[tz],fobj.param))
+    #     σ_external /= sqrt(2) # Assume half of variance is unknown external uncertainty
+    #     @. age_sigma_empirical[tz] = sqrt(data.HeAge_sigma[tz]^2 + σ_external^2)
+
+    #     h = plot(xlabel="eU", ylabel="Age", framestyle=:box, title="zircon")
+    #     x = range(extrema(eU[tz])..., length=100)
+    #     plot!(x, bilinearexponential(x,fobj.param), label="trendline")
+    #     plot!(eU[tz], data.HeAge[tz], yerror=age_sigma_empirical[tz], seriestype=:scatter, c=:black, msc=:black, label="empirical")
+    #     plot!(eU[tz], data.HeAge[tz], yerror=age_sigma[tz], seriestype=:scatter, c=mineralcolors["zircon"], msc=mineralcolors["zircon"], label="internal")
+    #     display(h)
+    # end
+
+## --- Empirical uncertainty estimation (using Gaussian window)
+
     age_sigma = copy(ds.HeAge_Ma_sigma_raw)
     age_sigma_empirical = similar(age_sigma)
 
     if any(ta)
-        p = [1, nanmean(eU[ta]), nanstd(eU[ta]), 1, 1]
-        fobj = curve_fit(bilinearexponential,eU[ta],data.HeAge[ta],p)
-        σ_external = nanstd(data.HeAge[ta] .- bilinearexponential(eU[ta],fobj.param))
-        σ_external /= sqrt(2) # Assume half of variance is unknown external uncertainty
-        @. age_sigma_empirical[ta] = sqrt(data.HeAge_sigma[ta]^2 + σ_external^2)
+        # Standard deviation of a Gaussian kernel in eU space, representing the 
+        # range of eU over which zircons with similar eU should have similar ages
+        σeU = 10
+
+        # Calculate errors
+        for i ∈ findall(ta)
+            nearesteU = minimum(x->abs(x-eU[i]), eU[setdiff(findall(ta), i)])
+            W = normpdf.(eU[i], max(σeU, nearesteU/2), eU[ta])
+            σ_external = nanstd(data.HeAge[ta], W) # Weighted standard deviation
+            σ_external /= sqrt(2) # Assume half of variance is unknown external uncertainty
+            σ_internal = age_sigma[i]
+            age_sigma_empirical[i] = sqrt(σ_external^2 + σ_internal^2)
+        end
 
         h = plot(xlabel="eU", ylabel="Age", framestyle=:box, title="apatite")
-        x = range(extrema(eU[ta])..., length=100)
-        plot!(x, bilinearexponential(x,fobj.param), label="trendline")
         plot!(eU[ta], data.HeAge[ta], yerror=age_sigma_empirical[ta], seriestype=:scatter, c=:black, msc=:black, label="empirical")
-        plot!(eU[ta], data.HeAge[ta], yerror=age_sigma[ta], seriestype=:scatter, c=mineralcolors["zircon"], msc=mineralcolors["zircon"], label="internal")
+        plot!(eU[ta], data.HeAge[ta], yerror=age_sigma[ta], seriestype=:scatter, c=mineralcolors["apatite"], msc=mineralcolors["apatite"], label="internal")
         display(h)
     end
 
     if any(tz)
-        p = [1, nanmean(eU[tz]), nanstd(eU[tz]), 1, 1]
-        fobj = curve_fit(bilinearexponential,eU[tz],data.HeAge[tz],p)
-        σ_external = nanstd(data.HeAge[tz] .- bilinearexponential(eU[tz],fobj.param))
-        σ_external /= sqrt(2) # Assume half of variance is unknown external uncertainty
-        @. age_sigma_empirical[tz] = sqrt(data.HeAge_sigma[tz]^2 + σ_external^2)
+        # Standard deviation of a Gaussian kernel in eU space, representing the 
+        # range of eU over which zircons with similar eU should have similar ages
+        σeU = 100
+
+        # Calculate errors
+        for i ∈ findall(tz)
+            nearesteU = minimum(x->abs(x-eU[i]), eU[setdiff(findall(tz), i)])
+            W = normpdf.(eU[i], max(σeU, nearesteU/2), eU[tz])
+            σ_external = nanstd(data.HeAge[tz], W) # Weighted standard deviation
+            σ_external /= sqrt(2) # Assume half of variance is unknown external uncertainty
+            σ_internal = age_sigma[i]
+            age_sigma_empirical[i] = sqrt(σ_external^2 + σ_internal^2)
+        end
 
         h = plot(xlabel="eU", ylabel="Age", framestyle=:box, title="zircon")
-        x = range(extrema(eU[tz])..., length=100)
-        plot!(x, bilinearexponential(x,fobj.param), label="trendline")
         plot!(eU[tz], data.HeAge[tz], yerror=age_sigma_empirical[tz], seriestype=:scatter, c=:black, msc=:black, label="empirical")
         plot!(eU[tz], data.HeAge[tz], yerror=age_sigma[tz], seriestype=:scatter, c=mineralcolors["zircon"], msc=mineralcolors["zircon"], label="internal")
         display(h)
     end
-
-# ## --- Empirical uncertainty estimation (using Gaussian window)
-
-#     age_sigma = copy(ds.HeAge_Ma_sigma_raw)
-#     age_sigma_empirical = similar(age_sigma)
-#     min_rel_uncert = 5/100 # 5% minmum relative age uncertainty
-
-#     if any(ta)
-#         # Standard deviation of a Gaussian kernel in eU space, representing the 
-#         # range of eU over which zircons with similar eU should have similar ages
-#         σeU = 10
-
-#         # Calculate errors
-#         for i ∈ findall(ta)
-#             W = normpdf.(eU[i], σeU, eU[ta])
-#             σ_external = nanstd(data.HeAge[ta], W) # Weighted standard deviation
-#             σ_external /= sqrt(2) # Assume half of variance is unknown external uncertainty
-#             σ_internal = age_sigma[i]
-#             age_sigma_empirical[i] = sqrt(σ_external^2 + σ_internal^2)
-#             age_sigma_empirical[i] = max(age_sigma_empirical[i], min_rel_uncert*age[i])
-#         end
-
-#         h = plot(xlabel="eU", ylabel="Age", framestyle=:box, title="apatite")
-#         plot!(eU[ta], data.HeAge[ta], yerror=age_sigma_empirical[ta], seriestype=:scatter, c=:black, msc=:black, label="empirical")
-#         plot!(eU[ta], data.HeAge[ta], yerror=age_sigma[ta], seriestype=:scatter, c=mineralcolors["apatite"], msc=mineralcolors["apatite"], label="internal")
-#         display(h)
-#     end
-
-#     if any(tz)
-#         # Standard deviation of a Gaussian kernel in eU space, representing the 
-#         # range of eU over which zircons with similar eU should have similar ages
-#         σeU = 100
-
-#         # Calculate errors
-#         for i ∈ findall(tz)
-#             W = normpdf.(eU[i], σeU, eU[tz])
-#             σ_external = nanstd(age[tz], W) # Weighted standard deviation
-#             σ_external /= sqrt(2) # Assume half of variance is unknown external uncertainty
-#             σ_internal = age_sigma[i]
-#             age_sigma_empirical[i] = sqrt(σ_external^2 + σ_internal^2)
-#             age_sigma_empirical[i] = max(age_sigma_empirical[i], min_rel_uncert*age[i])
-#         end
-
-#         h = plot(xlabel="eU", ylabel="Age", framestyle=:box, title="zircon")
-#         plot!(eU[tz], data.HeAge[tz], yerror=age_sigma_empirical[tz], seriestype=:scatter, c=:black, msc=:black, label="empirical")
-#         plot!(eU[tz], data.HeAge[tz], yerror=age_sigma[tz], seriestype=:scatter, c=mineralcolors["zircon"], msc=mineralcolors["zircon"], label="internal")
-#         display(h)
-#     end
 
 ## --- Prepare problem
 
@@ -206,12 +205,9 @@
 
     # # Uncomment this section if you wish to impose an unconformity or other constraint
     # # at any point in the record.
-    # # Uniform distributions from Age₀ to Age₀+ΔAge, T₀ to T₀+ΔT,
     # constraint = Constraint(
-    #     Age₀ = [500,],         # [Ma] Age
-    #     ΔAge = [80,],          # [Ma] Age range
-    #     T₀ = [0,],             # [C] Temperature
-    #     ΔT = [40,],            # [C] Temperature range
+    #     agedist = [Uniform(500,580),],  # [Ma] Age distribution
+    #     Tdist =   [   Uniform(0,50),],  # [C] Temperature distribution
     # )
     # name *= "_unconf"
 
@@ -228,16 +224,10 @@
     Mean jT: $(nanmean(view(tT.jTdist, model.burnin:model.nsteps)))
     """
 
-    # Save tTs using JLD
-    # # Compressed:
-    # using JLD
-    # using JLD: @write
+    # # Save tTs using JLD (compressed)
+    # using JLD: jldopen, @write
     # jldopen("$name.jld", "w", compress=true) do file
-    #     @write file tT.tpointdist
-    #     @write file tT.Tpointdist
-    #     @write file tT.ndist
-    #     @write file tT.HeAgedist
-    #     @write file tT.lldist
+    #     @write file tT
     #     @write file model
     # end
 
@@ -352,10 +342,7 @@
     cb = imsc(repeat(0:100, 1, 10), ylcn, 0, 100)
     plot!(k[2], 0:0.01:0.1, 0:0.01:1, cb, ylims=(0,1), xticks=false, framestyle=:box, yflip=false)
 
-    #plot!([659, 717.4, 717.4, 659, 659],[0, 0, 650, 650, 0], fill=true, color=:white, alpha=0.6) #Sturtian glacial
     plot!([635.5, 717.4, 717.4, 635.5, 635.5],[0, 0, 650, 650, 0], fill=true, color=:white, alpha=0.5) #Sturtian & Marinoan glacial
-    #plot!([635.5, 650.0, 650.0, 635.5, 635.5],[0, 0, 650, 650, 0], fill=true, color=:white, alpha=0.6) #Marinoan glacial
-    #plot!([480, 640, 640, 480, 480],[0, 0, 50, 50, 0], linestyle = :dot, color=:black, linewidth=1.25) # t-T box 640 to 480 Ma, 0-50°C
 
     savefig(k, name*"_tT.pdf")
     display(k)

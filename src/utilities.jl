@@ -154,6 +154,34 @@
         min(max(x, xmin), xmax)
     end
 
+    function boundtime(t::Number, boundary::Boundary)
+        tmin, tmax = extrema(boundary.agepoints)
+        if boundary.tboundary === :reflecting
+            reflecting(t, tmin, tmax)
+        elseif boundary.tboundary === :hard
+            hard(t, tmin, tmax)
+        elseif boundary.tboundary === :periodic
+            periodic(t, tmin, tmax)
+        else
+            @warn "`tboundary` $(boundary.tboundary) not recognized; choose `:reflecting`, `:hard`, or `:periodic`.\nDefaulting to `:reflecting`."
+            reflecting(t, tmin, tmax)
+        end
+    end
+
+    function boundtemp(T::Number, boundary::Boundary)
+        Tmin, Tmax = extrema(boundary.T₀)
+        if boundary.Tboundary === :reflecting
+            reflecting(T, Tmin, Tmax)
+        elseif boundary.Tboundary === :hard
+            hard(T, Tmin, Tmax)
+        elseif boundary.Tboundary === :periodic
+            periodic(T, Tmin, Tmax)
+        else
+            @warn "`Tboundary` $(boundary.Tboundary) not recognized; choose `:reflecting`, `:hard`, or `:periodic`.\nDefaulting to `:reflecting`."
+            reflecting(T, Tmin, Tmax)
+        end
+    end
+
     # Move a t-T point and apply boundary conditions
     function movepoint!(agepointsₚ::Vector{T}, Tpointsₚ::Vector{T}, k::Int, σⱼt::T, σⱼT::T, boundary::Boundary{T}) where {T}
 
@@ -164,28 +192,10 @@
         Tpointsₚ[k] += randn() * σⱼT
 
         # Apply time boundary conditions
-        tmin, tmax = extrema(boundary.agepoints)
-        if boundary.tboundary === :reflecting
-            agepointsₚ[k] = reflecting(agepointsₚ[k], tmin, tmax)
-        elseif boundary.tboundary === :hard
-            agepointsₚ[k] = hard(agepointsₚ[k], tmin, tmax)
-        elseif boundary.tboundary === :periodic
-            agepointsₚ[k] = periodic(agepointsₚ[k], tmin, tmax)
-        else
-            @error "`tboundary` must be either `:reflecting`, `:hard`, or `:periodic`"
-        end
+        agepointsₚ[k] = boundtime(agepointsₚ[k], boundary)
 
         # Apply Temperature boundary conditions
-        Tmin, Tmax = extrema(boundary.T₀)
-        if boundary.Tboundary === :reflecting
-            Tpointsₚ[k] = reflecting(Tpointsₚ[k], Tmin, Tmax)
-        elseif boundary.Tboundary === :hard
-            Tpointsₚ[k] = hard(Tpointsₚ[k], Tmin, Tmax)
-        elseif boundary.Tboundary === :periodic
-            Tpointsₚ[k] = periodic(Tpointsₚ[k], Tmin, Tmax)
-        else
-            @error "`Tboundary` must be either `:reflecting`, `:hard`, or `:periodic`"
-        end
+        Tpointsₚ[k] = boundtemp(Tpointsₚ[k], boundary)
 
         return agepointsₚ[k], Tpointsₚ[k]
     end
@@ -237,10 +247,10 @@
         end
         boundary
     end
-    function movebounds!(constraint::Constraint)
+    function movebounds!(constraint::Constraint, boundary::Boundary)
         @inbounds for i in eachindex(constraint.Tpointsₚ)
-            constraint.agepointsₚ[i] = constraint.Age₀[i] + rand()*constraint.ΔAge[i]
-            constraint.Tpointsₚ[i] = constraint.T₀[i] + rand()*constraint.ΔT[i]
+            constraint.agepointsₚ[i] = boundtime(rand(constraint.agedist[i]), boundary)
+            constraint.Tpointsₚ[i] = boundtemp(rand(constraint.Tdist[i]), boundary)
         end
         constraint
     end

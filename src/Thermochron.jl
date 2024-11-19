@@ -3,6 +3,7 @@ module Thermochron
     using Reexport
     @reexport using StatGeochemBase
     @reexport using NaNStatistics
+    @reexport using Distributions
 
     using LinearAlgebra
     using LoopVectorization
