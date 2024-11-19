@@ -126,7 +126,7 @@
         σⱼTdist = zeros(T, nsteps)
         lldist = zeros(T, nsteps)
         ndist = zeros(Int, nsteps)
-        acceptancedist = zeros(Bool, nsteps)
+        acceptancedist = falses(nsteps)
 
         # Proposal probabilities (must sum to 1)
         p_move = 0.64
@@ -250,7 +250,18 @@
             # Update progress meter every `progress_interval` steps
             (mod(n, progress_interval) == 0) && update!(progress, n)
         end
-        return (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist)
+
+        ttresult = TTResult(
+            tpointdist, 
+            Tpointdist, 
+            ndist, 
+            HeAgedist, 
+            σⱼtdist, 
+            σⱼTdist, 
+            lldist, 
+            acceptancedist,
+        )
+        return ttresult
     end
     export MCMC
 
@@ -368,7 +379,7 @@
         σⱼTdist = zeros(T, nsteps)
         lldist = zeros(T, nsteps)
         ndist = zeros(Int, nsteps)
-        acceptancedist = zeros(Bool, nsteps)
+        acceptancedist = falses(nsteps)
 
         # Proposal probabilities (must sum to 1)
         p_move = 0.6
@@ -503,6 +514,17 @@
             # Update progress meter every `progress_interval` steps
             (mod(n, progress_interval) == 0) && update!(progress, n)
         end
-        return (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist)
+        
+        ttresult = TTResult(
+            tpointdist, 
+            Tpointdist, 
+            ndist, 
+            HeAgedist, 
+            σⱼtdist, 
+            σⱼTdist, 
+            lldist, 
+            acceptancedist,
+        )
+        return ttresult
     end
     export MCMC_varkinetics

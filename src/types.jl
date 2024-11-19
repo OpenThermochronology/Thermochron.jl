@@ -2,7 +2,9 @@
 abstract type DamageModel end
 export DamageModel
 
-Base.@kwdef struct ZRDAAM{T<:AbstractFloat} <: DamageModel 
+abstract type ZirconHeliumModel{T} <: DamageModel end
+
+Base.@kwdef struct ZRDAAM{T<:AbstractFloat} <: ZirconHeliumModel{T} 
     DzD0::T = 193188.0          # Diffusivity [cm^2/sec], crystalline endmember
     DzD0_logsigma::T=log(2)     # log units (default = log(2) = a factor of 2)
     DzEa::T=165.0               # Activation energy [kJ/mol], crystalline endmember
@@ -25,7 +27,10 @@ Base.@kwdef struct ZRDAAM{T<:AbstractFloat} <: DamageModel
 end
 export ZRDAAM
 
-Base.@kwdef struct RDAAM{T<:AbstractFloat} <: DamageModel 
+
+abstract type ApatiteHeliumModel{T} <: DamageModel end
+
+Base.@kwdef struct RDAAM{T<:AbstractFloat} <: ApatiteHeliumModel{T} 
     D0L::T=0.6071               # Diffusivity [cm^2/s]
     D0L_logsigma::T=log(2)      # log units (default = log(2) = a factor of 2)
     EaL::T=122.3                # Activation energy [kJ/mol]
@@ -118,3 +123,26 @@ function DetailInterval(T::Type=Float64; agemin=0, agemax=0, minpoints=0)
     DetailInterval{T}(agemin, agemax, Int(minpoints))
 end
 export DetailInterval
+
+
+## --- Model result types
+
+abstract type AbstractTTResult end
+
+struct TTResult{T<:AbstractFloat} <: AbstractTTResult
+    tpointdist::Matrix{T}
+    Tpointdist::Matrix{T}
+    ndist::Vector{Int}
+    HeAgedist::Matrix{T}
+    jtdist::Vector{T}
+    jTdist::Vector{T}
+    lldist::Vector{T}
+    acceptancedist::BitVector
+end
+
+abstract type AbstractKineticResult end
+
+struct KineticResult{T<:AbstractFloat} <: AbstractKineticResult
+    admdist::Vector{<:ApatiteHeliumModel{T}}
+    zdmdist::Vector{<:ZirconHeliumModel{T}}
+end

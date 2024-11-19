@@ -10,7 +10,7 @@
 #       This file uses the MCMC, damage annealing, and Crank-Nicholson          #
 #   diffusion codes provided by the Thermochron.jl package.                     #
 #                                                                               #
-#   © 2022 C. Brenhin Keller and Kalin McDannell                                #                                                                            #
+#   © 2024 C. Brenhin Keller and Kalin McDannell                                #                                                                            #
 #                                                                               #
 #       If running for the first time, you might consider instantiating the     #
 #   manifest that came with this file                                           #
@@ -164,7 +164,7 @@
         dynamicjumping = true,      # Update the t and t jumping (proposal) distributions based on previously accepted jumps
         # Damage and annealing models for diffusivity (specify custom kinetics if desired)
         adm = RDAAM(),
-        zdm = ZRDAAM(rmr0=0.0), 
+        zdm = ZRDAAM(), 
         # Model uncertainty is not well known (depends on annealing parameters,
         # decay constants, diffusion parameters, etc.), but is certainly non-zero.
         # Here we add (in quadrature) a blanket model uncertainty of 25 Ma.
@@ -204,28 +204,28 @@
     # Default: No constraints are imposed
     constraint = Constraint()
 
-    # Uncomment this section if you wish to impose an unconformity or other constraint
-    # at any point in the record.
-    # Uniform distributions from Age₀ to Age₀+ΔAge, T₀ to T₀+ΔT,
-    constraint = Constraint(
-        Age₀ = [500,],         # [Ma] Age
-        ΔAge = [80,],          # [Ma] Age range
-        T₀ = [0,],             # [C] Temperature
-        ΔT = [40,],            # [C] Temperature range
-    )
-    name *= "_unconf"
+    # # Uncomment this section if you wish to impose an unconformity or other constraint
+    # # at any point in the record.
+    # # Uniform distributions from Age₀ to Age₀+ΔAge, T₀ to T₀+ΔT,
+    # constraint = Constraint(
+    #     Age₀ = [500,],         # [Ma] Age
+    #     ΔAge = [80,],          # [Ma] Age range
+    #     T₀ = [0,],             # [C] Temperature
+    #     ΔT = [40,],            # [C] Temperature range
+    # )
+    # name *= "_unconf"
 
 ## --- Invert for maximum likelihood t-T path
 
     # Run Markov Chain
-    @time (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC(data, model, boundary, constraint, detail)
-    # @time (tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist, σⱼtdist, σⱼTdist) = MCMC_varkinetics(data, model, boundary, constraint, detail)
-    @info """tpointdist & Tpointdist collected, size: $(size(Tpointdist))
-    Mean log-likelihood: $(nanmean(view(lldist, model.burnin:model.nsteps)))
-    Mean acceptance rate: $(nanmean(view(acceptancedist, model.burnin:model.nsteps)))
-    Mean npoints: $(nanmean(view(ndist, model.burnin:model.nsteps)))
-    Mean σⱼₜ: $(nanmean(view(σⱼtdist,model.burnin:model.nsteps)))
-    Mean σⱼT: $(nanmean(view(σⱼTdist, model.burnin:model.nsteps)))
+    # @time result = MCMC(data, model, boundary, constraint, detail)
+    @time result = MCMC_varkinetics(data, model, boundary, constraint, detail)
+    @info """result.tpointdist & result.Tpointdist collected, size: $(size(result.Tpointdist))
+    Mean log-likelihood: $(nanmean(view(result.lldist, model.burnin:model.nsteps)))
+    Mean acceptance rate: $(nanmean(view(result.acceptancedist, model.burnin:model.nsteps)))
+    Mean npoints: $(nanmean(view(result.ndist, model.burnin:model.nsteps)))
+    Mean jₜ: $(nanmean(view(result.jtdist,model.burnin:model.nsteps)))
+    Mean jT: $(nanmean(view(result.jTdist, model.burnin:model.nsteps)))
     """
 
     # Save results using JLD
@@ -233,35 +233,31 @@
     # using JLD
     # using JLD: @write
     # jldopen("$name.jld", "w", compress=true) do file
-    #     @write file tpointdist
-    #     @write file Tpointdist
-    #     @write file ndist
-    #     @write file HeAgedist
-    #     @write file lldist
+    #     @write file result.tpointdist
+    #     @write file result.Tpointdist
+    #     @write file result.ndist
+    #     @write file result.HeAgedist
+    #     @write file result.lldist
     #     @write file model
     # end
-    # Uncompresed:
-    # @save "$name.jld" tpointdist Tpointdist ndist HeAgedist lldist acceptancedist model
-    # To read all variables from file to local workspace:
-    # @load "filename.jld"
 
     # # Alternatively, save as MAT file
     # using MAT
     # matwrite("$name.mat", Dict(
-    #     "tpointdist"=>tpointdist,
-    #     "Tpointdist"=>Tpointdist,
-    #     "ndist"=>ndist,
-    #     "HeAgedist"=>HeAgedist,
-    #     "lldist"=>lldist,
-    #     "acceptancedist"=>acceptancedist,
+    #     "tpointdist"=>result.tpointdist,
+    #     "Tpointdist"=>result.Tpointdist,
+    #     "ndist"=>result.ndist,
+    #     "HeAgedist"=>result.HeAgedist,
+    #     "lldist"=>result.lldist,
+    #     "acceptancedist"=>result.acceptancedist,
     #     "model"=>Dict(
     #         replace.(string.(keys(model)), "σ"=>"sigma", "λ"=>"lambda", "Δ"=>"Delta") .=> values(model)
     #     )
     # ), compress=true)
 
     # Plot log likelihood distribution
-    h = plot(lldist, xlabel="Step number", ylabel="Log likelihood", label="", framestyle=:box)
-    savefig(h, name*"_lldist.pdf")
+    h = plot(result.lldist, xlabel="Step number", ylabel="Log likelihood", label="", framestyle=:box)
+    savefig(h, name*"_result.lldist.pdf")
     display(h)
 
 ## --- Plot model ages vs observed ages in age-eU space (zircon)
@@ -275,7 +271,7 @@
             ylabel="Age (Ma)",
             framestyle=:box,
         )
-        zircon_agedist = HeAgedist[tz, model.burnin:end]
+        zircon_agedist = result.HeAgedist[tz, model.burnin:end]
         m = nanmean(zircon_agedist, dims=2)
         l = nanpctile(zircon_agedist, 2.5, dims=2)
         u = nanpctile(zircon_agedist, 97.5, dims=2)
@@ -300,7 +296,7 @@
             ylabel="Age (Ma)",
             framestyle=:box,
         )
-        apatite_agedist = HeAgedist[ta,model.burnin:end]
+        apatite_agedist = result.HeAgedist[ta,model.burnin:end]
         m = nanmean(apatite_agedist, dims=2)
         l = nanpctile(apatite_agedist, 2.5, dims=2)
         u = nanpctile(apatite_agedist, 97.5, dims=2)
@@ -316,7 +312,7 @@
 
 ## --- Plot moving average of acceptance distribution
 
-    h = plot(movmean(acceptancedist,100), label="", framestyle=:box)
+    h = plot(movmean(result.acceptancedist,100), label="", framestyle=:box)
     plot!(xlabel="Step number", ylabel="acceptance probability (mean of 100)")
     savefig(h, name*"_acceptance.pdf")
     display(h)
@@ -332,7 +328,7 @@
     tTdist = Array{Float64}(undef, xresolution, model.nsteps-burnin)
     xq = range(0, model.tinit, length=xresolution)
     @time @inbounds for i = 1:model.nsteps-burnin
-        linterp1s!(view(tTdist,:,i), view(tpointdist,:,i+burnin), view(Tpointdist,:,i+burnin), xq)
+        linterp1s!(view(tTdist,:,i), view(result.tpointdist,:,i+burnin), view(result.Tpointdist,:,i+burnin), xq)
     end
 
     # Calculate composite image
