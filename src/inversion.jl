@@ -380,6 +380,8 @@
         lldist = zeros(T, nsteps)
         ndist = zeros(Int, nsteps)
         acceptancedist = falses(nsteps)
+        admdist = Array{typeof(adm)}(undef, nsteps)
+        zdmdist = Array{typeof(zdm)}(undef, nsteps)
 
         # Proposal probabilities (must sum to 1)
         p_move = 0.6
@@ -506,6 +508,8 @@
             σⱼtdist[n] = σⱼt[k]
             σⱼTdist[n] = σⱼT[k]
             HeAgedist[:,n] .= calcHeAges # distribution of He ages
+            admdist[n] = adm
+            zdmdist[n] = zdm
 
             # This is the actual output we want -- the distribution of t-T paths (t path is always identical)
             collectto!(view(tpointdist, :, n), view(agepoints, 1:npoints), boundary.agepoints, constraint.agepoints)
@@ -525,6 +529,10 @@
             lldist, 
             acceptancedist,
         )
-        return ttresult
+        kineticresult = KineticResult(
+            admdist,
+            zdmdist
+        )
+        return ttresult, kineticresult
     end
     export MCMC_varkinetics

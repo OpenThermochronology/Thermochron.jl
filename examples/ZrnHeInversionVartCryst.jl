@@ -218,46 +218,46 @@
 ## --- Invert for maximum likelihood t-T path
 
     # Run Markov Chain
-    # @time result = MCMC(data, model, boundary, constraint, detail)
-    @time result = MCMC_varkinetics(data, model, boundary, constraint, detail)
-    @info """result.tpointdist & result.Tpointdist collected, size: $(size(result.Tpointdist))
-    Mean log-likelihood: $(nanmean(view(result.lldist, model.burnin:model.nsteps)))
-    Mean acceptance rate: $(nanmean(view(result.acceptancedist, model.burnin:model.nsteps)))
-    Mean npoints: $(nanmean(view(result.ndist, model.burnin:model.nsteps)))
-    Mean jₜ: $(nanmean(view(result.jtdist,model.burnin:model.nsteps)))
-    Mean jT: $(nanmean(view(result.jTdist, model.burnin:model.nsteps)))
+    # @time tT = MCMC(data, model, boundary, constraint, detail)
+    @time tT, kinetics = MCMC_varkinetics(data, model, boundary, constraint, detail)
+    @info """tT.tpointdist & tT.Tpointdist collected, size: $(size(tT.Tpointdist))
+    Mean log-likelihood: $(nanmean(view(tT.lldist, model.burnin:model.nsteps)))
+    Mean acceptance rate: $(nanmean(view(tT.acceptancedist, model.burnin:model.nsteps)))
+    Mean npoints: $(nanmean(view(tT.ndist, model.burnin:model.nsteps)))
+    Mean jₜ: $(nanmean(view(tT.jtdist,model.burnin:model.nsteps)))
+    Mean jT: $(nanmean(view(tT.jTdist, model.burnin:model.nsteps)))
     """
 
-    # Save results using JLD
+    # Save tTs using JLD
     # # Compressed:
     # using JLD
     # using JLD: @write
     # jldopen("$name.jld", "w", compress=true) do file
-    #     @write file result.tpointdist
-    #     @write file result.Tpointdist
-    #     @write file result.ndist
-    #     @write file result.HeAgedist
-    #     @write file result.lldist
+    #     @write file tT.tpointdist
+    #     @write file tT.Tpointdist
+    #     @write file tT.ndist
+    #     @write file tT.HeAgedist
+    #     @write file tT.lldist
     #     @write file model
     # end
 
     # # Alternatively, save as MAT file
     # using MAT
     # matwrite("$name.mat", Dict(
-    #     "tpointdist"=>result.tpointdist,
-    #     "Tpointdist"=>result.Tpointdist,
-    #     "ndist"=>result.ndist,
-    #     "HeAgedist"=>result.HeAgedist,
-    #     "lldist"=>result.lldist,
-    #     "acceptancedist"=>result.acceptancedist,
+    #     "tpointdist"=>tT.tpointdist,
+    #     "Tpointdist"=>tT.Tpointdist,
+    #     "ndist"=>tT.ndist,
+    #     "HeAgedist"=>tT.HeAgedist,
+    #     "lldist"=>tT.lldist,
+    #     "acceptancedist"=>tT.acceptancedist,
     #     "model"=>Dict(
     #         replace.(string.(keys(model)), "σ"=>"sigma", "λ"=>"lambda", "Δ"=>"Delta") .=> values(model)
     #     )
     # ), compress=true)
 
     # Plot log likelihood distribution
-    h = plot(result.lldist, xlabel="Step number", ylabel="Log likelihood", label="", framestyle=:box)
-    savefig(h, name*"_result.lldist.pdf")
+    h = plot(tT.lldist, xlabel="Step number", ylabel="Log likelihood", label="", framestyle=:box)
+    savefig(h, name*"_tT.lldist.pdf")
     display(h)
 
 ## --- Plot model ages vs observed ages in age-eU space (zircon)
@@ -271,7 +271,7 @@
             ylabel="Age (Ma)",
             framestyle=:box,
         )
-        zircon_agedist = result.HeAgedist[tz, model.burnin:end]
+        zircon_agedist = tT.HeAgedist[tz, model.burnin:end]
         m = nanmean(zircon_agedist, dims=2)
         l = nanpctile(zircon_agedist, 2.5, dims=2)
         u = nanpctile(zircon_agedist, 97.5, dims=2)
@@ -296,7 +296,7 @@
             ylabel="Age (Ma)",
             framestyle=:box,
         )
-        apatite_agedist = result.HeAgedist[ta,model.burnin:end]
+        apatite_agedist = tT.HeAgedist[ta,model.burnin:end]
         m = nanmean(apatite_agedist, dims=2)
         l = nanpctile(apatite_agedist, 2.5, dims=2)
         u = nanpctile(apatite_agedist, 97.5, dims=2)
@@ -312,14 +312,14 @@
 
 ## --- Plot moving average of acceptance distribution
 
-    h = plot(movmean(result.acceptancedist,100), label="", framestyle=:box)
+    h = plot(movmean(tT.acceptancedist,100), label="", framestyle=:box)
     plot!(xlabel="Step number", ylabel="acceptance probability (mean of 100)")
     savefig(h, name*"_acceptance.pdf")
     display(h)
 
 ## --- Create image of paths
 
-    # Desired rsolution of resulting image
+    # Desired rsolution of tTing image
     xresolution = 2000
     yresolution = 1000
     burnin = model.burnin
@@ -328,7 +328,7 @@
     tTdist = Array{Float64}(undef, xresolution, model.nsteps-burnin)
     xq = range(0, model.tinit, length=xresolution)
     @time @inbounds for i = 1:model.nsteps-burnin
-        linterp1s!(view(tTdist,:,i), view(result.tpointdist,:,i+burnin), view(result.Tpointdist,:,i+burnin), xq)
+        linterp1s!(view(tTdist,:,i), view(tT.tpointdist,:,i+burnin), view(tT.Tpointdist,:,i+burnin), xq)
     end
 
     # Calculate composite image

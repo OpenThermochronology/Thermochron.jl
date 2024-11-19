@@ -72,40 +72,40 @@ constraint = Constraint()
 
 # Run Markov Chain
 @time "\nCompiling MCMC" MCMC(data, model, boundary, constraint)
-@time "\nRunning MCMC" result = MCMC(data, model, boundary, constraint)
+@time "\nRunning MCMC" tT = MCMC(data, model, boundary, constraint)
 
-@test isa(result.Tpointdist, AbstractMatrix)
-@test nanmaximum(result.Tpointdist) <= model.Tinit
-@test nanminimum(result.Tpointdist) >= model.Tnow
+@test isa(tT.Tpointdist, AbstractMatrix)
+@test nanmaximum(tT.Tpointdist) <= model.Tinit
+@test nanminimum(tT.Tpointdist) >= model.Tnow
 
-@test isa(result.tpointdist, AbstractMatrix)
-@test nanmaximum(result.Tpointdist) <= model.tinit
-@test nanminimum(result.Tpointdist) >= 0
+@test isa(tT.tpointdist, AbstractMatrix)
+@test nanmaximum(tT.Tpointdist) <= model.tinit
+@test nanminimum(tT.Tpointdist) >= 0
 
-@test isa(result.HeAgedist, AbstractMatrix)
-abserr = abs(sum(nanmean(result.HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
+@test isa(tT.HeAgedist, AbstractMatrix)
+abserr = abs(sum(nanmean(tT.HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
 @test 0 < abserr < 50
 @info "Mean absolute error: $abserr"
 
-@test isa(result.lldist, AbstractVector)
-llmean = mean(@view(result.lldist[model.burnin:end]))
+@test isa(tT.lldist, AbstractVector)
+llmean = mean(@view(tT.lldist[model.burnin:end]))
 @test -100 < llmean < 0
 @info "Mean ll: $llmean"
 
-@test isa(result.acceptancedist, AbstractVector{Bool})
-@test isapprox(mean(result.acceptancedist), 0.5, atol=0.4)
-@info "Mean acceptance rate: $(mean(result.acceptancedist[model.burnin:end]))"
+@test isa(tT.acceptancedist, AbstractVector{Bool})
+@test isapprox(mean(tT.acceptancedist), 0.5, atol=0.4)
+@info "Mean acceptance rate: $(mean(tT.acceptancedist[model.burnin:end]))"
 
-@test isa(result.ndist, AbstractVector{Int})
-@test minimum(result.ndist) >= 0
-@test maximum(result.ndist) <= model.maxpoints
-@info "Mean npoints: $(mean(result.ndist[model.burnin:end]))"
+@test isa(tT.ndist, AbstractVector{Int})
+@test minimum(tT.ndist) >= 0
+@test maximum(tT.ndist) <= model.maxpoints
+@info "Mean npoints: $(mean(tT.ndist[model.burnin:end]))"
 
-@test mean(result.jtdist[model.burnin:end]) ≈ model.tinit/60
-@info "Mean jₜ: $(mean(result.jtdist[model.burnin:end]))"
+@test mean(tT.jtdist[model.burnin:end]) ≈ model.tinit/60
+@info "Mean jₜ: $(mean(tT.jtdist[model.burnin:end]))"
 
-@test mean(result.jTdist[model.burnin:end]) ≈ model.Tinit/60
-@info "Mean jT: $(mean(result.jTdist[model.burnin:end]))"
+@test mean(tT.jTdist[model.burnin:end]) ≈ model.Tinit/60
+@info "Mean jT: $(mean(tT.jTdist[model.burnin:end]))"
 
 ## ---
 detail = DetailInterval(
@@ -113,76 +113,76 @@ detail = DetailInterval(
     agemax = 541, # Oldest end of detail interval
     minpoints = 5, # Minimum number of points in detail interval
 )
-@time "\nMCMC with Detail interval" result = MCMC(data, model, boundary, constraint, detail)
+@time "\nMCMC with Detail interval" tT = MCMC(data, model, boundary, constraint, detail)
 
-@test isa(result.Tpointdist, AbstractMatrix)
-@test nanmaximum(result.Tpointdist) <= model.Tinit
-@test nanminimum(result.Tpointdist) >= model.Tnow
+@test isa(tT.Tpointdist, AbstractMatrix)
+@test nanmaximum(tT.Tpointdist) <= model.Tinit
+@test nanminimum(tT.Tpointdist) >= model.Tnow
 
-@test isa(result.tpointdist, AbstractMatrix)
-@test nanmaximum(result.Tpointdist) <= model.tinit
-@test nanminimum(result.Tpointdist) >= 0
+@test isa(tT.tpointdist, AbstractMatrix)
+@test nanmaximum(tT.Tpointdist) <= model.tinit
+@test nanminimum(tT.Tpointdist) >= 0
 
-@test isa(result.HeAgedist, AbstractMatrix)
-abserr = abs(sum(nanmean(result.HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
+@test isa(tT.HeAgedist, AbstractMatrix)
+abserr = abs(sum(nanmean(tT.HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
 @test 0 < abserr < 50
 @info "Mean absolute error: $abserr"
 
-@test isa(result.lldist, AbstractVector)
-llmean = mean(@view(result.lldist[model.burnin:end]))
+@test isa(tT.lldist, AbstractVector)
+llmean = mean(@view(tT.lldist[model.burnin:end]))
 @test -100 < llmean < 0
 @info "Mean ll: $llmean"
 
-@test isa(result.acceptancedist, AbstractVector{Bool})
-@test isapprox(mean(result.acceptancedist), 0.5, atol=0.4)
-@info "Mean acceptance rate: $(mean(result.acceptancedist[model.burnin:end]))"
+@test isa(tT.acceptancedist, AbstractVector{Bool})
+@test isapprox(mean(tT.acceptancedist), 0.5, atol=0.4)
+@info "Mean acceptance rate: $(mean(tT.acceptancedist[model.burnin:end]))"
 
-@test isa(result.ndist, AbstractVector{Int})
-@test minimum(result.ndist) >= 0
-@test maximum(result.ndist) <= model.maxpoints
-@info "Mean npoints: $(mean(result.ndist[model.burnin:end]))"
+@test isa(tT.ndist, AbstractVector{Int})
+@test minimum(tT.ndist) >= 0
+@test maximum(tT.ndist) <= model.maxpoints
+@info "Mean npoints: $(mean(tT.ndist[model.burnin:end]))"
 
-@test mean(result.jtdist[model.burnin:end]) ≈ model.tinit/60
-@info "Mean jₜ: $(mean(result.jtdist[model.burnin:end]))"
+@test mean(tT.jtdist[model.burnin:end]) ≈ model.tinit/60
+@info "Mean jₜ: $(mean(tT.jtdist[model.burnin:end]))"
 
-@test mean(result.jTdist[model.burnin:end]) ≈ model.Tinit/60
-@info "Mean jT: $(mean(result.jTdist[model.burnin:end]))"
+@test mean(tT.jTdist[model.burnin:end]) ≈ model.Tinit/60
+@info "Mean jT: $(mean(tT.jTdist[model.burnin:end]))"
 
 ## ---
 model = (model...,
     dynamicjumping=true
 )
-@time "\nMCMC with Detail interval & dynamicjumping" result = MCMC(data, model, boundary, constraint, detail)
+@time "\nMCMC with Detail interval & dynamicjumping" tT = MCMC(data, model, boundary, constraint, detail)
 
-@test isa(result.Tpointdist, AbstractMatrix)
-@test nanmaximum(result.Tpointdist) <= model.Tinit
-@test nanminimum(result.Tpointdist) >= model.Tnow
+@test isa(tT.Tpointdist, AbstractMatrix)
+@test nanmaximum(tT.Tpointdist) <= model.Tinit
+@test nanminimum(tT.Tpointdist) >= model.Tnow
 
-@test isa(result.tpointdist, AbstractMatrix)
-@test nanmaximum(result.Tpointdist) <= model.tinit
-@test nanminimum(result.Tpointdist) >= 0
+@test isa(tT.tpointdist, AbstractMatrix)
+@test nanmaximum(tT.Tpointdist) <= model.tinit
+@test nanminimum(tT.Tpointdist) >= 0
 
-@test isa(result.HeAgedist, AbstractMatrix)
-abserr = abs(sum(nanmean(result.HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
+@test isa(tT.HeAgedist, AbstractMatrix)
+abserr = abs(sum(nanmean(tT.HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
 @test 0 < abserr < 50
 @info "Mean absolute error: $abserr"
 
-@test isa(result.lldist, AbstractVector)
-llmean = mean(@view(result.lldist[model.burnin:end]))
+@test isa(tT.lldist, AbstractVector)
+llmean = mean(@view(tT.lldist[model.burnin:end]))
 @test -100 < llmean < 0
 @info "Mean ll: $llmean"
 
-@test isa(result.acceptancedist, AbstractVector{Bool})
-@test isapprox(mean(result.acceptancedist), 0.5, atol=0.4)
-@info "Mean acceptance rate: $(mean(result.acceptancedist[model.burnin:end]))"
+@test isa(tT.acceptancedist, AbstractVector{Bool})
+@test isapprox(mean(tT.acceptancedist), 0.5, atol=0.4)
+@info "Mean acceptance rate: $(mean(tT.acceptancedist[model.burnin:end]))"
 
-@test isa(result.ndist, AbstractVector{Int})
-@test minimum(result.ndist) >= 0
-@test maximum(result.ndist) <= model.maxpoints
-@info "Mean npoints: $(mean(result.ndist[model.burnin:end]))"
+@test isa(tT.ndist, AbstractVector{Int})
+@test minimum(tT.ndist) >= 0
+@test maximum(tT.ndist) <= model.maxpoints
+@info "Mean npoints: $(mean(tT.ndist[model.burnin:end]))"
 
-@test model.dt < mean(result.jtdist[model.burnin:end]) < model.tinit
-@info "Mean jₜ: $(mean(result.jtdist[model.burnin:end]))"
+@test model.dt < mean(tT.jtdist[model.burnin:end]) < model.tinit
+@info "Mean jₜ: $(mean(tT.jtdist[model.burnin:end]))"
 
-@test 0 < mean(result.jTdist[model.burnin:end]) < model.Tinit
-@info "Mean jT: $(mean(result.jTdist[model.burnin:end]))"
+@test 0 < mean(tT.jTdist[model.burnin:end]) < model.Tinit
+@info "Mean jT: $(mean(tT.jTdist[model.burnin:end]))"
