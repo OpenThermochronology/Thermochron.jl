@@ -9,7 +9,7 @@
 
     ## Examples
     ```julia
-    tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist = MCMC(data, model, npoints, agepoints, Tpoints, constraint, boundary)
+    tT = MCMC(data, model, npoints, agepoints, Tpoints, constraint, boundary)
     ```
     """
     function MCMC(data::NamedTuple, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
@@ -24,6 +24,7 @@
         nsteps = (haskey(model, :nsteps) ? model.nsteps : 10^6)::Int
         minpoints = (haskey(model, :minpoints) ? model.minpoints : 1)::Int
         maxpoints = (haskey(model, :maxpoints) ? model.maxpoints : 50)::Int
+        burnin = (haskey(model, :burnin) ? model.burnin : 5*10^5)::Int
         npoints = (haskey(model, :npoints) ? model.npoints : minpoints)::Int
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
         simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
@@ -118,29 +119,19 @@
         σⱼtₚ = copy(σⱼt)
         σⱼTₚ = copy(σⱼT)
 
-        # distributions to populate
-        tpointdist = fill(T(NaN), totalpoints, nsteps)
-        Tpointdist = fill(T(NaN), totalpoints, nsteps)
-        HeAgedist = fill(T(NaN), length(HeAge), nsteps)
-        σⱼtdist = zeros(T, nsteps)
-        σⱼTdist = zeros(T, nsteps)
-        lldist = zeros(T, nsteps)
-        ndist = zeros(Int, nsteps)
-        acceptancedist = falses(nsteps)
-
         # Proposal probabilities (must sum to 1)
         p_move = 0.64
         p_birth = 0.15 # Must equal p_death
         p_death = 0.15 # Must equal p_birth
         p_bounds = 0.06
 
-        progress = Progress(nsteps, dt=1, desc="Running MCMC ($(nsteps) steps):")
-        progress_interval = ceil(Int,sqrt(nsteps))
-        for n = 1:nsteps
+        bprogress = Progress(burnin, dt=1, desc="MCMC burn-in ($(burnin) steps)")
+        progress_interval = ceil(Int,sqrt(burnin))
+        for n = 1:burnin
             if detail.minpoints > 0
                 enoughpoints = min(pointsininterval(agepoints, npoints, detail.agemin, detail.agemax, dt), detail.minpoints)::Int
             end
-            @label restart
+            @label brestart
 
             # Copy proposal from last accepted solution
             npointsₚ = npoints
@@ -154,7 +145,7 @@
 
             # Randomly choose an option and point (if applicable) to adjust
             r = rand()
-            k = ceil(Int, rand()*npoints) 
+            k = rand(1:npoints)
 
             # Adjust the proposal
             if r < p_move
@@ -187,12 +178,9 @@
             temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, constraint.Tpointsₚ)::StridedVector{T}
             linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
             
-            # Old version of imposing max reheating rate, for reference:
-            # (maxdiff(Tsteps) > dTmax) && @goto restart
-
             # Ensure we have enough points in the "detail" interval, if any
             if detail.minpoints > 0
-                (pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto restart
+                (pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto brestart
             end
 
             # Calculate model ages for each grain
@@ -231,13 +219,124 @@
                 copyto!(calcHeAges, calcHeAgesₚ)
                 copyto!(σⱼt, σⱼtₚ)
                 copyto!(σⱼT, σⱼTₚ)
+            end
+
+            # Update progress meter every `progress_interval` steps
+            (mod(n, progress_interval) == 0) && update!(bprogress, n)
+        end
+        finish!(bprogress)
+ 
+        # Final log likelihood
+        ll = normpdf_ll(HeAge, σ, calcHeAges) + llna
+
+        # distributions to populate
+        tpointdist = fill(T(NaN), totalpoints, nsteps)
+        Tpointdist = fill(T(NaN), totalpoints, nsteps)
+        HeAgedist = fill(T(NaN), length(HeAge), nsteps)
+        σⱼtdist = zeros(T, nsteps)
+        σⱼTdist = zeros(T, nsteps)
+        lldist = zeros(T, nsteps)
+        ndist = zeros(Int, nsteps)
+        acceptancedist = falses(nsteps)
+
+        progress = Progress(nsteps, dt=1, desc="MCMC collection ($(nsteps) steps):")
+        progress_interval = ceil(Int,sqrt(nsteps))
+        for n = 1:nsteps
+            if detail.minpoints > 0
+                enoughpoints = min(pointsininterval(agepoints, npoints, detail.agemin, detail.agemax, dt), detail.minpoints)::Int
+            end
+            @label crestart
+
+            # Copy proposal from last accepted solution
+            npointsₚ = npoints
+            copyto!(agepointsₚ, agepoints)
+            copyto!(Tpointsₚ, Tpoints)
+            copyto!(constraint.agepointsₚ, constraint.agepoints)
+            copyto!(constraint.Tpointsₚ, constraint.Tpoints)
+            copyto!(boundary.Tpointsₚ, boundary.Tpoints)
+            copyto!(σⱼtₚ, σⱼt)
+            copyto!(σⱼTₚ, σⱼT)
+
+            # Randomly choose an option and point (if applicable) to adjust
+            r = rand()
+            k = rand(1:npoints)
+
+            # Adjust the proposal
+            if r < p_move
+                # Move one t-T point
+                movepoint!(agepointsₚ, Tpointsₚ, k, σⱼtₚ[k], σⱼTₚ[k], boundary)
+
+            elseif (r < p_move+p_birth) && (npoints < maxpoints)
+                # Birth: add a new model point
+                k = npointsₚ = npoints + 1
+                addpoint!(agepointsₚ, Tpointsₚ, σⱼtₚ, σⱼTₚ, k, boundary)
+
+            elseif (r < p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
+                # Death: remove a model point
+                npointsₚ = npoints - 1
+                agepointsₚ[k] = agepointsₚ[npoints]
+                Tpointsₚ[k] = Tpointsₚ[npoints]
+                σⱼtₚ[k] = σⱼtₚ[npoints]
+                σⱼTₚ[k] = σⱼTₚ[npoints]
+
+            elseif (r < p_move+p_birth+p_death+p_bounds)
+                # Move the temperatures of the starting and ending boundaries
+                movebounds!(boundary)
+                # If there's an imposed unconformity or other t-T constraint, adjust within bounds
+                movebounds!(constraint, boundary)
+
+            end
+
+            # Recalculate interpolated proposed t-T path
+            ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, constraint.agepointsₚ)::StridedVector{T}
+            temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, constraint.Tpointsₚ)::StridedVector{T}
+            linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
+            
+            # Ensure we have enough points in the "detail" interval, if any
+            if detail.minpoints > 0
+                (pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto crestart
+            end
+
+            # Calculate model ages for each grain
+            mineralages!(calcHeAgesₚ, tzr, zpr, zTeq, dt, tsteps, Tsteps, zdm, zircons)
+            mineralages!(calcHeAgesₚ, tap, apr, aTeq, dt, tsteps, Tsteps, adm, apatites)
+
+            # Calculate log likelihood of proposal
+            llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
+            simplified && (llnaₚ += -log(npointsₚ))
+            llₚ = normpdf_ll(HeAge, σ, calcHeAgesₚ) + llnaₚ
+
+            # Accept or reject proposal based on likelihood
+            if log(rand()) < (llₚ - ll)
+
+                # Update jumping distribution based on size of current accepted p_move
+                if dynamicjumping && r < p_move
+                    if agepointsₚ[k] != agepoints[k]
+                        σⱼtₚ[k] = ℯ * abs(agepointsₚ[k] - agepoints[k])
+                    end
+                    if Tpointsₚ[k] != Tpoints[k]
+                        σⱼTₚ[k] = ℯ * abs(Tpointsₚ[k] - Tpoints[k])
+                    end
+                end
+
+                # Update the currently accepted proposal
+                ll = llₚ
+                npoints = npointsₚ
+                copyto!(agepoints, 1, agepointsₚ, 1, npoints)
+                copyto!(Tpoints, 1, Tpointsₚ, 1, npoints)
+                copyto!(constraint.agepoints, constraint.agepointsₚ)
+                copyto!(constraint.Tpoints, constraint.Tpointsₚ)
+                copyto!(boundary.Tpoints, boundary.Tpointsₚ)
+                copyto!(calcHeAges, calcHeAgesₚ)
+                copyto!(σⱼt, σⱼtₚ)
+                copyto!(σⱼT, σⱼTₚ)
 
                 # Not critical to the function of the MCMC loop, but critical for recording stationary distribution!
                 acceptancedist[n] = true
             end
 
             # Record results for analysis and troubleshooting
-            lldist[n] = llna + normpdf_ll(HeAge, σ, calcHeAges) # Recalculated to constant baseline
+            lldist[n] = ll
             ndist[n] = npoints # distribution of # of points
             σⱼtdist[n] = σⱼt[k]
             σⱼTdist[n] = σⱼT[k]
@@ -250,6 +349,7 @@
             # Update progress meter every `progress_interval` steps
             (mod(n, progress_interval) == 0) && update!(progress, n)
         end
+        finish!(progress)
 
         ttresult = TTResult(
             tpointdist, 
@@ -274,6 +374,7 @@
         U = T.(data.U)::DenseVector{T}
         Th = T.(data.Th)::DenseVector{T}
         Sm = (haskey(data, :Sm) ? T.(data.Th) : zeros(T, size(U)))::DenseVector{T}
+        burnin = (haskey(model, :burnin) ? model.burnin : 5*10^5)::Int
         nsteps = (haskey(model, :nsteps) ? model.nsteps : 10^6)::Int
         minpoints = (haskey(model, :minpoints) ? model.minpoints : 1)::Int
         maxpoints = (haskey(model, :maxpoints) ? model.maxpoints : 50)::Int
@@ -371,18 +472,6 @@
         σⱼtₚ = copy(σⱼt)
         σⱼTₚ = copy(σⱼT)
 
-        # distributions to populate
-        tpointdist = fill(T(NaN), totalpoints, nsteps)
-        Tpointdist = fill(T(NaN), totalpoints, nsteps)
-        HeAgedist = fill(T(NaN), length(HeAge), nsteps)
-        σⱼtdist = zeros(T, nsteps)
-        σⱼTdist = zeros(T, nsteps)
-        lldist = zeros(T, nsteps)
-        ndist = zeros(Int, nsteps)
-        acceptancedist = falses(nsteps)
-        admdist = Array{typeof(adm)}(undef, nsteps)
-        zdmdist = Array{typeof(zdm)}(undef, nsteps)
-
         # Proposal probabilities (must sum to 1)
         p_move = 0.6
         p_birth = 0.15 # Must equal p_death
@@ -390,13 +479,13 @@
         p_bounds = 0.06
         p_kinetics = 0.04
 
-        progress = Progress(nsteps, dt=1, desc="Running MCMC ($(nsteps) steps):")
-        progress_interval = ceil(Int,sqrt(nsteps))
-        for n = 1:nsteps
+        bprogress = Progress(burnin, dt=1, desc="MCMC burn-in ($(burnin) steps)")
+        progress_interval = ceil(Int,sqrt(burnin))
+        for n = 1:burnin
             if detail.minpoints > 0
                 enoughpoints = min(pointsininterval(agepoints, npoints, detail.agemin, detail.agemax, dt), detail.minpoints)::Int
             end
-            @label restart
+            @label brestart
 
             # Copy proposal from last accepted solution
             admₚ = adm
@@ -412,7 +501,7 @@
 
             # Randomly choose an option and point (if applicable) to adjust
             r = rand()
-            k = ceil(Int, rand()*npoints) 
+            k = rand(1:npoints)
 
             # Adjust the proposal
             if r < p_move
@@ -449,13 +538,10 @@
             ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, constraint.agepointsₚ)::StridedVector{T}
             temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, constraint.Tpointsₚ)::StridedVector{T}
             linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
-    
-            # Old version of imposing max reheating rate, for reference:
-            # (maxdiff(Tsteps) > dTmax) && @goto restart 
 
             # Ensure we have enough points in the "detail" interval, if any
             if detail.minpoints > 0
-                (pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto restart
+                (pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto brestart
             end
                
             # Calculate model ages for each grain
@@ -497,6 +583,129 @@
                 copyto!(calcHeAges, calcHeAgesₚ)
                 copyto!(σⱼt, σⱼtₚ)
                 copyto!(σⱼT, σⱼTₚ)
+            end
+
+            # Update progress meter every `progress_interval` steps
+            (mod(n, progress_interval) == 0) && update!(bprogress, n)
+        end
+        finish!(bprogress)
+
+        # Final log likelihood
+        ll = normpdf_ll(HeAge, σ, calcHeAges) + llna
+
+        # distributions to populate
+        tpointdist = fill(T(NaN), totalpoints, nsteps)
+        Tpointdist = fill(T(NaN), totalpoints, nsteps)
+        HeAgedist = fill(T(NaN), length(HeAge), nsteps)
+        σⱼtdist = zeros(T, nsteps)
+        σⱼTdist = zeros(T, nsteps)
+        lldist = zeros(T, nsteps)
+        ndist = zeros(Int, nsteps)
+        acceptancedist = falses(nsteps)
+        admdist = Array{typeof(adm)}(undef, nsteps)
+        zdmdist = Array{typeof(zdm)}(undef, nsteps)
+
+        progress = Progress(nsteps, dt=1, desc="MCMC collection ($(nsteps) steps):")
+        progress_interval = ceil(Int,sqrt(nsteps))
+        for n = 1:nsteps
+            if detail.minpoints > 0
+                enoughpoints = min(pointsininterval(agepoints, npoints, detail.agemin, detail.agemax, dt), detail.minpoints)::Int
+            end
+            @label crestart
+
+            # Copy proposal from last accepted solution
+            admₚ = adm
+            zdmₚ = zdm
+            npointsₚ = npoints
+            copyto!(agepointsₚ, agepoints)
+            copyto!(Tpointsₚ, Tpoints)
+            copyto!(constraint.agepointsₚ, constraint.agepoints)
+            copyto!(constraint.Tpointsₚ, constraint.Tpoints)
+            copyto!(boundary.Tpointsₚ, boundary.Tpoints)
+            copyto!(σⱼtₚ, σⱼt)
+            copyto!(σⱼTₚ, σⱼT)
+
+            # Randomly choose an option and point (if applicable) to adjust
+            r = rand()
+            k = rand(1:npoints)
+
+            # Adjust the proposal
+            if r < p_move
+                # Move one t-T point
+                movepoint!(agepointsₚ, Tpointsₚ, k, σⱼtₚ[k], σⱼTₚ[k], boundary)
+
+            elseif (r < p_move+p_birth) && (npoints < maxpoints)
+                # Birth: add a new model point
+                k = npointsₚ = npoints + 1
+                addpoint!(agepointsₚ, Tpointsₚ, σⱼtₚ, σⱼTₚ, k, boundary)
+
+            elseif (r < p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
+                # Death: remove a model point
+                npointsₚ = npoints - 1
+                agepointsₚ[k] = agepointsₚ[npoints]
+                Tpointsₚ[k] = Tpointsₚ[npoints]
+                σⱼtₚ[k] = σⱼtₚ[npoints]
+                σⱼTₚ[k] = σⱼTₚ[npoints]
+
+            elseif (r < p_move+p_birth+p_death+p_bounds)
+                # Move the temperatures of the starting and ending boundaries
+                movebounds!(boundary)
+                # If there's an imposed unconformity or other t-T constraint, adjust within bounds
+                movebounds!(constraint, boundary)
+
+            elseif (r < p_move+p_birth+p_death+p_bounds+p_kinetics)
+                # Adjust kinetic parameters, one at a time
+                any(tzr) && (zdmₚ = movekinetics(zdm))
+                any(tap) && (admₚ = movekinetics(adm))
+
+            end
+
+            # Recalculate interpolated proposed t-T path
+            ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, constraint.agepointsₚ)::StridedVector{T}
+            temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, constraint.Tpointsₚ)::StridedVector{T}
+            linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
+
+            # Ensure we have enough points in the "detail" interval, if any
+            if detail.minpoints > 0
+                (pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto crestart
+            end
+               
+            # Calculate model ages for each grain
+            mineralages!(calcHeAgesₚ, tzr, zpr, zTeq, dt, tsteps, Tsteps, zdmₚ, zircons)
+            mineralages!(calcHeAgesₚ, tap, apr, aTeq, dt, tsteps, Tsteps, admₚ, apatites)
+
+            # Calculate log likelihood of proposal
+            llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
+            llnaₚ += loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀)
+            simplified && (llnaₚ += -log(npointsₚ))
+            llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ) + llnaₚ
+
+            # Accept or reject proposal based on likelihood
+            if log(rand()) < (llₚ - ll)
+
+                # Update jumping distribution based on size of current accepted p_move
+                if dynamicjumping && r < p_move
+                    if agepointsₚ[k] != agepoints[k]
+                        σⱼtₚ[k] = ℯ * abs(agepointsₚ[k] - agepoints[k])
+                    end
+                    if Tpointsₚ[k] != Tpoints[k]
+                        σⱼTₚ[k] = ℯ * abs(Tpointsₚ[k] - Tpoints[k])
+                    end
+                end
+
+                # Update the currently accepted proposal
+                adm = admₚ
+                zdm = zdmₚ
+                ll = llₚ
+                npoints = npointsₚ
+                copyto!(agepoints, 1, agepointsₚ, 1, npoints)
+                copyto!(Tpoints, 1, Tpointsₚ, 1, npoints)
+                copyto!(constraint.agepoints, constraint.agepointsₚ)
+                copyto!(constraint.Tpoints, constraint.Tpointsₚ)
+                copyto!(boundary.Tpoints, boundary.Tpointsₚ)
+                copyto!(calcHeAges, calcHeAgesₚ)
+                copyto!(σⱼt, σⱼtₚ)
+                copyto!(σⱼT, σⱼTₚ)
 
                 # Not critical to the function of the MCMC loop, but critical for recording stationary distribution!
                 acceptancedist[n] = true
@@ -518,7 +727,8 @@
             # Update progress meter every `progress_interval` steps
             (mod(n, progress_interval) == 0) && update!(progress, n)
         end
-        
+        finish!(progress)
+
         ttresult = TTResult(
             tpointdist, 
             Tpointdist, 

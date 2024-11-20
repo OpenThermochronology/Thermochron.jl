@@ -9,8 +9,8 @@ BLAS.get_num_threads() > 2 && BLAS.set_num_threads(2)
 ## --- Prepare problem
 
 model = (
-    nsteps = 500, # How many steps of the Markov chain should we run?
     burnin = 300, # How long should we wait for MC to converge (become stationary)
+    nsteps = 300, # How many steps of the Markov chain should we run after burn-in?
     dr = 1.0,    # Radius step, in microns
     dt = 10.0,   # time step size in Myr
     dTmax = 25.0, # Maximum reheating/burial per model timestep
@@ -87,25 +87,25 @@ abserr = abs(sum(nanmean(tT.HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)
 @info "Mean absolute error: $abserr"
 
 @test isa(tT.lldist, AbstractVector)
-llmean = mean(@view(tT.lldist[model.burnin:end]))
+llmean = mean(tT.lldist)
 @test -300 < llmean < 0
 @info "Mean ll: $llmean"
 
 @test isa(tT.acceptancedist, AbstractVector{Bool})
 @test isapprox(mean(tT.acceptancedist), 0.5, atol=0.4)
-@info "Mean acceptance rate: $(mean(tT.acceptancedist[model.burnin:end]))"
+@info "Mean acceptance rate: $(mean(tT.acceptancedist))"
 
 @test isa(tT.ndist, AbstractVector{Int})
 @test minimum(tT.ndist) >= 0
 @test maximum(tT.ndist) <= model.maxpoints
-@info "Mean npoints: $(mean(tT.ndist[model.burnin:end]))"
+@info "Mean npoints: $(mean(tT.ndist))"
 
 
-@test mean(tT.jtdist[model.burnin:end]) ≈ model.tinit/60
-@info "Mean jₜ: $(mean(tT.jtdist[model.burnin:end]))"
+@test mean(tT.jtdist) ≈ model.tinit/60
+@info "Mean jₜ: $(mean(tT.jtdist))"
 
-@test mean(tT.jTdist[model.burnin:end]) ≈ model.Tinit/60
-@info "Mean jT: $(mean(tT.jTdist[model.burnin:end]))"
+@test mean(tT.jTdist) ≈ model.Tinit/60
+@info "Mean jT: $(mean(tT.jTdist))"
 
 ## --- As above, but with variable kinetic parameters
 
@@ -127,25 +127,25 @@ abserr = abs(sum(nanmean(tT.HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)
 @info "Mean absolute error: $abserr"
 
 @test isa(tT.lldist, AbstractVector)
-llmean = mean(@view(tT.lldist[model.burnin:end]))
+llmean = mean(tT.lldist)
 @test -300 < llmean < 0
 @info "Mean ll: $llmean"
 
 @test isa(tT.acceptancedist, AbstractVector{Bool})
 @test isapprox(mean(tT.acceptancedist), 0.5, atol=0.4)
-@info "Mean acceptance rate: $(mean(tT.acceptancedist[model.burnin:end]))"
+@info "Mean acceptance rate: $(mean(tT.acceptancedist))"
 
 @test isa(tT.ndist, AbstractVector{Int})
 @test minimum(tT.ndist) >= 0
 @test maximum(tT.ndist) <= model.maxpoints
-@info "Mean npoints: $(mean(tT.ndist[model.burnin:end]))"
+@info "Mean npoints: $(mean(tT.ndist))"
 
 
-@test mean(tT.jtdist[model.burnin:end]) ≈ model.tinit/60
-@info "Mean jₜ: $(mean(tT.jtdist[model.burnin:end]))"
+@test mean(tT.jtdist) ≈ model.tinit/60
+@info "Mean jₜ: $(mean(tT.jtdist))"
 
-@test mean(tT.jTdist[model.burnin:end]) ≈ model.Tinit/60
-@info "Mean jT: $(mean(tT.jTdist[model.burnin:end]))"
+@test mean(tT.jTdist) ≈ model.Tinit/60
+@info "Mean jT: $(mean(tT.jTdist))"
 
 # Kinetics
 D0Lmean = mean(kinetics.admdist .|> x-> x.D0L)
@@ -198,24 +198,24 @@ abserr = abs(sum(nanmean(tT.HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)
 @info "Mean absolute error: $abserr"
 
 @test isa(tT.lldist, AbstractVector)
-llmean = mean(@view(tT.lldist[model.burnin:end]))
+llmean = mean(tT.lldist)
 @test -200 < llmean < 0
 @info "Mean ll: $llmean"
 
 @test isa(tT.acceptancedist, AbstractVector{Bool})
 @test isapprox(mean(tT.acceptancedist), 0.5, atol=0.4)
-@info "Mean acceptance rate: $(mean(tT.acceptancedist[model.burnin:end]))"
+@info "Mean acceptance rate: $(mean(tT.acceptancedist))"
 
 @test isa(tT.ndist, AbstractVector{Int})
 @test minimum(tT.ndist) >= 0
 @test maximum(tT.ndist) <= model.maxpoints
-@info "Mean npoints: $(mean(tT.ndist[model.burnin:end]))"
+@info "Mean npoints: $(mean(tT.ndist))"
 
-@test mean(tT.jtdist[model.burnin:end]) ≈ model.tinit/60
-@info "Mean jₜ: $(mean(tT.jtdist[model.burnin:end]))"
+@test mean(tT.jtdist) ≈ model.tinit/60
+@info "Mean jₜ: $(mean(tT.jtdist))"
 
-@test mean(tT.jTdist[model.burnin:end]) ≈ model.Tinit/60
-@info "Mean jT: $(mean(tT.jTdist[model.burnin:end]))"
+@test mean(tT.jTdist) ≈ model.Tinit/60
+@info "Mean jT: $(mean(tT.jTdist))"
 
 ## ---
 
@@ -235,25 +235,25 @@ abserr = abs(sum(nanmean(tT.HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)
 @info "Mean absolute error: $abserr"
 
 @test isa(tT.lldist, AbstractVector)
-llmean = mean(@view(tT.lldist[model.burnin:end]))
+llmean = mean(tT.lldist)
 @test -200 < llmean < 0
 @info "Mean ll: $llmean"
 
 @test isa(tT.acceptancedist, AbstractVector{Bool})
 @test isapprox(mean(tT.acceptancedist), 0.5, atol=0.4)
-@info "Mean acceptance rate: $(mean(tT.acceptancedist[model.burnin:end]))"
+@info "Mean acceptance rate: $(mean(tT.acceptancedist))"
 
 @test isa(tT.ndist, AbstractVector{Int})
 @test minimum(tT.ndist) >= 0
 @test maximum(tT.ndist) <= model.maxpoints
-@info "Mean npoints: $(mean(tT.ndist[model.burnin:end]))"
+@info "Mean npoints: $(mean(tT.ndist))"
 
 
-@test mean(tT.jtdist[model.burnin:end]) ≈ model.tinit/60
-@info "Mean jₜ: $(mean(tT.jtdist[model.burnin:end]))"
+@test mean(tT.jtdist) ≈ model.tinit/60
+@info "Mean jₜ: $(mean(tT.jtdist))"
 
-@test mean(tT.jTdist[model.burnin:end]) ≈ model.Tinit/60
-@info "Mean jT: $(mean(tT.jTdist[model.burnin:end]))"
+@test mean(tT.jTdist) ≈ model.Tinit/60
+@info "Mean jT: $(mean(tT.jTdist))"
 
 # Kinetics
 D0Lmean = mean(kinetics.admdist .|> x-> x.D0L)
@@ -309,24 +309,24 @@ abserr = abs(sum(nanmean(tT.HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)
 @info "Mean absolute error: $abserr"
 
 @test isa(tT.lldist, AbstractVector)
-llmean = mean(@view(tT.lldist[model.burnin:end]))
+llmean = mean(tT.lldist)
 @test -200 < llmean < 0
 @info "Mean ll: $llmean"
 
 @test isa(tT.acceptancedist, AbstractVector{Bool})
 @test isapprox(mean(tT.acceptancedist), 0.5, atol=0.4)
-@info "Mean acceptance rate: $(mean(tT.acceptancedist[model.burnin:end]))"
+@info "Mean acceptance rate: $(mean(tT.acceptancedist))"
 
 @test isa(tT.ndist, AbstractVector{Int})
 @test minimum(tT.ndist) >= 0
 @test maximum(tT.ndist) <= model.maxpoints
-@info "Mean npoints: $(mean(tT.ndist[model.burnin:end]))"
+@info "Mean npoints: $(mean(tT.ndist))"
 
-@test model.dt < mean(tT.jtdist[model.burnin:end]) < model.tinit
-@info "Mean jₜ: $(mean(tT.jtdist[model.burnin:end]))"
+@test model.dt < mean(tT.jtdist) < model.tinit
+@info "Mean jₜ: $(mean(tT.jtdist))"
 
-@test 0 < mean(tT.jTdist[model.burnin:end]) < model.Tinit
-@info "Mean jT: $(mean(tT.jTdist[model.burnin:end]))"
+@test 0 < mean(tT.jTdist) < model.Tinit
+@info "Mean jT: $(mean(tT.jTdist))"
 
 ## ---
 
@@ -346,24 +346,24 @@ abserr = abs(sum(nanmean(tT.HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)
 @info "Mean absolute error: $abserr"
 
 @test isa(tT.lldist, AbstractVector)
-llmean = mean(@view(tT.lldist[model.burnin:end]))
+llmean = mean(tT.lldist)
 @test -200 < llmean < 0
 @info "Mean ll: $llmean"
 
 @test isa(tT.acceptancedist, AbstractVector{Bool})
 @test isapprox(mean(tT.acceptancedist), 0.5, atol=0.4)
-@info "Mean acceptance rate: $(mean(tT.acceptancedist[model.burnin:end]))"
+@info "Mean acceptance rate: $(mean(tT.acceptancedist))"
 
 @test isa(tT.ndist, AbstractVector{Int})
 @test minimum(tT.ndist) >= 0
 @test maximum(tT.ndist) <= model.maxpoints
-@info "Mean npoints: $(mean(tT.ndist[model.burnin:end]))"
+@info "Mean npoints: $(mean(tT.ndist))"
 
-@test model.dt < mean(tT.jtdist[model.burnin:end]) < model.tinit
-@info "Mean jₜ: $(mean(tT.jtdist[model.burnin:end]))"
+@test model.dt < mean(tT.jtdist) < model.tinit
+@info "Mean jₜ: $(mean(tT.jtdist))"
 
-@test 0 < mean(tT.jTdist[model.burnin:end]) < model.Tinit
-@info "Mean jT: $(mean(tT.jTdist[model.burnin:end]))"
+@test 0 < mean(tT.jTdist) < model.Tinit
+@info "Mean jT: $(mean(tT.jTdist))"
 
 # Kinetics
 D0Lmean = mean(kinetics.admdist .|> x-> x.D0L)

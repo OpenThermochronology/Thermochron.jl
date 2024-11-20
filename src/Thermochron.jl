@@ -7,7 +7,7 @@ module Thermochron
 
     using LinearAlgebra
     using LoopVectorization
-    using ProgressMeter: Progress, update!
+    using ProgressMeter: Progress, update!, finish!
 
     include("types.jl")
     include("utilities.jl")
