@@ -1,8 +1,8 @@
-## --- Define DamageModel types
-abstract type DamageModel end
-export DamageModel
+## --- Define DiffusivityModel types
+abstract type DiffusivityModel end
+export DiffusivityModel
 
-abstract type ZirconHeliumModel{T} <: DamageModel end
+abstract type ZirconHeliumModel{T} <: DiffusivityModel end
 
 Base.@kwdef struct ZRDAAM{T<:AbstractFloat} <: ZirconHeliumModel{T} 
     DzD0::T = 193188.0          # Diffusivity [cm^2/sec], crystalline endmember
@@ -28,7 +28,7 @@ end
 export ZRDAAM
 
 
-abstract type ApatiteHeliumModel{T} <: DamageModel end
+abstract type ApatiteHeliumModel{T} <: DiffusivityModel end
 
 Base.@kwdef struct RDAAM{T<:AbstractFloat} <: ApatiteHeliumModel{T} 
     D0L::T=0.6071               # Diffusivity [cm^2/s]

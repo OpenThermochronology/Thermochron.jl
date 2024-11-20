@@ -18,11 +18,11 @@ end
 
 """
 ```julia
-ρᵣ = anneal(dt::Number, tsteps::Vector, Tsteps::Matrix, [model::DamageModel=ZRDAAM()])
+ρᵣ = anneal(dt::Number, tsteps::Vector, Tsteps::Matrix, [model::DiffusivityModel=ZRDAAM()])
 ```
 Zircon damage annealing model as in Guenthner et al. 2013 (AJS)
 """
-function anneal(dt::Number, tsteps::DenseVector, Tsteps::DenseVector, dm::DamageModel=ZRDAAM())
+function anneal(dt::Number, tsteps::DenseVector, Tsteps::DenseVector, dm::DiffusivityModel=ZRDAAM())
     # Allocate matrix to hold reduced track lengths for all previous timesteps
     ntsteps = length(tsteps)
     ρᵣ = zeros(ntsteps,ntsteps)
@@ -35,7 +35,7 @@ export anneal
 
 """
 ```julia
-anneal!(ρᵣ::Matrix, dt::Number, tsteps::Vector, Tsteps::Vector, [model::DamageModel=ZRDAAM()])
+anneal!(ρᵣ::Matrix, dt::Number, tsteps::Vector, Tsteps::Vector, [model::DiffusivityModel=ZRDAAM()])
 ```
 In-place version of `anneal`
 """
@@ -82,9 +82,6 @@ function anneal!(ρᵣ::AbstractMatrix{T}, Teq::DenseVector{T}, dt::Number, tste
 
     # # Alternative conversion: Extrapolate from bottom of data to origin
     # map!(x->(x<0.4 ? 5/8x : x), ρᵣ, ρᵣ)
-    
-    # # Alternative conversion: rescale reduced densities based on the equivalent total annealing length
-    # map!(x->(x-0.36)/(1-0.36), ρᵣ, ρᵣ)
 
     return ρᵣ
 end
