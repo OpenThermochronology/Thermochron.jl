@@ -1,9 +1,9 @@
 ## --- Fission track models
 SEC_MYR = 1E6*365.25*24*3600
 
-abstract type FissionTrackModel{T} end
+abstract type AnnealingModel{T} end
 
-struct FanningCurvilinear{T<:AbstractFloat} <: FissionTrackModel{T} 
+struct FanningCurvilinear{T<:AbstractFloat} <: AnnealingModel{T} 
     C0::T
     C1::T
     C2::T
@@ -48,5 +48,32 @@ function reltrackdensity(r)
         1.6*r-0.6
     end
 end
+
+## --- 
+
+abstract type FissionTrackLength{T} end
+
+struct ApatiteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
+    length::T       # [um]
+    angle::T        # [degrees]
+    Dpar::T         # [μm]
+    F::T            # [APFU]
+    Cl::T           # [APFU]
+    OH::T           # [APFU]
+end
+
+abstract type FissionTrackAge{T} end
+
+struct ApatiteFT{T<:AbstractFloat} <: FissionTrackAge{T}
+    FTage::T        # [Ma]
+    FTage_sigma::T  # [Ma]
+    Dpar::T         # [μm]
+    F::T            # [APFU]
+    Cl::T           # [APFU]
+    OH::T           # [APFU]
+    UPbage::T       # [Ma]
+    UPbage_sigma::T # [Ma]
+end
+
 
 ## --- End of File
