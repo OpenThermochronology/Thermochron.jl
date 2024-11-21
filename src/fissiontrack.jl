@@ -49,6 +49,16 @@ function reltrackdensity(r)
     end
 end
 
+
+function lcmod(length, angle)
+    # la = 1.632*lc - 10.879
+    # if lc > 12.96
+
+    # θalr = 0.304 * exp(0.439*lc)
+    # a1 = 0.1035*θalr - 2.250.
+end
+
+
 ## --- 
 
 abstract type FissionTrackLength{T} end
