@@ -26,10 +26,10 @@ function anneal(dt::Number, tsteps::DenseVector, Tsteps::DenseVector, dm::Diffus
     # Allocate matrix to hold reduced track lengths for all previous timesteps
     ntsteps = length(tsteps)
     ρᵣ = zeros(ntsteps,ntsteps)
-    Teq = zeros(ntsteps)
+    teq = zeros(ntsteps)
     # In=-place version
-    anneal!(ρᵣ, Teq, dt, tsteps, Tsteps, dm)
-    return ρᵣ, Teq
+    anneal!(ρᵣ, teq, dt, tsteps, Tsteps, dm)
+    return ρᵣ, teq
 end
 export anneal
 
@@ -39,14 +39,14 @@ anneal!(ρᵣ::Matrix, dt::Number, tsteps::Vector, Tsteps::Vector, [model::Diffu
 ```
 In-place version of `anneal`
 """
-anneal!(ρᵣ::AbstractMatrix, Teq::DenseVector, dt::Number, tsteps::DenseVector, Tsteps::DenseVector) = anneal!(ρᵣ, Teq, dt, tsteps, Tsteps, ZRDAAM())
-function anneal!(ρᵣ::AbstractMatrix{T}, Teq::DenseVector{T}, dt::Number, tsteps::DenseVector, Tsteps::DenseVector, dm::ZRDAAM{T}) where T <: AbstractFloat
+anneal!(ρᵣ::AbstractMatrix, teq::DenseVector, dt::Number, tsteps::DenseVector, Tsteps::DenseVector) = anneal!(ρᵣ, teq, dt, tsteps, Tsteps, ZRDAAM())
+function anneal!(ρᵣ::AbstractMatrix{T}, teq::DenseVector{T}, dt::Number, tsteps::DenseVector, Tsteps::DenseVector, dm::ZRDAAM{T}) where T <: AbstractFloat
 
     ∅ = zero(T)
     ntsteps = length(tsteps)
     @assert size(ρᵣ) === (ntsteps, ntsteps)
-    @assert size(Teq) === (ntsteps,)
-    @turbo @. Teq = ∅
+    @assert size(teq) === (ntsteps,)
+    @turbo @. teq = ∅
 
     # First timestep
     ρᵣ[1,1] = 1 / ((dm.C0 + dm.C1*(log(dt)-dm.C2)/(log(1 / (Tsteps[1]+273.15))-dm.C3))^(1/dm.beta)+1)
@@ -59,12 +59,12 @@ function anneal!(ρᵣ::AbstractMatrix{T}, Teq::DenseVector{T}, dt::Number, tste
         # all previous timestep to an equivalent annealing time at the
         # current temperature
         pᵣᵢ = view(ρᵣ, i-1, 1:i-1)
-        @turbo @. Teq[1:i-1] = exp(dm.C2 + lᵢ * ((1/pᵣᵢ - 1)^dm.beta - dm.C0) / dm.C1)
+        @turbo @. teq[1:i-1] = exp(dm.C2 + lᵢ * ((1/pᵣᵢ - 1)^dm.beta - dm.C0) / dm.C1)
 
         # Calculate the new reduced track lengths for all previous time steps
         # Accumulating annealing strictly in terms of reduced track length
-        Teqᵢ = view(Teq, 1:i)
-        @turbo @. ρᵣ[i,1:i] = 1 / ((dm.C0 + dm.C1 * (log(dt + Teqᵢ) - dm.C2) / lᵢ)^(1/dm.beta) + 1)
+        teqᵢ = view(teq, 1:i)
+        @turbo @. ρᵣ[i,1:i] = 1 / ((dm.C0 + dm.C1 * (log(dt + teqᵢ) - dm.C2) / lᵢ)^(1/dm.beta) + 1)
     end
 
     # Guenthner et al volume-length conversion
@@ -85,13 +85,13 @@ function anneal!(ρᵣ::AbstractMatrix{T}, Teq::DenseVector{T}, dt::Number, tste
 
     return ρᵣ
 end
-function anneal!(ρᵣ::AbstractMatrix{T}, Teq::DenseVector{T}, dt::Number, tsteps::DenseVector, Tsteps::DenseVector, dm::RDAAM{T}) where T <: AbstractFloat
+function anneal!(ρᵣ::AbstractMatrix{T}, teq::DenseVector{T}, dt::Number, tsteps::DenseVector, Tsteps::DenseVector, dm::RDAAM{T}) where T <: AbstractFloat
 
     ∅ = zero(T)
     ntsteps = length(tsteps)
     @assert size(ρᵣ) === (ntsteps, ntsteps)
-    @assert size(Teq) === (ntsteps,)
-    @turbo @. Teq = ∅
+    @assert size(teq) === (ntsteps,)
+    @turbo @. teq = ∅
 
     # First timestep
     ρᵣ[1,1] = 1 / ((dm.C0 + dm.C1*(log(dt)-dm.C2)/(log(1 / (Tsteps[1]+273.15))-dm.C3))^(1/dm.beta)+1)
@@ -104,12 +104,12 @@ function anneal!(ρᵣ::AbstractMatrix{T}, Teq::DenseVector{T}, dt::Number, tste
         # all previous timestep to an equivalent annealing time at the
         # current temperature
         pᵣᵢ = view(ρᵣ, i-1, 1:i-1)
-        @turbo @. Teq[1:i-1] = exp(dm.C2 + lᵢ * ((1/pᵣᵢ - 1)^dm.beta - dm.C0) / dm.C1)
+        @turbo @. teq[1:i-1] = exp(dm.C2 + lᵢ * ((1/pᵣᵢ - 1)^dm.beta - dm.C0) / dm.C1)
 
         # Calculate the new reduced track lengths for all previous time steps
         # Accumulating annealing strictly in terms of reduced track length
-        Teqᵢ = view(Teq, 1:i)
-        @turbo @. ρᵣ[i,1:i] = 1 / ((dm.C0 + dm.C1 * (log(dt + Teqᵢ) - dm.C2) / lᵢ)^(1/dm.beta) + 1)
+        teqᵢ = view(teq, 1:i)
+        @turbo @. ρᵣ[i,1:i] = 1 / ((dm.C0 + dm.C1 * (log(dt + teqᵢ) - dm.C2) / lᵢ)^(1/dm.beta) + 1)
     end
 
     # Corrections to ρᵣ 

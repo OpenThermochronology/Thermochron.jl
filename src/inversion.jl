@@ -63,14 +63,14 @@
 
         # Damage models for each mineral
         zdm = (haskey(model, :zdm) ? model.zdm : ZRDAAM())::ZirconHeliumModel{T}
-        zpr, zTeq = anneal(dt, tsteps, Tsteps, zdm) # Zircon amage annealing history
+        zpr, zteq = anneal(dt, tsteps, Tsteps, zdm) # Zircon amage annealing history
         zpr::DenseMatrix{T}
-        zTeq::DenseVector{T}
+        zteq::DenseVector{T}
 
         adm = (haskey(model, :adm) ? model.adm : RDAAM())::ApatiteHeliumModel{T}
-        apr, aTeq = anneal(dt, tsteps, Tsteps, adm) # Apatite damage annealing history
+        apr, ateq = anneal(dt, tsteps, Tsteps, adm) # Apatite damage annealing history
         apr::DenseMatrix{T}
-        aTeq::DenseVector{T}
+        ateq::DenseVector{T}
 
         # See what minerals we have
         tzr = containsi.(data.mineral, "zircon")
@@ -184,8 +184,8 @@
             end
 
             # Calculate model ages for each grain
-            mineralages!(calcHeAgesₚ, tzr, zpr, zTeq, dt, tsteps, Tsteps, zdm, zircons)
-            mineralages!(calcHeAgesₚ, tap, apr, aTeq, dt, tsteps, Tsteps, adm, apatites)
+            mineralages!(calcHeAgesₚ, tzr, zpr, zteq, dt, tsteps, Tsteps, zdm, zircons)
+            mineralages!(calcHeAgesₚ, tap, apr, ateq, dt, tsteps, Tsteps, adm, apatites)
 
             # Calculate log likelihood of proposal
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
@@ -298,8 +298,8 @@
             end
 
             # Calculate model ages for each grain
-            mineralages!(calcHeAgesₚ, tzr, zpr, zTeq, dt, tsteps, Tsteps, zdm, zircons)
-            mineralages!(calcHeAgesₚ, tap, apr, aTeq, dt, tsteps, Tsteps, adm, apatites)
+            mineralages!(calcHeAgesₚ, tzr, zpr, zteq, dt, tsteps, Tsteps, zdm, zircons)
+            mineralages!(calcHeAgesₚ, tap, apr, ateq, dt, tsteps, Tsteps, adm, apatites)
 
             # Calculate log likelihood of proposal
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
@@ -416,14 +416,14 @@
 
         # Damage models for each mineral
         zdm₀ = zdm = zdmₚ = (haskey(model, :zdm) ? model.zdm : ZRDAAM())::ZirconHeliumModel{T}
-        zpr, zTeq = anneal(dt, tsteps, Tsteps, zdm) # Zircon amage annealing history
+        zpr, zteq = anneal(dt, tsteps, Tsteps, zdm) # Zircon amage annealing history
         zpr::DenseMatrix{T}
-        zTeq::DenseVector{T}
+        zteq::DenseVector{T}
 
         adm₀ = adm = admₚ =  (haskey(model, :adm) ? model.adm : RDAAM())::ApatiteHeliumModel{T}
-        apr, aTeq = anneal(dt, tsteps, Tsteps, adm) # Apatite damage annealing history
+        apr, ateq = anneal(dt, tsteps, Tsteps, adm) # Apatite damage annealing history
         apr::DenseMatrix{T}
-        aTeq::DenseVector{T}
+        ateq::DenseVector{T}
 
         # See what minerals we have
         tzr = containsi.(data.mineral, "zircon")
@@ -545,8 +545,8 @@
             end
                
             # Calculate model ages for each grain
-            mineralages!(calcHeAgesₚ, tzr, zpr, zTeq, dt, tsteps, Tsteps, zdmₚ, zircons)
-            mineralages!(calcHeAgesₚ, tap, apr, aTeq, dt, tsteps, Tsteps, admₚ, apatites)
+            mineralages!(calcHeAgesₚ, tzr, zpr, zteq, dt, tsteps, Tsteps, zdmₚ, zircons)
+            mineralages!(calcHeAgesₚ, tap, apr, ateq, dt, tsteps, Tsteps, admₚ, apatites)
 
             # Calculate log likelihood of proposal
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
@@ -671,8 +671,8 @@
             end
                
             # Calculate model ages for each grain
-            mineralages!(calcHeAgesₚ, tzr, zpr, zTeq, dt, tsteps, Tsteps, zdmₚ, zircons)
-            mineralages!(calcHeAgesₚ, tap, apr, aTeq, dt, tsteps, Tsteps, admₚ, apatites)
+            mineralages!(calcHeAgesₚ, tzr, zpr, zteq, dt, tsteps, Tsteps, zdmₚ, zircons)
+            mineralages!(calcHeAgesₚ, tap, apr, ateq, dt, tsteps, Tsteps, admₚ, apatites)
 
             # Calculate log likelihood of proposal
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)

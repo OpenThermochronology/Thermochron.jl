@@ -293,12 +293,12 @@
     end
 
     # Fill the vector of mineral helium ages in-place
-    function mineralages!(calcHeAges, t, pr, Teq, dt, tsteps, Tsteps, dm, minerals)
+    function mineralages!(calcHeAges, t, pr, teq, dt, tsteps, Tsteps, dm, minerals)
         @assert length(minerals) == count(t)
         @assert length(t) == length(calcHeAges)
         @assert length(tsteps) == length(Tsteps)
         if any(t)
-            anneal!(pr, Teq, dt, tsteps, Tsteps, dm)
+            anneal!(pr, teq, dt, tsteps, Tsteps, dm)
             mi = 1
             for i in eachindex(t)
                 if t[i]
