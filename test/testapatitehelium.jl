@@ -39,14 +39,14 @@
     end
 
 
-# Test creating and allocating an Apatite
+# Test creating and allocating an ApatiteHe
 
     crystalRadius = 29.26
     Uppm = 33.0
     Thppm = 24.2
-    Apatite(crystalRadius,dr,Uppm,Thppm,dt,reverse(tsteps))
-    @time "Allocating an apatite" apatite = Apatite(crystalRadius,dr,Uppm,Thppm,dt,reverse(tsteps))
-    @test isa(apatite, Apatite)
+    ApatiteHe(crystalRadius,dr,Uppm,Thppm,dt,reverse(tsteps))
+    @time "Allocating an apatite" apatite = ApatiteHe(crystalRadius,dr,Uppm,Thppm,dt,reverse(tsteps))
+    @test isa(apatite, ApatiteHe)
     @test apatite.agesteps == reverse(tsteps)
     @test apatite.r238U ≈ fill(8.349831932773109e16, 29)
     @test apatite.r235U ≈ fill(6.13593691093681e14, 29)
@@ -68,7 +68,7 @@
     # println( round.(apatite.alphaDamage, sigdigits=5))
 
 
-# Test integrated age program for Apatite
+# Test integrated age program for ApatiteHe
 
     HeAgeSpherical(apatite,Tsteps,pr,dm) # to not time compilation
     @time "Running HeAgeSpherical" age = HeAgeSpherical(apatite,Tsteps,pr,dm)
@@ -84,7 +84,7 @@
     crystalRadius = 35.
     Uppm = 110.7
     Thppm = 35.1
-    apatite = Apatite(crystalRadius,dr,Uppm,Thppm,dt,reverse(tsteps))
+    apatite = ApatiteHe(crystalRadius,dr,Uppm,Thppm,dt,reverse(tsteps))
     # Re-run to ensure internal state does not change
     for i=1:10
         # @test HeAgeSpherical(apatite,Tsteps,pr,dm) ≈ 150.6059246264699  # with no rmr0 correction
@@ -94,7 +94,7 @@
     crystalRadius = 135.
     Uppm = 173.8
     Thppm = 117.1
-    apatite = Apatite(crystalRadius,dr,Uppm,Thppm,dt,reverse(tsteps))
+    apatite = ApatiteHe(crystalRadius,dr,Uppm,Thppm,dt,reverse(tsteps))
     # Re-run to ensure internal state does not change
     for i=1:10
         # @test HeAgeSpherical(apatite,Tsteps,pr,dm) ≈ 266.3624679808305  # with no rmr0 correction
@@ -104,7 +104,7 @@
     crystalRadius = 135.
     Uppm = 50.0
     Thppm = 40.0
-    apatite = Apatite(crystalRadius,dr,Uppm,Thppm,dt,reverse(tsteps))
+    apatite = ApatiteHe(crystalRadius,dr,Uppm,Thppm,dt,reverse(tsteps))
     # Re-run to ensure internal state does not change
     for i=1:10
         # @test HeAgeSpherical(apatite,Tsteps,pr,dm) ≈ 263.9393563618151  # with no rmr0 correction

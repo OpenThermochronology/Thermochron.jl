@@ -20,7 +20,7 @@ end
 ```julia
 ρᵣ = anneal(dt::Number, tsteps::Vector, Tsteps::Matrix, [model::DiffusivityModel=ZRDAAM()])
 ```
-Zircon damage annealing model as in Guenthner et al. 2013 (AJS)
+ZirconHe damage annealing model as in Guenthner et al. 2013 (AJS)
 """
 function anneal(dt::Number, tsteps::DenseVector, Tsteps::DenseVector, dm::DiffusivityModel=ZRDAAM())
     # Allocate matrix to hold reduced track lengths for all previous timesteps
@@ -141,8 +141,8 @@ export anneal!
 
 """
 ```julia
-HeAgeSpherical(mineral::Zircon, Tsteps::Vector, ρᵣ::AbstractMatrix, dm::ZRDAAM)
-HeAgeSpherical(mineral::Apatite, Tsteps::Vector, ρᵣ::AbstractMatrix, dm::RDAAM)
+HeAgeSpherical(mineral::ZirconHe, Tsteps::Vector, ρᵣ::AbstractMatrix, dm::ZRDAAM)
+HeAgeSpherical(mineral::ApatiteHe, Tsteps::Vector, ρᵣ::AbstractMatrix, dm::RDAAM)
 ```
 Calculate the precdicted U-Th/He age of a zircon or apatite that has experienced a given 
 t-T path (specified by `mineral.agesteps` for time and `Tsteps` for temperature, at a
@@ -155,7 +155,7 @@ Ketcham, Richard A. (2005) "Forward and Inverse Modeling of Low-Temperature
 Thermochronometry Data" Reviews in Mineralogy and Geochemistry 58 (1), 275–314.
 https://doi.org/10.2138/rmg.2005.58.11
 """
-function HeAgeSpherical(zircon::Zircon{T}, Tsteps::StridedVector{T}, ρᵣ::StridedMatrix{T}, dm::ZRDAAM{T}) where T <: AbstractFloat
+function HeAgeSpherical(zircon::ZirconHe{T}, Tsteps::StridedVector{T}, ρᵣ::StridedMatrix{T}, dm::ZRDAAM{T}) where T <: AbstractFloat
 
     # Damage and annealing constants
     DzEa = dm.DzEa::T                           # kJ/mol
@@ -288,7 +288,7 @@ function HeAgeSpherical(zircon::Zircon{T}, Tsteps::StridedVector{T}, ρᵣ::Stri
 
     return HeAge
 end
-function HeAgeSpherical(apatite::Apatite{T}, Tsteps::StridedVector{T}, ρᵣ::AbstractMatrix{T}, dm::RDAAM{T}) where T <: AbstractFloat
+function HeAgeSpherical(apatite::ApatiteHe{T}, Tsteps::StridedVector{T}, ρᵣ::AbstractMatrix{T}, dm::RDAAM{T}) where T <: AbstractFloat
 
     # Damage and annealing constants
     D0L = dm.D0L*10000^2*SEC_MYR::T         # cm^2/sec, converted to micron^2/Myr  

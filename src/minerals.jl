@@ -69,12 +69,12 @@ abstract type Mineral{T} end
 
 """
 ```julia
-Zircon(r, dr, Uppm, Th232ppm, [Sm147ppm], dt, agesteps::AbstractVector)
+ZirconHe(r, dr, Uppm, Th232ppm, [Sm147ppm], dt, agesteps::AbstractVector)
 ```
-Construct a `Zircon` object
+Construct a `ZirconHe` object
 """
 # Concretely-typed immutable struct to hold information about a single zircon (Helium) crystal
-struct Zircon{T<:Number} <: Mineral{T}
+struct ZirconHe{T<:Number} <: Mineral{T}
     dt::T
     agesteps::Vector{T}
     tsteps::Vector{T}
@@ -103,9 +103,9 @@ struct Zircon{T<:Number} <: Mineral{T}
     F::LU{Float64, Tridiagonal{Float64, Vector{Float64}}, Vector{Int64}}
     y::Vector{T}
 end
-# Constructor for the Zircon type, given grain radius, U and Th concentrations and t-T discretization information
-Zircon(r::T, dr::Number, Uppm::T, Th232ppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number = Zircon(r, dr, Uppm, Th232ppm, zero(T), dt, agesteps)
-function Zircon(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number
+# Constructor for the ZirconHe type, given grain radius, U and Th concentrations and t-T discretization information
+ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number = ZirconHe(r, dr, Uppm, Th232ppm, zero(T), dt, agesteps)
+function ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number
     
     # Temporal discretization
     tsteps = reverse(agesteps)
@@ -248,7 +248,7 @@ function Zircon(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Number,
     # Vector for RHS of Crank-Nicholson equation with regular grid cells
     y = Array{T}(undef, nrsteps)
 
-    return Zircon{T}(
+    return ZirconHe{T}(
         dt,
         agesteps,
         tsteps,
@@ -278,17 +278,17 @@ function Zircon(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Number,
         y,
     )
 end
-export Zircon
+export ZirconHe
 
 
 """
 ```julia
-Apatite(r, dr, Uppm, Th232ppm, [Sm147ppm], dt, agesteps::AbstractVector)
+ApatiteHe(r, dr, Uppm, Th232ppm, [Sm147ppm], dt, agesteps::AbstractVector)
 ```
-Construct an `Apatite` object
+Construct an `ApatiteHe` object
 """
 # Concretely-typed immutable struct to hold information about a single apatite (Helium) crystal
-struct Apatite{T<:Number} <: Mineral{T}
+struct ApatiteHe{T<:Number} <: Mineral{T}
     dt::T
     agesteps::Vector{T}
     tsteps::Vector{T}
@@ -317,9 +317,9 @@ struct Apatite{T<:Number} <: Mineral{T}
     F::LU{Float64, Tridiagonal{Float64, Vector{Float64}}, Vector{Int64}}
     y::Vector{T}
 end
-# Constructor for the Apatite type, given grain radius, U and Th concentrations and t-T discretization information
-Apatite(r::T, dr::Number, Uppm::T, Th232ppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number = Apatite(r, dr, Uppm, Th232ppm, zero(T), dt, agesteps)
-function Apatite(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number
+# Constructor for the ApatiteHe type, given grain radius, U and Th concentrations and t-T discretization information
+ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number = ApatiteHe(r, dr, Uppm, Th232ppm, zero(T), dt, agesteps)
+function ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number
 
     # Temporal discretization
     tsteps = reverse(agesteps)
@@ -462,7 +462,7 @@ function Apatite(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Number
     # Vector for RHS of Crank-Nicholson equation with regular grid cells
     y = Array{T}(undef, nrsteps)
 
-    return Apatite{T}(
+    return ApatiteHe{T}(
         dt,
         agesteps,
         tsteps,
@@ -492,4 +492,4 @@ function Apatite(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Number
         y,
     )
 end
-export Apatite
+export ApatiteHe

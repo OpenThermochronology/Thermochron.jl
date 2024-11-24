@@ -72,14 +72,14 @@
         @test round.(pr, sigdigits=6) ≈ pr_known
     end
 
-# Test creating and allocating a Zircon
+# Test creating and allocating a ZirconHe
 
     crystalRadius = 29.26
     Uppm = 462.98
     Thppm = 177.76
-    Zircon(crystalRadius,dr,Uppm,Thppm,dt,reverse(tsteps))
-    @time "Allocating a zircon" zircon = Zircon(crystalRadius,dr,Uppm,Thppm,dt,reverse(tsteps))
-    @test isa(zircon, Zircon)
+    ZirconHe(crystalRadius,dr,Uppm,Thppm,dt,reverse(tsteps))
+    @time "Allocating a zircon" zircon = ZirconHe(crystalRadius,dr,Uppm,Thppm,dt,reverse(tsteps))
+    @test isa(zircon, ZirconHe)
     @test zircon.agesteps == reverse(tsteps)
     @test zircon.r238U ≈ fill(1.1714561176470587e18, 29)
     @test zircon.r235U ≈ fill(8.608533548562195e15, 29)
@@ -99,7 +99,7 @@
     @test round.(zircon.alphaDamage, sigdigits=5) ≈ alphaDamage_known
 
 
-# Test integrated age program for Zircon
+# Test integrated age program for ZirconHe
     dm = ZRDAAM(
         DzEa = 165.0,       # kJ/mol
         DzD0 = 193188.0,    # cm^2/sec
@@ -118,7 +118,7 @@
     crystalRadius = 35.
     Uppm = 1107.
     Thppm = 351.
-    zircon = Zircon(crystalRadius,dr,Uppm,Thppm,dt,reverse(tsteps))
+    zircon = ZirconHe(crystalRadius,dr,Uppm,Thppm,dt,reverse(tsteps))
     # Re-run to ensure internal state does not change
     for i=1:10
         @test HeAgeSpherical(zircon,Tsteps,pr,dm) ≈ 309.7600561440283
@@ -127,7 +127,7 @@
     crystalRadius = 135.
     Uppm = 1738.
     Thppm = 1171.
-    zircon = Zircon(crystalRadius,dr,Uppm,Thppm,dt,reverse(tsteps))
+    zircon = ZirconHe(crystalRadius,dr,Uppm,Thppm,dt,reverse(tsteps))
     # Re-run to ensure internal state does not change
     for i=1:10
         @test HeAgeSpherical(zircon,Tsteps,pr,dm) ≈ 16.02209841621174
@@ -136,7 +136,7 @@
     crystalRadius = 135.
     Uppm = 500.
     Thppm = 400.
-    zircon = Zircon(crystalRadius,dr,Uppm,Thppm,dt,reverse(tsteps))
+    zircon = ZirconHe(crystalRadius,dr,Uppm,Thppm,dt,reverse(tsteps))
     # Re-run to ensure internal state does not change
     for i=1:10
         @test HeAgeSpherical(zircon,Tsteps,pr,dm) ≈ 777.5627957477788
@@ -172,5 +172,5 @@
     crystalRadius = 59.3
     Uppm = 462.98
     Thppm = 177.76
-    zircon = Zircon(crystalRadius,dr,Uppm,Thppm,dt,reverse(tsteps))
+    zircon = ZirconHe(crystalRadius,dr,Uppm,Thppm,dt,reverse(tsteps))
     @test HeAgeSpherical(zircon,Tsteps,pr,dm) ≈ 175.87865725442353
