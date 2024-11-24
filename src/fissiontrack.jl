@@ -49,13 +49,60 @@ function reltrackdensity(r)
     end
 end
 
+using LsqFit: curve_fit
 
-function lcmod(length, angle)
-    # la = 1.632*lc - 10.879
-    # if lc > 12.96
+ellipse(x, lc) = @. sqrt(abs((1 - x^2/lc^2)*( 1.632*lc - 10.879)^2))
+alrline(x, θalr) = @. (0.1035*θalr - 2.250) + x * tan(deg2rad(θalr))
 
-    # θalr = 0.304 * exp(0.439*lc)
-    # a1 = 0.1035*θalr - 2.250.
+
+"""
+```julia
+lcmodel(l, θ)
+```
+Calculate the model c-axis equivalent length ("lc,mod") following the approach
+of Donelick et al. 1999 (doi: 10.2138/am-1999-0902) given a measured "confined"
+fission track length `l` [microns] and angle from the c-axis `θ` [degrees].
+"""
+function lcmodel(l, θ)
+    x = l*cos(deg2rad(θ))
+    y = l*sin(deg2rad(θ))
+    
+    fobj = curve_fit(ellipse, Float64[x], Float64[y], Float64[len])
+    lc_mod = only(fobj.param)
+    # Return if we're above the minimum length for ALR
+    lc_mod > 12.96 && return lc_mod
+
+    # Return if we're below the minimum angle for ALR
+    θalr = 0.304 * exp(0.439*lc_mod)
+    θ < θalr && return lc_mod
+ 
+    # Otherwise, fit to a linear segment for ALR
+    fobj = curve_fit(alrline, [x], [y], Float64[θalr])
+
+    lc_mod = log(only(fobj.param)/0.304)/0.439
+    return lc_mod
+end
+
+"""
+```julia
+rmr0(F, Cl, OH, Mn=0, Fe=0, others=0)
+```
+Calculate rmr0 as a function of composition (specified in terms of
+atoms per fomula unit, or APFU) for "multikinetic" apatite fission 
+track thermochronology.
+
+Implements the equation
+```
+rmr0 = (-0.0495 -0.0348F +0.3528|Cl - 1| +0.0701|OH - 1| 
+        -0.8592Mn -1.2252Fe -0.1721Others)^0.1433
+```
+(equation 11) from Ketcham et al. 2007 (doi: 10.2138/am.2007.2281)
+"""
+function rmr0(F, Cl, OH, Mn=0, Fe=0, others=0)
+    sum((F, Cl, OH)) ≈ 2 || error("F, Cl, and OH should sum to 2")
+    h = - 0.0348F + 0.3528abs(Cl - 1) + 0.0701abs(OH - 1) 
+        - 0.8592Mn - 1.2252Fe - 0.1721others -0.0495
+    return h^0.1433
 end
 
 
