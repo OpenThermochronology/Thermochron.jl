@@ -183,21 +183,21 @@ function HeAgeSpherical(zircon::ZirconHe{T}, Tsteps::StridedVector{T}, ρᵣ::St
     nrsteps = zircon.nrsteps
     dt = zircon.dt
     ntsteps = zircon.ntsteps
-    alphaDeposition = zircon.alphaDeposition::DenseMatrix{T}
-    alphaDamage = zircon.alphaDamage::DenseMatrix{T}
+    alphadeposition = zircon.alphadeposition::DenseMatrix{T}
+    alphadamage = zircon.alphadamage::DenseMatrix{T}
 
     # The annealed damage matrix is the summation of the ρᵣ for each
     # previous timestep multiplied by the the alpha dose at each
     # previous timestep; this is a linear combination, which can be
     # calculated efficiently for all radii by simple matrix multiplication.
-    annealedDamage = zircon.annealedDamage::DenseMatrix{T}
-    mul!(annealedDamage, ρᵣ, alphaDamage)
+    annealeddamage = zircon.annealeddamage::DenseMatrix{T}
+    mul!(annealeddamage, ρᵣ, alphadamage)
 
     # Calculate initial alpha damage
     β = zircon.β::DenseVector{T}
     @turbo for k = 1:(nrsteps-2)
-        fₐ = 1-exp(-Bα*annealedDamage[1,k]*Phi)
-        τ = (lint0/(4.2 / ((1-exp(-Bα*annealedDamage[1,k])) * SV) - 2.5))^2
+        fₐ = 1-exp(-Bα*annealeddamage[1,k]*Phi)
+        τ = (lint0/(4.2 / ((1-exp(-Bα*annealeddamage[1,k])) * SV) - 2.5))^2
         De = 1 / ((1-fₐ)^3 / (Dz[1]/τ) + fₐ^3 / DN17[1])
         β[k+1] = 2 * dr^2 / (De*dt) # Common β factor
     end
@@ -232,8 +232,8 @@ function HeAgeSpherical(zircon::ZirconHe{T}, Tsteps::StridedVector{T}, ρᵣ::St
 
         # Calculate alpha damage
         @turbo for k = 1:(nrsteps-2)
-            fₐ = 1-exp(-Bα*annealedDamage[i,k]*Phi)
-            τ = (lint0/(4.2 / ((1-exp(-Bα*annealedDamage[i,k])) * SV) - 2.5))^2
+            fₐ = 1-exp(-Bα*annealeddamage[i,k]*Phi)
+            τ = (lint0/(4.2 / ((1-exp(-Bα*annealeddamage[i,k])) * SV) - 2.5))^2
             De = 1 / ((1-fₐ)^3 / (Dz[i]/τ) + fₐ^3 / DN17[i])
             β[k+1] = 2 * dr^2 / (De*dt) # Common β factor
         end
@@ -259,7 +259,7 @@ function HeAgeSpherical(zircon::ZirconHe{T}, Tsteps::StridedVector{T}, ρᵣ::St
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
         @turbo for k = 2:nrsteps-1
             𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i-1], u[k-1, i-1], u[k+1, i-1]
-            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - alphaDeposition[i, k-1]*rsteps[k-1]*β[k]
+            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - alphadeposition[i, k-1]*rsteps[k-1]*β[k]
         end
 
         # Invert using tridiagonal matrix algorithm
@@ -321,20 +321,20 @@ function HeAgeSpherical(apatite::ApatiteHe{T}, Tsteps::StridedVector{T}, ρᵣ::
     nrsteps = apatite.nrsteps
     dt = apatite.dt
     ntsteps = apatite.ntsteps
-    alphaDeposition = apatite.alphaDeposition::DenseMatrix{T}
-    alphaDamage = apatite.alphaDamage::DenseMatrix{T}
+    alphadeposition = apatite.alphadeposition::DenseMatrix{T}
+    alphadamage = apatite.alphadamage::DenseMatrix{T}
 
     # The annealed damage matrix is the summation of the ρᵣ for each
     # previous timestep multiplied by the the alpha dose at each
     # previous timestep; this is a linear combination, which can be
     # calculated efficiently for all radii by simple matrix multiplication.
-    annealedDamage = apatite.annealedDamage::DenseMatrix{T}
-    mul!(annealedDamage, ρᵣ, alphaDamage)
+    annealeddamage = apatite.annealeddamage::DenseMatrix{T}
+    mul!(annealeddamage, ρᵣ, alphadamage)
 
     # Calculate initial alpha damage
     β = apatite.β::DenseVector{T}
     @turbo for k = 1:(nrsteps-2)
-        track_density = annealedDamage[1,k]*damage_conversion # cm/cm3
+        track_density = annealeddamage[1,k]*damage_conversion # cm/cm3
         trapDiff = psi*track_density + omega*track_density^3
         De = DL[1]/(trapDiff*Dtrap[1]+1) # micron^2/Myr
         β[k+1] = 2 * dr^2 / (De*dt) # Common β factor
@@ -370,7 +370,7 @@ function HeAgeSpherical(apatite::ApatiteHe{T}, Tsteps::StridedVector{T}, ρᵣ::
 
         # Calculate alpha damage
         @turbo for k = 1:(nrsteps-2)
-            track_density = annealedDamage[i,k]*damage_conversion # cm/cm3
+            track_density = annealeddamage[i,k]*damage_conversion # cm/cm3
             trapDiff = psi*track_density + omega*track_density^3
             De = DL[i]/(trapDiff*Dtrap[i]+1) # micron^2/Myr
             β[k+1] = 2 * dr^2 / (De*dt) # Common β factor
@@ -397,7 +397,7 @@ function HeAgeSpherical(apatite::ApatiteHe{T}, Tsteps::StridedVector{T}, ρᵣ::
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
         @turbo for k = 2:nrsteps-1
             𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i-1], u[k-1, i-1], u[k+1, i-1]
-            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - alphaDeposition[i, k-1]*rsteps[k-1]*β[k]
+            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - alphadeposition[i, k-1]*rsteps[k-1]*β[k]
         end
 
         # Invert using tridiagonal matrix algorithm

@@ -36,30 +36,30 @@ export intersectionfraction
 
 """
 ```julia
-intersectiondensity(rEdges::Vector, rVolumes::Vector, ralpha, d)
+intersectiondensity(redges::Vector, rvolumes::Vector, ralpha, d)
 ```
 Calculate the volume-nomalized fractional intersection density of an alpha
 stopping sphere of radius `ralpha` with each concentric shell (with shell edges
-`rEdges` and relative volumes `rVolumes`) of a spherical crystal where the
+`redges` and relative volumes `rvolumes`) of a spherical crystal where the
 two are separated by distance `d`
 """
-function intersectiondensity(rEdges::Vector{T}, rVolumes::Vector{T}, ralpha::T, d::T) where T <: AbstractFloat
-    dInt = Array{T}(undef, length(rEdges) - 1)
-    intersectiondensity!(dInt, rEdges, rVolumes, ralpha, d)
+function intersectiondensity(redges::Vector{T}, rvolumes::Vector{T}, ralpha::T, d::T) where T <: AbstractFloat
+    dint = Array{T}(undef, length(redges) - 1)
+    intersectiondensity!(dint, redges, rvolumes, ralpha, d)
 end
-function intersectiondensity!(dInt::Vector{T}, rEdges::Vector{T}, rVolumes::Vector{T}, ralpha::T, d::T) where T <: AbstractFloat
-    n = length(rEdges) - 1
-    fIntLast = intersectionfraction(first(rEdges),ralpha,d)
+function intersectiondensity!(dint::Vector{T}, redges::Vector{T}, rvolumes::Vector{T}, ralpha::T, d::T) where T <: AbstractFloat
+    n = length(redges) - 1
+    fintlast = intersectionfraction(first(redges),ralpha,d)
     @inbounds for i ∈ 1:n
-        # Integrated intersection fraction for each concentric sphere (rEdges) of crystal
-        fInt = intersectionfraction(rEdges[i+1],ralpha,d)
+        # Integrated intersection fraction for each concentric sphere (redges) of crystal
+        fint = intersectionfraction(redges[i+1],ralpha,d)
 
         # Intersection fraction for each spherical shell of the crystal (subtracting
         # one concentric sphere from the next) normalized by shell volume
-        dInt[i] = (fInt-fIntLast) / rVolumes[i]
-        fIntLast = fInt
+        dint[i] = (fint-fintlast) / rvolumes[i]
+        fintlast = fint
     end
-    return dInt
+    return dint
 end
 export intersectiondensity
 
@@ -81,8 +81,8 @@ struct ZirconHe{T<:Number} <: Mineral{T}
     ntsteps::Int
     dr::T
     rsteps::Vector{T}
-    rEdges::Vector{T}
-    relVolumes::Vector{T}
+    redges::Vector{T}
+    relvolumes::Vector{T}
     nrsteps::Int
     r238U::Vector{T}
     r235U::Vector{T}
@@ -92,9 +92,9 @@ struct ZirconHe{T<:Number} <: Mineral{T}
     r235UHe::Vector{T}
     r232ThHe::Vector{T}
     r147SmHe::Vector{T}
-    alphaDeposition::Matrix{T}
-    alphaDamage::Matrix{T}
-    annealedDamage::Matrix{T}
+    alphadeposition::Matrix{T}
+    alphadamage::Matrix{T}
+    annealeddamage::Matrix{T}
     u::Matrix{T}
     β::Vector{T}
     Dz::Vector{T}
@@ -113,17 +113,17 @@ function ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numbe
 
     # crystal size and spatial discretization
     rsteps = Array{T}(0+dr/2 : dr: r-dr/2)
-    rEdges = Array{T}(0 : dr : r) # Edges of each radius element
+    redges = Array{T}(0 : dr : r) # Edges of each radius element
     nrsteps = length(rsteps)+2 # number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
-    relVolumes = (rEdges[2:end].^3 - rEdges[1:end-1].^3)/rEdges[end]^3 # Relative volume fraction of spherical shell corresponding to each radius element
+    relvolumes = (redges[2:end].^3 - redges[1:end-1].^3)/redges[end]^3 # Relative volume fraction of spherical shell corresponding to each radius element
 
     # Alpha stopping distances for each isotope in each decay chain, from
     # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
-    alphaRadii238U = (11.78, 14.09, 13.73, 14.13, 17.32, 16.69, 28.56, 16.48,)
-    alphaRadii235U = (12.58, 15.04, 19.36, 18.06, 23.07, 26.87, 22.47,)
-    alphaRadii232Th = (10.99, 16.67, 18.16, 17.32, 23.61, 29.19,)
+    alpharadii238U = (11.78, 14.09, 13.73, 14.13, 17.32, 16.69, 28.56, 16.48,)
+    alpharadii235U = (12.58, 15.04, 19.36, 18.06, 23.07, 26.87, 22.47,)
+    alpharadii232Th = (10.99, 16.67, 18.16, 17.32, 23.61, 29.19,)
     # Ketchem et al. (2011), doi: 10.1016/j.gca.2011.10.011
-    alphaRadii147Sm = (4.76,)
+    alpharadii147Sm = (4.76,)
 
     # Decay constants
     λ235U = log(2)/(7.0381*10^8)*10^6 # [1/Myr] Jaffey et al. (1971)
@@ -145,44 +145,44 @@ function ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numbe
 
     # Calculate effective He deposition for each decay chain, corrected for alpha
     # stopping distance
-    dInt = zeros(T, length(rEdges) - 1)
+    dint = zeros(T, length(redges) - 1)
 
     
     r238UHe = zeros(size(r238U))
     @inbounds for ri = 1:length(rsteps)
-        for i=1:length(alphaRadii238U)
+        for i=1:length(alpharadii238U)
             # Effective radial alpha deposition from 238U
-            intersectiondensity!(dInt,rEdges,relVolumes,alphaRadii238U[i],rsteps[ri])
-            @turbo @. r238UHe += relVolumes[ri] * dInt * r238U[ri]
+            intersectiondensity!(dint,redges,relvolumes,alpharadii238U[i],rsteps[ri])
+            @turbo @. r238UHe += relvolumes[ri] * dint * r238U[ri]
         end
     end
 
     # Effective radial alpha deposition from U-235
     r235UHe = zeros(size(r235U))
     @inbounds for ri = 1:length(rsteps)
-        for i=1:length(alphaRadii235U)
+        for i=1:length(alpharadii235U)
             # Effective radial alpha deposition from 235U
-            intersectiondensity!(dInt, rEdges,relVolumes,alphaRadii235U[i],rsteps[ri])
-            @turbo @. r235UHe += relVolumes[ri] * dInt * r235U[ri]
+            intersectiondensity!(dint, redges,relvolumes,alpharadii235U[i],rsteps[ri])
+            @turbo @. r235UHe += relvolumes[ri] * dint * r235U[ri]
         end
     end
 
     # Effective radial alpha deposition from Th-232
     r232ThHe = zeros(size(r232Th))
     @inbounds for ri = 1:length(rsteps)
-        for i=1:length(alphaRadii232Th)
+        for i=1:length(alpharadii232Th)
             # Effective radial alpha deposition from 232Th
-            intersectiondensity!(dInt, rEdges,relVolumes,alphaRadii232Th[i],rsteps[ri])
-            @turbo @. r232ThHe += relVolumes[ri] * dInt * r232Th[ri]
+            intersectiondensity!(dint, redges,relvolumes,alpharadii232Th[i],rsteps[ri])
+            @turbo @. r232ThHe += relvolumes[ri] * dint * r232Th[ri]
         end
     end
 
     # Effective radial alpha deposition from Sm-147
     r147SmHe = zeros(size(r147Sm))
     @inbounds for ri = 1:length(rsteps)
-        for i=1:length(alphaRadii147Sm)
-            intersectiondensity!(dInt, rEdges,relVolumes,alphaRadii147Sm[i],rsteps[ri])
-            @turbo @. r147SmHe += relVolumes[ri] * dInt * r147Sm[ri]
+        for i=1:length(alpharadii147Sm)
+            intersectiondensity!(dint, redges,relvolumes,alpharadii147Sm[i],rsteps[ri])
+            @turbo @. r147SmHe += relvolumes[ri] * dint * r147Sm[ri]
         end
     end    
 
@@ -197,36 +197,36 @@ function ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numbe
     decay = Array{T}(undef, ntsteps)
     buffer = zeros(T, ntsteps, nrsteps-2)
     # Allocate deposition and damage arrays
-    alphaDeposition = zeros(T, ntsteps, nrsteps-2)
-    alphaDamage = zeros(T, ntsteps, nrsteps-2)
+    alphadeposition = zeros(T, ntsteps, nrsteps-2)
+    alphadamage = zeros(T, ntsteps, nrsteps-2)
     # U-238
     @turbo @. decay = exp(λ238U*(agesteps + dt_2)) - exp(λ238U*(agesteps - dt_2))
     mul!(buffer, decay, r238UHe')
-    @turbo @. alphaDeposition += buffer
+    @turbo @. alphadeposition += buffer
     mul!(buffer, decay, r238Udam')
-    @turbo @. alphaDamage += buffer
+    @turbo @. alphadamage += buffer
     # U-232
     @turbo @. decay = exp(λ235U*(agesteps + dt_2)) - exp(λ235U*(agesteps - dt_2))
     mul!(buffer, decay, r235UHe')
-    @turbo @. alphaDeposition += buffer
+    @turbo @. alphadeposition += buffer
     mul!(buffer, decay, r235Udam')
-    @turbo @. alphaDamage += buffer
+    @turbo @. alphadamage += buffer
     # Th-232
     @turbo @. decay = exp(λ232Th*(agesteps + dt_2)) - exp(λ232Th*(agesteps - dt_2))
     mul!(buffer, decay, r232ThHe')
-    @turbo @. alphaDeposition += buffer
+    @turbo @. alphadeposition += buffer
     mul!(buffer, decay, r232Thdam')
-    @turbo @. alphaDamage += buffer
+    @turbo @. alphadamage += buffer
     # Sm-147
     @turbo @. decay = exp(λ147Sm*(agesteps + dt_2)) - exp(λ147Sm*(agesteps - dt_2))
     mul!(buffer, decay, r147SmHe')
-    @turbo @. alphaDeposition += buffer
+    @turbo @. alphadeposition += buffer
     mul!(buffer, decay, r147Smdam')
-    @turbo @. alphaDamage += buffer
+    @turbo @. alphadamage += buffer
 
     # Allocate additional variables that will be needed for Crank-Nicholson
-    annealedDamage = similar(alphaDamage)
-    β = Array{T}(undef, nrsteps) # First row of annealedDamage
+    annealeddamage = similar(alphadamage)
+    β = Array{T}(undef, nrsteps) # First row of annealeddamage
 
     # Allocate arrays for diffusivities
     Dz = Array{T}(undef, ntsteps)
@@ -255,8 +255,8 @@ function ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numbe
         ntsteps,
         dr,
         rsteps,
-        rEdges,
-        relVolumes,
+        redges,
+        relvolumes,
         nrsteps,
         r238U,
         r235U,
@@ -266,9 +266,9 @@ function ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numbe
         r235UHe,
         r232ThHe,
         r147SmHe,
-        alphaDeposition,
-        alphaDamage,
-        annealedDamage,
+        alphadeposition,
+        alphadamage,
+        annealeddamage,
         u,
         β,
         Dz,
@@ -295,8 +295,8 @@ struct ApatiteHe{T<:Number} <: Mineral{T}
     ntsteps::Int
     dr::T
     rsteps::Vector{T}
-    rEdges::Vector{T}
-    relVolumes::Vector{T}
+    redges::Vector{T}
+    relvolumes::Vector{T}
     nrsteps::Int
     r238U::Vector{T}
     r235U::Vector{T}
@@ -306,9 +306,9 @@ struct ApatiteHe{T<:Number} <: Mineral{T}
     r235UHe::Vector{T}
     r232ThHe::Vector{T}
     r147SmHe::Vector{T}
-    alphaDeposition::Matrix{T}
-    alphaDamage::Matrix{T}
-    annealedDamage::Matrix{T}
+    alphadeposition::Matrix{T}
+    alphadamage::Matrix{T}
+    annealeddamage::Matrix{T}
     u::Matrix{T}
     β::Vector{T}
     DL::Vector{T}
@@ -327,17 +327,17 @@ function ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numb
 
     # crystal size and spatial discretization
     rsteps = Array{T}(0+dr/2 : dr: r-dr/2)
-    rEdges = Array{T}(0 : dr : r) # Edges of each radius element
+    redges = Array{T}(0 : dr : r) # Edges of each radius element
     nrsteps = length(rsteps)+2 # number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
-    relVolumes = (rEdges[2:end].^3 - rEdges[1:end-1].^3)/rEdges[end]^3 # Relative volume fraction of spherical shell corresponding to each radius element
+    relvolumes = (redges[2:end].^3 - redges[1:end-1].^3)/redges[end]^3 # Relative volume fraction of spherical shell corresponding to each radius element
 
     # Alpha stopping distances for each isotope in each decay chain, from
     # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
-    alphaRadii238U = (13.54, 16.26, 15.84, 16.31, 20.09, 22.89, 33.39, 19.10,)
-    alphaRadii235U = (14.48, 17.39, 22.5, 20.97, 26.89, 31.40, 26.18,)
-    alphaRadii232Th = (12.60, 19.32, 21.08, 20.09, 27.53, 34.14,)
+    alpharadii238U = (13.54, 16.26, 15.84, 16.31, 20.09, 22.89, 33.39, 19.10,)
+    alpharadii235U = (14.48, 17.39, 22.5, 20.97, 26.89, 31.40, 26.18,)
+    alpharadii232Th = (12.60, 19.32, 21.08, 20.09, 27.53, 34.14,)
     # Ketchem et al. (2011), doi: 10.1016/j.gca.2011.10.011
-    alphaRadii147Sm = (5.93,)
+    alpharadii147Sm = (5.93,)
 
     # Jaffey decay constants
     λ235U = log(2)/(7.0381*10^8)*10^6 # [1/Myr]
@@ -359,44 +359,44 @@ function ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numb
 
     # Calculate effective He deposition for each decay chain, corrected for alpha
     # stopping distance
-    dInt = zeros(T, length(rEdges) - 1)
+    dint = zeros(T, length(redges) - 1)
 
     # Effective radial alpha deposition from U-238
     r238UHe = zeros(size(r238U))
     @inbounds for ri = 1:length(rsteps)
-        for i=1:length(alphaRadii238U)
+        for i=1:length(alpharadii238U)
             # Effective radial alpha deposition from 238U
-            intersectiondensity!(dInt,rEdges,relVolumes,alphaRadii238U[i],rsteps[ri])
-            @turbo @. r238UHe += relVolumes[ri] * dInt * r238U[ri]
+            intersectiondensity!(dint,redges,relvolumes,alpharadii238U[i],rsteps[ri])
+            @turbo @. r238UHe += relvolumes[ri] * dint * r238U[ri]
         end
     end
 
     # Effective radial alpha deposition from U-235
     r235UHe = zeros(size(r235U))
     @inbounds for ri = 1:length(rsteps)
-        for i=1:length(alphaRadii235U)
+        for i=1:length(alpharadii235U)
             # Effective radial alpha deposition from 235U
-            intersectiondensity!(dInt, rEdges,relVolumes,alphaRadii235U[i],rsteps[ri])
-            @turbo @. r235UHe += relVolumes[ri] * dInt * r235U[ri]
+            intersectiondensity!(dint, redges,relvolumes,alpharadii235U[i],rsteps[ri])
+            @turbo @. r235UHe += relvolumes[ri] * dint * r235U[ri]
         end
     end
 
     # Effective radial alpha deposition from Th-232
     r232ThHe = zeros(size(r232Th))
     @inbounds for ri = 1:length(rsteps)
-        for i=1:length(alphaRadii232Th)
+        for i=1:length(alpharadii232Th)
             # Effective radial alpha deposition from 232Th
-            intersectiondensity!(dInt, rEdges,relVolumes,alphaRadii232Th[i],rsteps[ri])
-            @turbo @. r232ThHe += relVolumes[ri] * dInt * r232Th[ri]
+            intersectiondensity!(dint, redges,relvolumes,alpharadii232Th[i],rsteps[ri])
+            @turbo @. r232ThHe += relvolumes[ri] * dint * r232Th[ri]
         end
     end
 
     # Effective radial alpha deposition from Sm-147
     r147SmHe = zeros(size(r147Sm))
     @inbounds for ri = 1:length(rsteps)
-        for i=1:length(alphaRadii147Sm)
-            intersectiondensity!(dInt, rEdges,relVolumes,alphaRadii147Sm[i],rsteps[ri])
-            @turbo @. r147SmHe += relVolumes[ri] * dInt * r147Sm[ri]
+        for i=1:length(alpharadii147Sm)
+            intersectiondensity!(dint, redges,relvolumes,alpharadii147Sm[i],rsteps[ri])
+            @turbo @. r147SmHe += relvolumes[ri] * dint * r147Sm[ri]
         end
     end
 
@@ -411,36 +411,36 @@ function ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numb
     decay = Array{T}(undef, ntsteps)
     buffer = zeros(T, ntsteps, nrsteps-2)
     # Allocate deposition and damage arrays
-    alphaDeposition = zeros(T, ntsteps, nrsteps-2)
-    alphaDamage = zeros(T, ntsteps, nrsteps-2)
+    alphadeposition = zeros(T, ntsteps, nrsteps-2)
+    alphadamage = zeros(T, ntsteps, nrsteps-2)
     # U-238
     @turbo @. decay = exp(λ238U*(agesteps + dt_2)) - exp(λ238U*(agesteps - dt_2))
     mul!(buffer, decay, r238UHe')
-    @turbo @. alphaDeposition += buffer
+    @turbo @. alphadeposition += buffer
     mul!(buffer, decay, r238Udam')
-    @turbo @. alphaDamage += buffer
+    @turbo @. alphadamage += buffer
     # U-232
     @turbo @. decay = exp(λ235U*(agesteps + dt_2)) - exp(λ235U*(agesteps - dt_2))
     mul!(buffer, decay, r235UHe')
-    @turbo @. alphaDeposition += buffer
+    @turbo @. alphadeposition += buffer
     mul!(buffer, decay, r235Udam')
-    @turbo @. alphaDamage += buffer
+    @turbo @. alphadamage += buffer
     # Th-232
     @turbo @. decay = exp(λ232Th*(agesteps + dt_2)) - exp(λ232Th*(agesteps - dt_2))
     mul!(buffer, decay, r232ThHe')
-    @turbo @. alphaDeposition += buffer
+    @turbo @. alphadeposition += buffer
     mul!(buffer, decay, r232Thdam')
-    @turbo @. alphaDamage += buffer
+    @turbo @. alphadamage += buffer
     # Sm-147
     @turbo @. decay = exp(λ147Sm*(agesteps + dt_2)) - exp(λ147Sm*(agesteps - dt_2))
     mul!(buffer, decay, r147SmHe')
-    @turbo @. alphaDeposition += buffer
+    @turbo @. alphadeposition += buffer
     mul!(buffer, decay, r147Smdam')
-    @turbo @. alphaDamage += buffer
+    @turbo @. alphadamage += buffer
 
     # Allocate additional variables that will be needed for Crank-Nicholson
-    annealedDamage = similar(alphaDamage)
-    β = Array{T}(undef, nrsteps) # First row of annealedDamage
+    annealeddamage = similar(alphadamage)
+    β = Array{T}(undef, nrsteps) # First row of annealeddamage
 
     # Allocate arrays for diffusivities
     DL = Array{T}(undef, ntsteps)
@@ -469,8 +469,8 @@ function ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numb
         ntsteps,
         dr,
         rsteps,
-        rEdges,
-        relVolumes,
+        redges,
+        relvolumes,
         nrsteps,
         r238U,
         r235U,
@@ -480,9 +480,9 @@ function ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numb
         r235UHe,
         r232ThHe,
         r147SmHe,
-        alphaDeposition,
-        alphaDamage,
-        annealedDamage,
+        alphadeposition,
+        alphadamage,
+        annealeddamage,
         u,
         β,
         DL,
