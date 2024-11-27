@@ -1,12 +1,3 @@
-# Physical constants
-const SEC_MYR = 1E6*365.25*24*3600
-const LOG_SEC_MYR = log(SEC_MYR)
-
-# Jaffey decay constants
-const λ235U = log(2)/(7.0381*10^8)*10^6 # [1/Myr]
-const λ238U = log(2)/(4.4683*10^9)*10^6 # [1/Myr]
-const λ232Th = log(2)/(1.405*10^10)*10^6 # [1/Myr]
-
 # The amount of ingrown helium since time t
 function He(t, U238, U235, Th232)
     8*U238*(exp(λ238U*t)-1) + 7*U235*(exp(λ235U*t)-1) + 6*Th232*(exp(λ232Th*t)-1)
