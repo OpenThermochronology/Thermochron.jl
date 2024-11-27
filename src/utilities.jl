@@ -44,12 +44,13 @@
     `redges` and relative volumes `rvolumes`) of a spherical crystal where the
     two are separated by distance `d`
     """
-    function intersectiondensity(redges::Vector{T}, rvolumes::Vector{T}, ralpha::T, d::T) where T <: AbstractFloat
+    function intersectiondensity(redges::AbstractVector{T}, rvolumes::AbstractVector{T}, ralpha::T, d::T) where T <: AbstractFloat
         dint = Array{T}(undef, length(redges) - 1)
         intersectiondensity!(dint, redges, rvolumes, ralpha, d)
     end
-    function intersectiondensity!(dint::Vector{T}, redges::Vector{T}, rvolumes::Vector{T}, ralpha::T, d::T) where T <: AbstractFloat
+    function intersectiondensity!(dint::Vector{T}, redges::AbstractVector{T}, rvolumes::AbstractVector{T}, ralpha::T, d::T) where T <: AbstractFloat
         n = length(redges) - 1
+        @assert eachindex(dint) == eachindex(rvolumes) == 1:n
         fintlast = intersectionfraction(first(redges),ralpha,d)
         @inbounds for i ∈ 1:n
             # Integrated intersection fraction for each concentric sphere (redges) of crystal
