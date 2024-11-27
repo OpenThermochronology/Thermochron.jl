@@ -1,5 +1,4 @@
 ## --- Fission track models
-SEC_MYR = 1E6*365.25*24*3600
 
 abstract type AnnealingModel{T} end
 
@@ -14,10 +13,6 @@ end
 
 l₀ = 16.38 # [um] initial track length
 σl₀ = 0.09 # [um] initial track length uncertainty
-
-
-g(r, α ,β) = (((1-r^β)/β)^α-1)/α
-r(g, α, β) = (1-(g*α+1)^(1/α)*β)^(1/β)
 
 # "Simultaneous fit" Fanning Curvilinear models 
 const FCKetcham1999 = FanningCurvilinear(-19.84402202, 0.3895104539,-51.25312954,-7.642358713,-0.12327,-11.988)
@@ -126,32 +121,6 @@ end
 
 
 ## --- 
-
-abstract type FissionTrackLength{T} end
-
-struct ApatiteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
-    length::T       # [um]
-    angle::T        # [degrees]
-    Dpar::T         # [μm]
-    F::T            # [APFU]
-    Cl::T           # [APFU]
-    OH::T           # [APFU]
-    rmr0::T         # [unitless]
-end
-
-abstract type FissionTrackSample{T} end
-
-struct ApatiteFT{T<:AbstractFloat} <: FissionTrackSample{T}
-    age::T          # [Ma]
-    age_sigma::T    # [Ma]
-    Dpar::T         # [μm]
-    F::T            # [APFU]
-    Cl::T           # [APFU]
-    OH::T           # [APFU]
-    rmr0::T         # [unitless]
-    UPbage::T       # [Ma]
-    UPbage_sigma::T # [Ma]
-end
 
 
 # function AFTAge(apatite::ApatiteFT{Tf}, pr::Matrix, am::AnnealingModel{Tf}) where {Tf <: AbstractFloat}

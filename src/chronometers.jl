@@ -1,6 +1,32 @@
 # Abstract type to include any number of mineral chronometers (zircon, apatite, etc.)
 abstract type Chronometer{T} end
 
+abstract type FissionTrackLength{T} <: Chronometer{T} end
+
+struct ApatiteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
+    length::T       # [um]
+    angle::T        # [degrees]
+    Dpar::T         # [μm]
+    F::T            # [APFU]
+    Cl::T           # [APFU]
+    OH::T           # [APFU]
+    rmr0::T         # [unitless]
+end
+
+abstract type FissionTrackSample{T} <: Chronometer{T} end
+
+struct ApatiteFT{T<:AbstractFloat} <: FissionTrackSample{T}
+    age::T          # [Ma]
+    age_sigma::T    # [Ma]
+    Dpar::T         # [μm]
+    F::T            # [APFU]
+    Cl::T           # [APFU]
+    OH::T           # [APFU]
+    rmr0::T         # [unitless]
+end
+
+
+abstract type HeliumSample{T} <: Chronometer{T} end
 
 """
 ```julia
@@ -9,7 +35,7 @@ ZirconHe(r, dr, Uppm, Th232ppm, [Sm147ppm], dt, agesteps::AbstractVector)
 Construct a `ZirconHe` object
 """
 # Concretely-typed immutable struct to hold information about a single zircon (Helium) crystal
-struct ZirconHe{T<:Number} <: Chronometer{T}
+struct ZirconHe{T<:Number} <: HeliumSample{T}
     dt::T
     agesteps::Vector{T}
     tsteps::Vector{T}
@@ -223,7 +249,7 @@ ApatiteHe(r, dr, Uppm, Th232ppm, [Sm147ppm], dt, agesteps::AbstractVector)
 Construct an `ApatiteHe` object
 """
 # Concretely-typed immutable struct to hold information about a single apatite (Helium) crystal
-struct ApatiteHe{T<:Number} <: Chronometer{T}
+struct ApatiteHe{T<:Number} <: HeliumSample{T}
     dt::T
     agesteps::Vector{T}
     tsteps::Vector{T}
