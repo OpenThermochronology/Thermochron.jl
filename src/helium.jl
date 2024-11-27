@@ -280,13 +280,13 @@ function modelage(zircon::ZirconHe{T}, Tsteps::StridedVector{T}, ρᵣ::StridedM
     μ232Th = nanmean(zircon.r232Th::DenseVector{T})
 
     # Numerically solve for helium age of the grain
-    HeAge = one(T)
+    heliumage = one(T)
     for i=1:10
-        ∂He∂t = dHe(HeAge, μ238U, μ235U, μ232Th) # Calculate derivative
-        HeAge += (μHe - He(HeAge, μ238U, μ235U, μ232Th))/∂He∂t # Move towards zero (He(HeAge) == μHe)
+        ∂He∂t = dHe(heliumage, μ238U, μ235U, μ232Th) # Calculate derivative
+        heliumage += (μHe - He(heliumage, μ238U, μ235U, μ232Th))/∂He∂t # Move towards zero (He(heliumage) == μHe)
     end
 
-    return HeAge
+    return heliumage
 end
 function modelage(apatite::ApatiteHe{T}, Tsteps::StridedVector{T}, ρᵣ::AbstractMatrix{T}, dm::RDAAM{T}) where T <: AbstractFloat
 
@@ -418,13 +418,12 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::StridedVector{T}, ρᵣ::Abstra
     μ232Th = nanmean(apatite.r232Th::DenseVector{T})
 
     # Numerically solve for helium age of the grain
-    HeAge = one(T)
+    heliumage = one(T)
     for i=1:10
-        ∂He∂t = dHe(HeAge, μ238U, μ235U, μ232Th) # Calculate derivative
-        HeAge += (μHe - He(HeAge, μ238U, μ235U, μ232Th))/∂He∂t # Move towards zero (He(HeAge) == μHe)
+        ∂He∂t = dHe(heliumage, μ238U, μ235U, μ232Th) # Calculate derivative
+        heliumage += (μHe - He(heliumage, μ238U, μ235U, μ232Th))/∂He∂t # Move towards zero (He(heliumage) == μHe)
     end
 
-    return HeAge
+    return heliumage
 end
 export modelage
-
