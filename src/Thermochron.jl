@@ -11,7 +11,7 @@ module Thermochron
 
     include("types.jl")
     include("utilities.jl")
-    include("minerals.jl")
+    include("chronometers.jl")
     include("helium.jl")
     include("inversion.jl")
 
