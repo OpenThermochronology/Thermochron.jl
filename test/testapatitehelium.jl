@@ -70,15 +70,15 @@
 
 # Test integrated age program for ApatiteHe
 
-    HeAgeSpherical(apatite,Tsteps,pr,dm) # to not time compilation
-    @time "Running HeAgeSpherical" age = HeAgeSpherical(apatite,Tsteps,pr,dm)
+    modelage(apatite,Tsteps,pr,dm) # to not time compilation
+    @time "Running modelage" age = modelage(apatite,Tsteps,pr,dm)
     @test age ≈ 125.2393082743598 
     dm = RDAAM() # Standard RDAAM
     pr, Teq = anneal(dt, tsteps, Tsteps, dm)
     # Re-run to ensure internal state does not change
     for i=1:10
-        # @test HeAgeSpherical(apatite,Tsteps,pr,dm) ≈ 125.2393082743598  # with no rmr0 correction
-        @test HeAgeSpherical(apatite,Tsteps,pr,dm) ≈ 125.2331472062392  # with rmr0 = 0.83
+        # @test modelage(apatite,Tsteps,pr,dm) ≈ 125.2393082743598  # with no rmr0 correction
+        @test modelage(apatite,Tsteps,pr,dm) ≈ 125.2331472062392  # with rmr0 = 0.83
     end
 
     crystalradius = 35.
@@ -87,8 +87,8 @@
     apatite = ApatiteHe(crystalradius,dr,Uppm,Thppm,dt,reverse(tsteps))
     # Re-run to ensure internal state does not change
     for i=1:10
-        # @test HeAgeSpherical(apatite,Tsteps,pr,dm) ≈ 150.6059246264699  # with no rmr0 correction
-        @test HeAgeSpherical(apatite,Tsteps,pr,dm) ≈ 150.3786208747766  # with rmr0 = 0.83
+        # @test modelage(apatite,Tsteps,pr,dm) ≈ 150.6059246264699  # with no rmr0 correction
+        @test modelage(apatite,Tsteps,pr,dm) ≈ 150.3786208747766  # with rmr0 = 0.83
     end
 
     crystalradius = 135.
@@ -97,8 +97,8 @@
     apatite = ApatiteHe(crystalradius,dr,Uppm,Thppm,dt,reverse(tsteps))
     # Re-run to ensure internal state does not change
     for i=1:10
-        # @test HeAgeSpherical(apatite,Tsteps,pr,dm) ≈ 266.3624679808305  # with no rmr0 correction
-        @test HeAgeSpherical(apatite,Tsteps,pr,dm) ≈ 263.9370169558578  # with rmr0 = 0.83
+        # @test modelage(apatite,Tsteps,pr,dm) ≈ 266.3624679808305  # with no rmr0 correction
+        @test modelage(apatite,Tsteps,pr,dm) ≈ 263.9370169558578  # with rmr0 = 0.83
     end
 
     crystalradius = 135.
@@ -107,6 +107,6 @@
     apatite = ApatiteHe(crystalradius,dr,Uppm,Thppm,dt,reverse(tsteps))
     # Re-run to ensure internal state does not change
     for i=1:10
-        # @test HeAgeSpherical(apatite,Tsteps,pr,dm) ≈ 263.9393563618151  # with no rmr0 correction
-        @test HeAgeSpherical(apatite,Tsteps,pr,dm) ≈ 263.87540959714664  # with rmr0 = 0.83
+        # @test modelage(apatite,Tsteps,pr,dm) ≈ 263.9393563618151  # with no rmr0 correction
+        @test modelage(apatite,Tsteps,pr,dm) ≈ 263.87540959714664  # with rmr0 = 0.83
     end

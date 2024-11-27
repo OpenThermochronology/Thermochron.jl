@@ -293,9 +293,9 @@
     end
 
     # Fill the vector of mineral helium ages in-place
-    function mineralages!(calcHeAges, t, pr, teq, dt, tsteps, Tsteps, dm, minerals)
+    function mineralages!(calcages, t, pr, teq, dt, tsteps, Tsteps, dm, minerals)
         @assert length(minerals) == count(t)
-        @assert length(t) == length(calcHeAges)
+        @assert length(t) == length(calcages)
         @assert length(tsteps) == length(Tsteps)
         if any(t)
             anneal!(pr, teq, dt, tsteps, Tsteps, dm)
@@ -304,15 +304,15 @@
                 if t[i]
                     first_index = 1 + Int((last(tsteps)-last(minerals[mi].tsteps))÷dt)
                     if first_index > 1
-                        calcHeAges[i] = HeAgeSpherical(minerals[mi], @views(Tsteps[first_index:end]), @views(pr[first_index:end,first_index:end]), dm)
+                        calcages[i] = modelage(minerals[mi], @views(Tsteps[first_index:end]), @views(pr[first_index:end,first_index:end]), dm)
                     else
-                        calcHeAges[i] = HeAgeSpherical(minerals[mi], Tsteps, pr, dm)
+                        calcages[i] = modelage(minerals[mi], Tsteps, pr, dm)
                     end
                     mi += 1
                 end
             end
         end
-        return calcHeAges
+        return calcages
     end
 
     

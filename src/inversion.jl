@@ -59,7 +59,7 @@
         ages = collectto!(agepointbuffer, view(agepoints, 1:npoints), boundary.agepoints, constraint.agepoints)::StridedVector{T}
         temperatures = collectto!(Tpointbuffer, view(Tpoints, 1:npoints), boundary.Tpoints, constraint.Tpoints)::StridedVector{T}
         Tsteps = linterp1s(ages, temperatures, agesteps)::DenseVector{T}
-        calcHeAges = similar(HeAge)::DenseVector{T}
+        calcages = similar(HeAge)::DenseVector{T}
 
         # Damage models for each mineral
         zdm = (haskey(model, :zdm) ? model.zdm : ZRDAAM())::ZirconHeliumModel{T}
@@ -85,7 +85,7 @@
             # Iterate through each grain, calculate the modeled age for each
             first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
             zircons[zi] = ZirconHe(halfwidth[i], dr, U[i], Th[i], Sm[i], dt, agesteps[first_index:end])
-            calcHeAges[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
+            calcages[i] = modelage(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
             zi += 1
         end
         apatites = Array{ApatiteHe{T}}(undef, count(tap))::Vector{ApatiteHe{T}}
@@ -94,7 +94,7 @@
             # Iterate through each grain, calculate the modeled age for each
             first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
             apatites[ai] = ApatiteHe(halfwidth[i], dr, U[i], Th[i], Sm[i], dt, agesteps[first_index:end])
-            calcHeAges[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
+            calcages[i] = modelage(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
             ai += 1
         end
 
@@ -109,13 +109,13 @@
 
         # Log-likelihood for initial proposal
         llna = llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma) + (simplified ? -log(npoints) : zero(T))
-        ll = llₚ =  normpdf_ll(HeAge, σₐ, calcHeAges) + llna
+        ll = llₚ =  normpdf_ll(HeAge, σₐ, calcages) + llna
 
         # Variables to hold proposals
         npointsₚ = npoints
         agepointsₚ = copy(agepoints)::DenseVector{T}
         Tpointsₚ = copy(Tpoints)::DenseVector{T}
-        calcHeAgesₚ = copy(calcHeAges)::DenseVector{T}
+        calcagesₚ = copy(calcages)::DenseVector{T}
         σⱼtₚ = copy(σⱼt)
         σⱼTₚ = copy(σⱼT)
 
@@ -184,15 +184,15 @@
             end
 
             # Calculate model ages for each grain
-            mineralages!(calcHeAgesₚ, tzr, zpr, zteq, dt, tsteps, Tsteps, zdm, zircons)
-            mineralages!(calcHeAgesₚ, tap, apr, ateq, dt, tsteps, Tsteps, adm, apatites)
+            mineralages!(calcagesₚ, tzr, zpr, zteq, dt, tsteps, Tsteps, zdm, zircons)
+            mineralages!(calcagesₚ, tap, apr, ateq, dt, tsteps, Tsteps, adm, apatites)
 
             # Calculate log likelihood of proposal
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
             simplified && (llnaₚ += -log(npointsₚ))
             σₐ .= simannealsigma.(n, HeAge_sigma, σmodel, σannealing, λannealing)
-            llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ) + llnaₚ
-            llₗ = normpdf_ll(HeAge, σₐ, calcHeAges) + llna # Recalulate last one too with new σₐ
+            llₚ = normpdf_ll(HeAge, σₐ, calcagesₚ) + llnaₚ
+            llₗ = normpdf_ll(HeAge, σₐ, calcages) + llna # Recalulate last one too with new σₐ
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - llₗ)
@@ -216,7 +216,7 @@
                 copyto!(constraint.agepoints, constraint.agepointsₚ)
                 copyto!(constraint.Tpoints, constraint.Tpointsₚ)
                 copyto!(boundary.Tpoints, boundary.Tpointsₚ)
-                copyto!(calcHeAges, calcHeAgesₚ)
+                copyto!(calcages, calcagesₚ)
                 copyto!(σⱼt, σⱼtₚ)
                 copyto!(σⱼT, σⱼTₚ)
             end
@@ -227,7 +227,7 @@
         finish!(bprogress)
  
         # Final log likelihood
-        ll = normpdf_ll(HeAge, σ, calcHeAges) + llna
+        ll = normpdf_ll(HeAge, σ, calcages) + llna
 
         # distributions to populate
         tpointdist = fill(T(NaN), totalpoints, nsteps)
@@ -298,13 +298,13 @@
             end
 
             # Calculate model ages for each grain
-            mineralages!(calcHeAgesₚ, tzr, zpr, zteq, dt, tsteps, Tsteps, zdm, zircons)
-            mineralages!(calcHeAgesₚ, tap, apr, ateq, dt, tsteps, Tsteps, adm, apatites)
+            mineralages!(calcagesₚ, tzr, zpr, zteq, dt, tsteps, Tsteps, zdm, zircons)
+            mineralages!(calcagesₚ, tap, apr, ateq, dt, tsteps, Tsteps, adm, apatites)
 
             # Calculate log likelihood of proposal
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
             simplified && (llnaₚ += -log(npointsₚ))
-            llₚ = normpdf_ll(HeAge, σ, calcHeAgesₚ) + llnaₚ
+            llₚ = normpdf_ll(HeAge, σ, calcagesₚ) + llnaₚ
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - ll)
@@ -327,7 +327,7 @@
                 copyto!(constraint.agepoints, constraint.agepointsₚ)
                 copyto!(constraint.Tpoints, constraint.Tpointsₚ)
                 copyto!(boundary.Tpoints, boundary.Tpointsₚ)
-                copyto!(calcHeAges, calcHeAgesₚ)
+                copyto!(calcages, calcagesₚ)
                 copyto!(σⱼt, σⱼtₚ)
                 copyto!(σⱼT, σⱼTₚ)
 
@@ -340,7 +340,7 @@
             ndist[n] = npoints # distribution of # of points
             σⱼtdist[n] = σⱼt[k]
             σⱼTdist[n] = σⱼT[k]
-            HeAgedist[:,n] .= calcHeAges # distribution of He ages
+            HeAgedist[:,n] .= calcages # distribution of He ages
 
             # This is the actual output we want -- the distribution of t-T paths (t path is always identical)
             collectto!(view(tpointdist, :, n), view(agepoints, 1:npoints), boundary.agepoints, constraint.agepoints)
@@ -412,7 +412,7 @@
         ages = collectto!(agepointbuffer, view(agepoints, 1:npoints), boundary.agepoints, constraint.agepoints)::StridedVector{T}
         temperatures = collectto!(Tpointbuffer, view(Tpoints, 1:npoints), boundary.Tpoints, constraint.Tpoints)::StridedVector{T}
         Tsteps = linterp1s(ages, temperatures, agesteps)::DenseVector{T}
-        calcHeAges = similar(HeAge)::DenseVector{T}
+        calcages = similar(HeAge)::DenseVector{T}
 
         # Damage models for each mineral
         zdm₀ = zdm = zdmₚ = (haskey(model, :zdm) ? model.zdm : ZRDAAM())::ZirconHeliumModel{T}
@@ -438,7 +438,7 @@
             # Iterate through each grain, calculate the modeled age for each
             first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
             zircons[zi] = ZirconHe(halfwidth[i], dr, U[i], Th[i], Sm[i], dt, agesteps[first_index:end])
-            calcHeAges[i] = HeAgeSpherical(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
+            calcages[i] = modelage(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
             zi += 1
         end
         apatites = Array{ApatiteHe{T}}(undef, count(tap))::Vector{ApatiteHe{T}}
@@ -447,7 +447,7 @@
             # Iterate through each grain, calculate the modeled age for each
             first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
             apatites[ai] = ApatiteHe(halfwidth[i], dr, U[i], Th[i], Sm[i], dt, agesteps[first_index:end])
-            calcHeAges[i] = HeAgeSpherical(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
+            calcages[i] = modelage(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
             ai += 1
         end
 
@@ -462,13 +462,13 @@
 
         # Log-likelihood for initial proposal
         llna = llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma) + loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀) + (simplified ? -log(npoints) : zero(T))
-        ll = llₚ =  normpdf_ll(HeAge, σₐ, calcHeAges) + llna
+        ll = llₚ =  normpdf_ll(HeAge, σₐ, calcages) + llna
 
         # Variables to hold proposals
         npointsₚ = npoints
         agepointsₚ = copy(agepoints)::DenseVector{T}
         Tpointsₚ = copy(Tpoints)::DenseVector{T}
-        calcHeAgesₚ = copy(calcHeAges)::DenseVector{T}
+        calcagesₚ = copy(calcages)::DenseVector{T}
         σⱼtₚ = copy(σⱼt)
         σⱼTₚ = copy(σⱼT)
 
@@ -545,16 +545,16 @@
             end
                
             # Calculate model ages for each grain
-            mineralages!(calcHeAgesₚ, tzr, zpr, zteq, dt, tsteps, Tsteps, zdmₚ, zircons)
-            mineralages!(calcHeAgesₚ, tap, apr, ateq, dt, tsteps, Tsteps, admₚ, apatites)
+            mineralages!(calcagesₚ, tzr, zpr, zteq, dt, tsteps, Tsteps, zdmₚ, zircons)
+            mineralages!(calcagesₚ, tap, apr, ateq, dt, tsteps, Tsteps, admₚ, apatites)
 
             # Calculate log likelihood of proposal
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
             llnaₚ += loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀)
             simplified && (llnaₚ += -log(npointsₚ))
             σₐ .= simannealsigma.(n, HeAge_sigma, σmodel, σannealing, λannealing)
-            llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ) + llnaₚ
-            llₗ = normpdf_ll(HeAge, σₐ, calcHeAges) + llna # Recalulate last one too with new σₐ
+            llₚ = normpdf_ll(HeAge, σₐ, calcagesₚ) + llnaₚ
+            llₗ = normpdf_ll(HeAge, σₐ, calcages) + llna # Recalulate last one too with new σₐ
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - llₗ)
@@ -580,7 +580,7 @@
                 copyto!(constraint.agepoints, constraint.agepointsₚ)
                 copyto!(constraint.Tpoints, constraint.Tpointsₚ)
                 copyto!(boundary.Tpoints, boundary.Tpointsₚ)
-                copyto!(calcHeAges, calcHeAgesₚ)
+                copyto!(calcages, calcagesₚ)
                 copyto!(σⱼt, σⱼtₚ)
                 copyto!(σⱼT, σⱼTₚ)
             end
@@ -591,7 +591,7 @@
         finish!(bprogress)
 
         # Final log likelihood
-        ll = normpdf_ll(HeAge, σ, calcHeAges) + llna
+        ll = normpdf_ll(HeAge, σ, calcages) + llna
 
         # distributions to populate
         tpointdist = fill(T(NaN), totalpoints, nsteps)
@@ -671,14 +671,14 @@
             end
                
             # Calculate model ages for each grain
-            mineralages!(calcHeAgesₚ, tzr, zpr, zteq, dt, tsteps, Tsteps, zdmₚ, zircons)
-            mineralages!(calcHeAgesₚ, tap, apr, ateq, dt, tsteps, Tsteps, admₚ, apatites)
+            mineralages!(calcagesₚ, tzr, zpr, zteq, dt, tsteps, Tsteps, zdmₚ, zircons)
+            mineralages!(calcagesₚ, tap, apr, ateq, dt, tsteps, Tsteps, admₚ, apatites)
 
             # Calculate log likelihood of proposal
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
             llnaₚ += loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀)
             simplified && (llnaₚ += -log(npointsₚ))
-            llₚ = normpdf_ll(HeAge, σₐ, calcHeAgesₚ) + llnaₚ
+            llₚ = normpdf_ll(HeAge, σₐ, calcagesₚ) + llnaₚ
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - ll)
@@ -703,7 +703,7 @@
                 copyto!(constraint.agepoints, constraint.agepointsₚ)
                 copyto!(constraint.Tpoints, constraint.Tpointsₚ)
                 copyto!(boundary.Tpoints, boundary.Tpointsₚ)
-                copyto!(calcHeAges, calcHeAgesₚ)
+                copyto!(calcages, calcagesₚ)
                 copyto!(σⱼt, σⱼtₚ)
                 copyto!(σⱼT, σⱼTₚ)
 
@@ -712,11 +712,11 @@
             end
 
             # Record results for analysis and troubleshooting
-            lldist[n] = llna + normpdf_ll(HeAge, σ, calcHeAges) # Recalculated to constant baseline
+            lldist[n] = llna + normpdf_ll(HeAge, σ, calcages) # Recalculated to constant baseline
             ndist[n] = npoints # distribution of # of points
             σⱼtdist[n] = σⱼt[k]
             σⱼTdist[n] = σⱼT[k]
-            HeAgedist[:,n] .= calcHeAges # distribution of He ages
+            HeAgedist[:,n] .= calcages # distribution of He ages
             admdist[n] = adm
             zdmdist[n] = zdm
 

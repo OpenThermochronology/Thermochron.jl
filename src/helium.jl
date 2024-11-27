@@ -141,8 +141,8 @@ export anneal!
 
 """
 ```julia
-HeAgeSpherical(mineral::ZirconHe, Tsteps::Vector, ρᵣ::AbstractMatrix, dm::ZRDAAM)
-HeAgeSpherical(mineral::ApatiteHe, Tsteps::Vector, ρᵣ::AbstractMatrix, dm::RDAAM)
+modelage(mineral::ZirconHe, Tsteps::Vector, ρᵣ::AbstractMatrix, dm::ZRDAAM)
+modelage(mineral::ApatiteHe, Tsteps::Vector, ρᵣ::AbstractMatrix, dm::RDAAM)
 ```
 Calculate the precdicted U-Th/He age of a zircon or apatite that has experienced a given 
 t-T path (specified by `mineral.agesteps` for time and `Tsteps` for temperature, at a
@@ -155,7 +155,7 @@ Ketcham, Richard A. (2005) "Forward and Inverse Modeling of Low-Temperature
 Thermochronometry Data" Reviews in Mineralogy and Geochemistry 58 (1), 275–314.
 https://doi.org/10.2138/rmg.2005.58.11
 """
-function HeAgeSpherical(zircon::ZirconHe{T}, Tsteps::StridedVector{T}, ρᵣ::StridedMatrix{T}, dm::ZRDAAM{T}) where T <: AbstractFloat
+function modelage(zircon::ZirconHe{T}, Tsteps::StridedVector{T}, ρᵣ::StridedMatrix{T}, dm::ZRDAAM{T}) where T <: AbstractFloat
 
     # Damage and annealing constants
     DzEa = dm.DzEa::T                           # kJ/mol
@@ -288,7 +288,7 @@ function HeAgeSpherical(zircon::ZirconHe{T}, Tsteps::StridedVector{T}, ρᵣ::St
 
     return HeAge
 end
-function HeAgeSpherical(apatite::ApatiteHe{T}, Tsteps::StridedVector{T}, ρᵣ::AbstractMatrix{T}, dm::RDAAM{T}) where T <: AbstractFloat
+function modelage(apatite::ApatiteHe{T}, Tsteps::StridedVector{T}, ρᵣ::AbstractMatrix{T}, dm::RDAAM{T}) where T <: AbstractFloat
 
     # Damage and annealing constants
     D0L = dm.D0L*10000^2*SEC_MYR::T         # cm^2/sec, converted to micron^2/Myr  
@@ -426,5 +426,5 @@ function HeAgeSpherical(apatite::ApatiteHe{T}, Tsteps::StridedVector{T}, ρᵣ::
 
     return HeAge
 end
-export HeAgeSpherical
+export modelage
 

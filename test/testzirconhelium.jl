@@ -107,12 +107,12 @@
         DN17D0 = 3.4E-3,    # 6.367e-3 cm^2/sec
         rmr0=0.0,           # unitless
     )
-    HeAgeSpherical(zircon,Tsteps,pr,dm)
-    @time "Running HeAgeSpherical" age = HeAgeSpherical(zircon,Tsteps,pr,dm)
+    modelage(zircon,Tsteps,pr,dm)
+    @time "Running modelage" age = modelage(zircon,Tsteps,pr,dm)
     @test age ≈ 520.0297717798045
     # Re-run to ensure internal state does not change
     for i=1:10
-        @test HeAgeSpherical(zircon,Tsteps,pr,dm) ≈ 520.0297717798045
+        @test modelage(zircon,Tsteps,pr,dm) ≈ 520.0297717798045
     end
 
     crystalradius = 35.
@@ -121,7 +121,7 @@
     zircon = ZirconHe(crystalradius,dr,Uppm,Thppm,dt,reverse(tsteps))
     # Re-run to ensure internal state does not change
     for i=1:10
-        @test HeAgeSpherical(zircon,Tsteps,pr,dm) ≈ 309.7600561440283
+        @test modelage(zircon,Tsteps,pr,dm) ≈ 309.7600561440283
     end
 
     crystalradius = 135.
@@ -130,7 +130,7 @@
     zircon = ZirconHe(crystalradius,dr,Uppm,Thppm,dt,reverse(tsteps))
     # Re-run to ensure internal state does not change
     for i=1:10
-        @test HeAgeSpherical(zircon,Tsteps,pr,dm) ≈ 16.02209841621174
+        @test modelage(zircon,Tsteps,pr,dm) ≈ 16.02209841621174
     end
 
     crystalradius = 135.
@@ -139,7 +139,7 @@
     zircon = ZirconHe(crystalradius,dr,Uppm,Thppm,dt,reverse(tsteps))
     # Re-run to ensure internal state does not change
     for i=1:10
-        @test HeAgeSpherical(zircon,Tsteps,pr,dm) ≈ 777.5627957477788
+        @test modelage(zircon,Tsteps,pr,dm) ≈ 777.5627957477788
     end
 
 ## Test integrated age program 10 Ma timestep
@@ -173,4 +173,4 @@
     Uppm = 462.98
     Thppm = 177.76
     zircon = ZirconHe(crystalradius,dr,Uppm,Thppm,dt,reverse(tsteps))
-    @test HeAgeSpherical(zircon,Tsteps,pr,dm) ≈ 175.87865725442353
+    @test modelage(zircon,Tsteps,pr,dm) ≈ 175.87865725442353
