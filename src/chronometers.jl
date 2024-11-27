@@ -1,5 +1,5 @@
 # Abstract type to include any number of mineral chronometers (zircon, apatite, etc.)
-abstract type Mineral{T} end
+abstract type Chronometer{T} end
 
 
 """
@@ -9,7 +9,7 @@ ZirconHe(r, dr, Uppm, Th232ppm, [Sm147ppm], dt, agesteps::AbstractVector)
 Construct a `ZirconHe` object
 """
 # Concretely-typed immutable struct to hold information about a single zircon (Helium) crystal
-struct ZirconHe{T<:Number} <: Mineral{T}
+struct ZirconHe{T<:Number} <: Chronometer{T}
     dt::T
     agesteps::Vector{T}
     tsteps::Vector{T}
@@ -223,7 +223,7 @@ ApatiteHe(r, dr, Uppm, Th232ppm, [Sm147ppm], dt, agesteps::AbstractVector)
 Construct an `ApatiteHe` object
 """
 # Concretely-typed immutable struct to hold information about a single apatite (Helium) crystal
-struct ApatiteHe{T<:Number} <: Mineral{T}
+struct ApatiteHe{T<:Number} <: Chronometer{T}
     dt::T
     agesteps::Vector{T}
     tsteps::Vector{T}

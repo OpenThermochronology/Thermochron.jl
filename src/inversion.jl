@@ -78,7 +78,7 @@
         tap = containsi.(data.mineral, "apatite")
         any(tap) && @info "Inverting for He ages of $(count(tap)) apatites"
 
-        # Prepare a Mineral object for each analysis
+        # Prepare a Chronometer object for each analysis
         zircons = Array{ZirconHe{T}}(undef, count(tzr))::Vector{ZirconHe{T}}
         zi = 1
         for i in findall(tzr)
@@ -431,7 +431,7 @@
         tap = containsi.(data.mineral, "apatite")
         any(tap) && @info "Inverting for He ages of $(count(tap)) apatites"
 
-        # Prepare a Mineral object for each analysis
+        # Prepare a Chronometer object for each analysis
         zircons = Array{ZirconHe{T}}(undef, count(tzr))::Vector{ZirconHe{T}}
         zi = 1
         for i in findall(tzr)
