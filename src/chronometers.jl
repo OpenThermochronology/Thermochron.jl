@@ -1,7 +1,12 @@
 # Abstract type to include any number of mineral chronometers (zircon, apatite, etc.)
 abstract type Chronometer{T} end
 
+# Abstract subtypes for different categories of chronometers
 abstract type FissionTrackLength{T} <: Chronometer{T} end
+abstract type FissionTrackSample{T} <: Chronometer{T} end
+abstract type HeliumSample{T} <: Chronometer{T} end
+
+## --- Fission track sample types
 
 struct ApatiteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
     length::T       # [um]
@@ -12,8 +17,6 @@ struct ApatiteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
     OH::T           # [APFU]
     rmr0::T         # [unitless]
 end
-
-abstract type FissionTrackSample{T} <: Chronometer{T} end
 
 struct ApatiteFT{T<:AbstractFloat} <: FissionTrackSample{T}
     age::T          # [Ma]
@@ -26,8 +29,7 @@ struct ApatiteFT{T<:AbstractFloat} <: FissionTrackSample{T}
 end
 
 
-abstract type HeliumSample{T} <: Chronometer{T} end
-
+## --- Helium sample types
 """
 ```julia
 ZirconHe(r, dr, Uppm, Th232ppm, [Sm147ppm], dt, agesteps::AbstractVector)

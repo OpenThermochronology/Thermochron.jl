@@ -1,8 +1,21 @@
 ## --- Define DiffusivityModel types
-abstract type DiffusivityModel end
-export DiffusivityModel
 
-abstract type ZirconHeliumModel{T} <: DiffusivityModel end
+abstract type AnnealingModel{T} end
+
+struct FanningCurvilinear{T<:AbstractFloat} <: AnnealingModel{T} 
+    C0::T
+    C1::T
+    C2::T
+    C3::T
+    alpha::T
+    beta::T
+end
+
+## --- Define DiffusivityModel types
+
+abstract type DiffusivityModel{T} end
+abstract type ZirconHeliumModel{T} <: DiffusivityModel{T} end
+abstract type ApatiteHeliumModel{T} <: DiffusivityModel{T} end
 
 Base.@kwdef struct ZRDAAM{T<:AbstractFloat} <: ZirconHeliumModel{T} 
     DzD0::T = 193188.0          # Diffusivity [cm^2/sec], crystalline endmember
@@ -26,9 +39,6 @@ Base.@kwdef struct ZRDAAM{T<:AbstractFloat} <: ZirconHeliumModel{T}
     rmr0_sigma::T=0.1           # Damage conversion parameter uncertainty
 end
 export ZRDAAM
-
-
-abstract type ApatiteHeliumModel{T} <: DiffusivityModel end
 
 Base.@kwdef struct RDAAM{T<:AbstractFloat} <: ApatiteHeliumModel{T} 
     D0L::T=0.6071               # Diffusivity [cm^2/s]
@@ -57,6 +67,7 @@ end
 export RDAAM
 
 ## --- Define Boundary type to specify the working area
+
 struct Boundary{T<:AbstractFloat}
     agepoints::NTuple{2,T}  # Ma
     Tpoints::Vector{T}      # Degrees C
