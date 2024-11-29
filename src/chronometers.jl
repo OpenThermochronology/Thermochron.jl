@@ -158,34 +158,25 @@ function ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numbe
     # Calculate corrected alpha deposition and recoil damage each time step for each radius
     dt_2 = dt/2
     decay = Array{T}(undef, ntsteps)
-    buffer = zeros(T, ntsteps, nrsteps-2)
     # Allocate deposition and damage arrays
     alphadeposition = zeros(T, ntsteps, nrsteps-2)
     alphadamage = zeros(T, ntsteps, nrsteps-2)
     # U-238
     @. decay = exp(λ238U*(agesteps + dt_2)) - exp(λ238U*(agesteps - dt_2))
-    mul!(buffer, decay, r238UHe')
-    @. alphadeposition += buffer
-    mul!(buffer, decay, r238Udam')
-    @. alphadamage += buffer
+    mul!(alphadeposition, decay, r238UHe', one(T), one(T))
+    mul!(alphadamage, decay, r238Udam', one(T), one(T))
     # U-235
     @. decay = exp(λ235U*(agesteps + dt_2)) - exp(λ235U*(agesteps - dt_2))
-    mul!(buffer, decay, r235UHe')
-    @. alphadeposition += buffer
-    mul!(buffer, decay, r235Udam')
-    @. alphadamage += buffer
+    mul!(alphadeposition, decay, r235UHe', one(T), one(T))
+    mul!(alphadamage, decay, r235Udam', one(T), one(T))
     # Th-232
     @. decay = exp(λ232Th*(agesteps + dt_2)) - exp(λ232Th*(agesteps - dt_2))
-    mul!(buffer, decay, r232ThHe')
-    @. alphadeposition += buffer
-    mul!(buffer, decay, r232Thdam')
-    @. alphadamage += buffer
+    mul!(alphadeposition, decay, r232ThHe', one(T), one(T))
+    mul!(alphadamage, decay, r232Thdam', one(T), one(T))
     # Sm-147
     @. decay = exp(λ147Sm*(agesteps + dt_2)) - exp(λ147Sm*(agesteps - dt_2))
-    mul!(buffer, decay, r147SmHe')
-    @. alphadeposition += buffer
-    mul!(buffer, decay, r147Smdam')
-    @. alphadamage += buffer
+    mul!(alphadeposition, decay, r147SmHe', one(T), one(T))
+    mul!(alphadamage, decay, r147Smdam', one(T), one(T))
 
     # Allocate additional variables that will be needed for Crank-Nicholson
     annealeddamage = similar(alphadamage)
@@ -372,34 +363,25 @@ function ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numb
     # Calculate corrected alpha deposition and recoil damage each time step for each radius
     dt_2 = dt/2
     decay = Array{T}(undef, ntsteps)
-    buffer = zeros(T, ntsteps, nrsteps-2)
     # Allocate deposition and damage arrays
     alphadeposition = zeros(T, ntsteps, nrsteps-2)
     alphadamage = zeros(T, ntsteps, nrsteps-2)
     # U-238
     @. decay = exp(λ238U*(agesteps + dt_2)) - exp(λ238U*(agesteps - dt_2))
-    mul!(buffer, decay, r238UHe')
-    @. alphadeposition += buffer
-    mul!(buffer, decay, r238Udam')
-    @. alphadamage += buffer
+    mul!(alphadeposition, decay, r238UHe', one(T), one(T))
+    mul!(alphadamage, decay, r238Udam', one(T), one(T))
     # U-235
     @. decay = exp(λ235U*(agesteps + dt_2)) - exp(λ235U*(agesteps - dt_2))
-    mul!(buffer, decay, r235UHe')
-    @. alphadeposition += buffer
-    mul!(buffer, decay, r235Udam')
-    @. alphadamage += buffer
+    mul!(alphadeposition, decay, r235UHe', one(T), one(T))
+    mul!(alphadamage, decay, r235Udam', one(T), one(T))
     # Th-232
     @. decay = exp(λ232Th*(agesteps + dt_2)) - exp(λ232Th*(agesteps - dt_2))
-    mul!(buffer, decay, r232ThHe')
-    @. alphadeposition += buffer
-    mul!(buffer, decay, r232Thdam')
-    @. alphadamage += buffer
+    mul!(alphadeposition, decay, r232ThHe', one(T), one(T))
+    mul!(alphadamage, decay, r232Thdam', one(T), one(T))
     # Sm-147
     @. decay = exp(λ147Sm*(agesteps + dt_2)) - exp(λ147Sm*(agesteps - dt_2))
-    mul!(buffer, decay, r147SmHe')
-    @. alphadeposition += buffer
-    mul!(buffer, decay, r147Smdam')
-    @. alphadamage += buffer
+    mul!(alphadeposition, decay, r147SmHe', one(T), one(T))
+    mul!(alphadamage, decay, r147Smdam', one(T), one(T))
 
     # Allocate additional variables that will be needed for Crank-Nicholson
     annealeddamage = similar(alphadamage)
