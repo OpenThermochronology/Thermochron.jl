@@ -83,7 +83,7 @@ function lcmodel(l, θ)
     x = l*cos(deg2rad(θ))
     y = l*sin(deg2rad(θ))
     
-    fobj = curve_fit(ellipse, Float64[x], Float64[y], Float64[len])
+    fobj = curve_fit(ellipse, Float64[x], Float64[y], Float64[l])
     lc_mod = only(fobj.param)
     # Return if we're above the minimum length for ALR
     lc_mod > 12.96 && return lc_mod
@@ -98,6 +98,7 @@ function lcmodel(l, θ)
     lc_mod = log(only(fobj.param)/0.304)/0.439
     return lc_mod
 end
+export lcmodel
 
 """
 ```julia
