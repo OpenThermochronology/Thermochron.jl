@@ -37,7 +37,7 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::DenseVector{T}, dt::Number, tste
     ntsteps = length(tsteps)
     @assert size(ρᵣ) === (ntsteps, ntsteps)
     @assert size(teq) === (ntsteps,)
-    @turbo @. teq = ∅
+    fill!(teq, ∅)
 
     # First timestep
     ρᵣ[1,1] = 1 / ((dm.C0 + dm.C1*(log(dt)-dm.C2)/(log(1 / (Tsteps[1]+273.15))-dm.C3))^(1/dm.beta)+1)
@@ -49,13 +49,16 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::DenseVector{T}, dt::Number, tste
         # Convert any existing track length reduction for damage from
         # all previous timestep to an equivalent annealing time at the
         # current temperature
-        pᵣᵢ = view(ρᵣ, i-1, 1:i-1)
-        @turbo @. teq[1:i-1] = exp(dm.C2 + lᵢ * ((1/pᵣᵢ - 1)^dm.beta - dm.C0) / dm.C1)
+        @turbo for j in 1:i-1
+            teq[j] = exp(dm.C2 + lᵢ * ((1/ρᵣ[i-1, j] - 1)^dm.beta - dm.C0) / dm.C1)
+        end
 
         # Calculate the new reduced track lengths for all previous time steps
         # Accumulating annealing strictly in terms of reduced track length
         teqᵢ = view(teq, 1:i)
-        @turbo @. ρᵣ[i,1:i] = 1 / ((dm.C0 + dm.C1 * (log(dt + teqᵢ) - dm.C2) / lᵢ)^(1/dm.beta) + 1)
+        @turbo for j in 1:i
+            ρᵣ[i,j] = 1 / ((dm.C0 + dm.C1 * (log(dt + teq[j]) - dm.C2) / lᵢ)^(1/dm.beta) + 1)
+        end
     end
 
     # Guenthner et al volume-length conversion
@@ -82,7 +85,7 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::DenseVector{T}, dt::Number, tste
     ntsteps = length(tsteps)
     @assert size(ρᵣ) === (ntsteps, ntsteps)
     @assert size(teq) === (ntsteps,)
-    @turbo @. teq = ∅
+    fill!(teq, ∅)
 
     # First timestep
     ρᵣ[1,1] = 1 / ((dm.C0 + dm.C1*(log(dt)-dm.C2)/(log(1 / (Tsteps[1]+273.15))-dm.C3))^(1/dm.beta)+1)
@@ -94,13 +97,15 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::DenseVector{T}, dt::Number, tste
         # Convert any existing track length reduction for ρᵣ from
         # all previous timestep to an equivalent annealing time at the
         # current temperature
-        pᵣᵢ = view(ρᵣ, i-1, 1:i-1)
-        @turbo @. teq[1:i-1] = exp(dm.C2 + lᵢ * ((1/pᵣᵢ - 1)^dm.beta - dm.C0) / dm.C1)
+        @turbo for j in 1:i-1
+            teq[j] = exp(dm.C2 + lᵢ * ((1/ρᵣ[i-1, j] - 1)^dm.beta - dm.C0) / dm.C1)
+        end
 
         # Calculate the new reduced track lengths for all previous time steps
         # Accumulating annealing strictly in terms of reduced track length
-        teqᵢ = view(teq, 1:i)
-        @turbo @. ρᵣ[i,1:i] = 1 / ((dm.C0 + dm.C1 * (log(dt + teqᵢ) - dm.C2) / lᵢ)^(1/dm.beta) + 1)
+        @turbo for j in 1:i
+            ρᵣ[i,j] = 1 / ((dm.C0 + dm.C1 * (log(dt + teq[j]) - dm.C2) / lᵢ)^(1/dm.beta) + 1)
+        end
     end
 
     # Corrections to ρᵣ 
@@ -199,16 +204,16 @@ function modelage(zircon::ZirconHe{T}, Tsteps::StridedVector{T}, ρᵣ::StridedM
     # u = v*r is the coordinate transform (u-substitution) for the Crank-
     # Nicholson equations where v is the He profile and r is radius
     u = zircon.u::DenseMatrix{T}
-    @turbo @. u = 0 # initial u = v = 0 everywhere
+    fill!(u, zero(T)) # initial u = v = 0 everywhere
 
     # Vector for RHS of Crank-Nicholson equation with regular grid cells
     y = zircon.y
 
     # Tridiagonal matrix for LHS of Crank-Nicholson equation with regular grid cells
     A = zircon.A
-    @turbo @. A.dl = 1          # Sub-diagonal row
-    @turbo @. A.d = -2 - β      # Diagonal
-    @turbo @. A.du = 1          # Supra-diagonal row
+    fill!(A.dl, 1)          # Sub-diagonal row
+    @. A.d = -2 - β         # Diagonal
+    fill!(A.du, 1)          # Supra-diagonal row
     F = zircon.F                # For LU factorization
 
     # Neumann inner boundary condition (u[i,1] + u[i,2] = 0)
@@ -232,9 +237,9 @@ function modelage(zircon::ZirconHe{T}, Tsteps::StridedVector{T}, ρᵣ::StridedM
         β[end] = β[end-1]
 
         # Update tridiagonal matrix
-        @turbo @. A.dl = 1         # Sub-diagonal
-        @turbo @. A.d = -2 - β     # Diagonal
-        @turbo @. A.du = 1         # Supra-diagonal
+        fill!(A.dl, 1)         # Sub-diagonal
+        @. A.d = -2 - β        # Diagonal
+        fill!(A.du, 1)         # Supra-diagonal
 
         # Neumann inner boundary condition (u(i,1) + u(i,2) = 0)
         A.du[1] = 1
@@ -257,7 +262,7 @@ function modelage(zircon::ZirconHe{T}, Tsteps::StridedVector{T}, ρᵣ::StridedM
         # equivalent to u[:,i] = A\y
         lu!(F, A, allowsingular=true)
         ldiv!(F, y)
-        @turbo @. u[:,i] = y
+        u[:,i] = y
     end
 
     # Convert from u (coordinate-transform'd conc.) to v (real He conc.)
@@ -337,16 +342,16 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::StridedVector{T}, ρᵣ::Abstra
     # u = v*r is the coordinate transform (u-substitution) for the Crank-
     # Nicholson equations where v is the He profile and r is radius
     u = apatite.u::DenseMatrix{T}
-    @turbo @. u = 0 # initial u = v = 0 everywhere
+    fill!(u, zero(T)) # initial u = v = 0 everywhere
 
     # Vector for RHS of Crank-Nicholson equation with regular grid cells
     y = apatite.y
 
     # Tridiagonal matrix for LHS of Crank-Nicholson equation with regular grid cells
     A = apatite.A
-    @turbo @. A.dl = 1          # Sub-diagonal row
-    @turbo @. A.d = -2 - β      # Diagonal
-    @turbo @. A.du = 1          # Supra-diagonal row
+    fill!(A.dl, 1)          # Sub-diagonal row
+    @. A.d = -2 - β         # Diagonal
+    fill!(A.du, 1)          # Supra-diagonal row
     F = apatite.F               # For LU factorization
 
     # Neumann inner boundary condition (u[i,1] + u[i,2] = 0)
@@ -370,9 +375,9 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::StridedVector{T}, ρᵣ::Abstra
         β[end] = β[end-1]
 
         # Update tridiagonal matrix
-        @turbo @. A.dl = 1         # Sub-diagonal
-        @turbo @. A.d = -2 - β     # Diagonal
-        @turbo @. A.du = 1         # Supra-diagonal
+        fill!(A.dl, 1)         # Sub-diagonal
+        @. A.d = -2 - β        # Diagonal
+        fill!(A.du, 1)         # Supra-diagonal
 
         # Neumann inner boundary condition (u(i,1) + u(i,2) = 0)
         A.du[1] = 1
@@ -395,7 +400,7 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::StridedVector{T}, ρᵣ::Abstra
         # equivalent to u[:,i] = A\y
         lu!(F, A, allowsingular=true)
         ldiv!(F, y)
-        @turbo @. u[:,i] = y
+        u[:,i] = y
     end
 
     # Convert from u (coordinate-transform'd conc.) to v (real He conc.)
