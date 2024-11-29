@@ -2,6 +2,11 @@
 
 abstract type AnnealingModel{T} end
 
+# Implement methods to allow broadcasting
+Base.length(x::AnnealingModel) = 1
+Base.iterate(x::AnnealingModel) = (x, nothing)
+Base.iterate(x::AnnealingModel, state) = nothing
+
 struct FanningCurvilinear{T<:AbstractFloat} <: AnnealingModel{T} 
     C0::T
     C1::T
@@ -16,6 +21,11 @@ end
 abstract type DiffusivityModel{T} end
 abstract type ZirconHeliumModel{T} <: DiffusivityModel{T} end
 abstract type ApatiteHeliumModel{T} <: DiffusivityModel{T} end
+
+# Implement methods to allow broadcasting
+Base.length(x::DiffusivityModel) = 1
+Base.iterate(x::DiffusivityModel) = (x, nothing)
+Base.iterate(x::DiffusivityModel, state) = nothing
 
 Base.@kwdef struct ZRDAAM{T<:AbstractFloat} <: ZirconHeliumModel{T} 
     DzD0::T = 193188.0          # Diffusivity [cm^2/sec], crystalline endmember
