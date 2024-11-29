@@ -5,25 +5,29 @@ l₀ = 16.38 # [um] initial track length
 
 # "Simultaneous fit" Fanning Curvilinear models 
 const FCKetcham1999 = FanningCurvilinear(-19.84402202, 0.3895104539, -51.25312954, -7.642358713, -0.12327, -11.988)
-const FCKetcham2007 = FanningCurvilinear(  0.39528   , 0.01073     , -65.12969   , -7.91715    ,  0.04672, -1.0   )
-export FCKetcham1999, FCKetcham2007
+export FCKetcham1999
 
-function equivalenttime(t::Number, T::Number, Teq::Number, fc::FanningCurvilinear)
+const FCKetcham2007 = SimplifiedCurvilinear(0.39528, 0.01073, -65.12969, -7.91715, 0.04672)
+export FCKetcham2007
+
+function equivalenttime(t::Number, T::Number, Teq::Number, fc::Union{SimplifiedCurvilinear,FanningCurvilinear})
     exp(fc.C2 + (log(t*SEC_MYR)-fc.C2)*(log(1/(Teq+273.15))-fc.C3)/(log(1/(T+273.15))-fc.C3))/SEC_MYR
 end
 
 """
 ```julia
-reltracklength(t, T, fc::FanningCurvilinear) 
+reltracklength(t, T, am::AnnealingModel) 
 ```
 Calculate the relative track length `r` (equal to `l/l₀`) expected after 
-isothermal heating at `T` C for `t` Myr and annealing parameters `fc` 
-following the  "Fanning Curvilinear" equations of Ketcham et al. 1999 
-(doi: 10.2138/am-1999-0903)
+isothermal heating at `T` C for `t` Myr and annealing parameters `am` 
 """
 function reltracklength(t::Number, T::Number, fc::FanningCurvilinear{Tf}) where {Tf}
     g = fc.C0 + fc.C1*(log(t*SEC_MYR)-fc.C2)/(log(1/(T+273.15))-fc.C3)
     (1-max(g*fc.alpha+1, zero(Tf))^(1/fc.alpha)*fc.beta)^(1/fc.beta)
+end
+function reltracklength(t::Number, T::Number, fc::SimplifiedCurvilinear)
+    g = fc.C0 + fc.C1*(log(t*SEC_MYR)-fc.C2)/(log(1/(T+273.15))-fc.C3)
+    r = 1/(g^(1/fc.alpha) + 1)
 end
 
 

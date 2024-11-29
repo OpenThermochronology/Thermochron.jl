@@ -16,6 +16,14 @@ struct FanningCurvilinear{T<:AbstractFloat} <: AnnealingModel{T}
     beta::T
 end
 
+struct SimplifiedCurvilinear{T<:AbstractFloat} <: AnnealingModel{T} 
+    C0::T
+    C1::T
+    C2::T
+    C3::T
+    alpha::T
+end
+
 ## --- Define DiffusivityModel types
 
 abstract type DiffusivityModel{T} end
