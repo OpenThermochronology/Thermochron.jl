@@ -19,7 +19,14 @@ end
 reltracklength(t, T, am::AnnealingModel) 
 ```
 Calculate the relative track length `r` (equal to `l/l₀`) expected after 
-isothermal heating at `T` C for `t` Myr and annealing parameters `am` 
+isothermal heating at `T` C for `t` Myr and annealing parameters `am`. 
+    
+Possible annealing model types and the references for the equations 
+which they respetively implement include 
+  `FanningCurvilinear`      Ketcham et al. 1999 (doi: 10.2138/am-1999-0903)
+  `SimplifiedCurvilinear`   Ketcham et al. 2007 (doi: 10.2138/am.2007.2281)
+
+See also: `reltrackdensity`.
 """
 function reltracklength(t::Number, T::Number, fc::FanningCurvilinear{Tf}) where {Tf}
     g = fc.C0 + fc.C1*(log(t*SEC_MYR)-fc.C2)/(log(1/(T+273.15))-fc.C3)
@@ -39,6 +46,8 @@ reltrackdensity(t, T, am::AnnealingModel)
 Calculate the relative track density `ρ` corresponding to a given relative
 track length `r` following the approach of Ketcham et al. 2000, 
 equations 7a and 7b.
+
+See also: `reltracklength`.
 """
 reltrackdensity(t::Number, T::Number, am::AnnealingModel) = reltrackdensity(reltracklength(t, T, am))
 function reltrackdensity(r::T) where T<:Number
