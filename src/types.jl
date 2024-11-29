@@ -1,4 +1,4 @@
-## --- Define DiffusivityModel types
+## --- Define AnnealingModel types
 
 abstract type AnnealingModel{T} end
 

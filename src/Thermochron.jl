@@ -8,6 +8,7 @@ module Thermochron
     using LinearAlgebra
     using LoopVectorization
     using ProgressMeter: Progress, update!, finish!
+    using LsqFit: curve_fit
 
     # Physical constants
     const SEC_MYR = 1E6*365.25*24*3600
@@ -22,6 +23,7 @@ module Thermochron
     include("utilities.jl")
     include("chronometers.jl")
     include("helium.jl")
+    include("fissiontrack.jl")
     include("inversion.jl")
 
 end

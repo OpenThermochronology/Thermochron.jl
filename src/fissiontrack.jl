@@ -1,23 +1,11 @@
 ## --- Fission track models
 
-abstract type AnnealingModel{T} end
-
-struct FanningCurvilinear{T<:AbstractFloat} <: AnnealingModel{T} 
-    C0::T
-    C1::T
-    C2::T
-    C3::T
-    alpha::T
-    beta::T
-end
-
 l₀ = 16.38 # [um] initial track length
 σl₀ = 0.09 # [um] initial track length uncertainty
 
 # "Simultaneous fit" Fanning Curvilinear models 
 const FCKetcham1999 = FanningCurvilinear(-19.84402202, 0.3895104539,-51.25312954,-7.642358713,-0.12327,-11.988)
-const FCKetcham2007 = FanningCurvilinear(0.39528, 0.01073,-65.12969,-7.91715,0.04672,-1)
-
+const FCKetcham2007 = FanningCurvilinear(0.39528, 0.01073,-65.12969,-7.91715,0.04672,-1.0)
 
 function equivalenttime(t::Number, T::Number, Teq::Number, fc::FanningCurvilinear)
     exp(fc.C2 + (log(t*SEC_MYR)-fc.C2)*(log(1/(Teq+273.15))-fc.C3)/(log(1/(T+273.15))-fc.C3))/SEC_MYR
@@ -32,11 +20,9 @@ isothermal heating at `T` C for `t` Myr and annealing parameters `fc`
 following the  "Fanning Curvilinear" equations of Ketcham et al. 1999 
 (doi: 10.2138/am-1999-0903)
 """
-function reltracklength(t::Number, T::Number, fc::FanningCurvilinear{E}) where {E}
-    # Relative track length 𝑟 (=l/l₀) following the 
-    # Fanning Curvilinear equations of Ketcham et al. 1999
+function reltracklength(t::Number, T::Number, fc::FanningCurvilinear{Tf}) where {Tf}
     g = fc.C0 + fc.C1*(log(t*SEC_MYR)-fc.C2)/(log(1/(T+273.15))-fc.C3)
-    (1-max(g*fc.alpha+1, zero(E))^(1/fc.alpha)*fc.beta)^(1/fc.beta)
+    (1-max(g*fc.alpha+1, zero(Tf))^(1/fc.alpha)*fc.beta)^(1/fc.beta)
 end
 
 
@@ -63,7 +49,6 @@ end
 
 rlr(rmr, rmr0, κ=1.04-rmr0) =  ((rmr-rmr0)/(1-rmr0))^κ
 
-using LsqFit: curve_fit
 
 ellipse(x, lc) = @. sqrt(abs((1 - x^2/lc^2)*( 1.632*lc - 10.879)^2))
 alrline(x, θalr) = @. (0.1035*θalr - 2.250) + x * tan(deg2rad(θalr))
