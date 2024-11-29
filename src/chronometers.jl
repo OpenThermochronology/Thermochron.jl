@@ -116,7 +116,7 @@ function ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numbe
         for i=1:length(alpharadii238U)
             # Effective radial alpha deposition from 238U
             intersectiondensity!(dint,redges,relvolumes,alpharadii238U[i],rsteps[ri])
-            @turbo @. r238UHe += relvolumes[ri] * dint * r238U[ri]
+            @. r238UHe += relvolumes[ri] * dint * r238U[ri]
         end
     end
 
@@ -126,7 +126,7 @@ function ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numbe
         for i=1:length(alpharadii235U)
             # Effective radial alpha deposition from 235U
             intersectiondensity!(dint, redges,relvolumes,alpharadii235U[i],rsteps[ri])
-            @turbo @. r235UHe += relvolumes[ri] * dint * r235U[ri]
+            @. r235UHe += relvolumes[ri] * dint * r235U[ri]
         end
     end
 
@@ -136,7 +136,7 @@ function ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numbe
         for i=1:length(alpharadii232Th)
             # Effective radial alpha deposition from 232Th
             intersectiondensity!(dint, redges,relvolumes,alpharadii232Th[i],rsteps[ri])
-            @turbo @. r232ThHe += relvolumes[ri] * dint * r232Th[ri]
+            @. r232ThHe += relvolumes[ri] * dint * r232Th[ri]
         end
     end
 
@@ -145,7 +145,7 @@ function ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numbe
     @inbounds for ri = 1:length(rsteps)
         for i=1:length(alpharadii147Sm)
             intersectiondensity!(dint, redges,relvolumes,alpharadii147Sm[i],rsteps[ri])
-            @turbo @. r147SmHe += relvolumes[ri] * dint * r147Sm[ri]
+            @. r147SmHe += relvolumes[ri] * dint * r147Sm[ri]
         end
     end    
 
@@ -163,29 +163,29 @@ function ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numbe
     alphadeposition = zeros(T, ntsteps, nrsteps-2)
     alphadamage = zeros(T, ntsteps, nrsteps-2)
     # U-238
-    @turbo @. decay = exp(λ238U*(agesteps + dt_2)) - exp(λ238U*(agesteps - dt_2))
+    @. decay = exp(λ238U*(agesteps + dt_2)) - exp(λ238U*(agesteps - dt_2))
     mul!(buffer, decay, r238UHe')
-    @turbo @. alphadeposition += buffer
+    @. alphadeposition += buffer
     mul!(buffer, decay, r238Udam')
-    @turbo @. alphadamage += buffer
-    # U-232
-    @turbo @. decay = exp(λ235U*(agesteps + dt_2)) - exp(λ235U*(agesteps - dt_2))
+    @. alphadamage += buffer
+    # U-235
+    @. decay = exp(λ235U*(agesteps + dt_2)) - exp(λ235U*(agesteps - dt_2))
     mul!(buffer, decay, r235UHe')
-    @turbo @. alphadeposition += buffer
+    @. alphadeposition += buffer
     mul!(buffer, decay, r235Udam')
-    @turbo @. alphadamage += buffer
+    @. alphadamage += buffer
     # Th-232
-    @turbo @. decay = exp(λ232Th*(agesteps + dt_2)) - exp(λ232Th*(agesteps - dt_2))
+    @. decay = exp(λ232Th*(agesteps + dt_2)) - exp(λ232Th*(agesteps - dt_2))
     mul!(buffer, decay, r232ThHe')
-    @turbo @. alphadeposition += buffer
+    @. alphadeposition += buffer
     mul!(buffer, decay, r232Thdam')
-    @turbo @. alphadamage += buffer
+    @. alphadamage += buffer
     # Sm-147
-    @turbo @. decay = exp(λ147Sm*(agesteps + dt_2)) - exp(λ147Sm*(agesteps - dt_2))
+    @. decay = exp(λ147Sm*(agesteps + dt_2)) - exp(λ147Sm*(agesteps - dt_2))
     mul!(buffer, decay, r147SmHe')
-    @turbo @. alphadeposition += buffer
+    @. alphadeposition += buffer
     mul!(buffer, decay, r147Smdam')
-    @turbo @. alphadamage += buffer
+    @. alphadamage += buffer
 
     # Allocate additional variables that will be needed for Crank-Nicholson
     annealeddamage = similar(alphadamage)
@@ -330,7 +330,7 @@ function ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numb
         for i=1:length(alpharadii238U)
             # Effective radial alpha deposition from 238U
             intersectiondensity!(dint,redges,relvolumes,alpharadii238U[i],rsteps[ri])
-            @turbo @. r238UHe += relvolumes[ri] * dint * r238U[ri]
+            @. r238UHe += relvolumes[ri] * dint * r238U[ri]
         end
     end
 
@@ -340,7 +340,7 @@ function ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numb
         for i=1:length(alpharadii235U)
             # Effective radial alpha deposition from 235U
             intersectiondensity!(dint, redges,relvolumes,alpharadii235U[i],rsteps[ri])
-            @turbo @. r235UHe += relvolumes[ri] * dint * r235U[ri]
+            @. r235UHe += relvolumes[ri] * dint * r235U[ri]
         end
     end
 
@@ -350,7 +350,7 @@ function ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numb
         for i=1:length(alpharadii232Th)
             # Effective radial alpha deposition from 232Th
             intersectiondensity!(dint, redges,relvolumes,alpharadii232Th[i],rsteps[ri])
-            @turbo @. r232ThHe += relvolumes[ri] * dint * r232Th[ri]
+            @. r232ThHe += relvolumes[ri] * dint * r232Th[ri]
         end
     end
 
@@ -359,7 +359,7 @@ function ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numb
     @inbounds for ri = 1:length(rsteps)
         for i=1:length(alpharadii147Sm)
             intersectiondensity!(dint, redges,relvolumes,alpharadii147Sm[i],rsteps[ri])
-            @turbo @. r147SmHe += relvolumes[ri] * dint * r147Sm[ri]
+            @. r147SmHe += relvolumes[ri] * dint * r147Sm[ri]
         end
     end
 
@@ -377,29 +377,29 @@ function ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numb
     alphadeposition = zeros(T, ntsteps, nrsteps-2)
     alphadamage = zeros(T, ntsteps, nrsteps-2)
     # U-238
-    @turbo @. decay = exp(λ238U*(agesteps + dt_2)) - exp(λ238U*(agesteps - dt_2))
+    @. decay = exp(λ238U*(agesteps + dt_2)) - exp(λ238U*(agesteps - dt_2))
     mul!(buffer, decay, r238UHe')
-    @turbo @. alphadeposition += buffer
+    @. alphadeposition += buffer
     mul!(buffer, decay, r238Udam')
-    @turbo @. alphadamage += buffer
-    # U-232
-    @turbo @. decay = exp(λ235U*(agesteps + dt_2)) - exp(λ235U*(agesteps - dt_2))
+    @. alphadamage += buffer
+    # U-235
+    @. decay = exp(λ235U*(agesteps + dt_2)) - exp(λ235U*(agesteps - dt_2))
     mul!(buffer, decay, r235UHe')
-    @turbo @. alphadeposition += buffer
+    @. alphadeposition += buffer
     mul!(buffer, decay, r235Udam')
-    @turbo @. alphadamage += buffer
+    @. alphadamage += buffer
     # Th-232
-    @turbo @. decay = exp(λ232Th*(agesteps + dt_2)) - exp(λ232Th*(agesteps - dt_2))
+    @. decay = exp(λ232Th*(agesteps + dt_2)) - exp(λ232Th*(agesteps - dt_2))
     mul!(buffer, decay, r232ThHe')
-    @turbo @. alphadeposition += buffer
+    @. alphadeposition += buffer
     mul!(buffer, decay, r232Thdam')
-    @turbo @. alphadamage += buffer
+    @. alphadamage += buffer
     # Sm-147
-    @turbo @. decay = exp(λ147Sm*(agesteps + dt_2)) - exp(λ147Sm*(agesteps - dt_2))
+    @. decay = exp(λ147Sm*(agesteps + dt_2)) - exp(λ147Sm*(agesteps - dt_2))
     mul!(buffer, decay, r147SmHe')
-    @turbo @. alphadeposition += buffer
+    @. alphadeposition += buffer
     mul!(buffer, decay, r147Smdam')
-    @turbo @. alphadamage += buffer
+    @. alphadamage += buffer
 
     # Allocate additional variables that will be needed for Crank-Nicholson
     annealeddamage = similar(alphadamage)
