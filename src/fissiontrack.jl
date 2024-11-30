@@ -128,13 +128,18 @@ end
 
 ## ---
 
-# function modelage(apatite::ApatiteFT{Tf}, pr::Matrix, Tsteps, am::AnnealingModel{Tf}) where {Tf <: AbstractFloat}
-#     Teq = mean(Tsteps)
-#     teq = zero(Tf)
-#     for i in eachindex(Tsteps)
-#         teq += equivalenttime(dt, Tsteps[i], Teq, am)
-#         pr[i] = reltrackdensity(teq, Teq, am)
-#     end
-# end
+function modelage(apatite::ApatiteFT{Tf}, Tsteps, am::AnnealingModel{Tf}) where {Tf <: AbstractFloat}
+    tsteps = apatite.tsteps
+    @assert issorted(tsteps)
+    agesteps = apatite.agesteps
+    @assert eachindex(tsteps) == eachindex(agesteps) == eachindex(Tsteps)
+    Teq = mean(Tsteps)
+    teq = ftage = zero(Tf)
+    @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)), 1)
+        teq += equivalenttime(dt, Tsteps[i], Teq, am)
+        ftage += agesteps[i] * reltrackdensity(teq, Teq, am)
+    end
+    return ftage
+end
 
 ## --- End of File

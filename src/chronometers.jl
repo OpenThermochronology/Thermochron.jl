@@ -19,13 +19,15 @@ struct ApatiteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
 end
 
 struct ApatiteFT{T<:AbstractFloat} <: FissionTrackSample{T}
-    age::T          # [Ma]
-    age_sigma::T    # [Ma]
-    Dpar::T         # [μm]
-    F::T            # [APFU]
-    Cl::T           # [APFU]
-    OH::T           # [APFU]
-    rmr0::T         # [unitless]
+    age::T              # [Ma]
+    age_sigma::T        # [Ma]
+    agesteps::Vector{T} # [Ma]
+    tsteps::Vector{T}   # [Ma]
+    Dpar::T             # [μm]
+    F::T                # [APFU]
+    Cl::T               # [APFU]
+    OH::T               # [APFU]
+    rmr0::T             # [unitless]
 end
 
 
