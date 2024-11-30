@@ -102,10 +102,10 @@ llmean = mean(tT.lldist)
 
 
 @test mean(tT.jtdist) ≈ model.tinit/60
-@info "Mean jₜ: $(mean(tT.jtdist))"
+@info "Mean σjt: $(mean(tT.jtdist))"
 
 @test mean(tT.jTdist) ≈ model.Tinit/60
-@info "Mean jT: $(mean(tT.jTdist))"
+@info "Mean σjT : $(mean(tT.jTdist))"
 
 ## --- As above, but with variable kinetic parameters
 
@@ -142,10 +142,10 @@ llmean = mean(tT.lldist)
 
 
 @test mean(tT.jtdist) ≈ model.tinit/60
-@info "Mean jₜ: $(mean(tT.jtdist))"
+@info "Mean σjt: $(mean(tT.jtdist))"
 
 @test mean(tT.jTdist) ≈ model.Tinit/60
-@info "Mean jT: $(mean(tT.jTdist))"
+@info "Mean σjT: $(mean(tT.jTdist))"
 
 # Kinetics
 D0Lmean = mean(kinetics.admdist .|> x-> x.D0L)
@@ -212,10 +212,10 @@ llmean = mean(tT.lldist)
 @info "Mean npoints: $(mean(tT.ndist))"
 
 @test mean(tT.jtdist) ≈ model.tinit/60
-@info "Mean jₜ: $(mean(tT.jtdist))"
+@info "Mean σjt: $(mean(tT.jtdist))"
 
 @test mean(tT.jTdist) ≈ model.Tinit/60
-@info "Mean jT: $(mean(tT.jTdist))"
+@info "Mean σjT: $(mean(tT.jTdist))"
 
 ## ---
 
@@ -250,10 +250,10 @@ llmean = mean(tT.lldist)
 
 
 @test mean(tT.jtdist) ≈ model.tinit/60
-@info "Mean jₜ: $(mean(tT.jtdist))"
+@info "Mean σjt: $(mean(tT.jtdist))"
 
 @test mean(tT.jTdist) ≈ model.Tinit/60
-@info "Mean jT: $(mean(tT.jTdist))"
+@info "Mean σjT: $(mean(tT.jTdist))"
 
 # Kinetics
 D0Lmean = mean(kinetics.admdist .|> x-> x.D0L)
@@ -323,10 +323,10 @@ llmean = mean(tT.lldist)
 @info "Mean npoints: $(mean(tT.ndist))"
 
 @test model.dt < mean(tT.jtdist) < model.tinit
-@info "Mean jₜ: $(mean(tT.jtdist))"
+@info "Mean σjt: $(mean(tT.jtdist))"
 
 @test 0 < mean(tT.jTdist) < model.Tinit
-@info "Mean jT: $(mean(tT.jTdist))"
+@info "Mean σjT: $(mean(tT.jTdist))"
 
 ## ---
 
@@ -360,10 +360,10 @@ llmean = mean(tT.lldist)
 @info "Mean npoints: $(mean(tT.ndist))"
 
 @test model.dt < mean(tT.jtdist) < model.tinit
-@info "Mean jₜ: $(mean(tT.jtdist))"
+@info "Mean σjt: $(mean(tT.jtdist))"
 
 @test 0 < mean(tT.jTdist) < model.Tinit
-@info "Mean jT: $(mean(tT.jTdist))"
+@info "Mean σjT: $(mean(tT.jTdist))"
 
 # Kinetics
 D0Lmean = mean(kinetics.admdist .|> x-> x.D0L)

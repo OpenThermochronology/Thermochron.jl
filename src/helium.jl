@@ -13,7 +13,7 @@ end
 ```
 ZirconHe damage annealing model as in Guenthner et al. 2013 (AJS)
 """
-function anneal(dt::Number, tsteps::DenseVector, Tsteps::DenseVector, dm::DiffusivityModel=ZRDAAM())
+function anneal(dt::Number, tsteps::AbstractVector, Tsteps::AbstractVector, dm::DiffusivityModel=ZRDAAM())
     # Allocate matrix to hold reduced track lengths for all previous timesteps
     ntsteps = length(tsteps)
     ρᵣ = zeros(ntsteps,ntsteps)
@@ -30,8 +30,8 @@ anneal!(ρᵣ::Matrix, dt::Number, tsteps::Vector, Tsteps::Vector, [model::Diffu
 ```
 In-place version of `anneal`
 """
-anneal!(ρᵣ::AbstractMatrix, teq::DenseVector, dt::Number, tsteps::DenseVector, Tsteps::DenseVector) = anneal!(ρᵣ, teq, dt, tsteps, Tsteps, ZRDAAM())
-function anneal!(ρᵣ::AbstractMatrix{T}, teq::DenseVector{T}, dt::Number, tsteps::DenseVector, Tsteps::DenseVector, dm::ZRDAAM{T}) where T <: AbstractFloat
+anneal!(ρᵣ::AbstractMatrix, teq::DenseVector, dt::Number, tsteps::AbstractVector, Tsteps::AbstractVector) = anneal!(ρᵣ, teq, dt, tsteps, Tsteps, ZRDAAM())
+function anneal!(ρᵣ::AbstractMatrix{T}, teq::DenseVector{T}, dt::Number, tsteps::AbstractVector, Tsteps::AbstractVector, dm::ZRDAAM{T}) where T <: AbstractFloat
 
     ∅ = zero(T)
     ntsteps = length(tsteps)
@@ -79,7 +79,7 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::DenseVector{T}, dt::Number, tste
 
     return ρᵣ
 end
-function anneal!(ρᵣ::AbstractMatrix{T}, teq::DenseVector{T}, dt::Number, tsteps::DenseVector, Tsteps::DenseVector, dm::RDAAM{T}) where T <: AbstractFloat
+function anneal!(ρᵣ::AbstractMatrix{T}, teq::DenseVector{T}, dt::Number, tsteps::AbstractVector, Tsteps::AbstractVector, dm::RDAAM{T}) where T <: AbstractFloat
 
     ∅ = zero(T)
     ntsteps = length(tsteps)
@@ -174,11 +174,11 @@ function modelage(zircon::ZirconHe{T}, Tsteps::StridedVector{T}, ρᵣ::StridedM
     end
 
     # Get time and radius discretization
-    dr = zircon.dr
+    dr = step(zircon.rsteps)
     rsteps = zircon.rsteps
     nrsteps = zircon.nrsteps
-    dt = zircon.dt
-    ntsteps = zircon.ntsteps
+    dt = step(zircon.tsteps)
+    ntsteps = length(zircon.tsteps)
     alphadeposition = zircon.alphadeposition::DenseMatrix{T}
     alphadamage = zircon.alphadamage::DenseMatrix{T}
 
@@ -312,11 +312,11 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::StridedVector{T}, ρᵣ::Abstra
     end
 
     # Get time and radius discretization
-    dr = apatite.dr
+    dr = step(apatite.rsteps)
     rsteps = apatite.rsteps
     nrsteps = apatite.nrsteps
-    dt = apatite.dt
-    ntsteps = apatite.ntsteps
+    dt = step(apatite.tsteps)
+    ntsteps = length(apatite.tsteps)
     alphadeposition = apatite.alphadeposition::DenseMatrix{T}
     alphadamage = apatite.alphadamage::DenseMatrix{T}
 
@@ -362,7 +362,7 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::StridedVector{T}, ρᵣ::Abstra
     A.dl[nrsteps-1] = 0
     A.d[nrsteps] = 1
 
-    @inbounds for i=2:ntsteps
+    @inbounds for i = 2:ntsteps
 
         # Calculate alpha damage
         @turbo for k = 1:(nrsteps-2)
@@ -412,6 +412,7 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::StridedVector{T}, ρᵣ::Abstra
     μ238U = nanmean(apatite.r238U::DenseVector{T}) # Atoms/gram
     μ235U = nanmean(apatite.r235U::DenseVector{T})
     μ232Th = nanmean(apatite.r232Th::DenseVector{T})
+    μ147Sm = nanmean(apatite.r147Sm::DenseVector{T})
 
     # Numerically solve for helium age of the grain
     heliumage = one(T)

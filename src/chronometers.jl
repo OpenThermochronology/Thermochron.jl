@@ -34,29 +34,21 @@ end
 ## --- Helium sample types
 """
 ```julia
-ZirconHe(r, dr, Uppm, Th232ppm, [Sm147ppm], dt, agesteps::AbstractVector)
+ZirconHe(r, dr, Uppm, Th232ppm, [Sm147ppm], agesteps::AbstractVector)
 ```
 Construct a `ZirconHe` object
 """
 # Concretely-typed immutable struct to hold information about a single zircon (Helium) crystal
-struct ZirconHe{T<:Number} <: HeliumSample{T}
-    dt::T
-    agesteps::Vector{T}
-    tsteps::Vector{T}
-    ntsteps::Int
-    dr::T
-    rsteps::Vector{T}
-    redges::Vector{T}
-    relvolumes::Vector{T}
+struct ZirconHe{T<:AbstractFloat} <: HeliumSample{T}
+    agesteps::FloatRange
+    tsteps::FloatRange
+    rsteps::FloatRange
+    redges::FloatRange
     nrsteps::Int
     r238U::Vector{T}
     r235U::Vector{T}
     r232Th::Vector{T}
     r147Sm::Vector{T}
-    r238UHe::Vector{T}
-    r235UHe::Vector{T}
-    r232ThHe::Vector{T}
-    r147SmHe::Vector{T}
     alphadeposition::Matrix{T}
     alphadamage::Matrix{T}
     annealeddamage::Matrix{T}
@@ -65,21 +57,22 @@ struct ZirconHe{T<:Number} <: HeliumSample{T}
     Dz::Vector{T}
     DN17::Vector{T}
     A::Tridiagonal{T, Vector{T}}
-    F::LU{Float64, Tridiagonal{Float64, Vector{Float64}}, Vector{Int64}}
+    F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}}
     y::Vector{T}
 end
 # Constructor for the ZirconHe type, given grain radius, U and Th concentrations and t-T discretization information
-ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number = ZirconHe(r, dr, Uppm, Th232ppm, zero(T), dt, agesteps)
-function ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number
+ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, agesteps::AbstractRange) where T<:Number = ZirconHe(r, dr, Uppm, Th232ppm, zero(T), agesteps)
+function ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, agesteps::AbstractRange) where T<:Number
     
     # Temporal discretization
+    agesteps = floatrange(agesteps)
     tsteps = reverse(agesteps)
-    ntsteps = length(tsteps) # Number of time steps
+    @assert issorted(tsteps)
 
     # crystal size and spatial discretization
-    rsteps = Array{T}(0+dr/2 : dr: r-dr/2)
-    redges = Array{T}(0 : dr : r) # Edges of each radius element
-    nrsteps = length(rsteps)+2 # number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
+    rsteps = floatrange(0+dr/2 : dr : r-dr/2)
+    redges = floatrange(     0 : dr : r     )   # Edges of each radius element
+    nrsteps = length(rsteps)+2                  # number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
     relvolumes = (redges[2:end].^3 - redges[1:end-1].^3)/redges[end]^3 # Relative volume fraction of spherical shell corresponding to each radius element
 
     # Alpha stopping distances for each isotope in each decay chain, from
@@ -158,11 +151,11 @@ function ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numbe
     r147Smdam = 1*r147Sm # No smoothing of alpha damage, 1 alpha per 147 Sm
 
     # Calculate corrected alpha deposition and recoil damage each time step for each radius
-    dt_2 = dt/2
-    decay = Array{T}(undef, ntsteps)
+    dt_2 = step(tsteps)/2
+    decay = zeros(T, length(tsteps))
     # Allocate deposition and damage arrays
-    alphadeposition = zeros(T, ntsteps, nrsteps-2)
-    alphadamage = zeros(T, ntsteps, nrsteps-2)
+    alphadeposition = zeros(T, length(tsteps), nrsteps-2)
+    alphadamage = zeros(T, length(tsteps), nrsteps-2)
     # U-238
     @. decay = exp(λ238U*(agesteps + dt_2)) - exp(λ238U*(agesteps - dt_2))
     mul!(alphadeposition, decay, r238UHe', one(T), one(T))
@@ -182,14 +175,14 @@ function ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numbe
 
     # Allocate additional variables that will be needed for Crank-Nicholson
     annealeddamage = similar(alphadamage)
-    β = Array{T}(undef, nrsteps) # First row of annealeddamage
+    β = zeros(T, nrsteps) # First row of annealeddamage
 
     # Allocate arrays for diffusivities
-    Dz = Array{T}(undef, ntsteps)
-    DN17 = Array{T}(undef, ntsteps)
+    Dz = zeros(T, length(tsteps))
+    DN17 = zeros(T, length(tsteps))
 
     # Allocate output matrix for all timesteps
-    u = Array{T}(undef, nrsteps, ntsteps)
+    u = zeros(T, nrsteps, length(tsteps))
 
     # Allocate variables for tridiagonal matrix and RHS
     dl = ones(T, nrsteps-1)    # Sub-diagonal row
@@ -202,26 +195,18 @@ function ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numbe
     F = lu(A, allowsingular=true)
 
     # Vector for RHS of Crank-Nicholson equation with regular grid cells
-    y = Array{T}(undef, nrsteps)
+    y = zeros(T, nrsteps)
 
-    return ZirconHe{T}(
-        dt,
+    return ZirconHe(
         agesteps,
         tsteps,
-        ntsteps,
-        dr,
         rsteps,
         redges,
-        relvolumes,
         nrsteps,
         r238U,
         r235U,
         r232Th,
         r147Sm,
-        r238UHe,
-        r235UHe,
-        r232ThHe,
-        r147SmHe,
         alphadeposition,
         alphadamage,
         annealeddamage,
@@ -239,29 +224,21 @@ export ZirconHe
 
 """
 ```julia
-ApatiteHe(r, dr, Uppm, Th232ppm, [Sm147ppm], dt, agesteps::AbstractVector)
+ApatiteHe(r, dr, Uppm, Th232ppm, [Sm147ppm], agesteps::AbstractVector)
 ```
 Construct an `ApatiteHe` object
 """
 # Concretely-typed immutable struct to hold information about a single apatite (Helium) crystal
-struct ApatiteHe{T<:Number} <: HeliumSample{T}
-    dt::T
-    agesteps::Vector{T}
-    tsteps::Vector{T}
-    ntsteps::Int
-    dr::T
-    rsteps::Vector{T}
-    redges::Vector{T}
-    relvolumes::Vector{T}
+struct ApatiteHe{T<:AbstractFloat} <: HeliumSample{T}
+    agesteps::FloatRange
+    tsteps::FloatRange
+    rsteps::FloatRange
+    redges::FloatRange
     nrsteps::Int
     r238U::Vector{T}
     r235U::Vector{T}
     r232Th::Vector{T}
     r147Sm::Vector{T}
-    r238UHe::Vector{T}
-    r235UHe::Vector{T}
-    r232ThHe::Vector{T}
-    r147SmHe::Vector{T}
     alphadeposition::Matrix{T}
     alphadamage::Matrix{T}
     annealeddamage::Matrix{T}
@@ -270,21 +247,22 @@ struct ApatiteHe{T<:Number} <: HeliumSample{T}
     DL::Vector{T}
     Dtrap::Vector{T}
     A::Tridiagonal{T, Vector{T}}
-    F::LU{Float64, Tridiagonal{Float64, Vector{Float64}}, Vector{Int64}}
+    F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}}
     y::Vector{T}
 end
 # Constructor for the ApatiteHe type, given grain radius, U and Th concentrations and t-T discretization information
-ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number = ApatiteHe(r, dr, Uppm, Th232ppm, zero(T), dt, agesteps)
-function ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Number, agesteps::AbstractVector{T}) where T<:Number
+ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, agesteps::AbstractRange) where T<:Number = ApatiteHe(r, dr, Uppm, Th232ppm, zero(T), agesteps)
+function ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, agesteps::AbstractRange) where T<:Number
 
     # Temporal discretization
+    agesteps = floatrange(agesteps)
     tsteps = reverse(agesteps)
-    ntsteps = length(tsteps) # Number of time steps
+    @assert issorted(tsteps)
 
     # crystal size and spatial discretization
-    rsteps = Array{T}(0+dr/2 : dr: r-dr/2)
-    redges = Array{T}(0 : dr : r) # Edges of each radius element
-    nrsteps = length(rsteps)+2 # number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
+    rsteps = floatrange(0+dr/2 : dr : r-dr/2)
+    redges = floatrange(     0 : dr : r     )   # Edges of each radius element
+    nrsteps = length(rsteps)+2                  # number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
     relvolumes = (redges[2:end].^3 - redges[1:end-1].^3)/redges[end]^3 # Relative volume fraction of spherical shell corresponding to each radius element
 
     # Alpha stopping distances for each isotope in each decay chain, from
@@ -363,11 +341,11 @@ function ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numb
     r147Smdam = 1*r147Sm # No smoothing of alpha damage, 1 alpha per 147 Sm
 
     # Calculate corrected alpha deposition and recoil damage each time step for each radius
-    dt_2 = dt/2
-    decay = Array{T}(undef, ntsteps)
+    dt_2 = step(tsteps)/2
+    decay = zeros(T, length(tsteps))
     # Allocate deposition and damage arrays
-    alphadeposition = zeros(T, ntsteps, nrsteps-2)
-    alphadamage = zeros(T, ntsteps, nrsteps-2)
+    alphadeposition = zeros(T, length(tsteps), nrsteps-2)
+    alphadamage = zeros(T, length(tsteps), nrsteps-2)
     # U-238
     @. decay = exp(λ238U*(agesteps + dt_2)) - exp(λ238U*(agesteps - dt_2))
     mul!(alphadeposition, decay, r238UHe', one(T), one(T))
@@ -387,14 +365,14 @@ function ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numb
 
     # Allocate additional variables that will be needed for Crank-Nicholson
     annealeddamage = similar(alphadamage)
-    β = Array{T}(undef, nrsteps) # First row of annealeddamage
+    β = zeros(T, nrsteps) # First row of annealeddamage
 
     # Allocate arrays for diffusivities
-    DL = Array{T}(undef, ntsteps)
-    Dtrap = Array{T}(undef, ntsteps)
+    DL = zeros(T, length(tsteps))
+    Dtrap = zeros(T, length(tsteps))
 
     # Allocate output matrix for all timesteps
-    u = Array{T}(undef, nrsteps, ntsteps)
+    u = zeros(T, nrsteps, length(tsteps))
 
     # Allocate variables for tridiagonal matrix and RHS
     dl = ones(T, nrsteps-1)    # Sub-diagonal row
@@ -407,26 +385,18 @@ function ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, dt::Numb
     F = lu(A, allowsingular=true)
 
     # Vector for RHS of Crank-Nicholson equation with regular grid cells
-    y = Array{T}(undef, nrsteps)
+    y = zeros(T, nrsteps)
 
-    return ApatiteHe{T}(
-        dt,
+    return ApatiteHe(
         agesteps,
         tsteps,
-        ntsteps,
-        dr,
         rsteps,
         redges,
-        relvolumes,
         nrsteps,
         r238U,
         r235U,
         r232Th,
         r147Sm,
-        r238UHe,
-        r235UHe,
-        r232ThHe,
-        r147SmHe,
         alphadeposition,
         alphadamage,
         annealeddamage,

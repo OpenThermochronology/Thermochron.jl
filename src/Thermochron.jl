@@ -10,6 +10,9 @@ module Thermochron
     using ProgressMeter: Progress, update!, finish!
     using LsqFit: curve_fit
 
+    const FloatRange = typeof(1.0:1.0:10.0)
+    floatrange(x) = range(Float64(first(x)), Float64(last(x)), length=length(x))
+
     # Physical constants
     const SEC_MYR = 1E6*365.25*24*3600
     const LOG_SEC_MYR = log(SEC_MYR)

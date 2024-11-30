@@ -48,11 +48,11 @@
         dint = Array{T}(undef, length(redges) - 1)
         intersectiondensity!(dint, redges, rvolumes, ralpha, d)
     end
-    function intersectiondensity!(dint::Vector{T}, redges::AbstractVector{T}, rvolumes::AbstractVector{T}, ralpha::T, d::T) where T <: AbstractFloat
-        n = length(redges) - 1
-        @assert eachindex(dint) == eachindex(rvolumes) == 1:n
+    function intersectiondensity!(dint::DenseVector{T}, redges::AbstractVector{T}, rvolumes::AbstractVector{T}, ralpha::T, d::T) where T <: AbstractFloat
+        I = firstindex(redges):lastindex(redges)-1
+        @assert eachindex(dint) == eachindex(rvolumes) == I
         fintlast = intersectionfraction(first(redges),ralpha,d)
-        @inbounds for i ∈ 1:n
+        @inbounds for i ∈ I
             # Integrated intersection fraction for each concentric sphere (redges) of crystal
             fint = intersectionfraction(redges[i+1],ralpha,d)
 

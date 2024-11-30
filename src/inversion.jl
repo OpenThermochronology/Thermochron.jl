@@ -31,8 +31,9 @@
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
         dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10)::T
         dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : 5)::T
-        agesteps = T.(model.agesteps)::DenseVector{T}
-        tsteps = T.(model.tsteps)::DenseVector{T}
+        agesteps = range(T(first(model.agesteps)), T(last(model.agesteps)), length=length(model.agesteps))
+        tsteps = range(T(first(model.tsteps)), T(last(model.tsteps)), length=length(model.tsteps))
+        @assert tsteps == reverse(agesteps)
         tnow, tinit = extrema(boundary.agepoints)
         Tnow, Tinit = extrema(boundary.T₀)
         Tr = T(haskey(model, :Tr) ? model.Tr : (Tinit+Tnow)/2)::T
@@ -84,7 +85,7 @@
         for i in findall(tzr)
             # Iterate through each grain, calculate the modeled age for each
             first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-            zircons[zi] = ZirconHe(halfwidth[i], dr, U[i], Th[i], Sm[i], dt, agesteps[first_index:end])
+            zircons[zi] = ZirconHe(halfwidth[i], dr, U[i], Th[i], Sm[i], agesteps[first_index:end])
             calcages[i] = modelage(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
             zi += 1
         end
@@ -93,7 +94,7 @@
         for i in findall(tap)
             # Iterate through each grain, calculate the modeled age for each
             first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-            apatites[ai] = ApatiteHe(halfwidth[i], dr, U[i], Th[i], Sm[i], dt, agesteps[first_index:end])
+            apatites[ai] = ApatiteHe(halfwidth[i], dr, U[i], Th[i], Sm[i], agesteps[first_index:end])
             calcages[i] = modelage(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
             ai += 1
         end
@@ -384,8 +385,9 @@
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
         dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10)::T
         dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : 5)::T
-        agesteps = T.(model.agesteps)::DenseVector{T}
-        tsteps = T.(model.tsteps)::DenseVector{T}
+        agesteps = range(T(first(model.agesteps)), T(last(model.agesteps)), length=length(model.agesteps))
+        tsteps = range(T(first(model.tsteps)), T(last(model.tsteps)), length=length(model.tsteps))
+        @assert tsteps == reverse(agesteps)
         tnow, tinit = extrema(boundary.agepoints)
         Tnow, Tinit = extrema(boundary.T₀)
         Tr = T(haskey(model, :Tr) ? model.Tr : (Tinit+Tnow)/2)::T
@@ -437,7 +439,7 @@
         for i in findall(tzr)
             # Iterate through each grain, calculate the modeled age for each
             first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-            zircons[zi] = ZirconHe(halfwidth[i], dr, U[i], Th[i], Sm[i], dt, agesteps[first_index:end])
+            zircons[zi] = ZirconHe(halfwidth[i], dr, U[i], Th[i], Sm[i], agesteps[first_index:end])
             calcages[i] = modelage(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
             zi += 1
         end
@@ -446,7 +448,7 @@
         for i in findall(tap)
             # Iterate through each grain, calculate the modeled age for each
             first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
-            apatites[ai] = ApatiteHe(halfwidth[i], dr, U[i], Th[i], Sm[i], dt, agesteps[first_index:end])
+            apatites[ai] = ApatiteHe(halfwidth[i], dr, U[i], Th[i], Sm[i], agesteps[first_index:end])
             calcages[i] = modelage(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
             ai += 1
         end
