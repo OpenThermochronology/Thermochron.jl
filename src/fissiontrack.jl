@@ -64,9 +64,6 @@ function reltrackdensity(r::T) where T<:Number
 end
 
 
-rlr(rmr, rmr0, κ=1.04-rmr0) =  ((rmr-rmr0)/(1-rmr0))^κ
-
-
 ellipse(x, lc) = @. sqrt(abs((1 - x^2/lc^2)*( 1.632*lc - 10.879)^2))
 alrline(x, θalr) = @. (0.1035*θalr - 2.250) + x * tan(deg2rad(θalr))
 
@@ -125,11 +122,19 @@ export rmr0model
 
 ## --- 
 
+function rlr(rmr::T, rmr0::T, kappa=1.04-rmr0) where {T<:AbstractFloat}
+    (max(rmr-rmr0, zero(T))/(1-rmr0))^kappa
+end
 
-# function AFTAge(apatite::ApatiteFT{Tf}, pr::Matrix, am::AnnealingModel{Tf}) where {Tf <: AbstractFloat}
+## ---
+
+# function modelage(apatite::ApatiteFT{Tf}, pr::Matrix, Tsteps, am::AnnealingModel{Tf}) where {Tf <: AbstractFloat}
 #     Teq = mean(Tsteps)
 #     teq = zero(Tf)
-#     pr = equivalenttime(dt, Tsteps[i], Teq, am)
+#     for i in eachindex(Tsteps)
+#         teq += equivalenttime(dt, Tsteps[i], Teq, am)
+#         pr[i] = reltrackdensity(teq, Teq, am)
+#     end
 # end
 
 ## --- End of File

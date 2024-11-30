@@ -9,8 +9,8 @@ BLAS.get_num_threads() > 2 && BLAS.set_num_threads(2)
 ## --- Prepare problem
 
 model = (
-    burnin = 300, # How long should we wait for MC to converge (become stationary)
-    nsteps = 300, # How many steps of the Markov chain should we run after burn-in?
+    burnin = 350, # How long should we wait for MC to converge (become stationary)
+    nsteps = 250, # How many steps of the Markov chain should we run after burn-in?
     dr = 1.0,    # Radius step, in microns
     dt = 10.0,   # time step size in Myr
     dTmax = 25.0, # Maximum reheating/burial per model timestep
@@ -82,7 +82,7 @@ unconf = Constraint()
 @test nanminimum(tT.Tpointdist) >= 0
 
 @test isa(tT.HeAgedist, AbstractMatrix)
-abserr = abs(sum(nanmean(tT.HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
+abserr = abs(sum(nanmean(tT.HeAgedist, dims=2) - data.HeAge)/length(data.HeAge))
 @test 0 < abserr < 100
 @info "Mean absolute error: $abserr"
 
@@ -122,7 +122,7 @@ llmean = mean(tT.lldist)
 @test nanminimum(tT.Tpointdist) >= 0
 
 @test isa(tT.HeAgedist, AbstractMatrix)
-abserr = abs(sum(nanmean(tT.HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
+abserr = abs(sum(nanmean(tT.HeAgedist, dims=2) - data.HeAge)/length(data.HeAge))
 @test 0 < abserr < 100
 @info "Mean absolute error: $abserr"
 
@@ -193,7 +193,7 @@ detail = DetailInterval(
 @test nanminimum(tT.Tpointdist) >= 0
 
 @test isa(tT.HeAgedist, AbstractMatrix)
-abserr = abs(sum(nanmean(tT.HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
+abserr = abs(sum(nanmean(tT.HeAgedist, dims=2) - data.HeAge)/length(data.HeAge))
 @test 0 < abserr < 100
 @info "Mean absolute error: $abserr"
 
@@ -230,7 +230,7 @@ llmean = mean(tT.lldist)
 @test nanminimum(tT.Tpointdist) >= 0
 
 @test isa(tT.HeAgedist, AbstractMatrix)
-abserr = abs(sum(nanmean(tT.HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
+abserr = abs(sum(nanmean(tT.HeAgedist, dims=2) - data.HeAge)/length(data.HeAge))
 @test 0 < abserr < 100
 @info "Mean absolute error: $abserr"
 
@@ -304,7 +304,7 @@ unconf = Constraint(
 @test nanminimum(tT.Tpointdist) >= 0
 
 @test isa(tT.HeAgedist, AbstractMatrix)
-abserr = abs(sum(nanmean(tT.HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
+abserr = abs(sum(nanmean(tT.HeAgedist, dims=2) - data.HeAge)/length(data.HeAge))
 @test 0 < abserr < 100
 @info "Mean absolute error: $abserr"
 
@@ -341,7 +341,7 @@ llmean = mean(tT.lldist)
 @test nanminimum(tT.Tpointdist) >= 0
 
 @test isa(tT.HeAgedist, AbstractMatrix)
-abserr = abs(sum(nanmean(tT.HeAgedist[:,model.burnin:end], dims=2) - data.HeAge)/length(data.HeAge))
+abserr = abs(sum(nanmean(tT.HeAgedist, dims=2) - data.HeAge)/length(data.HeAge))
 @test 0 < abserr < 100
 @info "Mean absolute error: $abserr"
 
