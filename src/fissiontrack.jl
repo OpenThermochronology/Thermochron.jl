@@ -102,7 +102,7 @@ export lcmodel
 
 """
 ```julia
-rmr0(F, Cl, OH, Mn=0, Fe=0, others=0)
+rmr0model(F, Cl, OH, Mn=0, Fe=0, others=0)
 ```
 Calculate rmr0 as a function of composition (specified in terms of
 atoms per fomula unit, or APFU) for "multikinetic" apatite fission 
@@ -115,13 +115,13 @@ rmr0 = (-0.0495 -0.0348F +0.3528|Cl - 1| +0.0701|OH - 1|
         -0.8592Mn -1.2252Fe -0.1721Others)^0.1433
 ```
 """
-function rmr0(F, Cl, OH, Mn=0, Fe=0, others=0)
+function rmr0model(F, Cl, OH, Mn=0, Fe=0, others=0)
     sum((F, Cl, OH)) ≈ 2 || error("F, Cl, and OH should sum to 2")
     h = - 0.0348F + 0.3528abs(Cl - 1) + 0.0701abs(OH - 1) 
         - 0.8592Mn - 1.2252Fe - 0.1721others -0.0495
     return h^0.1433
 end
-
+export rmr0model
 
 ## --- 
 
