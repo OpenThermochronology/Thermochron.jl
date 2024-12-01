@@ -136,16 +136,13 @@ function modelage(apatite::ApatiteFT{T}, Tsteps, am::AnnealingModel{T}) where {T
     @assert issorted(tsteps)
     @assert eachindex(tsteps) == eachindex(agesteps) == eachindex(Tsteps)
     Teq = mean(Tsteps)
-    teq = Σft = Σρ = zero(T)
+    teq = ftage = zero(T)
     @inbounds for i in reverse(eachindex(Tsteps))
         teq += equivalenttime(dt, Tsteps[i], Teq, am)
         r = rlr(reltracklength(teq, Teq, am), rmr0)
-        ρ = reltrackdensity(r)
-        Σρ += ρ
-        Σft += agesteps[i] * ρ
+        ftage += dt * reltrackdensity(r)
     end
-    meanage = Σft/Σρ
-    return meanage * maximum(agesteps)/mean(agesteps)
+    return ftage
 end
 
 ## --- End of File
