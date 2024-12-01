@@ -2,9 +2,15 @@
 function He(t, U238, U235, Th232)
     8*U238*(exp(λ238U*t)-1) + 7*U235*(exp(λ235U*t)-1) + 6*Th232*(exp(λ232Th*t)-1)
 end
+function He(t, U238, U235, Th232, Sm147)
+    8*U238*(exp(λ238U*t)-1) + 7*U235*(exp(λ235U*t)-1) + 6*Th232*(exp(λ232Th*t)-1) + Sm147*(exp(λ147Sm*t)-1)
+end
 # First time derivative of the amount of ingrown helium since time t
 function dHe(t, U238, U235, Th232)
     8*U238*λ238U*exp(λ238U*t) + 7*U235*λ235U*exp(λ235U*t) + 6*Th232*λ232Th*exp(λ232Th*t)
+end
+function dHe(t, U238, U235, Th232, Sm147)
+    8*U238*λ238U*exp(λ238U*t) + 7*U235*λ235U*exp(λ235U*t) + 6*Th232*λ232Th*exp(λ232Th*t) + Sm147*λ147Sm*exp(λ147Sm*t)
 end
 
 """
@@ -274,12 +280,13 @@ function modelage(zircon::ZirconHe{T}, Tsteps::StridedVector{T}, ρᵣ::StridedM
     μ238U = nanmean(zircon.r238U::DenseVector{T}) # Atoms/gram
     μ235U = nanmean(zircon.r235U::DenseVector{T})
     μ232Th = nanmean(zircon.r232Th::DenseVector{T})
+    μ147Sm = nanmean(zircon.r147Sm::DenseVector{T})
 
     # Numerically solve for helium age of the grain
     heliumage = one(T)
     for i=1:10
-        ∂He∂t = dHe(heliumage, μ238U, μ235U, μ232Th) # Calculate derivative
-        heliumage += (μHe - He(heliumage, μ238U, μ235U, μ232Th))/∂He∂t # Move towards zero (He(heliumage) == μHe)
+        ∂He∂t = dHe(heliumage, μ238U, μ235U, μ232Th, μ147Sm) # Calculate derivative
+        heliumage += (μHe - He(heliumage, μ238U, μ235U, μ232Th, μ147Sm))/∂He∂t # Move towards zero (He(heliumage) == μHe)
     end
 
     return heliumage
@@ -417,8 +424,8 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::StridedVector{T}, ρᵣ::Abstra
     # Numerically solve for helium age of the grain
     heliumage = one(T)
     for i=1:10
-        ∂He∂t = dHe(heliumage, μ238U, μ235U, μ232Th) # Calculate derivative
-        heliumage += (μHe - He(heliumage, μ238U, μ235U, μ232Th))/∂He∂t # Move towards zero (He(heliumage) == μHe)
+        ∂He∂t = dHe(heliumage, μ238U, μ235U, μ232Th, μ147Sm) # Calculate derivative
+        heliumage += (μHe - He(heliumage, μ238U, μ235U, μ232Th, μ147Sm))/∂He∂t # Move towards zero (He(heliumage) == μHe)
     end
 
     return heliumage

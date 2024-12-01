@@ -14,7 +14,7 @@
     @test isa(Teq, AbstractVector)
     @test length(Teq) == 30
 
-    for i=1:10
+    for _ in 1:4
         anneal!(pr, Teq, dt, tsteps, Tsteps, ZRDAAM(rmr0=0.0))
         @test round.(pr, sigdigits=6) ≈ pr_known
     end
@@ -30,7 +30,7 @@
     @test isa(Teq, AbstractVector)
     @test length(Teq) == 30
 
-    for i=1:10
+    for _ in 1:4
         anneal!(pr, Teq, dt, tsteps, Tsteps, ZRDAAM(rmr0=0.0))
         @test round.(pr, sigdigits=6) ≈ pr_known
     end
@@ -47,6 +47,7 @@
     @test zircon.r238U ≈ fill(1.1714561176470587e18, 29)
     @test zircon.r235U ≈ fill(8.608533548562195e15, 29)
     @test zircon.r232Th ≈ fill(4.614097931034483e17, 29)
+    @test zircon.r147Sm ≈ fill(0.0, 29)
     @test zircon.redges == 0:dr:crystalradius
     @test zircon.rsteps == (zircon.redges[2:end] + zircon.redges[1:end-1])/2
     @test zircon.nrsteps == length(zircon.rsteps) + 2 # Implicit radius steps inside and outside modeled range
@@ -74,7 +75,7 @@
     @time "Running modelage" age = modelage(zircon,Tsteps,pr,dm)
     @test age ≈ 520.0297717798045
     # Re-run to ensure internal state does not change
-    for i=1:10
+    for _ in 1:4
         @test modelage(zircon,Tsteps,pr,dm) ≈ 520.0297717798045
     end
 
@@ -83,7 +84,7 @@
     Thppm = 351.
     zircon = ZirconHe(crystalradius,dr,Uppm,Thppm,reverse(tsteps))
     # Re-run to ensure internal state does not change
-    for i=1:10
+    for _ in 1:4
         @test modelage(zircon,Tsteps,pr,dm) ≈ 309.7600561440283
     end
 
@@ -92,7 +93,7 @@
     Thppm = 1171.
     zircon = ZirconHe(crystalradius,dr,Uppm,Thppm,reverse(tsteps))
     # Re-run to ensure internal state does not change
-    for i=1:10
+    for _ in 1:4
         @test modelage(zircon,Tsteps,pr,dm) ≈ 16.02209841621174
     end
 
@@ -101,13 +102,13 @@
     Thppm = 400.
     zircon = ZirconHe(crystalradius,dr,Uppm,Thppm,reverse(tsteps))
     # Re-run to ensure internal state does not change
-    for i=1:10
+    for _ in 1:4
         @test modelage(zircon,Tsteps,pr,dm) ≈ 777.5627957477788
     end
 
 ## Test integrated age program 10 Ma timestep
 
-    tCryst = 3000.0 # Time (in AMyr)
+    tCryst = 3000.0 # Time (in Myr)
     TCryst = 600 # C
     dt = 10 # time step size in Myr
     dr = 1
@@ -137,3 +138,15 @@
     Thppm = 177.76
     zircon = ZirconHe(crystalradius,dr,Uppm,Thppm,reverse(tsteps))
     @test modelage(zircon,Tsteps,pr,dm) ≈ 175.87865725442353
+
+## --- As above but with Sm as well
+
+    crystalradius = 59.3
+    Uppm = 462.98
+    Thppm = 177.76
+    Smppm = 38.13
+    zircon = ZirconHe(crystalradius,dr,Uppm,Thppm,Smppm,reverse(tsteps))
+    @test zircon.r147Sm ≈ fill(1.56203306122449e17, 59)
+    @test modelage(zircon,Tsteps,pr,dm) ≈ 175.67484621432263
+
+## --- End of file

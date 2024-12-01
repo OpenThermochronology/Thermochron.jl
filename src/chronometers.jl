@@ -83,11 +83,6 @@ function ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, agesteps:
     # Ketchem et al. (2011), doi: 10.1016/j.gca.2011.10.011
     alpharadii147Sm = (4.76,)
 
-    # Decay constants
-    λ235U = log(2)/(7.0381*10^8)*10^6 # [1/Myr] Jaffey et al. (1971)
-    λ238U = log(2)/(4.4683*10^9)*10^6 # [1/Myr] Jaffey et al. (1971)
-    λ232Th = log(2)/(1.405*10^10)*10^6 # [1/Myr]
-    λ147Sm = log(2)/(1.07*10^11)*10^6 # [1/Myr]
 
     # Observed radial HPE profiles at present day
     r238U = Uppm.*ones(T, size(rsteps)) # [PPMw]
@@ -272,12 +267,6 @@ function ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, agesteps
     alpharadii232Th = (12.60, 19.32, 21.08, 20.09, 27.53, 34.14,)
     # Ketchem et al. (2011), doi: 10.1016/j.gca.2011.10.011
     alpharadii147Sm = (5.93,)
-
-    # Jaffey decay constants
-    λ235U = log(2)/(7.0381*10^8)*10^6 # [1/Myr]
-    λ238U = log(2)/(4.4683*10^9)*10^6 # [1/Myr]
-    λ232Th = log(2)/(1.405*10^10)*10^6 # [1/Myr]
-    λ147Sm = log(2)/(1.07*10^11)*10^6 # [1/Myr]
 
     # Observed radial HPE profiles at present day
     r238U = Uppm.*ones(T, size(rsteps)) # PPM
