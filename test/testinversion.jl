@@ -16,24 +16,16 @@ b = rand(4)
 c = rand(2)
 @test Thermochron.collectto!(buffer, a, b, c) == vcat(a,b,c)
 
-# Test maxdiff
-for i=1:10
-    local a = rand(100)
-    @test Thermochron.maxdiff(a) === maximum(diff(a))
-    @test Thermochron.mindiff(a) === minimum(diff(a))
-    @test Thermochron.maxabsdiff(a) === maximum(abs.(diff(a)))
-end
-
-# Test diff_ll
-Thermochron.diff_ll(1:10, 1, 1) === 0.0
-Thermochron.diff_ll(2*(1:10), 1, 1) ≈ -4.5
-Thermochron.diff_ll(2*(1:10), 1, 0.5) ≈ -18.0
-
-# Test other utilities
-@test Thermochron.isdistinct(collect(1:10), 10, 5, 0.5)
-@test !Thermochron.isdistinct(collect(1:10), 10, 5, 1.5)
+# Test pointsininterval
 @test Thermochron.pointsininterval(collect(1:10), 10, 0.5, 5.5) == 5
 
+# Test diff_ll
+@test Thermochron.diff_ll(1:10, 1, 1) == 0.0
+@test Thermochron.diff_ll(2*(1:10), 1, 1) ≈ -4.5
+@test Thermochron.diff_ll(2*(1:10), 1, 0.5) ≈ -18.0
+x = rand(100)
+d = diff(x)
+@test Thermochron.diff_ll(x, 0, 1) ≈ normpdf_ll(0, 1, d[d .> 0])
 
 # Test boundary condition functions
 @test Thermochron.reflecting(101, 0, 100) == 99

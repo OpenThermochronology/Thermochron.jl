@@ -284,7 +284,7 @@ function modelage(zircon::ZirconHe{T}, Tsteps::StridedVector{T}, ρᵣ::StridedM
 
     # Numerically solve for helium age of the grain
     heliumage = one(T)
-    for i=1:10
+    for _ in 1:10
         ∂He∂t = dHe(heliumage, μ238U, μ235U, μ232Th, μ147Sm) # Calculate derivative
         heliumage += (μHe - He(heliumage, μ238U, μ235U, μ232Th, μ147Sm))/∂He∂t # Move towards zero (He(heliumage) == μHe)
     end
@@ -423,7 +423,7 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::StridedVector{T}, ρᵣ::Abstra
 
     # Numerically solve for helium age of the grain
     heliumage = one(T)
-    for i=1:10
+    for _ in 1:10
         ∂He∂t = dHe(heliumage, μ238U, μ235U, μ232Th, μ147Sm) # Calculate derivative
         heliumage += (μHe - He(heliumage, μ238U, μ235U, μ232Th, μ147Sm))/∂He∂t # Move towards zero (He(heliumage) == μHe)
     end

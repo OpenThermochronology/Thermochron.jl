@@ -77,7 +77,7 @@
     end
 
     # Utility functions for checking maximum reheating or cooling rate
-    function maxdiff(x::AbstractVector{T}) where {T}
+    function maxdiff(x::AbstractArray{T}) where {T}
         i₀ = firstindex(x)
         δₘ = zero(T)
         if length(x) > 1
@@ -92,7 +92,7 @@
         end
         return δₘ
     end
-    function mindiff(x::AbstractVector{T}) where {T}
+    function mindiff(x::AbstractArray{T}) where {T}
         i₀ = firstindex(x)
         δₘ = zero(T)
         if length(x) > 1
@@ -107,7 +107,7 @@
         end
         return δₘ
     end
-    function maxabsdiff(x::AbstractVector{T}) where {T}
+    function maxabsdiff(x::AbstractArray{T}) where {T}
         i₀ = firstindex(x)
         δₘ = zero(T) 
         if length(x) > 1
@@ -123,7 +123,7 @@
         return δₘ
     end
 
-    function diff_ll(x::AbstractVector, μ::Number, σ::Number)
+    function diff_ll(x::AbstractArray, μ::Number, σ::Number)
         i₀ = firstindex(x)
         inv_s2 = 1/(2*σ*σ)
         ll = zero(typeof(inv_s2))
@@ -142,8 +142,10 @@
     end
 
     # Check if point k is distinct from other points in list within ± δ
-    function isdistinct(points::DenseArray, npoints::Int, k::Int, δ::Number)
-        @inbounds for i = 1:npoints
+    function isdistinct(points::AbstractArray, k::Int, δ::Number, npoints::Int=length(points))
+        @assert npoints <= length(points)
+        I = firstindex(points):firstindex(points)+npoints-1
+        @inbounds for i in I
             if i!=k && abs(points[i] - points[k]) <= δ
                 return false
             end
@@ -164,7 +166,7 @@
         n = 0
         @inbounds for i = 1:npoints
             if  min < points[i] < max
-                n += isdistinct(points, npoints, i, δ)
+                n += isdistinct(points, i, δ, npoints)
             end
         end
         return n
