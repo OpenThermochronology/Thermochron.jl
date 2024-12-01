@@ -9,13 +9,16 @@ abstract type HeliumSample{T} <: Chronometer{T} end
 ## --- Fission track sample types
 
 struct ApatiteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
-    length::T       # [um]
-    angle::T        # [degrees]
-    Dpar::T         # [μm]
-    F::T            # [APFU]
-    Cl::T           # [APFU]
-    OH::T           # [APFU]
-    rmr0::T         # [unitless]
+    length::T               # [um]
+    angle::T                # [degrees]
+    agesteps::FloatRange    # [Ma]
+    tsteps::FloatRange      # [Ma]
+    modellengths::Vector{T} # [um]
+    Dpar::T                 # [μm]
+    F::T                    # [APFU]
+    Cl::T                   # [APFU]
+    OH::T                   # [APFU]
+    rmr0::T                 # [unitless]
 end
 export ApatiteTrackLength
 

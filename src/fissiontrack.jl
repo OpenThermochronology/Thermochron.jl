@@ -135,7 +135,7 @@ function modelage(apatite::ApatiteFT{T}, Tsteps, am::AnnealingModel{T}) where {T
     dt = step(tsteps)
     @assert issorted(tsteps)
     @assert eachindex(tsteps) == eachindex(agesteps) == eachindex(Tsteps)
-    Teq = mean(Tsteps)
+    Teq = logmeantemp(Tsteps)
     teq = ftage = zero(T)
     @inbounds for i in reverse(eachindex(Tsteps))
         teq += equivalenttime(dt, Tsteps[i], Teq, am)

@@ -81,20 +81,20 @@
     @test modelage(apatite, fill(100, 100), FCKetcham2007) ≈ 0.42338708872671615
 
     # Linear cooling
-    @test modelage(apatite, reverse(1:100), FCKetcham1999) ≈ 66.73644435739695
-    @test modelage(apatite, reverse(1:100), FCKetcham2007) ≈ 68.38511070119465
+    @test modelage(apatite, reverse(1:100), FCKetcham1999) ≈ 66.77980999111053
+    @test modelage(apatite, reverse(1:100), FCKetcham2007) ≈ 68.4228509734102
 
     apatite = ApatiteFT(agesteps=reverse(cntr(0:200)), F=1.75, Cl=0.01, OH=0.24)
     @test apatite isa ApatiteFT{Float64}
     @test apatite.rmr0 ≈ 0.8573573076438294
 
-    @test modelage(apatite, reverse(1:200), FCKetcham1999) ≈ 65.06771509645634
-    @test modelage(apatite, reverse(1:200), FCKetcham2007) ≈ 66.94892263322696
+    @test modelage(apatite, reverse(1:200), FCKetcham1999) ≈ 65.22193612822629
+    @test modelage(apatite, reverse(1:200), FCKetcham2007) ≈ 67.08221305145062
 
-    @test modelage(apatite, reverse(1:200)./2, FCKetcham1999) ≈ 125.24020510589108
-    @test modelage(apatite, reverse(1:200)./2, FCKetcham2007) ≈ 128.4999768393786
+    @test modelage(apatite, reverse(1:200)./2, FCKetcham1999) ≈ 125.34528518852127
+    @test modelage(apatite, reverse(1:200)./2, FCKetcham2007) ≈ 128.59190431998582
 
-    @test modelage(apatite, reverse(1:200).*2, FCKetcham1999) ≈ 33.17837482814896
-    @test modelage(apatite, reverse(1:200).*2, FCKetcham2007) ≈ 34.343921633350355
+    @test modelage(apatite, reverse(1:200).*2, FCKetcham1999) ≈ 33.39910745952449
+    @test modelage(apatite, reverse(1:200).*2, FCKetcham2007) ≈ 34.52279548202092
 
 ## --- 

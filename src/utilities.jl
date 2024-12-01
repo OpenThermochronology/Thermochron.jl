@@ -172,6 +172,14 @@
         return n
     end
 
+    function logmeantemp(Tsteps::AbstractArray{T}) where T
+        Tf = float(T)
+        lΣ = zero(Tf)
+        @inbounds for i in eachindex(Tsteps)
+            lΣ += log(Tsteps[i]+ Tf(273.15))
+        end
+        return exp(lΣ/length(Tsteps)) - Tf(273.15)
+    end
 
     """
     ```julia
