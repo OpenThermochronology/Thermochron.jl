@@ -61,4 +61,36 @@
     rmr = Thermochron.reltracklength.(1:10, 95, FCKetcham2007)
     @test Thermochron.rlr.(rmr, rmr0) ≈ [0.7390142328562013, 0.6849516733686434, 0.6428585390459669, 0.6061834471512542, 0.5490365748013377, 0.44555008284518977, 0.33418938122916036, 0.0, 0.0, 0.0]
 
+## --- Test model ages
+
+    apatite = ApatiteFT(agesteps=reverse(cntr(0:100)), F=1.75, Cl=0.01, OH=0.24)
+    @test apatite isa ApatiteFT{Float64}
+
+    # Isothermal residence
+    @test modelage(apatite, fill(0, 100), FCKetcham1999) ≈ 98.86460795137523
+    @test modelage(apatite, fill(0, 100), FCKetcham2007) ≈ 98.94726559797988
+
+    @test modelage(apatite, fill(50, 100), FCKetcham1999) ≈ 96.83273216463276
+    @test modelage(apatite, fill(50, 100), FCKetcham2007) ≈ 96.94611416970491
+
+    @test modelage(apatite, fill(75, 100), FCKetcham1999) ≈ 49.38911476700778
+    @test modelage(apatite, fill(75, 100), FCKetcham2007) ≈ 43.21535568542231
+
+    @test modelage(apatite, fill(100, 100), FCKetcham1999) ≈ 1.682998984707757
+    @test modelage(apatite, fill(100, 100), FCKetcham2007) ≈ 1.4269983583272758
+
+    # Linear cooling
+    @test modelage(apatite, reverse(1:100), FCKetcham1999) ≈ 78.78286263043795
+    @test modelage(apatite, reverse(1:100), FCKetcham2007) ≈ 78.83405814185862
+
+    apatite = ApatiteFT(agesteps=reverse(cntr(0:200)), F=1.75, Cl=0.01, OH=0.24)
+    @test modelage(apatite, reverse(1:200), FCKetcham1999) ≈ 77.25504264248725
+    @test modelage(apatite, reverse(1:200), FCKetcham2007) ≈ 77.55946351142703
+
+    @test modelage(apatite, reverse(1:200)./2, FCKetcham1999) ≈ 149.61871080270686
+    @test modelage(apatite, reverse(1:200)./2, FCKetcham2007) ≈ 149.72773281949782
+
+    @test modelage(apatite, reverse(1:200).*2, FCKetcham1999) ≈ 39.24525081223733
+    @test modelage(apatite, reverse(1:200).*2, FCKetcham2007) ≈ 39.632503309111044
+
 ## --- 

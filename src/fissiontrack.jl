@@ -49,7 +49,6 @@ equations 7a and 7b.
 
 See also: `reltracklength`.
 """
-reltrackdensity(t::Number, T::Number, am::AnnealingModel) = reltrackdensity(reltracklength(t, T, am))
 function reltrackdensity(r::T) where T<:Number
     Tf = float(T)
     if r < 0.5274435106696789
@@ -62,6 +61,7 @@ function reltrackdensity(r::T) where T<:Number
         one(Tf)
     end
 end
+reltrackdensity(t::Number, T::Number, am::AnnealingModel) = reltrackdensity(reltracklength(t, T, am))
 
 
 ellipse(x, lc) = @. sqrt(abs((1 - x^2/lc^2)*( 1.632*lc - 10.879)^2))
@@ -128,18 +128,24 @@ end
 
 ## ---
 
-function modelage(apatite::ApatiteFT{Tf}, Tsteps, am::AnnealingModel{Tf}) where {Tf <: AbstractFloat}
-    tsteps = apatite.tsteps
-    @assert issorted(tsteps)
+function modelage(apatite::ApatiteFT{T}, Tsteps, am::AnnealingModel{T}) where {T <: AbstractFloat}
     agesteps = apatite.agesteps
+    tsteps = apatite.tsteps
+    rmr0 = apatite.rmr0
+    dt = step(tsteps)
+    @assert issorted(tsteps)
     @assert eachindex(tsteps) == eachindex(agesteps) == eachindex(Tsteps)
     Teq = mean(Tsteps)
-    teq = ftage = zero(Tf)
-    @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)), 1)
+    teq = Σft = Σρ = zero(T)
+    @inbounds for i in reverse(eachindex(Tsteps))
         teq += equivalenttime(dt, Tsteps[i], Teq, am)
-        ftage += agesteps[i] * reltrackdensity(teq, Teq, am)
+        r = rlr(reltracklength(teq, Teq, am), rmr0)
+        ρ = reltrackdensity(r)
+        Σρ += ρ
+        Σft += agesteps[i] * ρ
     end
-    return ftage
+    meanage = Σft/Σρ
+    return meanage * maximum(agesteps)/mean(agesteps)
 end
 
 ## --- End of File

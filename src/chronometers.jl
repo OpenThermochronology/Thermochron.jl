@@ -17,19 +17,51 @@ struct ApatiteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
     OH::T           # [APFU]
     rmr0::T         # [unitless]
 end
+export ApatiteTrackLength
 
 struct ApatiteFT{T<:AbstractFloat} <: FissionTrackSample{T}
-    age::T              # [Ma]
-    age_sigma::T        # [Ma]
-    agesteps::Vector{T} # [Ma]
-    tsteps::Vector{T}   # [Ma]
-    Dpar::T             # [μm]
-    F::T                # [APFU]
-    Cl::T               # [APFU]
-    OH::T               # [APFU]
-    rmr0::T             # [unitless]
+    age::T                  # [Ma]
+    age_sigma::T            # [Ma]
+    agesteps::FloatRange    # [Ma]
+    tsteps::FloatRange      # [Ma]
+    Dpar::T                 # [μm]
+    F::T                    # [APFU]
+    Cl::T                   # [APFU]
+    OH::T                   # [APFU]
+    rmr0::T                 # [unitless]
 end
-
+function ApatiteFT(T::Type=Float64; 
+        age=zero(T), 
+        age_sigma=zero(T), 
+        agesteps, 
+        tsteps=reverse(agesteps), 
+        Dpar=zero(T), 
+        F=zero(T), 
+        Cl=zero(T), 
+        OH=zero(T), 
+        rmr0=T(NaN),
+    )
+    if isnan(rmr0)
+        s = F + Cl + OH
+        rmr0 = if s > 0
+            rmr0model(F/s*2, Cl/s*2, OH/s*2)
+        else
+            0.83
+        end
+    end
+    ApatiteFT(
+        T(age),
+        T(age_sigma),
+        floatrange(agesteps),
+        floatrange(tsteps),
+        T(Dpar),
+        T(F),
+        T(Cl),
+        T(OH),
+        T(rmr0),
+    )
+end
+export ApatiteFT
 
 ## --- Helium sample types
 """
