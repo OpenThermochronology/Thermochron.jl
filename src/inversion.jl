@@ -85,7 +85,7 @@
         zi = 1
         for i in findall(tzr)
             # Iterate through each grain, calculate the modeled age for each
-            first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+            first_index = 1 + floor(Int,(tinit - crystAge[i])/dt)
             zircons[zi] = ZirconHe(
                 age = HeAge[i], 
                 age_sigma = HeAge_sigma[i], 
@@ -103,7 +103,7 @@
         ai = 1
         for i in findall(tap)
             # Iterate through each grain, calculate the modeled age for each
-            first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+            first_index = 1 + floor(Int,(tinit - crystAge[i])/dt)
             apatites[ai] = ApatiteHe(
                 age = HeAge[i],
                 age_sigma = HeAge_sigma[i],
@@ -458,7 +458,7 @@
         zi = 1
         for i in findall(tzr)
             # Iterate through each grain, calculate the modeled age for each
-            first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+            first_index = 1 + floor(Int,(tinit - crystAge[i])/dt)
             zircons[zi] = ZirconHe(
                 age = HeAge[i], 
                 age_sigma = HeAge_sigma[i], 
@@ -476,7 +476,7 @@
         ai = 1
         for i in findall(tap)
             # Iterate through each grain, calculate the modeled age for each
-            first_index = 1 + floor(Int64,(tinit - crystAge[i])/dt)
+            first_index = 1 + floor(Int,(tinit - crystAge[i])/dt)
             apatites[ai] = ApatiteHe(
                 age = HeAge[i],
                 age_sigma = HeAge_sigma[i],

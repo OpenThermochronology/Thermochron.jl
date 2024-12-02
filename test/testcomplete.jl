@@ -66,6 +66,10 @@ boundary = Boundary(
 # Default: No unconformity is imposed
 unconf = Constraint()
 
+## --- Test generation of Chronometer objects
+
+chrons = chronometer(ds, model)
+@test chrons isa Vector{<:Chronometer}
 
 ## --- Invert for maximum likelihood t-T path
 

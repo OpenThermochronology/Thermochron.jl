@@ -1,5 +1,6 @@
 # Abstract type to include any number of mineral chronometers (zircon, apatite, etc.)
 abstract type Chronometer{T} end
+export Chronometer
 
 # Abstract subtypes for different categories of chronometers
 abstract type FissionTrackLength{T} <: Chronometer{T} end
@@ -498,53 +499,83 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
 end
 export ApatiteHe
 
-chronometers(data, model) = chronometers(Float64, data, model)
-function chronometers(T::Type{<:AbstractFloat}, data, model)
+
+"""
+```julia
+chronometer([T=Float64], data, model)
+```
+Construct a vector of `Chronometer` objects given a dataset `data`
+and model parameters `model`
+"""
+chronometer(data, model) = chronometer(Float64, data, model)
+function chronometer(T::Type{<:AbstractFloat}, data, model)
     agesteps = floatrange(model.agesteps)
     tsteps = floatrange(model.tsteps)
+    dr = haskey(model, :dr) ? model.dr : one(T)
     @assert issorted(tsteps)
-    @assert tsteps = reverse(agesteps)
+    @assert tsteps == reverse(agesteps)
 
-    crystage = data.CrystAge_Ma
-    dr = model.dr
+    haskey(data, :mineral) || @error "data must contain a column labeled `mineral`"
+    mineral = data.mineral
+    haskey(data, :crystallization_age_Ma) || @error "data must contain a column labeled `crystallization age [Ma]`"
+    crystage = data.crystallization_age_Ma
+    @assert eachindex(data.mineral) == eachindex(data.crystallization_age_Ma)
 
     result = Chronometer[]
-    for i in eachindex(data.mineral)
-        first_index = 
-        first_index = 1 + floor(Int64,(maximum(agesteps) - crystage[i])/dt)
+    for i in eachindex(mineral)
+        first_index = 1 + round(Int,(maximum(agesteps) - crystage[i])/step(tsteps))
 
-        if data.mineral[i] == "apatite"
+        if data.mineral[i] == "zircon"
             if haskey(data, :HeAge) && haskey(data, :HeAge_sigma) && !isnan(data.HeAge[i]/data.HeAge_sigma[i])
-                c = ApatiteHe(T;
-                    age = data.HeAge[i], 
-                    age_sigma = data.HeAge_sigma[i], 
-                    r = data.halfwidth[i], 
+                c = ZirconHe(T;
+                    age = data.raw_He_age_Ma[i], 
+                    age_sigma = data.raw_He_age_sigma_Ma[i], 
+                    r = data.halfwidth_um[i], 
                     dr = dr, 
-                    U238 = data.U[i], 
-                    Th232 = data.Th[i], 
-                    Sm147 = (haskey(data, :Sm) && isnan(data.Sm[i])) ? data.Sm[i] : 0,
+                    U238 = data.U238_ppm[i], 
+                    Th232 = data.Th232_ppm[i], 
+                    Sm147 = (haskey(data, :Sm147_ppm) && isnan(data.Sm147_ppm[i])) ? data.Sm147_ppm[i] : 0,
                     agesteps = agesteps[first_index:end],
                 )
                 push!(result, c)
             end
-            if haskey(data, :FTAge) && haskey(data, :FTAge_sigma) && !isnan(data.FTAge[i]/data.FTAge_sigma[i])
-                c = ApatiteFT()
-                push!(result, c)
-            end
-            if haskey(data, :tracklength) && (0 < data.tracklength[i])
-                c = ApatiteTrackLength()
-                push!(result, c)
-            end
-        elseif data.mineral[i] == "zircon"
-            if haskey(data, :HeAge) && haskey(data, :HeAge_sigma) && !isnan(data.HeAge[i]/data.HeAge_sigma[i])
-                c = ZirconHe(T;
-                    age = HeAge[i], 
-                    age_sigma = HeAge_sigma[i], 
-                    r = halfwidth[i], 
+
+        elseif data.mineral[i] == "apatite"
+            if haskey(data, :raw_He_age_Ma) && haskey(data, :raw_He_age_sigma_Ma) && !isnan(data.raw_He_age_Ma[i]/data.raw_He_age_sigma_Ma[i])
+                c = ApatiteHe(T;
+                    age = data.raw_He_age_Ma[i], 
+                    age_sigma = data.raw_He_age_sigma_Ma[i], 
+                    r = data.halfwidth_um[i], 
                     dr = dr, 
-                    U238 = data.U[i], 
-                    Th232 = data.Th[i], 
-                    Sm147 = (haskey(data, :Sm) && isnan(data.Sm[i])) ? data.Sm[i] : 0,
+                    U238 = data.U238_ppm[i], 
+                    Th232 = data.Th232_ppm[i], 
+                    Sm147 = (haskey(data, :Sm147_ppm) && isnan(data.Sm147_ppm[i])) ? data.Sm147_ppm[i] : 0,
+                    agesteps = agesteps[first_index:end],
+                )
+                push!(result, c)
+            end
+            if haskey(data, :FT_age_Ma) && haskey(data, :FT_age_sigma_Ma) && !isnan(data.FT_age_Ma[i]/data.FT_age_sigma_Ma[i])
+                c = ApatiteFT(T;
+                    age = data.FT_age_Ma[i], 
+                    age_sigma = data.FT_age_sigma_Ma[i], 
+                    dpar = haskey(data, :dpar_um) ? data.dpar_um[i] : NaN,
+                    F = haskey(data, :F_apfu) ? data.F_apfu[i] : NaN,
+                    Cl = haskey(data, :Cl_apfu) ? data.Cl_apfu[i] : NaN,
+                    OH = haskey(data, :OH_apfu) ? data.OH_apfu[i] : NaN,
+                    rmr0 =haskey(data, :rmr0) ? data.rmr0[i] : NaN,
+                    agesteps = agesteps[first_index:end],
+                )
+                push!(result, c)
+            end
+            if haskey(data, :track_length_um) && haskey(data, :track_angle_degrees) && (0 < data.track_length_um[i])
+                c = ApatiteTrackLength(T;
+                    length = data.track_length_um[i], 
+                    angle = data.track_angle_degrees[i], 
+                    dpar = haskey(data, :dpar_um) ? data.dpar_um[i] : NaN,
+                    F = haskey(data, :F_apfu) ? data.F_apfu[i] : NaN,
+                    Cl = haskey(data, :Cl_apfu) ? data.Cl_apfu[i] : NaN,
+                    OH = haskey(data, :OH_apfu) ? data.OH_apfu[i] : NaN,
+                    rmr0 =haskey(data, :rmr0) ? data.rmr0[i] : NaN,
                     agesteps = agesteps[first_index:end],
                 )
                 push!(result, c)
@@ -553,4 +584,4 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
     end
     return unionize(result)
 end
-chronometers
+export chronometer
