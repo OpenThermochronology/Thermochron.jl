@@ -526,7 +526,7 @@ function chronometer(T::Type{<:AbstractFloat}, data, model)
         first_index = 1 + round(Int,(maximum(agesteps) - crystage[i])/step(tsteps))
 
         if data.mineral[i] == "zircon"
-            if haskey(data, :HeAge) && haskey(data, :HeAge_sigma) && !isnan(data.HeAge[i]/data.HeAge_sigma[i])
+            if haskey(data, :raw_He_age_Ma) && haskey(data, :raw_He_age_sigma_Ma) && !isnan(data.raw_He_age_Ma[i]/data.raw_He_age_sigma_Ma[i])
                 c = ZirconHe(T;
                     age = data.raw_He_age_Ma[i], 
                     age_sigma = data.raw_He_age_sigma_Ma[i], 
@@ -582,6 +582,25 @@ function chronometer(T::Type{<:AbstractFloat}, data, model)
             end
         end
     end
+
+    # Print info about samples found
+    if any(x->isa(x, ZirconHe), result)
+        n = count(x->isa(x, ZirconHe), result)
+        @info "found $n zircon helium samples"
+    end
+    if any(x->isa(x, ApatiteHe), result)
+        n = count(x->isa(x, ApatiteHe), result)
+        @info "found $n apatite helium samples"
+    end
+    if any(x->isa(x, ApatiteFT), result)
+        n = count(x->isa(x, ApatiteFT), result)
+        @info "found $n apatite fission track samples"
+    end
+    if any(x->isa(x, ApatiteTrackLength), result)
+        n = count(x->isa(x, ApatiteTrackLength), result)
+        @info "found $n apatite fission track lengths"
+    end
+
     return unionize(result)
 end
 export chronometer

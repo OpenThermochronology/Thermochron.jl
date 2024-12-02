@@ -70,6 +70,7 @@ unconf = Constraint()
 
 chrons = chronometer(ds, model)
 @test chrons isa Vector{<:Chronometer}
+@test length(chrons) == length(ds.mineral)
 
 ## --- Invert for maximum likelihood t-T path
 

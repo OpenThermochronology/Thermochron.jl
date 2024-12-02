@@ -29,5 +29,5 @@ module Thermochron
     include("helium.jl")
     include("fissiontrack.jl")
     include("inversion.jl")
-
+    include("show.jl")
 end
