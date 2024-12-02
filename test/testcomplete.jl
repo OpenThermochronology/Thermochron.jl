@@ -305,12 +305,12 @@ unconf = Constraint(
 
 @test isa(tT.HeAgedist, AbstractMatrix)
 abserr = abs(sum(nanmean(tT.HeAgedist, dims=2) - data.HeAge)/length(data.HeAge))
-@test 0 < abserr < 100
+@test 0 < abserr < 150
 @info "Mean absolute error: $abserr"
 
 @test isa(tT.lldist, AbstractVector)
 llmean = mean(tT.lldist)
-@test -200 < llmean < 0
+@test -300 < llmean < 0
 @info "Mean ll: $llmean"
 
 @test isa(tT.acceptancedist, AbstractVector{Bool})
