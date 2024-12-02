@@ -128,13 +128,12 @@ end
 
 ## ---
 
-function modelage(apatite::ApatiteFT{T}, Tsteps, am::AnnealingModel{T}) where {T <: AbstractFloat}
-    agesteps = apatite.agesteps
+function modelage(apatite::ApatiteFT{T}, Tsteps::AbstractVector, am::AnnealingModel{T}) where {T <: AbstractFloat}
     tsteps = apatite.tsteps
     rmr0 = apatite.rmr0
     dt = step(tsteps)
     @assert issorted(tsteps)
-    @assert eachindex(tsteps) == eachindex(agesteps) == eachindex(Tsteps)
+    @assert eachindex(tsteps) == eachindex(Tsteps)
     Teq = logmeantemp(Tsteps)
     teq = ftage = zero(T)
     @inbounds for i in reverse(eachindex(Tsteps))
@@ -144,5 +143,23 @@ function modelage(apatite::ApatiteFT{T}, Tsteps, am::AnnealingModel{T}) where {T
     end
     return ftage
 end
+
+
+function modellength(track::ApatiteTrackLength{T}, Tsteps::AbstractVector, am::AnnealingModel{T}) where {T <: AbstractFloat}
+    tsteps = track.tsteps
+    rmr0 = track.rmr0
+    dt = step(tsteps)
+    r = track.r
+    @assert issorted(tsteps)
+    @assert eachindex(tsteps) == eachindex(Tsteps) == eachindex(r)
+    Teq = logmeantemp(Tsteps)
+    teq = zero(T)
+    @inbounds for i in reverse(eachindex(Tsteps))
+        teq += equivalenttime(dt, Tsteps[i], Teq, am)
+        r[i] = rlr(reltracklength(teq, Teq, am), rmr0)
+    end
+    return r
+end
+export modellength
 
 ## --- End of File
