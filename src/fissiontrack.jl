@@ -174,7 +174,7 @@ function modellength(track::ApatiteTrackLength{T}, Tsteps::AbstractVector, am::A
         r[i] = rlr(reltracklength(teq, Teq, am), rmr0)
         pr[i] = reltrackdensity(r[i])
     end
-    return nanmean(r, pr)
+    return nanmean(r, pr), nanstd(r, pr)
 end
 export modellength
 
