@@ -109,7 +109,7 @@ export ApatiteFT
 ## --- Helium sample types
 """
 ```julia
-ZirconHe(r, dr, U238ppm, Th232ppm, [Sm147ppm], agesteps::AbstractVector)
+ZirconHe(r, dr, U238, Th232, [Sm147], agesteps::AbstractVector)
 ```
 Construct a `ZirconHe` object
 """
@@ -143,9 +143,9 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
         age_sigma::Number=T(NaN),
         r::Number=one(T),
         dr::Number, 
-        U238ppm::Number,
-        Th232ppm::Number,
-        Sm147ppm::Number=zero(T),
+        U238::Number,
+        Th232::Number,
+        Sm147::Number=zero(T),
         agesteps::AbstractRange
     )
     
@@ -170,10 +170,10 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
 
 
     # Observed radial HPE profiles at present day
-    r238U = U238ppm.*ones(T, size(rsteps)) # [PPMw]
+    r238U = U238.*ones(T, size(rsteps)) # [PPMw]
     r235U = T.(r238U/137.818) # [PPMw]
-    r232Th = Th232ppm .* ones(T, size(rsteps)) # [PPMw]
-    r147Sm = Sm147ppm .* ones(T, size(rsteps)) # [PPMw]
+    r232Th = Th232 .* ones(T, size(rsteps)) # [PPMw]
+    r147Sm = Sm147 .* ones(T, size(rsteps)) # [PPMw]
 
     # Convert to atoms per gram
     r238U *= 6.022E23 / 1E6 / 238
@@ -305,7 +305,7 @@ export ZirconHe
 
 """
 ```julia
-ApatiteHe(r, dr, U238ppm, Th232ppm, [Sm147ppm], agesteps::AbstractVector)
+ApatiteHe(r, dr, U238, Th232, [Sm147], agesteps::AbstractVector)
 ```
 Construct an `ApatiteHe` object
 """
@@ -339,9 +339,9 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
         age_sigma::Number=T(NaN),
         r::Number, 
         dr::Number=one(T), 
-        U238ppm::Number, 
-        Th232ppm::Number, 
-        Sm147ppm::Number=zero(T), 
+        U238::Number, 
+        Th232::Number, 
+        Sm147::Number=zero(T), 
         agesteps::AbstractRange,
     )
 
@@ -365,10 +365,10 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
     alpharadii147Sm = (5.93,)
 
     # Observed radial HPE profiles at present day
-    r238U = fill(T(U238ppm), size(rsteps))         # [PPMw]
-    r235U = fill(T(U238ppm/137.818), size(rsteps)) # [PPMw]
-    r232Th = fill(T(Th232ppm), size(rsteps))    # [PPMw]
-    r147Sm = fill(T(Sm147ppm), size(rsteps))    # [PPMw]
+    r238U = fill(T(U238), size(rsteps))         # [PPMw]
+    r235U = fill(T(U238/137.818), size(rsteps)) # [PPMw]
+    r232Th = fill(T(Th232), size(rsteps))    # [PPMw]
+    r147Sm = fill(T(Sm147), size(rsteps))    # [PPMw]
 
     # Convert to atoms per gram
     r238U *= 6.022E23 / 1E6 / 238
@@ -497,3 +497,60 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
     )
 end
 export ApatiteHe
+
+chronometers(data, model) = chronometers(Float64, data, model)
+function chronometers(T::Type{<:AbstractFloat}, data, model)
+    agesteps = floatrange(model.agesteps)
+    tsteps = floatrange(model.tsteps)
+    @assert issorted(tsteps)
+    @assert tsteps = reverse(agesteps)
+
+    crystage = data.CrystAge_Ma
+    dr = model.dr
+
+    result = Chronometer[]
+    for i in eachindex(data.mineral)
+        first_index = 
+        first_index = 1 + floor(Int64,(maximum(agesteps) - crystage[i])/dt)
+
+        if data.mineral[i] == "apatite"
+            if haskey(data, :HeAge) && haskey(data, :HeAge_sigma) && !isnan(data.HeAge[i]/data.HeAge_sigma[i])
+                c = ApatiteHe(T;
+                    age = data.HeAge[i], 
+                    age_sigma = data.HeAge_sigma[i], 
+                    r = data.halfwidth[i], 
+                    dr = dr, 
+                    U238 = data.U[i], 
+                    Th232 = data.Th[i], 
+                    Sm147 = (haskey(data, :Sm) && isnan(data.Sm[i])) ? data.Sm[i] : 0,
+                    agesteps = agesteps[first_index:end],
+                )
+                push!(result, c)
+            end
+            if haskey(data, :FTAge) && haskey(data, :FTAge_sigma) && !isnan(data.FTAge[i]/data.FTAge_sigma[i])
+                c = ApatiteFT()
+                push!(result, c)
+            end
+            if haskey(data, :tracklength) && (0 < data.tracklength[i])
+                c = ApatiteTrackLength()
+                push!(result, c)
+            end
+        elseif data.mineral[i] == "zircon"
+            if haskey(data, :HeAge) && haskey(data, :HeAge_sigma) && !isnan(data.HeAge[i]/data.HeAge_sigma[i])
+                c = ZirconHe(T;
+                    age = HeAge[i], 
+                    age_sigma = HeAge_sigma[i], 
+                    r = halfwidth[i], 
+                    dr = dr, 
+                    U238 = data.U[i], 
+                    Th232 = data.Th[i], 
+                    Sm147 = (haskey(data, :Sm) && isnan(data.Sm[i])) ? data.Sm[i] : 0,
+                    agesteps = agesteps[first_index:end],
+                )
+                push!(result, c)
+            end
+        end
+    end
+    return unionize(result)
+end
+chronometers

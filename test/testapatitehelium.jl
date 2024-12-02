@@ -42,10 +42,10 @@
 # Test creating and allocating an ApatiteHe
 
     crystalradius = 29.26
-    Uppm = 33.0
-    Thppm = 24.2
-    ApatiteHe(r=crystalradius,dr=dr,U238ppm=Uppm,Th232ppm=Thppm,agesteps=reverse(tsteps))
-    @time "Allocating an apatite" apatite = ApatiteHe(r=crystalradius,dr=dr,U238ppm=Uppm,Th232ppm=Thppm,agesteps=reverse(tsteps))
+    U = 33.0
+    Th = 24.2
+    ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
+    @time "Allocating an apatite" apatite = ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
     @test isa(apatite, ApatiteHe)
     @test apatite.agesteps == reverse(tsteps)
     @test apatite.r238U ≈ fill(8.349831932773109e16, 29)
@@ -83,9 +83,9 @@
     end
 
     crystalradius = 35.
-    Uppm = 110.7
-    Thppm = 35.1
-    apatite = ApatiteHe(r=crystalradius,dr=dr,U238ppm=Uppm,Th232ppm=Thppm,agesteps=reverse(tsteps))
+    U = 110.7
+    Th = 35.1
+    apatite = ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
     # Re-run to ensure internal state does not change
     for _ in 1:4
         # @test modelage(apatite,Tsteps,pr,dm) ≈ 150.6059246264699  # with no rmr0 correction
@@ -93,9 +93,9 @@
     end
 
     crystalradius = 135.
-    Uppm = 173.8
-    Thppm = 117.1
-    apatite = ApatiteHe(r=crystalradius,dr=dr,U238ppm=Uppm,Th232ppm=Thppm,agesteps=reverse(tsteps))
+    U = 173.8
+    Th = 117.1
+    apatite = ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
     # Re-run to ensure internal state does not change
     for _ in 1:4
         # @test modelage(apatite,Tsteps,pr,dm) ≈ 266.3624679808305  # with no rmr0 correction
@@ -103,9 +103,9 @@
     end
 
     crystalradius = 135.
-    Uppm = 50.0
-    Thppm = 40.0
-    apatite = ApatiteHe(r=crystalradius,dr=dr,U238ppm=Uppm,Th232ppm=Thppm,agesteps=reverse(tsteps))
+    U = 50.0
+    Th = 40.0
+    apatite = ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
     # Re-run to ensure internal state does not change
     for _ in 1:4
         # @test modelage(apatite,Tsteps,pr,dm) ≈ 263.9393563618151  # with no rmr0 correction
@@ -115,10 +115,10 @@
 ## --- As above but with Sm as well
 
     crystalradius = 35.
-    Uppm = 110.7
-    Thppm = 35.1
-    Smppm = 38.13
-    apatite = ApatiteHe(r=crystalradius,dr=dr,U238ppm=Uppm,Th232ppm=Thppm,Sm147ppm=Smppm, agesteps=reverse(tsteps))
+    U = 110.7
+    Th = 35.1
+    Sm = 38.13
+    apatite = ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,Sm147=Sm, agesteps=reverse(tsteps))
     @test apatite.r147Sm ≈ fill(1.56203306122449e17, 35)
     @test modelage(apatite,Tsteps,pr,dm) ≈ 150.47353084468298
 

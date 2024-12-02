@@ -91,9 +91,9 @@
                 age_sigma = HeAge_sigma[i], 
                 r = halfwidth[i], 
                 dr = dr, 
-                U238ppm = U[i], 
-                Th232ppm = Th[i], 
-                Sm147ppm = Sm[i], 
+                U238 = U[i], 
+                Th232 = Th[i], 
+                Sm147 = Sm[i], 
                 agesteps = agesteps[first_index:end],
             )
             calcages[i] = modelage(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
@@ -109,9 +109,9 @@
                 age_sigma = HeAge_sigma[i],
                 r = halfwidth[i], 
                 dr = dr, 
-                U238ppm = U[i], 
-                Th232ppm = Th[i], 
-                Sm147ppm = Sm[i], 
+                U238 = U[i], 
+                Th232 = Th[i], 
+                Sm147 = Sm[i], 
                 agesteps = agesteps[first_index:end],
             )
             calcages[i] = modelage(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
@@ -464,9 +464,9 @@
                 age_sigma = HeAge_sigma[i], 
                 r = halfwidth[i], 
                 dr = dr, 
-                U238ppm = U[i], 
-                Th232ppm = Th[i], 
-                Sm147ppm = Sm[i], 
+                U238 = U[i], 
+                Th232 = Th[i], 
+                Sm147 = Sm[i], 
                 agesteps = agesteps[first_index:end],
             )
             calcages[i] = modelage(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
@@ -482,9 +482,9 @@
                 age_sigma = HeAge_sigma[i],
                 r = halfwidth[i], 
                 dr = dr, 
-                U238ppm = U[i], 
-                Th232ppm = Th[i], 
-                Sm147ppm = Sm[i], 
+                U238 = U[i], 
+                Th232 = Th[i], 
+                Sm147 = Sm[i], 
                 agesteps = agesteps[first_index:end],
             )
             calcages[i] = modelage(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
