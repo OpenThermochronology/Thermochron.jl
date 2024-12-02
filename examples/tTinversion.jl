@@ -1,5 +1,5 @@
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-#                            ZrnHeInversion.jl                                  #
+#                              tTinversion.jl                                   #
 #                                                                               #
 #       A transdimensional Bayesian Markov-chain Monte Carlo code for           #
 #   inverting time-temperature paths from zircon U-Th/He ages, using a 1D       #
