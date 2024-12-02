@@ -14,7 +14,8 @@ struct ApatiteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
     agesteps::FloatRange    # [Ma]
     tsteps::FloatRange      # [Ma]
     r::Vector{T}            # [unitless]
-    Dpar::T                 # [μm]
+    pr::Vector{T}           # [unitless]
+    dpar::T                 # [μm]
     F::T                    # [APFU]
     Cl::T                   # [APFU]
     OH::T                   # [APFU]
@@ -26,16 +27,19 @@ function ApatiteTrackLength(T::Type=Float64;
     agesteps, 
     tsteps=reverse(agesteps), 
     r=zeros(T, size(agesteps)),
-    Dpar=zero(T), 
-    F=zero(T), 
-    Cl=zero(T), 
-    OH=zero(T), 
+    pr=zeros(T, size(agesteps)),
+    dpar=T(NaN), 
+    F=T(NaN), 
+    Cl=T(NaN), 
+    OH=T(NaN), 
     rmr0=T(NaN),
 )
 if isnan(rmr0)
     s = F + Cl + OH
-    rmr0 = if s > 0
+    rmr0 = if !isnan(s)
         rmr0model(F/s*2, Cl/s*2, OH/s*2)
+    elseif !isnan(dpar)
+        rmr0fromdpar(dpar)
     else
         0.83
     end
@@ -46,7 +50,8 @@ ApatiteTrackLength(
     floatrange(agesteps),
     floatrange(tsteps),
     T.(r),
-    T(Dpar),
+    T.(pr),
+    T(dpar),
     T(F),
     T(Cl),
     T(OH),
@@ -60,7 +65,7 @@ struct ApatiteFT{T<:AbstractFloat} <: FissionTrackSample{T}
     age_sigma::T            # [Ma]
     agesteps::FloatRange    # [Ma]
     tsteps::FloatRange      # [Ma]
-    Dpar::T                 # [μm]
+    dpar::T                 # [μm]
     F::T                    # [APFU]
     Cl::T                   # [APFU]
     OH::T                   # [APFU]
@@ -71,7 +76,7 @@ function ApatiteFT(T::Type=Float64;
         age_sigma=zero(T), 
         agesteps, 
         tsteps=reverse(agesteps), 
-        Dpar=zero(T), 
+        dpar=zero(T), 
         F=zero(T), 
         Cl=zero(T), 
         OH=zero(T), 
@@ -90,7 +95,7 @@ function ApatiteFT(T::Type=Float64;
         T(age_sigma),
         floatrange(agesteps),
         floatrange(tsteps),
-        T(Dpar),
+        T(dpar),
         T(F),
         T(Cl),
         T(OH),

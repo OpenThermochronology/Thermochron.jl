@@ -113,12 +113,26 @@ rmr0 = (-0.0495 -0.0348F +0.3528|Cl - 1| +0.0701|OH - 1|
 ```
 """
 function rmr0model(F, Cl, OH, Mn=0, Fe=0, others=0)
-    sum((F, Cl, OH)) ≈ 2 || error("F, Cl, and OH should sum to 2")
+    F+Cl+OH ≈ 2 || error("F, Cl, and OH should sum to 2")
     h = - 0.0348F + 0.3528abs(Cl - 1) + 0.0701abs(OH - 1) 
         - 0.8592Mn - 1.2252Fe - 0.1721others -0.0495
     return h^0.1433
 end
 export rmr0model
+
+"""
+```julia
+rmr0fromdpar(dpar)
+```
+Calculate `rmr0` as a function of `dpar` for "multikinetic" apatite 
+fission track following the relation (Fig. 7) of Ketcham et al. 1999
+(doi: 10.2138/am-1999-0903)
+```
+rmr0 = 1 - exp(0.647(dpar-1.75) - 1.834)
+```
+"""
+rmr0fromdpar(dpar) = 1 - exp(0.647(dpar-1.75) - 1.834)
+export rmr0fromdpar
 
 ## --- 
 
@@ -150,6 +164,7 @@ function modellength(track::ApatiteTrackLength{T}, Tsteps::AbstractVector, am::A
     rmr0 = track.rmr0
     dt = step(tsteps)
     r = track.r
+    pr = track.pr
     @assert issorted(tsteps)
     @assert eachindex(tsteps) == eachindex(Tsteps) == eachindex(r)
     Teq = logmeantemp(Tsteps)
@@ -157,8 +172,9 @@ function modellength(track::ApatiteTrackLength{T}, Tsteps::AbstractVector, am::A
     @inbounds for i in reverse(eachindex(Tsteps))
         teq += equivalenttime(dt, Tsteps[i], Teq, am)
         r[i] = rlr(reltracklength(teq, Teq, am), rmr0)
+        pr[i] = reltrackdensity(r[i])
     end
-    return r
+    return nanmean(r, pr)
 end
 export modellength
 
