@@ -44,8 +44,8 @@
     crystalradius = 29.26
     Uppm = 33.0
     Thppm = 24.2
-    ApatiteHe(crystalradius,dr,Uppm,Thppm,reverse(tsteps))
-    @time "Allocating an apatite" apatite = ApatiteHe(crystalradius,dr,Uppm,Thppm,reverse(tsteps))
+    ApatiteHe(r=crystalradius,dr=dr,U238ppm=Uppm,Th232ppm=Thppm,agesteps=reverse(tsteps))
+    @time "Allocating an apatite" apatite = ApatiteHe(r=crystalradius,dr=dr,U238ppm=Uppm,Th232ppm=Thppm,agesteps=reverse(tsteps))
     @test isa(apatite, ApatiteHe)
     @test apatite.agesteps == reverse(tsteps)
     @test apatite.r238U ≈ fill(8.349831932773109e16, 29)
@@ -85,7 +85,7 @@
     crystalradius = 35.
     Uppm = 110.7
     Thppm = 35.1
-    apatite = ApatiteHe(crystalradius,dr,Uppm,Thppm,reverse(tsteps))
+    apatite = ApatiteHe(r=crystalradius,dr=dr,U238ppm=Uppm,Th232ppm=Thppm,agesteps=reverse(tsteps))
     # Re-run to ensure internal state does not change
     for _ in 1:4
         # @test modelage(apatite,Tsteps,pr,dm) ≈ 150.6059246264699  # with no rmr0 correction
@@ -95,7 +95,7 @@
     crystalradius = 135.
     Uppm = 173.8
     Thppm = 117.1
-    apatite = ApatiteHe(crystalradius,dr,Uppm,Thppm,reverse(tsteps))
+    apatite = ApatiteHe(r=crystalradius,dr=dr,U238ppm=Uppm,Th232ppm=Thppm,agesteps=reverse(tsteps))
     # Re-run to ensure internal state does not change
     for _ in 1:4
         # @test modelage(apatite,Tsteps,pr,dm) ≈ 266.3624679808305  # with no rmr0 correction
@@ -105,7 +105,7 @@
     crystalradius = 135.
     Uppm = 50.0
     Thppm = 40.0
-    apatite = ApatiteHe(crystalradius,dr,Uppm,Thppm,reverse(tsteps))
+    apatite = ApatiteHe(r=crystalradius,dr=dr,U238ppm=Uppm,Th232ppm=Thppm,agesteps=reverse(tsteps))
     # Re-run to ensure internal state does not change
     for _ in 1:4
         # @test modelage(apatite,Tsteps,pr,dm) ≈ 263.9393563618151  # with no rmr0 correction
@@ -118,7 +118,7 @@
     Uppm = 110.7
     Thppm = 35.1
     Smppm = 38.13
-    apatite = ApatiteHe(crystalradius,dr,Uppm,Thppm,Smppm,reverse(tsteps))
+    apatite = ApatiteHe(r=crystalradius,dr=dr,U238ppm=Uppm,Th232ppm=Thppm,Sm147ppm=Smppm, agesteps=reverse(tsteps))
     @test apatite.r147Sm ≈ fill(1.56203306122449e17, 35)
     @test modelage(apatite,Tsteps,pr,dm) ≈ 150.47353084468298
 

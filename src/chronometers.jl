@@ -21,9 +21,9 @@ struct ApatiteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
     OH::T                   # [APFU]
     rmr0::T                 # [unitless]
 end
-function ApatiteTrackLength(T::Type=Float64; 
-    length=zero(T), 
-    angle=zero(T), 
+function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64; 
+    length=T(NaN), 
+    angle=T(NaN), 
     agesteps, 
     tsteps=reverse(agesteps), 
     r=zeros(T, size(agesteps)),
@@ -71,21 +71,23 @@ struct ApatiteFT{T<:AbstractFloat} <: FissionTrackSample{T}
     OH::T                   # [APFU]
     rmr0::T                 # [unitless]
 end
-function ApatiteFT(T::Type=Float64; 
-        age=zero(T), 
-        age_sigma=zero(T), 
+function ApatiteFT(T::Type{<:AbstractFloat}=Float64; 
+        age=T(NaN), 
+        age_sigma=T(NaN), 
         agesteps, 
         tsteps=reverse(agesteps), 
-        dpar=zero(T), 
-        F=zero(T), 
-        Cl=zero(T), 
-        OH=zero(T), 
+        dpar=T(NaN),
+        F=T(NaN),
+        Cl=T(NaN),
+        OH=T(NaN),
         rmr0=T(NaN),
     )
     if isnan(rmr0)
         s = F + Cl + OH
-        rmr0 = if s > 0
+        rmr0 = if !isnan(s)
             rmr0model(F/s*2, Cl/s*2, OH/s*2)
+        elseif !isnan(dpar)
+            rmr0fromdpar(dpar)
         else
             0.83
         end
@@ -107,12 +109,14 @@ export ApatiteFT
 ## --- Helium sample types
 """
 ```julia
-ZirconHe(r, dr, Uppm, Th232ppm, [Sm147ppm], agesteps::AbstractVector)
+ZirconHe(r, dr, U238ppm, Th232ppm, [Sm147ppm], agesteps::AbstractVector)
 ```
 Construct a `ZirconHe` object
 """
 # Concretely-typed immutable struct to hold information about a single zircon (Helium) crystal
 struct ZirconHe{T<:AbstractFloat} <: HeliumSample{T}
+    age::T
+    age_sigma::T
     agesteps::FloatRange
     tsteps::FloatRange
     rsteps::FloatRange
@@ -134,8 +138,16 @@ struct ZirconHe{T<:AbstractFloat} <: HeliumSample{T}
     y::Vector{T}
 end
 # Constructor for the ZirconHe type, given grain radius, U and Th concentrations and t-T discretization information
-ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, agesteps::AbstractRange) where T<:Number = ZirconHe(r, dr, Uppm, Th232ppm, zero(T), agesteps)
-function ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, agesteps::AbstractRange) where T<:Number
+function ZirconHe(T::Type{<:AbstractFloat}=Float64;
+        age::Number=T(NaN),
+        age_sigma::Number=T(NaN),
+        r::Number=one(T),
+        dr::Number, 
+        U238ppm::Number,
+        Th232ppm::Number,
+        Sm147ppm::Number=zero(T),
+        agesteps::AbstractRange
+    )
     
     # Temporal discretization
     agesteps = floatrange(agesteps)
@@ -158,7 +170,7 @@ function ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, agesteps:
 
 
     # Observed radial HPE profiles at present day
-    r238U = Uppm.*ones(T, size(rsteps)) # [PPMw]
+    r238U = U238ppm.*ones(T, size(rsteps)) # [PPMw]
     r235U = T.(r238U/137.818) # [PPMw]
     r232Th = Th232ppm .* ones(T, size(rsteps)) # [PPMw]
     r147Sm = Sm147ppm .* ones(T, size(rsteps)) # [PPMw]
@@ -172,9 +184,8 @@ function ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, agesteps:
     # Calculate effective He deposition for each decay chain, corrected for alpha
     # stopping distance
     dint = zeros(T, length(redges) - 1)
-
     
-    r238UHe = zeros(size(r238U))
+    r238UHe = zeros(T, size(r238U))
     @inbounds for ri = 1:length(rsteps)
         for i=1:length(alpharadii238U)
             # Effective radial alpha deposition from 238U
@@ -184,7 +195,7 @@ function ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, agesteps:
     end
 
     # Effective radial alpha deposition from U-235
-    r235UHe = zeros(size(r235U))
+    r235UHe = zeros(T, size(r235U))
     @inbounds for ri = 1:length(rsteps)
         for i=1:length(alpharadii235U)
             # Effective radial alpha deposition from 235U
@@ -194,7 +205,7 @@ function ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, agesteps:
     end
 
     # Effective radial alpha deposition from Th-232
-    r232ThHe = zeros(size(r232Th))
+    r232ThHe = zeros(T, size(r232Th))
     @inbounds for ri = 1:length(rsteps)
         for i=1:length(alpharadii232Th)
             # Effective radial alpha deposition from 232Th
@@ -204,7 +215,7 @@ function ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, agesteps:
     end
 
     # Effective radial alpha deposition from Sm-147
-    r147SmHe = zeros(size(r147Sm))
+    r147SmHe = zeros(T, size(r147Sm))
     @inbounds for ri = 1:length(rsteps)
         for i=1:length(alpharadii147Sm)
             intersectiondensity!(dint, redges,relvolumes,alpharadii147Sm[i],rsteps[ri])
@@ -266,6 +277,8 @@ function ZirconHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, agesteps:
     y = zeros(T, nrsteps)
 
     return ZirconHe(
+        T(age),
+        T(age_sigma),
         agesteps,
         tsteps,
         rsteps,
@@ -292,12 +305,14 @@ export ZirconHe
 
 """
 ```julia
-ApatiteHe(r, dr, Uppm, Th232ppm, [Sm147ppm], agesteps::AbstractVector)
+ApatiteHe(r, dr, U238ppm, Th232ppm, [Sm147ppm], agesteps::AbstractVector)
 ```
 Construct an `ApatiteHe` object
 """
 # Concretely-typed immutable struct to hold information about a single apatite (Helium) crystal
 struct ApatiteHe{T<:AbstractFloat} <: HeliumSample{T}
+    age::T
+    age_sigma::T
     agesteps::FloatRange
     tsteps::FloatRange
     rsteps::FloatRange
@@ -319,8 +334,16 @@ struct ApatiteHe{T<:AbstractFloat} <: HeliumSample{T}
     y::Vector{T}
 end
 # Constructor for the ApatiteHe type, given grain radius, U and Th concentrations and t-T discretization information
-ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, agesteps::AbstractRange) where T<:Number = ApatiteHe(r, dr, Uppm, Th232ppm, zero(T), agesteps)
-function ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, agesteps::AbstractRange) where T<:Number
+function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
+        age::Number=T(NaN),
+        age_sigma::Number=T(NaN),
+        r::Number, 
+        dr::Number=one(T), 
+        U238ppm::Number, 
+        Th232ppm::Number, 
+        Sm147ppm::Number=zero(T), 
+        agesteps::AbstractRange,
+    )
 
     # Temporal discretization
     agesteps = floatrange(agesteps)
@@ -342,10 +365,10 @@ function ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, agesteps
     alpharadii147Sm = (5.93,)
 
     # Observed radial HPE profiles at present day
-    r238U = Uppm.*ones(T, size(rsteps)) # PPM
-    r235U = T.(r238U/137.818) #PPM
-    r232Th = Th232ppm .* ones(T, size(rsteps)) #PPM
-    r147Sm = Sm147ppm .* ones(T, size(rsteps)) # [PPMw]
+    r238U = fill(T(U238ppm), size(rsteps))         # [PPMw]
+    r235U = fill(T(U238ppm/137.818), size(rsteps)) # [PPMw]
+    r232Th = fill(T(Th232ppm), size(rsteps))    # [PPMw]
+    r147Sm = fill(T(Sm147ppm), size(rsteps))    # [PPMw]
 
     # Convert to atoms per gram
     r238U *= 6.022E23 / 1E6 / 238
@@ -358,7 +381,7 @@ function ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, agesteps
     dint = zeros(T, length(redges) - 1)
 
     # Effective radial alpha deposition from U-238
-    r238UHe = zeros(size(r238U))
+    r238UHe = zeros(T, size(r238U))
     @inbounds for ri = 1:length(rsteps)
         for i=1:length(alpharadii238U)
             # Effective radial alpha deposition from 238U
@@ -368,7 +391,7 @@ function ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, agesteps
     end
 
     # Effective radial alpha deposition from U-235
-    r235UHe = zeros(size(r235U))
+    r235UHe = zeros(T, size(r235U))
     @inbounds for ri = 1:length(rsteps)
         for i=1:length(alpharadii235U)
             # Effective radial alpha deposition from 235U
@@ -378,7 +401,7 @@ function ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, agesteps
     end
 
     # Effective radial alpha deposition from Th-232
-    r232ThHe = zeros(size(r232Th))
+    r232ThHe = zeros(T, size(r232Th))
     @inbounds for ri = 1:length(rsteps)
         for i=1:length(alpharadii232Th)
             # Effective radial alpha deposition from 232Th
@@ -388,7 +411,7 @@ function ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, agesteps
     end
 
     # Effective radial alpha deposition from Sm-147
-    r147SmHe = zeros(size(r147Sm))
+    r147SmHe = zeros(T, size(r147Sm))
     @inbounds for ri = 1:length(rsteps)
         for i=1:length(alpharadii147Sm)
             intersectiondensity!(dint, redges,relvolumes,alpharadii147Sm[i],rsteps[ri])
@@ -450,6 +473,8 @@ function ApatiteHe(r::T, dr::Number, Uppm::T, Th232ppm::T, Sm147ppm::T, agesteps
     y = zeros(T, nrsteps)
 
     return ApatiteHe(
+        T(age),
+        T(age_sigma),
         agesteps,
         tsteps,
         rsteps,

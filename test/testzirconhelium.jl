@@ -40,8 +40,8 @@
     crystalradius = 29.26
     Uppm = 462.98
     Thppm = 177.76
-    ZirconHe(crystalradius,dr,Uppm,Thppm,reverse(tsteps))
-    @time "Allocating a zircon" zircon = ZirconHe(crystalradius,dr,Uppm,Thppm,reverse(tsteps))
+    zircon = ZirconHe(r=crystalradius,dr=dr,U238ppm=Uppm,Th232ppm=Thppm,agesteps=reverse(tsteps))
+    @time "Allocating a zircon" zircon = ZirconHe(r=crystalradius,dr=dr,U238ppm=Uppm,Th232ppm=Thppm,agesteps=reverse(tsteps))
     @test isa(zircon, ZirconHe)
     @test zircon.agesteps == reverse(tsteps)
     @test zircon.r238U ≈ fill(1.1714561176470587e18, 29)
@@ -82,7 +82,7 @@
     crystalradius = 35.
     Uppm = 1107.
     Thppm = 351.
-    zircon = ZirconHe(crystalradius,dr,Uppm,Thppm,reverse(tsteps))
+    zircon = ZirconHe(r=crystalradius,dr=dr,U238ppm=Uppm,Th232ppm=Thppm,agesteps=reverse(tsteps))
     # Re-run to ensure internal state does not change
     for _ in 1:4
         @test modelage(zircon,Tsteps,pr,dm) ≈ 309.7600561440283
@@ -91,7 +91,7 @@
     crystalradius = 135.
     Uppm = 1738.
     Thppm = 1171.
-    zircon = ZirconHe(crystalradius,dr,Uppm,Thppm,reverse(tsteps))
+    zircon = ZirconHe(r=crystalradius,dr=dr,U238ppm=Uppm,Th232ppm=Thppm,agesteps=reverse(tsteps))
     # Re-run to ensure internal state does not change
     for _ in 1:4
         @test modelage(zircon,Tsteps,pr,dm) ≈ 16.02209841621174
@@ -100,7 +100,7 @@
     crystalradius = 135.
     Uppm = 500.
     Thppm = 400.
-    zircon = ZirconHe(crystalradius,dr,Uppm,Thppm,reverse(tsteps))
+    zircon = ZirconHe(r=crystalradius,dr=dr,U238ppm=Uppm,Th232ppm=Thppm,agesteps=reverse(tsteps))
     # Re-run to ensure internal state does not change
     for _ in 1:4
         @test modelage(zircon,Tsteps,pr,dm) ≈ 777.5627957477788
@@ -136,7 +136,7 @@
     crystalradius = 59.3
     Uppm = 462.98
     Thppm = 177.76
-    zircon = ZirconHe(crystalradius,dr,Uppm,Thppm,reverse(tsteps))
+    zircon = ZirconHe(r=crystalradius,dr=dr,U238ppm=Uppm,Th232ppm=Thppm,agesteps=reverse(tsteps))
     @test modelage(zircon,Tsteps,pr,dm) ≈ 175.87865725442353
 
 ## --- As above but with Sm as well
@@ -145,7 +145,7 @@
     Uppm = 462.98
     Thppm = 177.76
     Smppm = 38.13
-    zircon = ZirconHe(crystalradius,dr,Uppm,Thppm,Smppm,reverse(tsteps))
+    zircon = ZirconHe(r=crystalradius,dr=dr,U238ppm=Uppm,Th232ppm=Thppm,Sm147ppm=Smppm,agesteps=reverse(tsteps))
     @test zircon.r147Sm ≈ fill(1.56203306122449e17, 59)
     @test modelage(zircon,Tsteps,pr,dm) ≈ 175.67484621432263
 
