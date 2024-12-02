@@ -35,14 +35,14 @@ model = (
 
 # Populate data NamedTuple from imported dataset
 data = (
-    halfwidth = ds.Halfwidth_um,            # Crystal half-width, in microns
+    halfwidth = ds.halfwidth_um,            # Crystal half-width, in microns
     U = ds.U238_ppm,                        # U concentration, in PPM
     Th = ds.Th232_ppm,                      # Th-232 concentration, in PPM
     Sm = ds.Sm147_ppm,                      # Sm-147 concentration, in PPM (optional)
-    HeAge = ds.HeAge_Ma_raw,                # He age, in Ma
-    HeAge_sigma = ds.HeAge_Ma_sigma_10pct,  # He age uncertainty (1-sigma), in Ma
-    crystAge = ds.CrystAge_Ma,              # Crystallization age, in Ma
-    mineral = ds.Mineral                    # zircon or apatite
+    HeAge = ds.raw_He_age_Ma,               # He age, in Ma
+    HeAge_sigma = ds.raw_He_age_Ma.*0.1,    # He age uncertainty (1-sigma), in Ma
+    crystAge = ds.crystallization_age_Ma,   # Crystallization age, in Ma
+    mineral = ds.mineral                    # zircon or apatite
 )
 
 # Sort out crystallization ages and start time

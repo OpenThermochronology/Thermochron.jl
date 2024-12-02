@@ -35,14 +35,14 @@
 
     # Populate data NamedTuple from imported dataset
     data = (;
-        halfwidth = copy(ds.Halfwidth_um),            # Crystal half-width, in microns
+        halfwidth = copy(ds.halfwidth_um),            # Crystal half-width, in microns
         U = copy(ds.U238_ppm),                        # U concentration, in PPM
         Th = copy(ds.Th232_ppm),                      # Th-232 concentration, in PPM
         Sm = copy(ds.Sm147_ppm),                      # Sm-147 concentration, in PPM (optional)
-        HeAge = copy(ds.HeAge_Ma_raw),                # He age, in Ma
-        HeAge_sigma = copy(ds.HeAge_Ma_sigma_raw),    # He age uncertainty (1-sigma), in Ma
-        crystAge = copy(ds.CrystAge_Ma),              # Crystallization age, in Ma
-        mineral = copy(ds.Mineral),                   # i.e., "zircon" or "apatite"
+        HeAge = copy(ds.raw_He_age_Ma),               # He age, in Ma
+        HeAge_sigma = copy(ds.raw_He_age_sigma_Ma),   # He age uncertainty (1-sigma), in Ma
+        crystAge = copy(ds.crystallization_age_Ma),   # Crystallization age, in Ma
+        mineral = copy(ds.mineral),                   # i.e., "zircon" or "apatite"
     )
 
     ta = containsi.(data.mineral, "apatite")

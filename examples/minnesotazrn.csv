@@ -1,24 +1,24 @@
-Grain_Name,Mineral,CrystAge_Ma,Halfwidth_um,HeAge_Ma_raw,HeAge_Ma_sigma_raw,HeAge_Ma_sigma_5pct,HeAge_Ma_sigma_10pct,U238_ppm,Th232_ppm,HeAge_reference
-04RF1zA,zircon,3500,64,770,15,38.5,77,84,67,Guenthner et al. 2013
-04SC1zB,zircon,1779,71,659,51,32.95,65.9,415,111,Guenthner et al. 2013
-04SC1zA,zircon,1779,47,649,13,32.45,64.9,422,110,Guenthner et al. 2013
-04GF1zB,zircon,3500,63,638,12.6,31.9,63.8,254,104,Guenthner et al. 2013
-04GF1zA,zircon,3500,56,620,18.4,31,62,247,88,Guenthner et al. 2013
-04RF1zB,zircon,3500,72,557,10,27.85,55.7,155,177,Guenthner et al. 2013
-04MT1zA,zircon,3500,67,545,12,27.25,54.5,362,89,Guenthner et al. 2013
-04R1zB,zircon,1783,51,500,10,25,50,580,174,Guenthner et al. 2013
-04MT1zB,zircon,3500,68,493,43,24.65,49.3,346,78,Guenthner et al. 2013
-04R1zA,zircon,1783,42,357,7,17.85,35.7,656,167,Guenthner et al. 2013
-04MT1zF,zircon,3500,54,329,7,16.45,32.9,567,75,Miltich 2005
-04EQ1zA,zircon,3500,41,253,5.2,12.65,25.3,781,203,Guenthner et al. 2013
-04EQ1zF,zircon,3500,43,241,4.6,12.05,24.1,647,284,Guenthner et al. 2013
-04SH1zB,zircon,2603,56,225,4.6,11.25,22.5,883,184,Guenthner et al. 2013
-04EQ1zB,zircon,3500,42,225,6,11.25,22.5,748,218,Guenthner et al. 2013
-04MT1zD,zircon,3500,80,217,5,10.85,21.7,739,141,Miltich 2005
-04MT1zC,zircon,3500,45,193,4,9.65,19.3,980,252,Miltich 2005
-04MT1zE,zircon,3500,49,190,4,9.5,19,974,197,Miltich 2005
-04SG1zB,zircon,3500,55,72,2,3.6,36,1738,1171,Guenthner et al. 2013
-04EQ1zC,zircon,3500,36,57,1.1,2.85,28.5,894,246,Guenthner et al. 2013
-04EQ1zE,zircon,3500,35,42,1.1,2.1,21,1107,351,Guenthner et al. 2013
-04EQ1zD,zircon,3500,31,29,0.8,1.45,14.5,866,166,Guenthner et al. 2013
-04SH1zA,zircon,2603,50,11,0.2,0.55,5.5,1011,228,Guenthner et al. 2013
+grain name,mineral,crystallization age [Ma],halfwidth [um],raw He age [Ma],raw He age sigma [Ma],U238 [ppm],Th232 [ppm],reference
+04RF1zA,zircon,3500,64,770,15,84,67,Guenthner et al. 2013
+04SC1zB,zircon,1779,71,659,51,415,111,Guenthner et al. 2013
+04SC1zA,zircon,1779,47,649,13,422,110,Guenthner et al. 2013
+04GF1zB,zircon,3500,63,638,12.6,254,104,Guenthner et al. 2013
+04GF1zA,zircon,3500,56,620,18.4,247,88,Guenthner et al. 2013
+04RF1zB,zircon,3500,72,557,10,155,177,Guenthner et al. 2013
+04MT1zA,zircon,3500,67,545,12,362,89,Guenthner et al. 2013
+04R1zB,zircon,1783,51,500,10,580,174,Guenthner et al. 2013
+04MT1zB,zircon,3500,68,493,43,346,78,Guenthner et al. 2013
+04R1zA,zircon,1783,42,357,7,656,167,Guenthner et al. 2013
+04MT1zF,zircon,3500,54,329,7,567,75,Miltich 2005
+04EQ1zA,zircon,3500,41,253,5.2,781,203,Guenthner et al. 2013
+04EQ1zF,zircon,3500,43,241,4.6,647,284,Guenthner et al. 2013
+04SH1zB,zircon,2603,56,225,4.6,883,184,Guenthner et al. 2013
+04EQ1zB,zircon,3500,42,225,6,748,218,Guenthner et al. 2013
+04MT1zD,zircon,3500,80,217,5,739,141,Miltich 2005
+04MT1zC,zircon,3500,45,193,4,980,252,Miltich 2005
+04MT1zE,zircon,3500,49,190,4,974,197,Miltich 2005
+04SG1zB,zircon,3500,55,72,2,1738,1171,Guenthner et al. 2013
+04EQ1zC,zircon,3500,36,57,1.1,894,246,Guenthner et al. 2013
+04EQ1zE,zircon,3500,35,42,1.1,1107,351,Guenthner et al. 2013
+04EQ1zD,zircon,3500,31,29,0.8,866,166,Guenthner et al. 2013
+04SH1zA,zircon,2603,50,11,0.2,1011,228,Guenthner et al. 2013
