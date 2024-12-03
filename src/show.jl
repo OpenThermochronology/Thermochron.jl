@@ -1,19 +1,21 @@
 # Compact show for chronometers
 function Base.show(io::IO, x::T) where {T<:HeliumSample}
     t = Base.typename(T).wrapper
-    μ = round(x.age, sigdigits=2)
-    σ = round(x.age_sigma, sigdigits=1)
+    σ = round(x.age_sigma, sigdigits=2)
+    d = floor(Int, log10(x.age)-log10(x.age_sigma))
+    μ = round(x.age, sigdigits=2+d)
     print(io, "$t($(μ)±$(σ) Ma)")
 end
 function Base.show(io::IO, x::T) where {T<:FissionTrackSample}
     t = Base.typename(T).wrapper
-    μ = round(x.age, sigdigits=2)
-    σ = round(x.age_sigma, sigdigits=1)
+    σ = round(x.age_sigma, sigdigits=2)
+    d = floor(Int, log10(x.age)-log10(x.age_sigma))
+    μ = round(x.age, sigdigits=2+d)
     print(io, "$t($(μ)±$(σ) Ma)")
 end
 function Base.show(io::IO, x::T) where {T<:FissionTrackLength}
     t = Base.typename(T).wrapper
-    l = round(x.length, sigdigits=2)
+    l = round(x.length, sigdigits=3)
     print(io, "$t($(l) μm)")
 end
 
