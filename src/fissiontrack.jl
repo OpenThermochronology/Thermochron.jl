@@ -69,33 +69,34 @@ alrline(x, θalr) = @. (0.1035*θalr - 2.250) + x * tan(deg2rad(θalr))
 
 """
 ```julia
-lcmodel(l, θ)
+lcmod(l, θ)
 ```
 Calculate the model c-axis equivalent length ("lc,mod") given a measured
 "confined" fission track length `l` [microns] and angle from the c-axis 
 `θ` [degrees] following the approach of Donelick et al. 1999 
 (doi: 10.2138/am-1999-0902) 
 """
-function lcmodel(l, θ)
+lcmod(x::FissionTrackLength) = x.lcmod
+function lcmod(l, θ)
     x = l*cos(deg2rad(θ))
     y = l*sin(deg2rad(θ))
     
     fobj = curve_fit(ellipse, Float64[x], Float64[y], Float64[l])
-    lc_mod = only(fobj.param)
+    lcm = only(fobj.param)
     # Return if we're above the minimum length for ALR
-    lc_mod > 12.96 && return lc_mod
+    lcm > 12.96 && return lcm
 
     # Return if we're below the minimum angle for ALR
-    θalr = 0.304 * exp(0.439*lc_mod)
-    θ < θalr && return lc_mod
+    θalr = 0.304 * exp(0.439*lcm)
+    θ < θalr && return lcm
  
     # Otherwise, fit to a linear segment for ALR
     fobj = curve_fit(alrline, [x], [y], Float64[θalr])
 
-    lc_mod = log(only(fobj.param)/0.304)/0.439
-    return lc_mod
+    lcm = log(only(fobj.param)/0.304)/0.439
+    return lcm
 end
-export lcmodel
+export lcmod
 
 """
 ```julia

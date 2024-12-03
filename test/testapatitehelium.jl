@@ -47,6 +47,9 @@
     ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
     @time "Allocating an apatite" apatite = ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
     @test isa(apatite, ApatiteHe)
+    display(apatite)
+    show(apatite)
+    
     @test apatite.agesteps == reverse(tsteps)
     @test apatite.r238U ≈ fill(8.349831932773109e16, 29)
     @test apatite.r235U ≈ fill(6.13593691093681e14, 29)

@@ -10,8 +10,9 @@ abstract type HeliumSample{T} <: Chronometer{T} end
 ## --- Fission track sample types
 
 struct ApatiteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
-    l::T                    # [um]
-    theta::T                # [degrees]
+    length::T               # [um]
+    angle::T                # [degrees]
+    lcmod::T                # [um]
     agesteps::FloatRange    # [Ma]
     tsteps::FloatRange      # [Ma]
     r::Vector{T}            # [unitless]
@@ -25,6 +26,7 @@ end
 function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64; 
     length=T(NaN), 
     angle=T(NaN), 
+    lcmod=lcmod(length, angle),
     agesteps, 
     tsteps=reverse(agesteps), 
     r=zeros(T, size(agesteps)),
@@ -48,6 +50,7 @@ end
 ApatiteTrackLength(
     T(length),
     T(angle),
+    T(lcmod),
     floatrange(agesteps),
     floatrange(tsteps),
     T.(r),
@@ -171,16 +174,16 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
 
 
     # Observed radial HPE profiles at present day
-    r238U = U238.*ones(T, size(rsteps)) # [PPMw]
-    r235U = T.(r238U/137.818) # [PPMw]
-    r232Th = Th232 .* ones(T, size(rsteps)) # [PPMw]
-    r147Sm = Sm147 .* ones(T, size(rsteps)) # [PPMw]
+    r238U = fill(T(U238), size(rsteps))         # [PPMw]
+    r235U = fill(T(U238/137.818), size(rsteps)) # [PPMw]
+    r232Th = fill(T(Th232), size(rsteps))       # [PPMw]
+    r147Sm = fill(T(Sm147), size(rsteps))       # [PPMw]
 
     # Convert to atoms per gram
-    r238U *= 6.022E23 / 1E6 / 238
-    r235U *= 6.022E23 / 1E6 / 235
-    r232Th *= 6.022E23 / 1E6 / 232
-    r147Sm *= 6.022E23 / 1E6 / 147
+    r238U .*= 6.022E23 / 1E6 / 238
+    r235U .*= 6.022E23 / 1E6 / 235
+    r232Th .*= 6.022E23 / 1E6 / 232
+    r147Sm .*= 6.022E23 / 1E6 / 147
 
     # Calculate effective He deposition for each decay chain, corrected for alpha
     # stopping distance
@@ -368,14 +371,14 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
     # Observed radial HPE profiles at present day
     r238U = fill(T(U238), size(rsteps))         # [PPMw]
     r235U = fill(T(U238/137.818), size(rsteps)) # [PPMw]
-    r232Th = fill(T(Th232), size(rsteps))    # [PPMw]
-    r147Sm = fill(T(Sm147), size(rsteps))    # [PPMw]
+    r232Th = fill(T(Th232), size(rsteps))       # [PPMw]
+    r147Sm = fill(T(Sm147), size(rsteps))       # [PPMw]
 
     # Convert to atoms per gram
-    r238U *= 6.022E23 / 1E6 / 238
-    r235U *= 6.022E23 / 1E6 / 235
-    r232Th *= 6.022E23 / 1E6 / 232
-    r147Sm *= 6.022E23 / 1E6 / 147
+    r238U .*= 6.022E23 / 1E6 / 238
+    r235U .*= 6.022E23 / 1E6 / 235
+    r232Th .*= 6.022E23 / 1E6 / 232
+    r147Sm .*= 6.022E23 / 1E6 / 147
 
     # Calculate effective He deposition for each decay chain, corrected for alpha
     # stopping distance
@@ -534,7 +537,7 @@ function chronometer(T::Type{<:AbstractFloat}, data, model)
                     dr = dr, 
                     U238 = data.U238_ppm[i], 
                     Th232 = data.Th232_ppm[i], 
-                    Sm147 = (haskey(data, :Sm147_ppm) && isnan(data.Sm147_ppm[i])) ? data.Sm147_ppm[i] : 0,
+                    Sm147 = (haskey(data, :Sm147_ppm) && !isnan(data.Sm147_ppm[i])) ? data.Sm147_ppm[i] : 0,
                     agesteps = agesteps[first_index:end],
                 )
                 push!(result, c)
@@ -549,7 +552,7 @@ function chronometer(T::Type{<:AbstractFloat}, data, model)
                     dr = dr, 
                     U238 = data.U238_ppm[i], 
                     Th232 = data.Th232_ppm[i], 
-                    Sm147 = (haskey(data, :Sm147_ppm) && isnan(data.Sm147_ppm[i])) ? data.Sm147_ppm[i] : 0,
+                    Sm147 = (haskey(data, :Sm147_ppm) && !isnan(data.Sm147_ppm[i])) ? data.Sm147_ppm[i] : 0,
                     agesteps = agesteps[first_index:end],
                 )
                 push!(result, c)

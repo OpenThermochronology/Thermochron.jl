@@ -2,21 +2,63 @@
 function Base.show(io::IO, x::T) where {T<:HeliumSample}
     t = Base.typename(T).wrapper
     σ = round(x.age_sigma, sigdigits=2)
-    d = floor(Int, log10(x.age)-log10(x.age_sigma))
-    μ = round(x.age, sigdigits=2+d)
+    d = log10(x.age)-log10(x.age_sigma)
+    μ = round(x.age, sigdigits=2+floor(Int, d*!isnan(d)))
     print(io, "$t($(μ)±$(σ) Ma)")
 end
 function Base.show(io::IO, x::T) where {T<:FissionTrackSample}
     t = Base.typename(T).wrapper
     σ = round(x.age_sigma, sigdigits=2)
-    d = floor(Int, log10(x.age)-log10(x.age_sigma))
-    μ = round(x.age, sigdigits=2+d)
+    d = log10(x.age)-log10(x.age_sigma)
+    μ = round(x.age, sigdigits=2+floor(Int, d*!isnan(d)))
     print(io, "$t($(μ)±$(σ) Ma)")
 end
 function Base.show(io::IO, x::T) where {T<:FissionTrackLength}
     t = Base.typename(T).wrapper
     l = round(x.length, sigdigits=3)
     print(io, "$t($(l) μm)")
+end
+
+# Verbose show methods
+printshort(x::AbstractArray) = "[$(first(x)) … $(last(x))]"
+function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:HeliumSample}
+    print(io, """$T:
+      age       : $(x.age) Ma
+      age_sigma : $(x.age_sigma) Ma
+      U-238     : $(printshort(x.r238U / (6.022E23 / 1E6 / 238))) ppm
+      U-235     : $(printshort(x.r235U / (6.022E23 / 1E6 / 235))) ppm
+      Th-232    : $(printshort(x.r232Th / (6.022E23 / 1E6 / 232))) ppm
+      Sm-147    : $(printshort(x.r147Sm / (6.022E23 / 1E6 / 147))) ppm
+      rsteps    : $(x.rsteps) μm
+      agesteps  : $(x.agesteps) Ma
+    """
+    )
+end
+function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:FissionTrackSample}
+    print(io, """$T:
+      age       : $(x.age) Ma
+      age_sigma : $(x.age_sigma) Ma
+      dpar      : $(x.dpar) μm
+      F         : $(x.F) APFU
+      Cl        : $(x.Cl) APFU
+      OH        : $(x.OH) APFU
+      rmr0      : $(x.rmr0)
+      agesteps  : $(x.agesteps) Ma
+    """
+    )
+end
+function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:FissionTrackLength}
+    print(io, """$T:
+      length    : $(x.length) μm
+      angle     : $(x.angle) μm
+      dpar      : $(x.dpar) μm
+      F         : $(x.F) APFU
+      Cl        : $(x.Cl) APFU
+      OH        : $(x.OH) APFU
+      rmr0      : $(x.rmr0)
+      agesteps  : $(x.agesteps) Ma
+    """
+    )
 end
 
 # Compact show for annealing models

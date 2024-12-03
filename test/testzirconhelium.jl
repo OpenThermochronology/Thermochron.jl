@@ -43,6 +43,9 @@
     zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
     @time "Allocating a zircon" zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
     @test isa(zircon, ZirconHe)
+    display(zircon)
+    show(zircon)
+
     @test zircon.agesteps == reverse(tsteps)
     @test zircon.r238U ≈ fill(1.1714561176470587e18, 29)
     @test zircon.r235U ≈ fill(8.608533548562195e15, 29)
