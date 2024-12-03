@@ -435,8 +435,8 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::StridedVector{T}, dm::RDAAM{T})
 end
 export modelage
 
-model_ll(mineral::HeliumSample, Tsteps, dm::DiffusivityModel) = _model_ll(anneal!(mineral, Tsteps, dm), Tsteps, dm)
-function _model_ll(mineral::HeliumSample, Tsteps, dm::DiffusivityModel)
+function model_ll(mineral::HeliumSample, Tsteps, dm::DiffusivityModel)
+    anneal!(mineral, Tsteps, dm)
     age = modelage(mineral, Tsteps, dm)
     δ = age - mineral.age
     σ² = mineral.age_sigma^2
