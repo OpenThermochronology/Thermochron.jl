@@ -4,10 +4,10 @@ l₀ = 16.38 # [um] initial track length
 σl₀ = 0.09 # [um] initial track length uncertainty
 
 # "Simultaneous fit" Fanning Curvilinear models 
-const FCKetcham1999 = FanningCurvilinear(-19.84402202, 0.3895104539, -51.25312954, -7.642358713, -0.12327, -11.988)
+const FCKetcham1999 = FanningCurvilinear(-19.84402202, 0.3895104539, -51.25312954, -7.642358713, -0.12327, -11.988, 16.38, 0.09)
 export FCKetcham1999
 
-const FCKetcham2007 = SimplifiedCurvilinear(0.39528, 0.01073, -65.12969, -7.91715, 0.04672)
+const FCKetcham2007 = SimplifiedCurvilinear(0.39528, 0.01073, -65.12969, -7.91715, 0.04672, 16.38, 0.09)
 export FCKetcham2007
 
 function equivalenttime(t::Number, T::Number, Teq::Number, fc::Union{SimplifiedCurvilinear,FanningCurvilinear})
@@ -178,5 +178,13 @@ function modellength(track::ApatiteTrackLength{T}, Tsteps::AbstractVector, am::A
     return nanmean(r, pr), nanstd(r, pr)
 end
 export modellength
+
+function model_ll(track::ApatiteTrackLength, Tsteps, am::AnnealingModel)
+    l,σ = modellength(track, Tsteps, am) .* am.l0
+    lc = lcmod(track)
+    δ = l - lc
+    σ² = σ^2 + am.l0_sigma^2
+    -log(2*pi*σ²)/2 - 0.5*δ^2/σ²
+end
 
 ## --- End of File

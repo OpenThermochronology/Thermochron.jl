@@ -143,6 +143,8 @@
     @test l ≈ 15.376461527029509 
     @test σ ≈  0.09967577151793756
 
+    @test Thermochron.model_ll(track, fill(20., 28), FCKetcham2007) ≈ 1.0651088634382597
+
 ## --- Test c-axis equivalent model lengths
 
     @test lcmod(track) ≈ lcmod(15, 35) ≈ 15.405678663327869
