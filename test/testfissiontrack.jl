@@ -93,6 +93,10 @@
     @test modelage(apatite, reverse(1:200).*2, FCKetcham1999) ≈ 33.39910745952449
     @test modelage(apatite, reverse(1:200).*2, FCKetcham2007) ≈ 34.52279548202092
 
+    apatite = ApatiteFT(age=25, age_sigma=3, agesteps=reverse(cntr(0:28)), dpar=2.16)
+    @test modelage(apatite, fill(20., 28), FCKetcham2007) ≈ 25.25247092840902
+    @test Thermochron.model_ll(apatite, fill(20., 28), FCKetcham2007) ≈ -2.0210920201889886
+
 ## --- Test track lengths
 
     track = ApatiteTrackLength(length=15, angle=35, agesteps=reverse(cntr(0:20)), F=1.75, Cl=0.01, OH=0.24)

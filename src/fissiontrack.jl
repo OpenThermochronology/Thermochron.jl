@@ -159,6 +159,13 @@ function modelage(apatite::ApatiteFT{T}, Tsteps::AbstractVector, am::AnnealingMo
     return ftage
 end
 
+function model_ll(apatite::ApatiteFT, Tsteps, am::AnnealingModel)
+    age = modelage(apatite, Tsteps, am)
+    δ = age - apatite.age
+    σ² = apatite.age_sigma^2
+    -0.5*(log(2*pi*σ²) + δ^2/σ²)
+end
+
 
 function modellength(track::ApatiteTrackLength{T}, Tsteps::AbstractVector, am::AnnealingModel{T}) where {T <: AbstractFloat}
     tsteps = track.tsteps
@@ -184,7 +191,7 @@ function model_ll(track::ApatiteTrackLength, Tsteps, am::AnnealingModel)
     lc = lcmod(track)
     δ = l - lc
     σ² = σ^2 + am.l0_sigma^2
-    -log(2*pi*σ²)/2 - 0.5*δ^2/σ²
+    -0.5*(log(2*pi*σ²) + δ^2/σ²)
 end
 
 ## --- End of File
