@@ -43,8 +43,8 @@
     zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
     @time "Allocating a zircon" zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
     @test isa(zircon, ZirconHe)
-    display(zircon)
     show(zircon)
+    display(zircon)
 
     @test zircon.agesteps == reverse(tsteps)
     @test zircon.r238U ≈ fill(1.1714561176470587e18, 29)
@@ -148,8 +148,12 @@
     U = 462.98
     Th = 177.76
     Sm = 38.13
-    zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,Sm147=Sm,agesteps=reverse(tsteps))
+    zircon = ZirconHe(age=175, age_sigma=5, r=crystalradius,dr=dr,U238=U,Th232=Th,Sm147=Sm,agesteps=reverse(tsteps))
     @test zircon.r147Sm ≈ fill(1.56203306122449e17, 59)
     @test modelage(zircon,Tsteps,pr,dm) ≈ 175.67484621432263
+
+## --- Test log likelihood
+
+    @test Thermochron.model_ll(zircon,Tsteps,dm) ≈ -2.537484793898485
 
 ## --- End of file

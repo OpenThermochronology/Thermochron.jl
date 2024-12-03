@@ -47,9 +47,9 @@
     ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
     @time "Allocating an apatite" apatite = ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
     @test isa(apatite, ApatiteHe)
-    display(apatite)
     show(apatite)
-    
+    display(apatite)
+
     @test apatite.agesteps == reverse(tsteps)
     @test apatite.r238U ≈ fill(8.349831932773109e16, 29)
     @test apatite.r235U ≈ fill(6.13593691093681e14, 29)
@@ -121,8 +121,12 @@
     U = 110.7
     Th = 35.1
     Sm = 38.13
-    apatite = ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,Sm147=Sm, agesteps=reverse(tsteps))
+    apatite = ApatiteHe(age=150, age_sigma=5, r=crystalradius,dr=dr,U238=U,Th232=Th,Sm147=Sm, agesteps=reverse(tsteps))
     @test apatite.r147Sm ≈ fill(1.56203306122449e17, 35)
     @test modelage(apatite,Tsteps,pr,dm) ≈ 150.47353084468298
+
+## --- Test log likelihood
+
+    @test Thermochron.model_ll(apatite,Tsteps,dm) ≈ -2.532861074856097
 
 ## --- End of file

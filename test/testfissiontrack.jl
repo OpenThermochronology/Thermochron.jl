@@ -60,8 +60,8 @@
     apatite = ApatiteFT(agesteps=reverse(cntr(0:100)), F=1.75, Cl=0.01, OH=0.24)
     @test apatite isa ApatiteFT{Float64}
     @test apatite.rmr0 ≈ 0.8573573076438294
-    display(apatite)
     show(apatite)
+    display(apatite)
 
     # Isothermal residence
     @test modelage(apatite, fill(0, 100), FCKetcham1999) ≈ 89.48198019056863
@@ -100,8 +100,8 @@
 ## --- Test track lengths
 
     track = ApatiteTrackLength(length=15, angle=35, agesteps=reverse(cntr(0:20)), F=1.75, Cl=0.01, OH=0.24)
-    display(track)
     show(track)
+    display(track)
 
     l, σ = modellength(track, fill(75, 20), FCKetcham1999) .* 16.38
     @test l ≈ 12.434055894969841

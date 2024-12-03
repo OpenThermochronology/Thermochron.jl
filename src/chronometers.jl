@@ -132,6 +132,7 @@ struct ZirconHe{T<:AbstractFloat} <: HeliumSample{T}
     r147Sm::Vector{T}
     alphadeposition::Matrix{T}
     alphadamage::Matrix{T}
+    pr::Matrix{T}
     annealeddamage::Matrix{T}
     u::Matrix{T}
     β::Vector{T}
@@ -239,6 +240,8 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
     # Allocate deposition and damage arrays
     alphadeposition = zeros(T, length(tsteps), nrsteps-2)
     alphadamage = zeros(T, length(tsteps), nrsteps-2)
+    pr = zeros(T, length(tsteps), length(tsteps))
+
     # U-238
     @. decay = exp(λ238U*(agesteps + dt_2)) - exp(λ238U*(agesteps - dt_2))
     mul!(alphadeposition, decay, r238UHe', one(T), one(T))
@@ -294,6 +297,7 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
         r147Sm,
         alphadeposition,
         alphadamage,
+        pr,
         annealeddamage,
         u,
         β,
@@ -328,6 +332,7 @@ struct ApatiteHe{T<:AbstractFloat} <: HeliumSample{T}
     r147Sm::Vector{T}
     alphadeposition::Matrix{T}
     alphadamage::Matrix{T}
+    pr::Matrix{T}
     annealeddamage::Matrix{T}
     u::Matrix{T}
     β::Vector{T}
@@ -435,6 +440,8 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
     # Allocate deposition and damage arrays
     alphadeposition = zeros(T, length(tsteps), nrsteps-2)
     alphadamage = zeros(T, length(tsteps), nrsteps-2)
+    pr = zeros(T, length(tsteps), length(tsteps))
+
     # U-238
     @. decay = exp(λ238U*(agesteps + dt_2)) - exp(λ238U*(agesteps - dt_2))
     mul!(alphadeposition, decay, r238UHe', one(T), one(T))
@@ -490,6 +497,7 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
         r147Sm,
         alphadeposition,
         alphadamage,
+        pr,
         annealeddamage,
         u,
         β,

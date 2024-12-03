@@ -36,8 +36,8 @@ anneal!(ρᵣ::Matrix, dt::Number, tsteps::Vector, Tsteps::Vector, [model::Diffu
 ```
 In-place version of `anneal`
 """
-anneal!(ρᵣ::AbstractMatrix, teq::DenseVector, dt::Number, tsteps::AbstractVector, Tsteps::AbstractVector) = anneal!(ρᵣ, teq, dt, tsteps, Tsteps, ZRDAAM())
-function anneal!(ρᵣ::AbstractMatrix{T}, teq::DenseVector{T}, dt::Number, tsteps::AbstractVector, Tsteps::AbstractVector, dm::ZRDAAM{T}) where T <: AbstractFloat
+anneal!(mineral::HeliumSample, Tsteps::AbstractVector, dm::DiffusivityModel) = (anneal!(mineral.pr, view(mineral.annealeddamage,:,1), step(mineral.tsteps), mineral.tsteps, Tsteps, dm); mineral)
+function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, dt::Number, tsteps::AbstractVector, Tsteps::AbstractVector, dm::ZRDAAM{T}) where T <: AbstractFloat
 
     ∅ = zero(T)
     ntsteps = length(tsteps)
@@ -85,7 +85,7 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::DenseVector{T}, dt::Number, tste
 
     return ρᵣ
 end
-function anneal!(ρᵣ::AbstractMatrix{T}, teq::DenseVector{T}, dt::Number, tsteps::AbstractVector, Tsteps::AbstractVector, dm::RDAAM{T}) where T <: AbstractFloat
+function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, dt::Number, tsteps::AbstractVector, Tsteps::AbstractVector, dm::RDAAM{T}) where T <: AbstractFloat
 
     ∅ = zero(T)
     ntsteps = length(tsteps)
@@ -157,7 +157,8 @@ Ketcham, Richard A. (2005) "Forward and Inverse Modeling of Low-Temperature
 Thermochronometry Data" Reviews in Mineralogy and Geochemistry 58 (1), 275–314.
 https://doi.org/10.2138/rmg.2005.58.11
 """
-function modelage(zircon::ZirconHe{T}, Tsteps::StridedVector{T}, ρᵣ::StridedMatrix{T}, dm::ZRDAAM{T}) where T <: AbstractFloat
+modelage(mineral::HeliumSample, Tsteps::StridedVector, ρᵣ::AbstractMatrix, dm::DiffusivityModel) = (mineral.pr .= ρᵣ; modelage(mineral, Tsteps, dm))
+function modelage(zircon::ZirconHe{T}, Tsteps::StridedVector{T}, dm::ZRDAAM{T}) where T <: AbstractFloat
 
     # Damage and annealing constants
     DzEa = dm.DzEa::T                           # kJ/mol
@@ -171,8 +172,8 @@ function modelage(zircon::ZirconHe{T}, Tsteps::StridedVector{T}, ρᵣ::StridedM
     R = 0.008314472                             # kJ/(K*mol)
 
     # Diffusivities of crystalline and amorphous endmembers
-    Dz = zircon.Dz::DenseVector{T}
-    DN17 = zircon.DN17::DenseVector{T}
+    Dz = zircon.Dz::Vector{T}
+    DN17 = zircon.DN17::Vector{T}
     @assert eachindex(Dz) == eachindex(DN17) == eachindex(Tsteps)
     @turbo for i ∈ eachindex(Dz)
         Dz[i] = DzD0 * exp(-DzEa / R / (Tsteps[i] + 273.15)) # micron^2/Myr
@@ -185,18 +186,19 @@ function modelage(zircon::ZirconHe{T}, Tsteps::StridedVector{T}, ρᵣ::StridedM
     nrsteps = zircon.nrsteps
     dt = step(zircon.tsteps)
     ntsteps = length(zircon.tsteps)
-    alphadeposition = zircon.alphadeposition::DenseMatrix{T}
-    alphadamage = zircon.alphadamage::DenseMatrix{T}
+    alphadeposition = zircon.alphadeposition::Matrix{T}
+    alphadamage = zircon.alphadamage::Matrix{T}
 
     # The annealed damage matrix is the summation of the ρᵣ for each
     # previous timestep multiplied by the the alpha dose at each
     # previous timestep; this is a linear combination, which can be
     # calculated efficiently for all radii by simple matrix multiplication.
-    annealeddamage = zircon.annealeddamage::DenseMatrix{T}
-    mul!(annealeddamage, ρᵣ, alphadamage)
+    annealeddamage = zircon.annealeddamage::Matrix{T}
+    pr = zircon.pr::Matrix{T}
+    mul!(annealeddamage, pr, alphadamage)
 
     # Calculate initial alpha damage
-    β = zircon.β::DenseVector{T}
+    β = zircon.β::Vector{T}
     @turbo for k = 1:(nrsteps-2)
         fₐ = 1-exp(-Bα*annealeddamage[1,k]*Phi)
         τ = (lint0/(4.2 / ((1-exp(-Bα*annealeddamage[1,k])) * SV) - 2.5))^2
@@ -277,10 +279,10 @@ function modelage(zircon::ZirconHe{T}, Tsteps::StridedVector{T}, ρᵣ::StridedM
     μHe = nanmean(vFinal) # Atoms/gram
 
     # Raw Age (i.e., as measured)
-    μ238U = nanmean(zircon.r238U::DenseVector{T}) # Atoms/gram
-    μ235U = nanmean(zircon.r235U::DenseVector{T})
-    μ232Th = nanmean(zircon.r232Th::DenseVector{T})
-    μ147Sm = nanmean(zircon.r147Sm::DenseVector{T})
+    μ238U = nanmean(zircon.r238U::Vector{T}) # Atoms/gram
+    μ235U = nanmean(zircon.r235U::Vector{T})
+    μ232Th = nanmean(zircon.r232Th::Vector{T})
+    μ147Sm = nanmean(zircon.r147Sm::Vector{T})
 
     # Numerically solve for helium age of the grain
     heliumage = one(T)
@@ -291,7 +293,7 @@ function modelage(zircon::ZirconHe{T}, Tsteps::StridedVector{T}, ρᵣ::StridedM
 
     return heliumage
 end
-function modelage(apatite::ApatiteHe{T}, Tsteps::StridedVector{T}, ρᵣ::AbstractMatrix{T}, dm::RDAAM{T}) where T <: AbstractFloat
+function modelage(apatite::ApatiteHe{T}, Tsteps::StridedVector{T}, dm::RDAAM{T}) where T <: AbstractFloat
 
     # Damage and annealing constants
     D0L = dm.D0L*10000^2*SEC_MYR::T         # cm^2/sec, converted to micron^2/Myr  
@@ -310,8 +312,8 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::StridedVector{T}, ρᵣ::Abstra
     damage_conversion = rhoap*(lambdaf/lambdaD)*etaq*L
 
     # Diffusivities of crystalline and amorphous endmembers
-    DL = apatite.DL::DenseVector{T}
-    Dtrap = apatite.Dtrap::DenseVector{T}
+    DL = apatite.DL::Vector{T}
+    Dtrap = apatite.Dtrap::Vector{T}
     @assert eachindex(DL) == eachindex(Dtrap) == eachindex(Tsteps)
     @turbo for i ∈ eachindex(DL)
         DL[i] = D0L * exp(-EaL / R / (Tsteps[i] + 273.15)) # micron^2/Myr
@@ -324,18 +326,19 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::StridedVector{T}, ρᵣ::Abstra
     nrsteps = apatite.nrsteps
     dt = step(apatite.tsteps)
     ntsteps = length(apatite.tsteps)
-    alphadeposition = apatite.alphadeposition::DenseMatrix{T}
-    alphadamage = apatite.alphadamage::DenseMatrix{T}
+    alphadeposition = apatite.alphadeposition::Matrix{T}
+    alphadamage = apatite.alphadamage::Matrix{T}
 
     # The annealed damage matrix is the summation of the ρᵣ for each
     # previous timestep multiplied by the the alpha dose at each
     # previous timestep; this is a linear combination, which can be
     # calculated efficiently for all radii by simple matrix multiplication.
-    annealeddamage = apatite.annealeddamage::DenseMatrix{T}
-    mul!(annealeddamage, ρᵣ, alphadamage)
+    annealeddamage = apatite.annealeddamage::Matrix{T}
+    pr = apatite.pr::Matrix{T}
+    mul!(annealeddamage, pr, alphadamage)
 
     # Calculate initial alpha damage
-    β = apatite.β::DenseVector{T}
+    β = apatite.β::Vector{T}
     @turbo for k = 1:(nrsteps-2)
         track_density = annealeddamage[1,k]*damage_conversion # cm/cm3
         trapDiff = psi*track_density + omega*track_density^3
@@ -416,10 +419,10 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::StridedVector{T}, ρᵣ::Abstra
     μHe = nanmean(vFinal) # Atoms/gram
 
     # Raw Age (i.e., as measured)
-    μ238U = nanmean(apatite.r238U::DenseVector{T}) # Atoms/gram
-    μ235U = nanmean(apatite.r235U::DenseVector{T})
-    μ232Th = nanmean(apatite.r232Th::DenseVector{T})
-    μ147Sm = nanmean(apatite.r147Sm::DenseVector{T})
+    μ238U = nanmean(apatite.r238U::Vector{T}) # Atoms/gram
+    μ235U = nanmean(apatite.r235U::Vector{T})
+    μ232Th = nanmean(apatite.r232Th::Vector{T})
+    μ147Sm = nanmean(apatite.r147Sm::Vector{T})
 
     # Numerically solve for helium age of the grain
     heliumage = one(T)
@@ -431,3 +434,11 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::StridedVector{T}, ρᵣ::Abstra
     return heliumage
 end
 export modelage
+
+model_ll(mineral::HeliumSample, Tsteps, dm::DiffusivityModel) = _model_ll(anneal!(mineral, Tsteps, dm), Tsteps, dm)
+function _model_ll(mineral::HeliumSample, Tsteps, dm::DiffusivityModel)
+    age = modelage(mineral, Tsteps, dm)
+    δ = age - mineral.age
+    σ² = mineral.age_sigma^2
+    -0.5*(log(2*pi*σ²) + δ^2/σ²)
+end

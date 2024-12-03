@@ -159,10 +159,10 @@ function modelage(apatite::ApatiteFT{T}, Tsteps::AbstractVector, am::AnnealingMo
     return ftage
 end
 
-function model_ll(apatite::ApatiteFT, Tsteps, am::AnnealingModel)
-    age = modelage(apatite, Tsteps, am)
-    δ = age - apatite.age
-    σ² = apatite.age_sigma^2
+function model_ll(mineral::FissionTrackSample, Tsteps, am::AnnealingModel)
+    age = modelage(mineral, Tsteps, am)
+    δ = age - mineral.age
+    σ² = mineral.age_sigma^2
     -0.5*(log(2*pi*σ²) + δ^2/σ²)
 end
 
