@@ -68,6 +68,7 @@ unconf = Constraint()
 
 ## --- Test generation of Chronometer objects
 
+# Modern input format
 chrons = chronometer(ds, model)
 @test chrons isa Vector{<:Chronometer}
 @test length(chrons) == length(ds.mineral)
@@ -76,6 +77,13 @@ Tsteps = range(model.Tinit, model.Tnow, length=length(model.tsteps))
 ll = Thermochron.model_and_ll!(modelages, chrons, Tsteps, ZRDAAM(), RDAAM(), FCKetcham2007)
 @test round.(modelages, sigdigits=5) ≈ [1313.9, 1320.7, 1185.0, 1243.0, 1216.1, 1335.4, 1141.7, 1094.4, 1170.2, 923.8, 723.59, 201.76, 429.67, 95.576, 259.05, 419.15, 2.9065, 6.1464, 0.00063415, 27.545, 0.007082, 55.056, 2.0682, 175.1, 283.3, 287.75, 277.18, 240.28, 267.91, 245.68, 274.75, 328.47, 322.98, 353.37]
 @test ll ≈ -26856.800804732477
+
+# Legacy input format
+chrons2 = chronometer(data, model)
+@test typeof.(chrons) == typeof.(chrons2)
+ll = Thermochron.model_and_ll!(modelages, chrons2, Tsteps, ZRDAAM(), RDAAM(), FCKetcham2007)
+@test round.(modelages, sigdigits=5) ≈ [1313.9, 1320.7, 1185.0, 1243.0, 1216.1, 1335.4, 1141.7, 1094.4, 1170.2, 923.8, 723.59, 201.76, 429.67, 95.576, 259.05, 419.15, 2.9065, 6.1464, 0.00063415, 27.545, 0.007082, 55.056, 2.0682, 175.1, 283.3, 287.75, 277.18, 240.28, 267.91, 245.68, 274.75, 328.47, 322.98, 353.37]
+@test ll ≈ -1444.7803141995764
 
 ## --- Invert for maximum likelihood t-T path
 

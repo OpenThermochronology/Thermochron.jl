@@ -62,6 +62,9 @@
                 δ = l - lc
                 σ² = σ^2 + aftm.l0_sigma^2
                 ll-=0.5*(log(2*pi*σ²) + δ^2/σ²)
+            else
+                # NaN if not calculated
+                modelages[i] = T(NaN)
             end
         end
         return ll
