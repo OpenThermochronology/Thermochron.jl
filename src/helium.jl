@@ -32,9 +32,10 @@ export anneal
 
 """
 ```julia
-anneal!(mineral::ZirconHe, Tsteps::AbstractVector, dm::ZirconHeliumModel)
-anneal!(mineral::ApatiteHe, Tsteps::AbstractVector, dm::ApatiteHeliumModel)
-anneal!(ρᵣ::Matrix, dt::Number, tsteps::Vector, Tsteps::Vector, [model::DiffusivityModel=ZRDAAM()])
+anneal!(data::Vector{<:Chronometer}, ::Type{<:HeliumSample}, tsteps, Tsteps, dm::DiffusivityModel)
+anneal!(mineral::ZirconHe, Tsteps, dm::ZRDAAM)
+anneal!(mineral::ApatiteHe, Tsteps, dm::RDAAM)
+anneal!(ρᵣ::Matrix, dt::Number, tsteps, Tsteps, [dm::DiffusivityModel=ZRDAAM()])
 ```
 In-place version of `anneal`
 """
@@ -58,7 +59,12 @@ function anneal!(data::Vector{<:Chronometer}, ::Type{T}, tsteps::AbstractRange, 
     end
     return data
 end
-function anneal!(mineral::HeliumSample, Tsteps::AbstractVector, dm::DiffusivityModel)
+function anneal!(mineral::ZirconHe, Tsteps::AbstractVector, dm::ZRDAAM)
+    anneal!(mineral.pr, view(mineral.annealeddamage,:,1), step(mineral.tsteps), mineral.tsteps, Tsteps, dm)
+    mul!(mineral.annealeddamage, mineral.pr, mineral.alphadamage)
+    return mineral
+end
+function anneal!(mineral::ApatiteHe, Tsteps::AbstractVector, dm::RDAAM)
     anneal!(mineral.pr, view(mineral.annealeddamage,:,1), step(mineral.tsteps), mineral.tsteps, Tsteps, dm)
     mul!(mineral.annealeddamage, mineral.pr, mineral.alphadamage)
     return mineral
@@ -167,12 +173,12 @@ export anneal!
 
 """
 ```julia
-modelage(mineral::ZirconHe, Tsteps::Vector, [ρᵣ], dm::ZRDAAM)
-modelage(mineral::ApatiteHe, Tsteps::Vector, [ρᵣ], dm::RDAAM)
+modelage(mineral::ZirconHe, Tsteps, [ρᵣ], dm::ZRDAAM)
+modelage(mineral::ApatiteHe, Tsteps, [ρᵣ], dm::RDAAM)
 ```
 Calculate the precdicted U-Th/He age of a zircon or apatite that has experienced a given 
-t-T path (specified by `mineral.agesteps` for time and `Tsteps` for temperature, at a
-time resolution of `mineral.dt`) using a Crank-Nicholson diffusion solution for a
+t-T path (specified by `mineral.tsteps` for time and `Tsteps` for temperature, at a
+time resolution of `step(mineral.tsteps)`) using a Crank-Nicholson diffusion solution for a
 spherical grain of radius `mineral.r` at spatial resolution `mineral.dr`.
 
 Implemented based on the the Crank-Nicholson solution for diffusion out of a

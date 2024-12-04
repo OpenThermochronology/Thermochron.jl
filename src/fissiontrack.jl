@@ -143,6 +143,19 @@ end
 
 ## ---
 
+"""
+```julia
+modelage(mineral::ApatiteFT, Tsteps, am::AnnealingModel)
+```
+Calculate the precdicted fission track age of an apatite that has experienced a given 
+t-T path (specified by `mineral.tsteps` for time and `Tsteps` for temperature, at a
+time resolution of `step(mineral.tsteps)`) and given annealing model parameters `am`.
+
+Possible annealing model types and the references for the equations 
+which they respetively implement include 
+  `FanningCurvilinear`      Ketcham et al. 1999 (doi: 10.2138/am-1999-0903)
+  `SimplifiedCurvilinear`   Ketcham et al. 2007 (doi: 10.2138/am.2007.2281)
+"""
 function modelage(apatite::ApatiteFT{T}, Tsteps::AbstractVector, am::AnnealingModel{T}) where {T <: AbstractFloat}
     tsteps = apatite.tsteps
     rmr0 = apatite.rmr0
@@ -167,6 +180,20 @@ function model_ll(mineral::FissionTrackSample, Tsteps::AbstractVector, am::Annea
 end
 
 
+"""
+```julia
+modellength(track::ApatiteTrackLength, Tsteps, am::AnnealingModel)
+```
+Calculate the predicted mean and standard deviation of the distribution of fission  
+track lengths of an apatite that has experienced a given t-T path (specified by 
+`track.tsteps` for time and `Tsteps` for temperature, at a time resolution of 
+`step(mineral.tsteps)`) and given annealing model parameters `am`.
+
+Possible annealing model types and the references for the equations 
+which they respetively implement include 
+  `FanningCurvilinear`      Ketcham et al. 1999 (doi: 10.2138/am-1999-0903)
+  `SimplifiedCurvilinear`   Ketcham et al. 2007 (doi: 10.2138/am.2007.2281)
+"""
 function modellength(track::ApatiteTrackLength{T}, Tsteps::AbstractVector, am::AnnealingModel{T}) where {T <: AbstractFloat}
     tsteps = track.tsteps
     rmr0 = track.rmr0
