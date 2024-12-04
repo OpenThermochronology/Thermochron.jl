@@ -32,17 +32,37 @@ export anneal
 
 """
 ```julia
+anneal!(mineral::ZirconHe, Tsteps::AbstractVector, dm::ZirconHeliumModel)
+anneal!(mineral::ApatiteHe, Tsteps::AbstractVector, dm::ApatiteHeliumModel)
 anneal!(ρᵣ::Matrix, dt::Number, tsteps::Vector, Tsteps::Vector, [model::DiffusivityModel=ZRDAAM()])
 ```
 In-place version of `anneal`
 """
-anneal!(mineral::HeliumSample, Tsteps::AbstractVector, dm::DiffusivityModel) = (anneal!(mineral.pr, view(mineral.annealeddamage,:,1), step(mineral.tsteps), mineral.tsteps, Tsteps, dm); mineral)
+function anneal!(data::Vector{<:Chronometer}, ::Type{T}, tsteps::AbstractRange, Tsteps, dm::DiffusivityModel) where {T<:HeliumSample}
+    dt = step(tsteps)
+    if any(x->isa(x, T), data)
+        imax = argmax(i->isa(data[i], T) ? length(data[i].tsteps) : 0, eachindex(data))
+        tmax = last(data[imax].tsteps)
+        @assert dt == step(data[imax].tsteps)
+        first_index = 1 + Int((last(tsteps) - tmax)÷dt)
+        anneal!(data[imax]::T, @views(Tsteps[first_index:end]), dm)
+        pr = data[imax].pr
+        for i in eachindex(data)
+            if i!=imax && isa(data[i], T)
+                @assert dt == step(data[i].tsteps)
+                first_index = 1 + Int((tmax - last(data[i].tsteps))÷dt)
+                data[i].pr .= @views(pr[first_index:end, first_index:end])
+            end
+        end
+    end
+    return data
+end
+anneal!(mineral::ZirconHe, Tsteps::AbstractVector, dm::ZirconHeliumModel) = (anneal!(mineral.pr, view(mineral.annealeddamage,:,1), step(mineral.tsteps), mineral.tsteps, Tsteps, dm); mineral)
+anneal!(mineral::ApatiteHe, Tsteps::AbstractVector, dm::ApatiteHeliumModel) = (anneal!(mineral.pr, view(mineral.annealeddamage,:,1), step(mineral.tsteps), mineral.tsteps, Tsteps, dm); mineral)
 function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, dt::Number, tsteps::AbstractVector, Tsteps::AbstractVector, dm::ZRDAAM{T}) where T <: AbstractFloat
-
-    ∅ = zero(T)
+    @assert eachindex(tsteps) == eachindex(Tsteps) == eachindex(teq) == axes(ρᵣ, 1) == axes(ρᵣ,2) == Base.OneTo(length(tsteps))
     ntsteps = length(tsteps)
-    @assert size(ρᵣ) === (ntsteps, ntsteps)
-    @assert size(teq) === (ntsteps,)
+    ∅ = zero(T)
     fill!(teq, ∅)
 
     # First timestep

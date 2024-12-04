@@ -1,3 +1,4 @@
+
     function modelages!(calc::AbstractVector, calcuncert::AbstractVector, data::Vector{<:Chronometer}, Tsteps::AbstractVector, zdm::ZirconHeliumModel{T}, adm::ApatiteHeliumModel{T}, aftm::AnnealingModel{T}) where {T<:AbstractFloat}
         @assert eachindex(calc) == eachindex(calcuncert) == eachindex(data)
         imax = argmax(i->length(data[i].agesteps), eachindex(data))
@@ -8,33 +9,9 @@
         @assert eachindex(tsteps) == eachindex(Tsteps)
 
         # Pre-anneal ZRDAAM samples, if any
-        if isa(zdm, ZRDAAM) && any(x->isa(x, ZirconHe), data)
-            ihmax = argmax(i->isa(data[i], ZirconHe) ? length(data[i].tsteps) : 0, eachindex(data))
-            thmax = last(data[ihmax].tsteps)
-            first_index = 1 + Int((tmax - thmax)÷dt)
-            anneal!(data[ihmax], @views(Tsteps[first_index:end]), zdm)
-            pr = data[ihmax].pr
-            for i in eachindex(data)
-                if i!=imax && isa(data[i], ZirconHe)
-                    first_index = 1 + Int((thmax - last(data[i].tsteps))÷dt)
-                    data[i].pr .= @views(pr[first_index:end, first_index:end])
-                end
-            end
-        end
+        isa(zdm, ZRDAAM) && anneal!(data, ZirconHe, tsteps, Tsteps, zdm)
         # Pre-anneal RDAAM samples, if any
-        if isa(adm, RDAAM) && any(x->isa(x, ApatiteHe), data)
-            ihmax = argmax(i->isa(data[i], ApatiteHe) ? length(data[i].tsteps) : 0, eachindex(data))
-            thmax = last(data[ihmax].tsteps)
-            first_index = 1 + Int((tmax - thmax)÷dt)
-            anneal!(data[ihmax], @views(Tsteps[first_index:end]), adm)
-            pr = data[ihmax].pr
-            for i in eachindex(data)
-                if i!=imax && isa(data[i], ApatiteHe)
-                    first_index = 1 + Int((thmax - last(data[i].tsteps))÷dt)
-                    data[i].pr .= @views(pr[first_index:end, first_index:end])
-                end
-            end
-        end
+        isa(adm, RDAAM) && anneal!(data, ApatiteHe, tsteps, Tsteps, adm)
 
         for i in eachindex(data)
             c = data[i]

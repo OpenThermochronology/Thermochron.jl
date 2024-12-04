@@ -644,23 +644,23 @@ function chronometer(T::Type{<:AbstractFloat}, data, model)
         end
     end
 
-    # Print info about samples found
-    if any(x->isa(x, ZirconHe), result)
-        n = count(x->isa(x, ZirconHe), result)
-        @info "found $n zircon helium samples"
-    end
-    if any(x->isa(x, ApatiteHe), result)
-        n = count(x->isa(x, ApatiteHe), result)
-        @info "found $n apatite helium samples"
-    end
-    if any(x->isa(x, ApatiteFT), result)
-        n = count(x->isa(x, ApatiteFT), result)
-        @info "found $n apatite fission track samples"
-    end
-    if any(x->isa(x, ApatiteTrackLength), result)
-        n = count(x->isa(x, ApatiteTrackLength), result)
-        @info "found $n apatite fission track lengths"
-    end
+    # # Print info about samples found
+    # if any(x->isa(x, ZirconHe), result)
+    #     n = count(x->isa(x, ZirconHe), result)
+    #     @info "found $n zircon helium samples"
+    # end
+    # if any(x->isa(x, ApatiteHe), result)
+    #     n = count(x->isa(x, ApatiteHe), result)
+    #     @info "found $n apatite helium samples"
+    # end
+    # if any(x->isa(x, ApatiteFT), result)
+    #     n = count(x->isa(x, ApatiteFT), result)
+    #     @info "found $n apatite fission track samples"
+    # end
+    # if any(x->isa(x, ApatiteTrackLength), result)
+    #     n = count(x->isa(x, ApatiteTrackLength), result)
+    #     @info "found $n apatite fission track lengths"
+    # end
 
     return unionize(result)
 end
