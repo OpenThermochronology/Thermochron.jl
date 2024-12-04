@@ -48,17 +48,21 @@ function anneal!(data::Vector{<:Chronometer}, ::Type{T}, tsteps::AbstractRange, 
         anneal!(data[imax]::T, @views(Tsteps[first_index:end]), dm)
         pr = data[imax].pr
         for i in eachindex(data)
-            if i!=imax && isa(data[i], T)
-                @assert dt == step(data[i].tsteps)
-                first_index = 1 + Int((tmax - last(data[i].tsteps))÷dt)
-                data[i].pr .= @views(pr[first_index:end, first_index:end])
+            c = data[i]
+            if i!=imax && isa(c, T)
+                @assert dt == step(c.tsteps)
+                first_index = 1 + Int((tmax - last(c.tsteps))÷dt)
+                mul!(c.annealeddamage, @views(pr[first_index:end, first_index:end]), c.alphadamage)
             end
         end
     end
     return data
 end
-anneal!(mineral::ZirconHe, Tsteps::AbstractVector, dm::ZirconHeliumModel) = (anneal!(mineral.pr, view(mineral.annealeddamage,:,1), step(mineral.tsteps), mineral.tsteps, Tsteps, dm); mineral)
-anneal!(mineral::ApatiteHe, Tsteps::AbstractVector, dm::ApatiteHeliumModel) = (anneal!(mineral.pr, view(mineral.annealeddamage,:,1), step(mineral.tsteps), mineral.tsteps, Tsteps, dm); mineral)
+function anneal!(mineral::HeliumSample, Tsteps::AbstractVector, dm::DiffusivityModel)
+    anneal!(mineral.pr, view(mineral.annealeddamage,:,1), step(mineral.tsteps), mineral.tsteps, Tsteps, dm)
+    mul!(mineral.annealeddamage, mineral.pr, mineral.alphadamage)
+    return mineral
+end
 function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, dt::Number, tsteps::AbstractVector, Tsteps::AbstractVector, dm::ZRDAAM{T}) where T <: AbstractFloat
     @assert eachindex(tsteps) == eachindex(Tsteps) == eachindex(teq) == axes(ρᵣ, 1) == axes(ρᵣ,2) == Base.OneTo(length(tsteps))
     ntsteps = length(tsteps)
@@ -177,7 +181,10 @@ Ketcham, Richard A. (2005) "Forward and Inverse Modeling of Low-Temperature
 Thermochronometry Data" Reviews in Mineralogy and Geochemistry 58 (1), 275–314.
 https://doi.org/10.2138/rmg.2005.58.11
 """
-modelage(mineral::HeliumSample, Tsteps::AbstractVector, ρᵣ::AbstractMatrix, dm::DiffusivityModel) = (mineral.pr .= ρᵣ; modelage(mineral, Tsteps, dm))
+function modelage(mineral::HeliumSample, Tsteps::AbstractVector, ρᵣ::AbstractMatrix, dm::DiffusivityModel)
+    mul!(mineral.annealeddamage, ρᵣ, mineral.alphadamage)
+    modelage(mineral, Tsteps, dm)
+end
 function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T}) where T <: AbstractFloat
 
     # Damage and annealing constants
@@ -207,15 +214,12 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T})
     dt = step(zircon.tsteps)
     ntsteps = length(zircon.tsteps)
     alphadeposition = zircon.alphadeposition::Matrix{T}
-    alphadamage = zircon.alphadamage::Matrix{T}
 
     # The annealed damage matrix is the summation of the ρᵣ for each
     # previous timestep multiplied by the the alpha dose at each
     # previous timestep; this is a linear combination, which can be
     # calculated efficiently for all radii by simple matrix multiplication.
     annealeddamage = zircon.annealeddamage::Matrix{T}
-    pr = zircon.pr::Matrix{T}
-    mul!(annealeddamage, pr, alphadamage)
 
     # Calculate initial alpha damage
     β = zircon.β::Vector{T}
@@ -347,15 +351,12 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
     dt = step(apatite.tsteps)
     ntsteps = length(apatite.tsteps)
     alphadeposition = apatite.alphadeposition::Matrix{T}
-    alphadamage = apatite.alphadamage::Matrix{T}
 
     # The annealed damage matrix is the summation of the ρᵣ for each
     # previous timestep multiplied by the the alpha dose at each
     # previous timestep; this is a linear combination, which can be
     # calculated efficiently for all radii by simple matrix multiplication.
     annealeddamage = apatite.annealeddamage::Matrix{T}
-    pr = apatite.pr::Matrix{T}
-    mul!(annealeddamage, pr, alphadamage)
 
     # Calculate initial alpha damage
     β = apatite.β::Vector{T}
