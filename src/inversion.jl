@@ -1,6 +1,6 @@
 
-    function modelages!(calc::AbstractVector, calcuncert::AbstractVector, data::Vector{<:Chronometer}, Tsteps::AbstractVector, zdm::ZirconHeliumModel{T}, adm::ApatiteHeliumModel{T}, aftm::AnnealingModel{T}) where {T<:AbstractFloat}
-        @assert eachindex(calc) == eachindex(calcuncert) == eachindex(data)
+    function modelages!(calc::AbstractVector, calc_sigma::AbstractVector, data::Vector{<:Chronometer}, Tsteps::AbstractVector, zdm::ZirconHeliumModel{T}, adm::ApatiteHeliumModel{T}, aftm::AnnealingModel{T}) where {T<:AbstractFloat}
+        @assert eachindex(calc) == eachindex(calc_sigma) == eachindex(data)
         imax = argmax(i->length(data[i].agesteps), eachindex(data))
         tsteps = data[imax].tsteps
         tmax = last(tsteps)
@@ -18,25 +18,25 @@
             first_index = 1 + Int((tmax - last(c.tsteps))÷dt)
             if isa(c, ZirconHe)
                 calc[i] = modelage(data[i], @views(Tsteps[first_index:end]), zdm)
-                calcuncert[i] = zero(T)
+                calc_sigma[i] = zero(T)
             elseif isa(c, ApatiteHe)
                 calc[i] = modelage(c, @views(Tsteps[first_index:end]), adm)
-                calcuncert[i] = zero(T)
+                calc_sigma[i] = zero(T)
             elseif isa(c, ApatiteFT)
                 calc[i] = modelage(hrons[i], @views(Tsteps[first_index:end]), aftm)
-                calcuncert[i] = zero(T)
+                calc_sigma[i] = zero(T)
             elseif isa(c, ApatiteTrackLength)
                 l,σ = modellength(c, @views(Tsteps[first_index:end]), aftm) .* aftm.l0
                 calc[i] = l
-                calcuncert[i] = sqrt(σ^2 + aftm.l0_sigma^2)
+                calc_sigma[i] = sqrt(σ^2 + aftm.l0_sigma^2)
             else
                 # NaN if not calculated
                 calc[i] = T(NaN)
-                calcuncert[i] = T(NaN)
+                calc_sigma[i] = T(NaN)
 
             end
         end
-        return calc, calcuncert
+        return calc, calc_sigma
     end
 
     """
@@ -45,22 +45,18 @@
     ```
     Markov chain Monte Carlo time-Temperature inversion of the data specified in `data` and model parameters specified by `model`.
 
-    Returns a tuple of distributions `(tpointdist, Tpointdist, ndist, HeAgedist, lldist, acceptancedist)`
+    Returns a tuple of distributions `(tpointdist, Tpointdist, ndist, resultdist, lldist, acceptancedist)`
 
     ## Examples
     ```julia
     tT = MCMC(data, model, npoints, agepoints, Tpoints, constraint, boundary)
     ```
     """
-    function MCMC(data::NamedTuple, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
+    MCMC(data::NamedTuple, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where {T <: AbstractFloat} = MCMC(chronometers(T, data, model), model, boundary, constraint, detail)
+    function MCMC(data::Vector{<:Chronometer}, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
         # Process inputs
-        halfwidth = T.(data.halfwidth)::DenseVector{T}
-        crystAge = T.(data.crystAge)::DenseVector{T}
-        HeAge = T.(data.HeAge)::DenseVector{T}
-        HeAge_sigma = T.(data.HeAge_sigma)::DenseVector{T}
-        U = T.(data.U)::DenseVector{T}
-        Th = T.(data.Th)::DenseVector{T}
-        Sm = (haskey(data, :Sm) ? T.(data.Th) : zeros(T, size(U)))::DenseVector{T}
+        observed = val.(data)::Vector{T}
+        observed_sigma = err.(data)::Vector{T}
         nsteps = (haskey(model, :nsteps) ? model.nsteps : 10^6)::Int
         minpoints = (haskey(model, :minpoints) ? model.minpoints : 1)::Int
         maxpoints = (haskey(model, :maxpoints) ? model.maxpoints : 50)::Int
@@ -93,89 +89,48 @@
         Tpoints[1:npoints] .= Tr # Degrees C
 
         # Calculate number of boundary and unconformity points and allocate buffer for interpolating
-        agepointbuffer = similar(agepoints, totalpoints)::DenseVector{T}
-        Tpointbuffer = similar(agepoints, totalpoints)::DenseVector{T}
-        knot_index = similar(agesteps, Int)::DenseVector{Int}
+        agepointbuffer = similar(agepoints, totalpoints)::Vector{T}
+        Tpointbuffer = similar(agepoints, totalpoints)::Vector{T}
+        knot_index = similar(agesteps, Int)::Vector{Int}
 
         # Prepare to calculate model ages for initial proposal
         ages = collectto!(agepointbuffer, view(agepoints, 1:npoints), boundary.agepoints, constraint.agepoints)::StridedVector{T}
         temperatures = collectto!(Tpointbuffer, view(Tpoints, 1:npoints), boundary.Tpoints, constraint.Tpoints)::StridedVector{T}
-        Tsteps = linterp1s(ages, temperatures, agesteps)::DenseVector{T}
-        calcages = similar(HeAge)::DenseVector{T}
+        Tsteps = linterp1s(ages, temperatures, agesteps)::Vector{T}
+        calc = zeros(T, length(observed))
+        calc_sigma = zeros(T, length(observed))
 
         # Damage models for each mineral
         zdm = (haskey(model, :zdm) ? model.zdm : ZRDAAM())::ZirconHeliumModel{T}
-        zpr, zteq = anneal(dt, tsteps, Tsteps, zdm) # Zircon amage annealing history
-        zpr::DenseMatrix{T}
-        zteq::DenseVector{T}
-
         adm = (haskey(model, :adm) ? model.adm : RDAAM())::ApatiteHeliumModel{T}
-        apr, ateq = anneal(dt, tsteps, Tsteps, adm) # Apatite damage annealing history
-        apr::DenseMatrix{T}
-        ateq::DenseVector{T}
+        aftm = (haskey(model, :aftm) ? model.aftm : FCKetcham2007)::AnnealingModel{T}
 
         # See what minerals we have
-        tzr = containsi.(data.mineral, "zircon")
-        any(tzr) && @info "Inverting for He ages of $(count(tzr)) zircons"
-        tap = containsi.(data.mineral, "apatite")
-        any(tap) && @info "Inverting for He ages of $(count(tap)) apatites"
-
-        # Prepare a Chronometer object for each analysis
-        zircons = Array{ZirconHe{T}}(undef, count(tzr))::Vector{ZirconHe{T}}
-        zi = 1
-        for i in findall(tzr)
-            # Iterate through each grain, calculate the modeled age for each
-            first_index = 1 + floor(Int,(tinit - crystAge[i])/dt)
-            zircons[zi] = ZirconHe(
-                age = HeAge[i], 
-                age_sigma = HeAge_sigma[i], 
-                r = halfwidth[i], 
-                dr = dr, 
-                U238 = U[i], 
-                Th232 = Th[i], 
-                Sm147 = Sm[i], 
-                agesteps = agesteps[first_index:end],
-            )
-            calcages[i] = modelage(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
-            zi += 1
-        end
-        apatites = Array{ApatiteHe{T}}(undef, count(tap))::Vector{ApatiteHe{T}}
-        ai = 1
-        for i in findall(tap)
-            # Iterate through each grain, calculate the modeled age for each
-            first_index = 1 + floor(Int,(tinit - crystAge[i])/dt)
-            apatites[ai] = ApatiteHe(
-                age = HeAge[i],
-                age_sigma = HeAge_sigma[i],
-                r = halfwidth[i], 
-                dr = dr, 
-                U238 = U[i], 
-                Th232 = Th[i], 
-                Sm147 = Sm[i], 
-                agesteps = agesteps[first_index:end],
-            )
-            calcages[i] = modelage(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
-            ai += 1
-        end
-
+        (haszhe = any(x->isa(x, ZirconHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, ZirconHe), data)) zircons"
+        (hasahe = any(x->isa(x, ApatiteHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, ApatiteHe), data)) apatites"
+        (hasaft = any(x->isa(x, ApatiteFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, ApatiteFT), data)) apatites"
+        (hasatl = any(x->isa(x, ApatiteTrackLength), data)) && @info "Inverting for track lengths of $(count(x->isa(x, ApatiteTrackLength), data)) apatite fission tracks"
+        
         # Standard deviations of Gaussian proposal ("jumping") distributions
         # for temperature and time
         σⱼt = fill((tinit-tnow)/60, maxpoints)
         σⱼT = fill((Tinit-Tnow)/60, maxpoints)
 
         # Simulated annealing of uncertainty
-        σₐ = simannealsigma.(1, HeAge_sigma, σmodel, σannealing, λannealing)::DenseVector{T}
-        σ = sqrt.(HeAge_sigma.^2 .+ σmodel^2)
+        σₐ = simannealsigma.(1, observed_sigma, σmodel, σannealing, λannealing)::Vector{T}
+        σ = sqrt.(observed_sigma.^2 .+ σmodel^2)
 
         # Log-likelihood for initial proposal
+        modelages!(calc, calc_sigma, data, Tsteps, zdm, adm, aftm)
         llna = llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma) + (simplified ? -log(npoints) : zero(T))
-        ll = llₚ =  norm_ll(HeAge, σₐ, calcages) + llna
+        ll = llₚ =  norm_ll(observed, σₐ, calc) + llna
 
         # Variables to hold proposals
         npointsₚ = npoints
-        agepointsₚ = copy(agepoints)::DenseVector{T}
-        Tpointsₚ = copy(Tpoints)::DenseVector{T}
-        calcagesₚ = copy(calcages)::DenseVector{T}
+        agepointsₚ = copy(agepoints)::Vector{T}
+        Tpointsₚ = copy(Tpoints)::Vector{T}
+        calcₚ = copy(calc)::Vector{T}
+        calc_sigmaₚ = copy(calc_sigma)::Vector{T}
         σⱼtₚ = copy(σⱼt)
         σⱼTₚ = copy(σⱼT)
 
@@ -244,15 +199,14 @@
             end
 
             # Calculate model ages for each grain
-            modelages!(calcagesₚ, tzr, zpr, zteq, dt, tsteps, Tsteps, zdm, zircons)
-            modelages!(calcagesₚ, tap, apr, ateq, dt, tsteps, Tsteps, adm, apatites)
+            modelages!(calcₚ, calc_sigmaₚ, data, Tsteps, zdm, adm, aftm)
 
             # Calculate log likelihood of proposal
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
             simplified && (llnaₚ += -log(npointsₚ))
-            σₐ .= simannealsigma.(n, HeAge_sigma, σmodel, σannealing, λannealing)
-            llₚ = norm_ll(HeAge, σₐ, calcagesₚ) + llnaₚ
-            llₗ = norm_ll(HeAge, σₐ, calcages) + llna # Recalulate last one too with new σₐ
+            σₐ .= simannealsigma.(n, observed_sigma, σmodel, σannealing, λannealing)
+            llₚ = norm_ll(observed, σₐ, calcₚ) + llnaₚ
+            llₗ = norm_ll(observed, σₐ, calc) + llna # Recalulate last one too with new σₐ
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - llₗ)
@@ -276,7 +230,8 @@
                 copyto!(constraint.agepoints, constraint.agepointsₚ)
                 copyto!(constraint.Tpoints, constraint.Tpointsₚ)
                 copyto!(boundary.Tpoints, boundary.Tpointsₚ)
-                copyto!(calcages, calcagesₚ)
+                copyto!(calc, calcₚ)
+                copyto!(calc_sigma, calc_sigmaₚ)
                 copyto!(σⱼt, σⱼtₚ)
                 copyto!(σⱼT, σⱼTₚ)
             end
@@ -287,12 +242,12 @@
         finish!(bprogress)
  
         # Final log likelihood
-        ll = norm_ll(HeAge, σ, calcages) + llna
+        ll = norm_ll(observed, σ, calc) + llna
 
         # distributions to populate
         tpointdist = fill(T(NaN), totalpoints, nsteps)
         Tpointdist = fill(T(NaN), totalpoints, nsteps)
-        HeAgedist = fill(T(NaN), length(HeAge), nsteps)
+        resultdist = fill(T(NaN), length(observed), nsteps)
         σⱼtdist = zeros(T, nsteps)
         σⱼTdist = zeros(T, nsteps)
         lldist = zeros(T, nsteps)
@@ -358,13 +313,12 @@
             end
 
             # Calculate model ages for each grain
-            modelages!(calcagesₚ, tzr, zpr, zteq, dt, tsteps, Tsteps, zdm, zircons)
-            modelages!(calcagesₚ, tap, apr, ateq, dt, tsteps, Tsteps, adm, apatites)
+            modelages!(calcₚ, calc_sigmaₚ, data, Tsteps, zdm, adm, aftm)
 
             # Calculate log likelihood of proposal
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
             simplified && (llnaₚ += -log(npointsₚ))
-            llₚ = norm_ll(HeAge, σ, calcagesₚ) + llnaₚ
+            llₚ = norm_ll(observed, σ, calcₚ) + llnaₚ
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - ll)
@@ -387,7 +341,8 @@
                 copyto!(constraint.agepoints, constraint.agepointsₚ)
                 copyto!(constraint.Tpoints, constraint.Tpointsₚ)
                 copyto!(boundary.Tpoints, boundary.Tpointsₚ)
-                copyto!(calcages, calcagesₚ)
+                copyto!(calc, calcₚ)
+                copyto!(calc_sigma, calc_sigmaₚ)
                 copyto!(σⱼt, σⱼtₚ)
                 copyto!(σⱼT, σⱼTₚ)
 
@@ -400,7 +355,7 @@
             ndist[n] = npoints # distribution of # of points
             σⱼtdist[n] = σⱼt[k]
             σⱼTdist[n] = σⱼT[k]
-            HeAgedist[:,n] .= calcages # distribution of He ages
+            resultdist[:,n] .= calc # distribution of He ages
 
             # This is the actual output we want -- the distribution of t-T paths (t path is always identical)
             collectto!(view(tpointdist, :, n), view(agepoints, 1:npoints), boundary.agepoints, constraint.agepoints)
@@ -415,7 +370,7 @@
             tpointdist, 
             Tpointdist, 
             ndist, 
-            HeAgedist, 
+            resultdist, 
             σⱼtdist, 
             σⱼTdist, 
             lldist, 
@@ -425,15 +380,11 @@
     end
     export MCMC
 
-    function MCMC_varkinetics(data::NamedTuple, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
+    MCMC_varkinetics(data::NamedTuple, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where {T <: AbstractFloat} = MCMC_varkinetics(chronometers(T, data, model), model, boundary, constraint, detail)
+    function MCMC_varkinetics(data::Vector{<:Chronometer}, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
         # Process inputs
-        halfwidth = T.(data.halfwidth)::DenseVector{T}
-        crystAge = T.(data.crystAge)::DenseVector{T}
-        HeAge = T.(data.HeAge)::DenseVector{T}
-        HeAge_sigma = T.(data.HeAge_sigma)::DenseVector{T}
-        U = T.(data.U)::DenseVector{T}
-        Th = T.(data.Th)::DenseVector{T}
-        Sm = (haskey(data, :Sm) ? T.(data.Th) : zeros(T, size(U)))::DenseVector{T}
+        observed = val.(data)::Vector{T}
+        observed_sigma = err.(data)::Vector{T}
         burnin = (haskey(model, :burnin) ? model.burnin : 5*10^5)::Int
         nsteps = (haskey(model, :nsteps) ? model.nsteps : 10^6)::Int
         minpoints = (haskey(model, :minpoints) ? model.minpoints : 1)::Int
@@ -466,70 +417,27 @@
         Tpoints[1:npoints] .= Tr # Degrees C
 
         # Calculate number of boundary and unconformity points and allocate buffer for interpolating
-        agepointbuffer = similar(agepoints, totalpoints)::DenseVector{T}
-        Tpointbuffer = similar(agepoints, totalpoints)::DenseVector{T}
-        knot_index = similar(agesteps, Int)::DenseVector{Int}
+        agepointbuffer = similar(agepoints, totalpoints)::Vector{T}
+        Tpointbuffer = similar(agepoints, totalpoints)::Vector{T}
+        knot_index = similar(agesteps, Int)::Vector{Int}
 
         # Prepare to calculate model ages for initial proposal
         ages = collectto!(agepointbuffer, view(agepoints, 1:npoints), boundary.agepoints, constraint.agepoints)::StridedVector{T}
         temperatures = collectto!(Tpointbuffer, view(Tpoints, 1:npoints), boundary.Tpoints, constraint.Tpoints)::StridedVector{T}
-        Tsteps = linterp1s(ages, temperatures, agesteps)::DenseVector{T}
-        calcages = similar(HeAge)::DenseVector{T}
-
+        Tsteps = linterp1s(ages, temperatures, agesteps)::Vector{T}
+        calc = zeros(T, length(observed))
+        calc_sigma = zeros(T, length(observed))
+        
         # Damage models for each mineral
         zdm₀ = zdm = zdmₚ = (haskey(model, :zdm) ? model.zdm : ZRDAAM())::ZirconHeliumModel{T}
-        zpr, zteq = anneal(dt, tsteps, Tsteps, zdm) # Zircon amage annealing history
-        zpr::DenseMatrix{T}
-        zteq::DenseVector{T}
-
         adm₀ = adm = admₚ =  (haskey(model, :adm) ? model.adm : RDAAM())::ApatiteHeliumModel{T}
-        apr, ateq = anneal(dt, tsteps, Tsteps, adm) # Apatite damage annealing history
-        apr::DenseMatrix{T}
-        ateq::DenseVector{T}
+        aftm = (haskey(model, :aftm) ? model.aftm : FCKetcham2007)::AnnealingModel{T}
 
         # See what minerals we have
-        tzr = containsi.(data.mineral, "zircon")
-        any(tzr) && @info "Inverting for He ages of $(count(tzr)) zircons"
-        tap = containsi.(data.mineral, "apatite")
-        any(tap) && @info "Inverting for He ages of $(count(tap)) apatites"
-
-        # Prepare a Chronometer object for each analysis
-        zircons = Array{ZirconHe{T}}(undef, count(tzr))::Vector{ZirconHe{T}}
-        zi = 1
-        for i in findall(tzr)
-            # Iterate through each grain, calculate the modeled age for each
-            first_index = 1 + floor(Int,(tinit - crystAge[i])/dt)
-            zircons[zi] = ZirconHe(
-                age = HeAge[i], 
-                age_sigma = HeAge_sigma[i], 
-                r = halfwidth[i], 
-                dr = dr, 
-                U238 = U[i], 
-                Th232 = Th[i], 
-                Sm147 = Sm[i], 
-                agesteps = agesteps[first_index:end],
-            )
-            calcages[i] = modelage(zircons[zi], @views(Tsteps[first_index:end]), @views(zpr[first_index:end,first_index:end]), zdm)::T
-            zi += 1
-        end
-        apatites = Array{ApatiteHe{T}}(undef, count(tap))::Vector{ApatiteHe{T}}
-        ai = 1
-        for i in findall(tap)
-            # Iterate through each grain, calculate the modeled age for each
-            first_index = 1 + floor(Int,(tinit - crystAge[i])/dt)
-            apatites[ai] = ApatiteHe(
-                age = HeAge[i],
-                age_sigma = HeAge_sigma[i],
-                r = halfwidth[i], 
-                dr = dr, 
-                U238 = U[i], 
-                Th232 = Th[i], 
-                Sm147 = Sm[i], 
-                agesteps = agesteps[first_index:end],
-            )
-            calcages[i] = modelage(apatites[ai], @views(Tsteps[first_index:end]), @views(apr[first_index:end,first_index:end]), adm)::T
-            ai += 1
-        end
+        (haszhe = any(x->isa(x, ZirconHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, ZirconHe), data)) zircons"
+        (hasahe = any(x->isa(x, ApatiteHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, ApatiteHe), data)) apatites"
+        (hasaft = any(x->isa(x, ApatiteFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, ApatiteFT), data)) apatites"
+        (hasatl = any(x->isa(x, ApatiteTrackLength), data)) && @info "Inverting for track lengths of $(count(x->isa(x, ApatiteTrackLength), data)) apatite fission tracks"
 
         # Standard deviations of Gaussian proposal ("jumping") distributions
         # for temperature and time
@@ -537,18 +445,20 @@
         σⱼT = fill((Tinit-Tnow)/60, maxpoints)
 
         # Simulated annealing of uncertainty
-        σₐ = simannealsigma.(1, HeAge_sigma, σmodel, σannealing, λannealing)::DenseVector{T}
-        σ = sqrt.(HeAge_sigma.^2 .+ σmodel^2)
+        σₐ = simannealsigma.(1, observed_sigma, σmodel, σannealing, λannealing)::Vector{T}
+        σ = sqrt.(observed_sigma.^2 .+ σmodel^2)
 
         # Log-likelihood for initial proposal
+        modelages!(calc, calc_sigma, data, Tsteps, zdm, adm, aftm)
         llna = llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma) + loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀) + (simplified ? -log(npoints) : zero(T))
-        ll = llₚ =  norm_ll(HeAge, σₐ, calcages) + llna
+        ll = llₚ =  norm_ll(observed, σₐ, calc) + llna
 
         # Variables to hold proposals
         npointsₚ = npoints
-        agepointsₚ = copy(agepoints)::DenseVector{T}
-        Tpointsₚ = copy(Tpoints)::DenseVector{T}
-        calcagesₚ = copy(calcages)::DenseVector{T}
+        agepointsₚ = copy(agepoints)::Vector{T}
+        Tpointsₚ = copy(Tpoints)::Vector{T}
+        calcₚ = copy(calc)::Vector{T}
+        calc_sigmaₚ = copy(calc_sigma)
         σⱼtₚ = copy(σⱼt)
         σⱼTₚ = copy(σⱼT)
 
@@ -609,8 +519,8 @@
 
             elseif (r < p_move+p_birth+p_death+p_bounds+p_kinetics)
                 # Adjust kinetic parameters, one at a time
-                any(tzr) && (zdmₚ = movekinetics(zdm))
-                any(tap) && (admₚ = movekinetics(adm))
+                haszhe && (zdmₚ = movekinetics(zdm))
+                hasahe && (admₚ = movekinetics(adm))
 
             end
 
@@ -625,16 +535,15 @@
             end
                
             # Calculate model ages for each grain
-            modelages!(calcagesₚ, tzr, zpr, zteq, dt, tsteps, Tsteps, zdmₚ, zircons)
-            modelages!(calcagesₚ, tap, apr, ateq, dt, tsteps, Tsteps, admₚ, apatites)
+            modelages!(calcₚ, calc_sigmaₚ, data, Tsteps, zdmₚ, admₚ, aftm)
 
             # Calculate log likelihood of proposal
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
             llnaₚ += loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀)
             simplified && (llnaₚ += -log(npointsₚ))
-            σₐ .= simannealsigma.(n, HeAge_sigma, σmodel, σannealing, λannealing)
-            llₚ = norm_ll(HeAge, σₐ, calcagesₚ) + llnaₚ
-            llₗ = norm_ll(HeAge, σₐ, calcages) + llna # Recalulate last one too with new σₐ
+            σₐ .= simannealsigma.(n, observed_sigma, σmodel, σannealing, λannealing)
+            llₚ = norm_ll(observed, σₐ, calcₚ) + llnaₚ
+            llₗ = norm_ll(observed, σₐ, calc) + llna # Recalulate last one too with new σₐ
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - llₗ)
@@ -660,7 +569,8 @@
                 copyto!(constraint.agepoints, constraint.agepointsₚ)
                 copyto!(constraint.Tpoints, constraint.Tpointsₚ)
                 copyto!(boundary.Tpoints, boundary.Tpointsₚ)
-                copyto!(calcages, calcagesₚ)
+                copyto!(calc, calcₚ)
+                copyto!(calc_sigma, calc_sigmaₚ)
                 copyto!(σⱼt, σⱼtₚ)
                 copyto!(σⱼT, σⱼTₚ)
             end
@@ -671,12 +581,12 @@
         finish!(bprogress)
 
         # Final log likelihood
-        ll = norm_ll(HeAge, σ, calcages) + llna
+        ll = norm_ll(observed, σ, calc) + llna
 
         # distributions to populate
         tpointdist = fill(T(NaN), totalpoints, nsteps)
         Tpointdist = fill(T(NaN), totalpoints, nsteps)
-        HeAgedist = fill(T(NaN), length(HeAge), nsteps)
+        resultdist = fill(T(NaN), length(observed), nsteps)
         σⱼtdist = zeros(T, nsteps)
         σⱼTdist = zeros(T, nsteps)
         lldist = zeros(T, nsteps)
@@ -735,8 +645,8 @@
 
             elseif (r < p_move+p_birth+p_death+p_bounds+p_kinetics)
                 # Adjust kinetic parameters, one at a time
-                any(tzr) && (zdmₚ = movekinetics(zdm))
-                any(tap) && (admₚ = movekinetics(adm))
+                haszhe && (zdmₚ = movekinetics(zdm))
+                hasahe && (admₚ = movekinetics(adm))
 
             end
 
@@ -751,14 +661,13 @@
             end
                
             # Calculate model ages for each grain
-            modelages!(calcagesₚ, tzr, zpr, zteq, dt, tsteps, Tsteps, zdmₚ, zircons)
-            modelages!(calcagesₚ, tap, apr, ateq, dt, tsteps, Tsteps, admₚ, apatites)
+            modelages!(calcₚ, calc_sigmaₚ, data, Tsteps, zdmₚ, admₚ, aftm)
 
             # Calculate log likelihood of proposal
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
             llnaₚ += loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀)
             simplified && (llnaₚ += -log(npointsₚ))
-            llₚ = norm_ll(HeAge, σₐ, calcagesₚ) + llnaₚ
+            llₚ = norm_ll(observed, σₐ, calcₚ) + llnaₚ
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - ll)
@@ -783,7 +692,8 @@
                 copyto!(constraint.agepoints, constraint.agepointsₚ)
                 copyto!(constraint.Tpoints, constraint.Tpointsₚ)
                 copyto!(boundary.Tpoints, boundary.Tpointsₚ)
-                copyto!(calcages, calcagesₚ)
+                copyto!(calc, calcₚ)
+                copyto!(calc_sigma, calc_sigmaₚ)
                 copyto!(σⱼt, σⱼtₚ)
                 copyto!(σⱼT, σⱼTₚ)
 
@@ -792,11 +702,11 @@
             end
 
             # Record results for analysis and troubleshooting
-            lldist[n] = llna + norm_ll(HeAge, σ, calcages) # Recalculated to constant baseline
+            lldist[n] = llna + norm_ll(observed, σ, calc) # Recalculated to constant baseline
             ndist[n] = npoints # distribution of # of points
             σⱼtdist[n] = σⱼt[k]
             σⱼTdist[n] = σⱼT[k]
-            HeAgedist[:,n] .= calcages # distribution of He ages
+            resultdist[:,n] .= calc # distribution of He ages
             admdist[n] = adm
             zdmdist[n] = zdm
 
@@ -813,7 +723,7 @@
             tpointdist, 
             Tpointdist, 
             ndist, 
-            HeAgedist, 
+            resultdist, 
             σⱼtdist, 
             σⱼTdist, 
             lldist, 

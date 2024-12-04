@@ -122,8 +122,8 @@ Thermochron.modelages!(calc, tap, apr, ateq, dt, tsteps, Tsteps, RDAAM(), apatit
 @test nanmaximum(tT.Tpointdist) <= model.tinit
 @test nanminimum(tT.Tpointdist) >= 0
 
-@test isa(tT.HeAgedist, AbstractMatrix)
-abserr = abs(sum(nanmean(tT.HeAgedist, dims=2) - data.HeAge)/length(data.HeAge))
+@test isa(tT.resultdist, AbstractMatrix)
+abserr = abs(sum(nanmean(tT.resultdist, dims=2) - data.HeAge)/length(data.HeAge))
 @test 0 < abserr < 100
 @info "Mean absolute error: $abserr"
 
@@ -162,8 +162,8 @@ llmean = mean(tT.lldist)
 @test nanmaximum(tT.Tpointdist) <= model.tinit
 @test nanminimum(tT.Tpointdist) >= 0
 
-@test isa(tT.HeAgedist, AbstractMatrix)
-abserr = abs(sum(nanmean(tT.HeAgedist, dims=2) - data.HeAge)/length(data.HeAge))
+@test isa(tT.resultdist, AbstractMatrix)
+abserr = abs(sum(nanmean(tT.resultdist, dims=2) - data.HeAge)/length(data.HeAge))
 @test 0 < abserr < 100
 @info "Mean absolute error: $abserr"
 
@@ -233,8 +233,8 @@ detail = DetailInterval(
 @test nanmaximum(tT.Tpointdist) <= model.tinit
 @test nanminimum(tT.Tpointdist) >= 0
 
-@test isa(tT.HeAgedist, AbstractMatrix)
-abserr = abs(sum(nanmean(tT.HeAgedist, dims=2) - data.HeAge)/length(data.HeAge))
+@test isa(tT.resultdist, AbstractMatrix)
+abserr = abs(sum(nanmean(tT.resultdist, dims=2) - data.HeAge)/length(data.HeAge))
 @test 0 < abserr < 100
 @info "Mean absolute error: $abserr"
 
@@ -270,8 +270,8 @@ llmean = mean(tT.lldist)
 @test nanmaximum(tT.Tpointdist) <= model.tinit
 @test nanminimum(tT.Tpointdist) >= 0
 
-@test isa(tT.HeAgedist, AbstractMatrix)
-abserr = abs(sum(nanmean(tT.HeAgedist, dims=2) - data.HeAge)/length(data.HeAge))
+@test isa(tT.resultdist, AbstractMatrix)
+abserr = abs(sum(nanmean(tT.resultdist, dims=2) - data.HeAge)/length(data.HeAge))
 @test 0 < abserr < 100
 @info "Mean absolute error: $abserr"
 
@@ -344,8 +344,8 @@ unconf = Constraint(
 @test nanmaximum(tT.Tpointdist) <= model.tinit
 @test nanminimum(tT.Tpointdist) >= 0
 
-@test isa(tT.HeAgedist, AbstractMatrix)
-abserr = abs(sum(nanmean(tT.HeAgedist, dims=2) - data.HeAge)/length(data.HeAge))
+@test isa(tT.resultdist, AbstractMatrix)
+abserr = abs(sum(nanmean(tT.resultdist, dims=2) - data.HeAge)/length(data.HeAge))
 @test 0 < abserr < 150
 @info "Mean absolute error: $abserr"
 
@@ -381,8 +381,8 @@ llmean = mean(tT.lldist)
 @test nanmaximum(tT.Tpointdist) <= model.tinit
 @test nanminimum(tT.Tpointdist) >= 0
 
-@test isa(tT.HeAgedist, AbstractMatrix)
-abserr = abs(sum(nanmean(tT.HeAgedist, dims=2) - data.HeAge)/length(data.HeAge))
+@test isa(tT.resultdist, AbstractMatrix)
+abserr = abs(sum(nanmean(tT.resultdist, dims=2) - data.HeAge)/length(data.HeAge))
 @test 0 < abserr < 100
 @info "Mean absolute error: $abserr"
 

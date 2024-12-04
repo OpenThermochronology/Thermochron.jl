@@ -164,7 +164,7 @@ struct TTResult{T<:AbstractFloat} <: AbstractTTResult
     tpointdist::Matrix{T}
     Tpointdist::Matrix{T}
     ndist::Vector{Int}
-    HeAgedist::Matrix{T}
+    resultdist::Matrix{T}
     jtdist::Vector{T}
     jTdist::Vector{T}
     lldist::Vector{T}
