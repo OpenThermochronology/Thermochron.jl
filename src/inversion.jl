@@ -1,3 +1,71 @@
+    function model_and_ll!(modelages::AbstractVector, chrons::Vector{<:Chronometer}, Tsteps::AbstractVector, zdm::ZirconHeliumModel{T}, adm::ApatiteHeliumModel{T}, aftm::AnnealingModel{T}) where {T<:AbstractFloat}
+        @assert eachindex(modelages) == eachindex(chrons)
+        imax = argmax(i->length(chrons[i].agesteps), eachindex(chrons))
+        tsteps = chrons[imax].tsteps
+        tmax = maximum(tsteps)
+        dt = step(tsteps)
+        @assert issorted(tsteps)
+        @assert eachindex(tsteps) == eachindex(Tsteps)
+
+        # Pre-anneal ZRDAAM samples, if any
+        if isa(zdm, ZRDAAM) && any(x->isa(x, ZirconHe), chrons)
+            ihmax = argmax(i->isa(chrons[i], ZirconHe) ? length(chrons[i].tsteps) : 0, eachindex(chrons))
+            thmax = maximum(chrons[ihmax].tsteps)
+            first_index = 1 + round(Int, (tmax - thmax)/dt)
+            anneal!(chrons[ihmax], @views(Tsteps[first_index:end]), zdm)
+            prhmax = chrons[ihmax].pr
+            for i in eachindex(chrons)
+                if i!=imax && isa(chrons[i], ZirconHe)
+                    first_index = 1 + round(Int, (thmax - maximum(chrons[i].tsteps))/dt)
+                    chrons[i].pr .= @views(prhmax[first_index:end, first_index:end])
+                end
+            end
+        end
+        # Pre-anneal RDAAM samples, if any
+        if isa(adm, RDAAM) && any(x->isa(x, ApatiteHe), chrons)
+            ihmax = argmax(i->isa(chrons[i], ApatiteHe) ? length(chrons[i].tsteps) : 0, eachindex(chrons))
+            thmax = maximum(chrons[ihmax].tsteps)
+            first_index = 1 + round(Int, (tmax - thmax)/dt)
+            anneal!(chrons[ihmax], @views(Tsteps[first_index:end]), zdm)
+            prhmax = chrons[ihmax].pr
+            for i in eachindex(chrons)
+                if i!=imax && isa(chrons[i], ApatiteHe)
+                    first_index = 1 + round(Int, (thmax - maximum(chrons[i].tsteps))/dt)
+                    chrons[i].pr .= @views(prhmax[first_index:end, first_index:end])
+                end
+            end
+        end
+
+        ll = zero(T)
+        for i in eachindex(chrons)
+            c = chrons[i]
+            first_index = 1 + round(Int, (tmax - maximum(c.tsteps))/dt)
+            if isa(c, ZirconHe)
+                modelages[i] = age = modelage(chrons[i], @views(Tsteps[first_index:end]), zdm)
+                δ = age - c.age
+                σ² = c.age_sigma^2
+                ll -= 0.5*(log(2*pi*σ²) + δ^2/σ²)
+            elseif isa(c, ApatiteHe)
+                modelages[i] = age = modelage(c, @views(Tsteps[first_index:end]), adm)
+                δ = age - c.age
+                σ² = c.age_sigma^2
+                ll -= 0.5*(log(2*pi*σ²) + δ^2/σ²)
+            elseif isa(c, ApatiteFT)
+                modelages[i] = age = modelage(hrons[i], @views(Tsteps[first_index:end]), aftm)
+                δ = age - c.age
+                σ² = c.age_sigma^2
+                ll -= 0.5*(log(2*pi*σ²) + δ^2/σ²)
+            elseif isa(c, ApatiteTrackLength)
+                l,σ = modellength(c, @views(Tsteps[first_index:end]), aftm) .* aftm.l0
+                modelages[i] = l
+                lc = lcmod(c)
+                δ = l - lc
+                σ² = σ^2 + aftm.l0_sigma^2
+                ll-=0.5*(log(2*pi*σ²) + δ^2/σ²)
+            end
+        end
+        return ll
+    end
 
     """
     ```julia

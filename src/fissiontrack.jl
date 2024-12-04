@@ -159,7 +159,7 @@ function modelage(apatite::ApatiteFT{T}, Tsteps::AbstractVector, am::AnnealingMo
     return ftage
 end
 
-function model_ll(mineral::FissionTrackSample, Tsteps, am::AnnealingModel)
+function model_ll(mineral::FissionTrackSample, Tsteps::AbstractVector, am::AnnealingModel)
     age = modelage(mineral, Tsteps, am)
     δ = age - mineral.age
     σ² = mineral.age_sigma^2
@@ -186,7 +186,7 @@ function modellength(track::ApatiteTrackLength{T}, Tsteps::AbstractVector, am::A
 end
 export modellength
 
-function model_ll(track::ApatiteTrackLength, Tsteps, am::AnnealingModel)
+function model_ll(track::ApatiteTrackLength, Tsteps::AbstractVector, am::AnnealingModel)
     l,σ = modellength(track, Tsteps, am) .* am.l0
     lc = lcmod(track)
     δ = l - lc

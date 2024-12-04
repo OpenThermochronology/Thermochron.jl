@@ -157,8 +157,8 @@ Ketcham, Richard A. (2005) "Forward and Inverse Modeling of Low-Temperature
 Thermochronometry Data" Reviews in Mineralogy and Geochemistry 58 (1), 275–314.
 https://doi.org/10.2138/rmg.2005.58.11
 """
-modelage(mineral::HeliumSample, Tsteps::StridedVector, ρᵣ::AbstractMatrix, dm::DiffusivityModel) = (mineral.pr .= ρᵣ; modelage(mineral, Tsteps, dm))
-function modelage(zircon::ZirconHe{T}, Tsteps::StridedVector{T}, dm::ZRDAAM{T}) where T <: AbstractFloat
+modelage(mineral::HeliumSample, Tsteps::AbstractVector, ρᵣ::AbstractMatrix, dm::DiffusivityModel) = (mineral.pr .= ρᵣ; modelage(mineral, Tsteps, dm))
+function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T}) where T <: AbstractFloat
 
     # Damage and annealing constants
     DzEa = dm.DzEa::T                           # kJ/mol
@@ -291,9 +291,9 @@ function modelage(zircon::ZirconHe{T}, Tsteps::StridedVector{T}, dm::ZRDAAM{T}) 
         heliumage += (μHe - He(heliumage, μ238U, μ235U, μ232Th, μ147Sm))/∂He∂t # Move towards zero (He(heliumage) == μHe)
     end
 
-    return heliumage
+    return max(heliumage, zero(T))
 end
-function modelage(apatite::ApatiteHe{T}, Tsteps::StridedVector{T}, dm::RDAAM{T}) where T <: AbstractFloat
+function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}) where T <: AbstractFloat
 
     # Damage and annealing constants
     D0L = dm.D0L*10000^2*SEC_MYR::T         # cm^2/sec, converted to micron^2/Myr  
@@ -431,7 +431,7 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::StridedVector{T}, dm::RDAAM{T})
         heliumage += (μHe - He(heliumage, μ238U, μ235U, μ232Th, μ147Sm))/∂He∂t # Move towards zero (He(heliumage) == μHe)
     end
 
-    return heliumage
+    return max(heliumage, zero(T))
 end
 export modelage
 
