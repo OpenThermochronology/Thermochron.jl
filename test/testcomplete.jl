@@ -69,7 +69,7 @@ unconf = Constraint()
 ## --- Test generation of Chronometer objects
 
 # Modern input format
-chrons = chronometer(ds, model)
+chrons = chronometers(ds, model)
 @test chrons isa Vector{<:Chronometer}
 @test length(chrons) == length(ds.mineral)
 
@@ -89,7 +89,7 @@ Thermochron.modelages!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), FCKe
 @test last(calc) ≈ modelage(last(chrons), Tsteps, RDAAM())
 
 # Legacy input format
-chrons2 = chronometer(data, model)
+chrons2 = chronometers(data, model)
 @test typeof.(chrons) == typeof.(chrons2)
 Thermochron.modelages!(calc, calcuncert, chrons2, Tsteps, ZRDAAM(), RDAAM(), FCKetcham2007)
 @test round.(calc, sigdigits=5) ≈ [1313.9, 1320.7, 1185.0, 1243.0, 1216.1, 1335.4, 1141.7, 1094.4, 1170.2, 923.8, 723.59, 201.76, 429.67, 95.576, 259.05, 419.15, 2.9065, 6.1464, 0.00063415, 27.545, 0.007082, 55.056, 2.0682, 174.81, 283.3, 287.74, 266.14, 240.19, 267.84, 244.37, 274.74, 328.26, 322.88, 352.43]

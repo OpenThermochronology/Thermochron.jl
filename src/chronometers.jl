@@ -15,7 +15,7 @@ abstract type FissionTrackLength{T} <: Chronometer{T} end
 abstract type FissionTrackSample{T} <: Chronometer{T} end
 abstract type HeliumSample{T} <: Chronometer{T} end
 
-# Internal functions to get values and uncertainties from any chronometer
+# Internal functions to get values and uncertainties from any chronometers
 val(x::Chronometer) = x.age
 err(x::Chronometer) = x.age_sigma
 val(x::FissionTrackLength) = x.lcmod
@@ -527,13 +527,13 @@ export ApatiteHe
 
 """
 ```julia
-chronometer([T=Float64], data, model)
+chronometers([T=Float64], data, model)
 ```
 Construct a vector of `Chronometer` objects given a dataset `data`
 and model parameters `model`
 """
-chronometer(data, model) = chronometer(Float64, data, model)
-function chronometer(T::Type{<:AbstractFloat}, data, model)
+chronometers(data, model) = chronometers(Float64, data, model)
+function chronometers(T::Type{<:AbstractFloat}, data, model)
     agesteps = floatrange(model.agesteps)
     tsteps = floatrange(model.tsteps)
     dr = haskey(model, :dr) ? model.dr : one(T)
@@ -662,6 +662,7 @@ function chronometer(T::Type{<:AbstractFloat}, data, model)
     #     @info "found $n apatite fission track lengths"
     # end
 
+    isempty(result) && @error "No chronometers found"
     return unionize(result)
 end
-export chronometer
+export chronometers
