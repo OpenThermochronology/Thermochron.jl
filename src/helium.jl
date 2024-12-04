@@ -143,8 +143,8 @@ export anneal!
 
 """
 ```julia
-modelage(mineral::ZirconHe, Tsteps::Vector, ρᵣ::AbstractMatrix, dm::ZRDAAM)
-modelage(mineral::ApatiteHe, Tsteps::Vector, ρᵣ::AbstractMatrix, dm::RDAAM)
+modelage(mineral::ZirconHe, Tsteps::Vector, [ρᵣ], dm::ZRDAAM)
+modelage(mineral::ApatiteHe, Tsteps::Vector, [ρᵣ], dm::RDAAM)
 ```
 Calculate the precdicted U-Th/He age of a zircon or apatite that has experienced a given 
 t-T path (specified by `mineral.agesteps` for time and `Tsteps` for temperature, at a

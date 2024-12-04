@@ -1,11 +1,25 @@
 # Abstract type to include any number of mineral chronometers (zircon, apatite, etc.)
 abstract type Chronometer{T} end
 export Chronometer
+Base.copy(x::Chronometer) = deepcopy(x)
+Base.:(==)(x::Chronometer, y::Chronometer) = false
+function Base.:(==)(x::T, y::T) where {T<:Chronometer}
+    for n in fieldnames(T)
+        isequal(getfield(x, n), getfield(y, n)) || return false
+    end
+    return true
+end
 
 # Abstract subtypes for different categories of chronometers
 abstract type FissionTrackLength{T} <: Chronometer{T} end
 abstract type FissionTrackSample{T} <: Chronometer{T} end
 abstract type HeliumSample{T} <: Chronometer{T} end
+
+# Internal functions to get values and uncertainties from any chronometer
+val(x::Chronometer) = x.age
+err(x::Chronometer) = x.age_sigma
+val(x::FissionTrackLength) = x.lcmod
+err(x::FissionTrackLength{T}) where {T} = zero(T)
 
 ## --- Fission track sample types
 

@@ -367,7 +367,7 @@
     end
 
     # Fill the vector of mineral helium ages in-place
-    function mineralages!(calcages, t, pr, teq, dt, tsteps, Tsteps, dm, minerals)
+    function modelages!(calcages, t, pr, teq, dt, tsteps, Tsteps, dm, minerals)
         @assert length(minerals) == count(t)
         @assert length(t) == length(calcages)
         @assert length(tsteps) == length(Tsteps)
