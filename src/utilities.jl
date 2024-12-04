@@ -351,19 +351,45 @@
         )
     end
 
+    # Normal log likelihood
+    @inline function norm_ll(mu::Number, sigma::Number, x::Number)
+        δ = x - mu
+        σ² = sigma^2
+        -0.5*(log(2*pi*σ²) + δ^2/σ²)
+    end
+    function norm_ll(mu::AbstractVector{T}, sigma::AbstractVector{T}, x::AbstractVector{T}) where {T<:Number}
+        ll = zero(float(T))
+        for i in eachindex(mu, sigma, x)
+            ll += norm_ll(mu[i], sigma[i], x[i])
+        end
+        return ll
+    end
+    @inline function norm_ll(mu::Number, sigma::Number, x::Number, x_sigma::Number)
+        δ = x - mu
+        σ² = sigma^2 + x_sigma^2
+        -0.5*(log(2*pi*σ²) + δ^2/σ²)
+    end
+    function norm_ll(mu::AbstractVector{T}, sigma::AbstractVector{T}, x::AbstractVector{T}, x_sigma::AbstractVector{T}) where {T<:Number}
+        ll = zero(float(T))
+        for i in eachindex(mu, sigma, x, x_sigma)
+            ll += norm_ll(mu[i], sigma[i], x[i])
+        end
+        return ll
+    end
+
     # Specialized ll functions for ZRDAAM and RDAAM
     function loglikelihood(zdmₚ::ZRDAAM, zdm::ZRDAAM)
-        normpdf_ll(log(zdm.DzD0), zdm.DzD0_logsigma, log(zdmₚ.DzD0)) + 
-        normpdf_ll(log(zdm.DzEa), zdm.DzEa_logsigma, log(zdmₚ.DzEa)) + 
-        normpdf_ll(log(zdm.DN17D0), zdm.DN17D0_logsigma, log(zdmₚ.DN17D0)) + 
-        normpdf_ll(log(zdm.DN17Ea), zdm.DN17Ea_logsigma, log(zdmₚ.DN17Ea)) +
-        normpdf_ll(zdm.rmr0, zdm.rmr0_sigma, zdmₚ.rmr0)
+        norm_ll(log(zdm.DzD0), zdm.DzD0_logsigma, log(zdmₚ.DzD0)) + 
+        norm_ll(log(zdm.DzEa), zdm.DzEa_logsigma, log(zdmₚ.DzEa)) + 
+        norm_ll(log(zdm.DN17D0), zdm.DN17D0_logsigma, log(zdmₚ.DN17D0)) + 
+        norm_ll(log(zdm.DN17Ea), zdm.DN17Ea_logsigma, log(zdmₚ.DN17Ea)) +
+        norm_ll(zdm.rmr0, zdm.rmr0_sigma, zdmₚ.rmr0)
     end
     function loglikelihood(admₚ::RDAAM, adm::RDAAM)
-        normpdf_ll(log(adm.D0L), adm.D0L_logsigma, log(admₚ.D0L)) + 
-        normpdf_ll(log(adm.EaL), adm.EaL_logsigma, log(admₚ.EaL)) + 
-        normpdf_ll(log(adm.EaTrap), adm.EaTrap_logsigma, log(admₚ.EaTrap))+
-        normpdf_ll(adm.rmr0, adm.rmr0_sigma, admₚ.rmr0)
+        norm_ll(log(adm.D0L), adm.D0L_logsigma, log(admₚ.D0L)) + 
+        norm_ll(log(adm.EaL), adm.EaL_logsigma, log(admₚ.EaL)) + 
+        norm_ll(log(adm.EaTrap), adm.EaTrap_logsigma, log(admₚ.EaTrap))+
+        norm_ll(adm.rmr0, adm.rmr0_sigma, admₚ.rmr0)
     end
 
     # Fill the vector of mineral helium ages in-place

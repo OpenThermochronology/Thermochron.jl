@@ -107,7 +107,6 @@ apatites = chrons[tap]
 apr, ateq = anneal(dt, tsteps, Tsteps, RDAAM()) # Apatite damage annealing history
 Thermochron.modelages!(calc, tap, apr, ateq, dt, tsteps, Tsteps, RDAAM(), apatites)
 @test round.(calc, sigdigits=5) ≈ [1313.9, 1320.7, 1185.0, 1243.0, 1216.1, 1335.4, 1141.7, 1094.4, 1170.2, 923.8, 723.59, 201.76, 429.67, 95.576, 259.05, 419.15, 2.9065, 6.1464, 0.00063415, 27.545, 0.007082, 55.056, 2.0682, 174.81, 283.3, 287.74, 266.14, 240.19, 267.84, 244.37, 274.74, 328.26, 322.88, 352.43]
-print(calc)
 
 ## --- Invert for maximum likelihood t-T path
 
@@ -241,7 +240,7 @@ abserr = abs(sum(nanmean(tT.HeAgedist, dims=2) - data.HeAge)/length(data.HeAge))
 
 @test isa(tT.lldist, AbstractVector)
 llmean = mean(tT.lldist)
-@test -200 < llmean < 0
+@test -300 < llmean < 0
 @info "Mean ll: $llmean"
 
 @test isa(tT.acceptancedist, AbstractVector{Bool})
@@ -278,7 +277,7 @@ abserr = abs(sum(nanmean(tT.HeAgedist, dims=2) - data.HeAge)/length(data.HeAge))
 
 @test isa(tT.lldist, AbstractVector)
 llmean = mean(tT.lldist)
-@test -200 < llmean < 0
+@test -300 < llmean < 0
 @info "Mean ll: $llmean"
 
 @test isa(tT.acceptancedist, AbstractVector{Bool})
@@ -352,7 +351,7 @@ abserr = abs(sum(nanmean(tT.HeAgedist, dims=2) - data.HeAge)/length(data.HeAge))
 
 @test isa(tT.lldist, AbstractVector)
 llmean = mean(tT.lldist)
-@test -300 < llmean < 0
+@test -400 < llmean < 0
 @info "Mean ll: $llmean"
 
 @test isa(tT.acceptancedist, AbstractVector{Bool})
@@ -389,7 +388,7 @@ abserr = abs(sum(nanmean(tT.HeAgedist, dims=2) - data.HeAge)/length(data.HeAge))
 
 @test isa(tT.lldist, AbstractVector)
 llmean = mean(tT.lldist)
-@test -200 < llmean < 0
+@test -300 < llmean < 0
 @info "Mean ll: $llmean"
 
 @test isa(tT.acceptancedist, AbstractVector{Bool})

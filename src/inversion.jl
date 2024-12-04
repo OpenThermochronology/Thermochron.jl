@@ -192,7 +192,7 @@
 
         # Log-likelihood for initial proposal
         llna = llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma) + (simplified ? -log(npoints) : zero(T))
-        ll = llₚ =  normpdf_ll(HeAge, σₐ, calcages) + llna
+        ll = llₚ =  norm_ll(HeAge, σₐ, calcages) + llna
 
         # Variables to hold proposals
         npointsₚ = npoints
@@ -274,8 +274,8 @@
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
             simplified && (llnaₚ += -log(npointsₚ))
             σₐ .= simannealsigma.(n, HeAge_sigma, σmodel, σannealing, λannealing)
-            llₚ = normpdf_ll(HeAge, σₐ, calcagesₚ) + llnaₚ
-            llₗ = normpdf_ll(HeAge, σₐ, calcages) + llna # Recalulate last one too with new σₐ
+            llₚ = norm_ll(HeAge, σₐ, calcagesₚ) + llnaₚ
+            llₗ = norm_ll(HeAge, σₐ, calcages) + llna # Recalulate last one too with new σₐ
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - llₗ)
@@ -310,7 +310,7 @@
         finish!(bprogress)
  
         # Final log likelihood
-        ll = normpdf_ll(HeAge, σ, calcages) + llna
+        ll = norm_ll(HeAge, σ, calcages) + llna
 
         # distributions to populate
         tpointdist = fill(T(NaN), totalpoints, nsteps)
@@ -387,7 +387,7 @@
             # Calculate log likelihood of proposal
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
             simplified && (llnaₚ += -log(npointsₚ))
-            llₚ = normpdf_ll(HeAge, σ, calcagesₚ) + llnaₚ
+            llₚ = norm_ll(HeAge, σ, calcagesₚ) + llnaₚ
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - ll)
@@ -565,7 +565,7 @@
 
         # Log-likelihood for initial proposal
         llna = llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma) + loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀) + (simplified ? -log(npoints) : zero(T))
-        ll = llₚ =  normpdf_ll(HeAge, σₐ, calcages) + llna
+        ll = llₚ =  norm_ll(HeAge, σₐ, calcages) + llna
 
         # Variables to hold proposals
         npointsₚ = npoints
@@ -656,8 +656,8 @@
             llnaₚ += loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀)
             simplified && (llnaₚ += -log(npointsₚ))
             σₐ .= simannealsigma.(n, HeAge_sigma, σmodel, σannealing, λannealing)
-            llₚ = normpdf_ll(HeAge, σₐ, calcagesₚ) + llnaₚ
-            llₗ = normpdf_ll(HeAge, σₐ, calcages) + llna # Recalulate last one too with new σₐ
+            llₚ = norm_ll(HeAge, σₐ, calcagesₚ) + llnaₚ
+            llₗ = norm_ll(HeAge, σₐ, calcages) + llna # Recalulate last one too with new σₐ
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - llₗ)
@@ -694,7 +694,7 @@
         finish!(bprogress)
 
         # Final log likelihood
-        ll = normpdf_ll(HeAge, σ, calcages) + llna
+        ll = norm_ll(HeAge, σ, calcages) + llna
 
         # distributions to populate
         tpointdist = fill(T(NaN), totalpoints, nsteps)
@@ -781,7 +781,7 @@
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
             llnaₚ += loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀)
             simplified && (llnaₚ += -log(npointsₚ))
-            llₚ = normpdf_ll(HeAge, σₐ, calcagesₚ) + llnaₚ
+            llₚ = norm_ll(HeAge, σₐ, calcagesₚ) + llnaₚ
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - ll)
@@ -815,7 +815,7 @@
             end
 
             # Record results for analysis and troubleshooting
-            lldist[n] = llna + normpdf_ll(HeAge, σ, calcages) # Recalculated to constant baseline
+            lldist[n] = llna + norm_ll(HeAge, σ, calcages) # Recalculated to constant baseline
             ndist[n] = npoints # distribution of # of points
             σⱼtdist[n] = σⱼt[k]
             σⱼTdist[n] = σⱼT[k]

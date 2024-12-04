@@ -54,3 +54,5 @@ d = diff(x)
 @test Thermochron.hard(200, 0, 100) == 100
 @test Thermochron.hard(201, 0, 100) == 100
 @test Thermochron.hard(-101, 0, 100) == 0
+
+## ---Test generation of Chronometer objects
