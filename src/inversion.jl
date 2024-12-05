@@ -23,7 +23,7 @@
                 calc[i] = modelage(c, @views(Tsteps[first_index:end]), adm)
                 calc_sigma[i] = zero(T)
             elseif isa(c, ApatiteFT)
-                calc[i] = modelage(hrons[i], @views(Tsteps[first_index:end]), aftm)
+                calc[i] = modelage(c, @views(Tsteps[first_index:end]), aftm)
                 calc_sigma[i] = zero(T)
             elseif isa(c, ApatiteTrackLength)
                 l,σ = modellength(c, @views(Tsteps[first_index:end]), aftm) .* aftm.l0
