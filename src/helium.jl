@@ -12,6 +12,10 @@ end
 function dHe(t, U238, U235, Th232, Sm147)
     8*U238*λ238U*exp(λ238U*t) + 7*U235*λ235U*exp(λ235U*t) + 6*Th232*λ232Th*exp(λ232Th*t) + Sm147*λ147Sm*exp(λ147Sm*t)
 end
+function newton_he_age(U238, U235, Th232; iterations::Int=10)
+end
+function newton_he_age(U238, U235, Th232, Sm147; iterations::Int=10)
+end
 
 """
 ```julia
@@ -39,21 +43,30 @@ anneal!(ρᵣ::Matrix, dt::Number, tsteps, Tsteps, [dm::DiffusivityModel=ZRDAAM(
 ```
 In-place version of `anneal`
 """
-function anneal!(data::Vector{<:Chronometer}, ::Type{T}, tsteps::AbstractRange, Tsteps, dm::DiffusivityModel) where {T<:HeliumSample}
-    dt = step(tsteps)
-    if any(x->isa(x, T), data)
-        imax = argmax(i->isa(data[i], T) ? length(data[i].tsteps) : 0, eachindex(data))
-        tmax = last(data[imax].tsteps)
-        @assert dt == step(data[imax].tsteps)
+function anneal!(data::Vector{<:ChronometerUnion{T}}, ::Type{C}, tsteps::AbstractRange{T}, Tsteps::AbstractVector{T}, dm::DiffusivityModel{T}) where {T<:AbstractFloat, C<:HeliumSample}
+    dt = step(tsteps)::T
+    if any(x->isa(x, C), data)
+        imax = argmax(i->isa(data[i], C) ? length(data[i].tsteps) : 0, eachindex(data))
+        m = data[imax]::C
+        tmax = last(m.tsteps)::T
+        @assert dt == step(m.tsteps)
         first_index = 1 + Int((last(tsteps) - tmax)÷dt)
-        anneal!(data[imax]::T, @views(Tsteps[first_index:end]), dm)
-        pr = data[imax].pr
+        if first_index > 1
+            anneal!(m, @views(Tsteps[first_index:end]), dm)
+        else
+            anneal!(m, Tsteps, dm)
+        end
+        pr = m.pr
         for i in eachindex(data)
-            c = data[i]
-            if i!=imax && isa(c, T)
+            if i!=imax && isa(data[i], C)
+                c = data[i]::C
                 @assert dt == step(c.tsteps)
                 first_index = 1 + Int((tmax - last(c.tsteps))÷dt)
-                mul!(c.annealeddamage, @views(pr[first_index:end, first_index:end]), c.alphadamage)
+                if first_index > 1
+                    mul!(c.annealeddamage, @views(pr[first_index:end, first_index:end]), c.alphadamage)
+                else
+                    mul!(c.annealeddamage, pr, c.alphadamage)
+                end
             end
         end
     end

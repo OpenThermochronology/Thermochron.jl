@@ -16,9 +16,9 @@ abstract type FissionTrackSample{T} <: Chronometer{T} end
 abstract type HeliumSample{T} <: Chronometer{T} end
 
 # Internal functions to get values and uncertainties from any chronometers
-val(x::Chronometer) = x.age
-err(x::Chronometer) = x.age_sigma
-val(x::FissionTrackLength) = x.lcmod
+val(x::Chronometer{T}) where {T} = x.age::T
+err(x::Chronometer{T}) where {T} = x.age_sigma::T
+val(x::FissionTrackLength{T}) where {T} = x.lcmod::T
 err(x::FissionTrackLength{T}) where {T} = zero(T)
 
 ## --- Fission track sample types
@@ -524,6 +524,8 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
 end
 export ApatiteHe
 
+
+const ChronometerUnion{T} = Union{ZirconHe{T}, ApatiteHe{T}, ApatiteFT{T}, ApatiteTrackLength{T}}
 
 """
 ```julia
