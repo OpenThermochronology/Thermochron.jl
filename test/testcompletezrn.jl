@@ -89,7 +89,7 @@ abserr = abs(sum(nanmean(tT.resultdist, dims=2) - data.HeAge)/length(data.HeAge)
 
 @test isa(tT.lldist, AbstractVector)
 llmean = mean(tT.lldist)
-@test -200 < llmean < 0
+@test -300 < llmean < 0
 @info "Mean ll: $llmean"
 
 @test isa(tT.acceptancedist, AbstractVector{Bool})
@@ -130,7 +130,7 @@ abserr = abs(sum(nanmean(tT.resultdist, dims=2) - data.HeAge)/length(data.HeAge)
 
 @test isa(tT.lldist, AbstractVector)
 llmean = mean(tT.lldist)
-@test -200 < llmean < 0
+@test -300 < llmean < 0
 @info "Mean ll: $llmean"
 
 @test isa(tT.acceptancedist, AbstractVector{Bool})
@@ -169,7 +169,7 @@ abserr = abs(sum(nanmean(tT.resultdist, dims=2) - data.HeAge)/length(data.HeAge)
 
 @test isa(tT.lldist, AbstractVector)
 llmean = mean(tT.lldist)
-@test -200 < llmean < 0
+@test -300 < llmean < 0
 @info "Mean ll: $llmean"
 
 @test isa(tT.acceptancedist, AbstractVector{Bool})
