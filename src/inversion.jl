@@ -41,11 +41,16 @@
 
     """
     ```julia
-    MCMC(data::NamedTuple, model::NamedTuple, npoints::Int, agepoints::Vector, Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval])
+    MCMC(data::Vector{<:Chronometer}, model::NamedTuple, npoints::Int, agepoints::Vector, Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval])
     ```
-    Markov chain Monte Carlo time-Temperature inversion of the data specified in `data` and model parameters specified by `model`.
+    Markov chain Monte Carlo time-Temperature inversion of the thermochronometric data 
+    specified as a vector `chrons` of `Chronometer` objects (`ZirconHe`, `ApatiteHe`, 
+    `ApatiteFT`, etc.) and model parameters specified by the named tuple `model`, 
+    with variable diffusion kinetics.
 
-    Returns a tuple of distributions `(tpointdist, Tpointdist, ndist, resultdist, lldist, acceptancedist)`
+    Returns a `TTResult` object containing posterior time-temperature paths,
+
+    See also `MCMC_varkinetics` for a variant with variable diffusion kinetics.
 
     ## Examples
     ```julia
@@ -380,6 +385,26 @@
     end
     export MCMC
 
+
+    """
+    ```julia
+    MCMC_varkinetics(chrons::Vector{<:Chronometer}, model::NamedTuple, npoints::Int, agepoints::Vector, Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval])
+    ```
+    Markov chain Monte Carlo time-Temperature inversion of the thermochronometric data 
+    specified as a vector `chrons` of `Chronometer` objects (`ZirconHe`, `ApatiteHe`, 
+    `ApatiteFT`, etc.) and model parameters specified by the named tuple `model`, 
+    with variable diffusion kinetics.
+
+    Returns a `TTResult` object containing posterior time-temperature paths,
+    and a `KineticResult` object containing the posterior kinetic parameters.
+
+    See also `MCMC` for a variant with constant diffusion kinetics.
+
+    ## Examples
+    ```julia
+    tT, kinetics = MCMC_varkinetics(data, model, npoints, agepoints, Tpoints, constraint, boundary)
+    ```
+    """
     MCMC_varkinetics(data::NamedTuple, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where {T <: AbstractFloat} = MCMC_varkinetics(chronometers(T, data, model), model, boundary, constraint, detail)
     function MCMC_varkinetics(data::Vector{<:ChronometerUnion{T}}, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
         # Process inputs
