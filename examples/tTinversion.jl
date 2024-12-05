@@ -59,7 +59,7 @@
     #     v = @. 1/2 - atan(xs)/3.141592653589793 # Sigmoid (positive on LHS)
     #     @. exp(A + shp*skw*xs*v - shp/skw*xs*(1-v))
     # end
-    # age_sigma = copy(ds.HeAge_Ma_sigma_raw)
+    # age_sigma = copy(ds.raw_He_age_sigma_Ma)
     # age_sigma_empirical = similar(age_sigma)
 
     # if any(ta)
@@ -94,7 +94,7 @@
 
 ## --- Empirical uncertainty estimation (using Gaussian window)
 
-    age_sigma = copy(ds.HeAge_Ma_sigma_raw)
+    age_sigma = copy(ds.raw_He_age_sigma_Ma)
     age_sigma_empirical = similar(age_sigma)
 
     if any(ta)
@@ -212,10 +212,13 @@
     # name *= "_unconf"
 
 ## --- Invert for maximum likelihood t-T path
+    
+    # Process data into Chronometer objects
+    chrons = chronometers(data, model)
 
     # Run Markov Chain
-    # @time tT = MCMC(data, model, boundary, constraint, detail)
-    @time tT, kinetics = MCMC_varkinetics(data, model, boundary, constraint, detail)
+    @time tT = MCMC(chrons, model, boundary, constraint, detail)
+    # @time tT, kinetics = MCMC_varkinetics(chrons, model, boundary, constraint, detail)
     @info """tT.tpointdist & tT.Tpointdist collected, size: $(size(tT.Tpointdist))
     Mean log-likelihood: $(nanmean(view(tT.lldist, model.burnin:model.nsteps)))
     Mean acceptance rate: $(nanmean(view(tT.acceptancedist, model.burnin:model.nsteps)))
@@ -237,7 +240,7 @@
     #     "tpointdist"=>tT.tpointdist,
     #     "Tpointdist"=>tT.Tpointdist,
     #     "ndist"=>tT.ndist,
-    #     "HeAgedist"=>tT.HeAgedist,
+    #     "resultdist"=>tT.resultdist,
     #     "lldist"=>tT.lldist,
     #     "acceptancedist"=>tT.acceptancedist,
     #     "model"=>Dict(
@@ -261,7 +264,7 @@
             ylabel="Age (Ma)",
             framestyle=:box,
         )
-        zircon_agedist = tT.HeAgedist[tz, model.burnin:end]
+        zircon_agedist = tT.resultdist[tz, :]
         m = nanmean(zircon_agedist, dims=2)
         l = nanpctile(zircon_agedist, 2.5, dims=2)
         u = nanpctile(zircon_agedist, 97.5, dims=2)
@@ -286,7 +289,7 @@
             ylabel="Age (Ma)",
             framestyle=:box,
         )
-        apatite_agedist = tT.HeAgedist[ta,model.burnin:end]
+        apatite_agedist = tT.resultdist[ta,:]
         m = nanmean(apatite_agedist, dims=2)
         l = nanpctile(apatite_agedist, 2.5, dims=2)
         u = nanpctile(apatite_agedist, 97.5, dims=2)
