@@ -1,13 +1,7 @@
 
 # Test simulated annealing
-simannealmodel = (
-    σmodel = 10., # Model uncertainty [Ma]
-    σannealing = 100., # Initial uncertainty [Ma]
-    λannealing = 10 / 10^5, # lambda [1/n]
-)
-
-@test simannealsigma(1, 10.; simannealmodel) ≈ 110.44365174144839
-@test simannealsigma(10^5, 10.; simannealmodel) ≈ 14.145346247832224
+@test simannealsigma(1, 10., 100., 10 / 10^5) ≈ 100.48880634173474
+@test simannealsigma(10^5, 10., 100., 10 / 10^5) ≈ 10.000001030576758
 
 # Test collectto!
 buffer = rand(20)

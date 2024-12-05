@@ -1,6 +1,6 @@
 
-    function modelages!(calc::AbstractVector{T}, calc_sigma::AbstractVector{T}, data::Vector{<:Chronometer{T}}, Tsteps::AbstractVector{T}, zdm::ZirconHeliumModel{T}, adm::ApatiteHeliumModel{T}, aftm::AnnealingModel{T}) where {T<:AbstractFloat}
-        @assert eachindex(calc) == eachindex(calc_sigma) == eachindex(data)
+    function modelages!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, data::Vector{<:Chronometer{T}}, Tsteps::AbstractVector{T}, zdm::ZirconHeliumModel{T}, adm::ApatiteHeliumModel{T}, aftm::AnnealingModel{T}) where {T<:AbstractFloat}
+        @assert eachindex(μcalc) == eachindex(σcalc) == eachindex(data)
         imax = argmax(i->length(data[i].agesteps), eachindex(data))
         tsteps = data[imax].tsteps
         tmax = last(tsteps)
@@ -17,26 +17,22 @@
             c = data[i]
             first_index = 1 + Int((tmax - last(c.tsteps))÷dt)
             if isa(c, ZirconHe)
-                calc[i] = modelage(data[i], @views(Tsteps[first_index:end]), zdm)
-                calc_sigma[i] = zero(T)
+                μcalc[i] = modelage(data[i], @views(Tsteps[first_index:end]), zdm)
             elseif isa(c, ApatiteHe)
-                calc[i] = modelage(c, @views(Tsteps[first_index:end]), adm)
-                calc_sigma[i] = zero(T)
+                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), adm)
             elseif isa(c, ApatiteFT)
-                calc[i] = modelage(c, @views(Tsteps[first_index:end]), aftm)
-                calc_sigma[i] = zero(T)
+                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), aftm)
             elseif isa(c, ApatiteTrackLength)
                 l,σ = modellength(c, @views(Tsteps[first_index:end]), aftm) .* aftm.l0
-                calc[i] = l
-                calc_sigma[i] = sqrt(σ^2 + aftm.l0_sigma^2)
+                μcalc[i] = l
+                σcalc[i] = sqrt(σ^2 + aftm.l0_sigma^2)
             else
                 # NaN if not calculated
-                calc[i] = T(NaN)
-                calc_sigma[i] = T(NaN)
+                μcalc[i] = T(NaN)
 
             end
         end
-        return calc, calc_sigma
+        return μcalc, σcalc
     end
 
     """
@@ -80,7 +76,6 @@
         Tnow, Tinit = extrema(boundary.T₀)
         Tr = T(haskey(model, :Tr) ? model.Tr : (Tinit+Tnow)/2)::T
         dt = T(model.dt)::T
-        dr = T(model.dr)::T
         σmodel = T(model.σmodel)::T
         σannealing = T(model.σannealing)::T
         λannealing = T(model.λannealing)::T
@@ -102,8 +97,8 @@
         ages = collectto!(agepointbuffer, view(agepoints, 1:npoints), boundary.agepoints, constraint.agepoints)::StridedVector{T}
         temperatures = collectto!(Tpointbuffer, view(Tpoints, 1:npoints), boundary.Tpoints, constraint.Tpoints)::StridedVector{T}
         Tsteps = linterp1s(ages, temperatures, agesteps)::Vector{T}
-        calc = zeros(T, length(observed))
-        calc_sigma = zeros(T, length(observed))
+        μcalc = zeros(T, length(observed))
+        σcalc = fill(T(σmodel), length(observed))
 
         # Damage models for each mineral
         zdm = (haskey(model, :zdm) ? model.zdm : ZRDAAM())::ZirconHeliumModel{T}
@@ -122,20 +117,20 @@
         σⱼT = fill((Tinit-Tnow)/60, maxpoints)
 
         # Simulated annealing of uncertainty
-        σₐ = simannealsigma.(1, observed_sigma, σmodel, σannealing, λannealing)::Vector{T}
-        σ = sqrt.(observed_sigma.^2 .+ σmodel^2)
+        σₐ = simannealsigma.(1, observed_sigma, σannealing, λannealing)::Vector{T}
+        σ = observed_sigma
 
         # Log-likelihood for initial proposal
-        modelages!(calc, calc_sigma, data, Tsteps, zdm, adm, aftm)
+        modelages!(μcalc, σcalc, data, Tsteps, zdm, adm, aftm)
         llna = llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma) + (simplified ? -log(npoints) : zero(T))
-        ll = llₚ =  norm_ll(observed, σₐ, calc, calc_sigma) + llna
+        ll = llₚ =  norm_ll(observed, σₐ, μcalc, σcalc) + llna
 
         # Variables to hold proposals
         npointsₚ = npoints
         agepointsₚ = copy(agepoints)::Vector{T}
         Tpointsₚ = copy(Tpoints)::Vector{T}
-        calcₚ = copy(calc)::Vector{T}
-        calc_sigmaₚ = copy(calc_sigma)::Vector{T}
+        μcalcₚ = copy(μcalc)::Vector{T}
+        σcalcₚ = copy(σcalc)::Vector{T}
         σⱼtₚ = copy(σⱼt)
         σⱼTₚ = copy(σⱼT)
 
@@ -204,14 +199,14 @@
             end
 
             # Calculate model ages for each grain
-            modelages!(calcₚ, calc_sigmaₚ, data, Tsteps, zdm, adm, aftm)
+            modelages!(μcalcₚ, σcalcₚ, data, Tsteps, zdm, adm, aftm)
 
             # Calculate log likelihood of proposal
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
             simplified && (llnaₚ += -log(npointsₚ))
-            σₐ .= simannealsigma.(n, observed_sigma, σmodel, σannealing, λannealing)
-            llₚ = norm_ll(observed, σₐ, calcₚ, calc_sigmaₚ) + llnaₚ
-            llₗ = norm_ll(observed, σₐ, calc, calc_sigma) + llna # Recalulate last one too with new σₐ
+            σₐ .= simannealsigma.(n, observed_sigma, σannealing, λannealing)
+            llₚ = norm_ll(observed, σₐ, μcalcₚ, σcalcₚ) + llnaₚ
+            llₗ = norm_ll(observed, σₐ, μcalc, σcalc) + llna # Recalulate last one too with new σₐ
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - llₗ)
@@ -235,8 +230,8 @@
                 copyto!(constraint.agepoints, constraint.agepointsₚ)
                 copyto!(constraint.Tpoints, constraint.Tpointsₚ)
                 copyto!(boundary.Tpoints, boundary.Tpointsₚ)
-                copyto!(calc, calcₚ)
-                copyto!(calc_sigma, calc_sigmaₚ)
+                copyto!(μcalc, μcalcₚ)
+                copyto!(σcalc, σcalcₚ)
                 copyto!(σⱼt, σⱼtₚ)
                 copyto!(σⱼT, σⱼTₚ)
             end
@@ -247,7 +242,7 @@
         finish!(bprogress)
  
         # Final log likelihood
-        ll = norm_ll(observed, σ, calc, calc_sigma) + llna
+        ll = norm_ll(observed, σ, μcalc, σcalc) + llna
 
         # distributions to populate
         tpointdist = fill(T(NaN), totalpoints, nsteps)
@@ -318,12 +313,12 @@
             end
 
             # Calculate model ages for each grain
-            modelages!(calcₚ, calc_sigmaₚ, data, Tsteps, zdm, adm, aftm)
+            modelages!(μcalcₚ, σcalcₚ, data, Tsteps, zdm, adm, aftm)
 
             # Calculate log likelihood of proposal
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
             simplified && (llnaₚ += -log(npointsₚ))
-            llₚ = norm_ll(observed, σ, calcₚ, calc_sigmaₚ) + llnaₚ
+            llₚ = norm_ll(observed, σ, μcalcₚ, σcalcₚ) + llnaₚ
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - ll)
@@ -346,8 +341,8 @@
                 copyto!(constraint.agepoints, constraint.agepointsₚ)
                 copyto!(constraint.Tpoints, constraint.Tpointsₚ)
                 copyto!(boundary.Tpoints, boundary.Tpointsₚ)
-                copyto!(calc, calcₚ)
-                copyto!(calc_sigma, calc_sigmaₚ)
+                copyto!(μcalc, μcalcₚ)
+                copyto!(σcalc, σcalcₚ)
                 copyto!(σⱼt, σⱼtₚ)
                 copyto!(σⱼT, σⱼTₚ)
 
@@ -360,7 +355,7 @@
             ndist[n] = npoints # distribution of # of points
             σⱼtdist[n] = σⱼt[k]
             σⱼTdist[n] = σⱼT[k]
-            resultdist[:,n] .= calc # distribution of He ages
+            resultdist[:,n] .= μcalc # distribution of He ages
 
             # This is the actual output we want -- the distribution of t-T paths (t path is always identical)
             collectto!(view(tpointdist, :, n), view(agepoints, 1:npoints), boundary.agepoints, constraint.agepoints)
@@ -428,7 +423,6 @@
         Tnow, Tinit = extrema(boundary.T₀)
         Tr = T(haskey(model, :Tr) ? model.Tr : (Tinit+Tnow)/2)::T
         dt = T(model.dt)::T
-        dr = T(model.dr)::T
         σmodel = T(model.σmodel)::T
         σannealing = T(model.σannealing)::T
         λannealing = T(model.λannealing)::T
@@ -450,8 +444,8 @@
         ages = collectto!(agepointbuffer, view(agepoints, 1:npoints), boundary.agepoints, constraint.agepoints)::StridedVector{T}
         temperatures = collectto!(Tpointbuffer, view(Tpoints, 1:npoints), boundary.Tpoints, constraint.Tpoints)::StridedVector{T}
         Tsteps = linterp1s(ages, temperatures, agesteps)::Vector{T}
-        calc = zeros(T, length(observed))
-        calc_sigma = zeros(T, length(observed))
+        μcalc = zeros(T, length(observed))
+        σcalc = fill(T(σmodel), length(observed))
         
         # Damage models for each mineral
         zdm₀ = zdm = zdmₚ = (haskey(model, :zdm) ? model.zdm : ZRDAAM())::ZirconHeliumModel{T}
@@ -470,20 +464,20 @@
         σⱼT = fill((Tinit-Tnow)/60, maxpoints)
 
         # Simulated annealing of uncertainty
-        σₐ = simannealsigma.(1, observed_sigma, σmodel, σannealing, λannealing)::Vector{T}
-        σ = sqrt.(observed_sigma.^2 .+ σmodel^2)
-
+        σₐ = simannealsigma.(1, observed_sigma, σannealing, λannealing)::Vector{T}
+        σ = observed_sigma
+        
         # Log-likelihood for initial proposal
-        modelages!(calc, calc_sigma, data, Tsteps, zdm, adm, aftm)
+        modelages!(μcalc, σcalc, data, Tsteps, zdm, adm, aftm)
         llna = llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma) + loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀) + (simplified ? -log(npoints) : zero(T))
-        ll = llₚ =  norm_ll(observed, σₐ, calc, calc_sigma) + llna
+        ll = llₚ =  norm_ll(observed, σₐ, μcalc, σcalc) + llna
 
         # Variables to hold proposals
         npointsₚ = npoints
         agepointsₚ = copy(agepoints)::Vector{T}
         Tpointsₚ = copy(Tpoints)::Vector{T}
-        calcₚ = copy(calc)::Vector{T}
-        calc_sigmaₚ = copy(calc_sigma)
+        μcalcₚ = copy(μcalc)::Vector{T}
+        σcalcₚ = copy(σcalc)
         σⱼtₚ = copy(σⱼt)
         σⱼTₚ = copy(σⱼT)
 
@@ -560,15 +554,15 @@
             end
                
             # Calculate model ages for each grain
-            modelages!(calcₚ, calc_sigmaₚ, data, Tsteps, zdmₚ, admₚ, aftm)
+            modelages!(μcalcₚ, σcalcₚ, data, Tsteps, zdmₚ, admₚ, aftm)
 
             # Calculate log likelihood of proposal
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
             llnaₚ += loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀)
             simplified && (llnaₚ += -log(npointsₚ))
-            σₐ .= simannealsigma.(n, observed_sigma, σmodel, σannealing, λannealing)
-            llₚ = norm_ll(observed, σₐ, calcₚ, calc_sigmaₚ) + llnaₚ
-            llₗ = norm_ll(observed, σₐ, calc, calc_sigma) + llna # Recalulate last one too with new σₐ
+            σₐ .= simannealsigma.(n, observed_sigma, σannealing, λannealing)
+            llₚ = norm_ll(observed, σₐ, μcalcₚ, σcalcₚ) + llnaₚ
+            llₗ = norm_ll(observed, σₐ, μcalc, σcalc) + llna # Recalulate last one too with new σₐ
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - llₗ)
@@ -594,8 +588,8 @@
                 copyto!(constraint.agepoints, constraint.agepointsₚ)
                 copyto!(constraint.Tpoints, constraint.Tpointsₚ)
                 copyto!(boundary.Tpoints, boundary.Tpointsₚ)
-                copyto!(calc, calcₚ)
-                copyto!(calc_sigma, calc_sigmaₚ)
+                copyto!(μcalc, μcalcₚ)
+                copyto!(σcalc, σcalcₚ)
                 copyto!(σⱼt, σⱼtₚ)
                 copyto!(σⱼT, σⱼTₚ)
             end
@@ -606,7 +600,7 @@
         finish!(bprogress)
 
         # Final log likelihood
-        ll = norm_ll(observed, σ, calc, calc_sigma) + llna
+        ll = norm_ll(observed, σ, μcalc, σcalc) + llna
 
         # distributions to populate
         tpointdist = fill(T(NaN), totalpoints, nsteps)
@@ -686,13 +680,13 @@
             end
                
             # Calculate model ages for each grain
-            modelages!(calcₚ, calc_sigmaₚ, data, Tsteps, zdmₚ, admₚ, aftm)
+            modelages!(μcalcₚ, σcalcₚ, data, Tsteps, zdmₚ, admₚ, aftm)
 
             # Calculate log likelihood of proposal
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
             llnaₚ += loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀)
             simplified && (llnaₚ += -log(npointsₚ))
-            llₚ = norm_ll(observed, σₐ, calcₚ, calc_sigmaₚ) + llnaₚ
+            llₚ = norm_ll(observed, σₐ, μcalcₚ, σcalcₚ) + llnaₚ
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - ll)
@@ -717,8 +711,8 @@
                 copyto!(constraint.agepoints, constraint.agepointsₚ)
                 copyto!(constraint.Tpoints, constraint.Tpointsₚ)
                 copyto!(boundary.Tpoints, boundary.Tpointsₚ)
-                copyto!(calc, calcₚ)
-                copyto!(calc_sigma, calc_sigmaₚ)
+                copyto!(μcalc, μcalcₚ)
+                copyto!(σcalc, σcalcₚ)
                 copyto!(σⱼt, σⱼtₚ)
                 copyto!(σⱼT, σⱼTₚ)
 
@@ -727,11 +721,11 @@
             end
 
             # Record results for analysis and troubleshooting
-            lldist[n] = llna + norm_ll(observed, σ, calc, calc_sigma) # Recalculated to constant baseline
+            lldist[n] = llna + norm_ll(observed, σ, μcalc, σcalc) # Recalculated to constant baseline
             ndist[n] = npoints # distribution of # of points
             σⱼtdist[n] = σⱼt[k]
             σⱼTdist[n] = σⱼT[k]
-            resultdist[:,n] .= calc # distribution of He ages
+            resultdist[:,n] .= μcalc # distribution of He ages
             admdist[n] = adm
             zdmdist[n] = zdm
 

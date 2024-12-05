@@ -183,26 +183,19 @@
 
     """
     ```julia
-    simannealsigma(n, σAnalytical; [simannealmodel::NamedTuple])
-    simannealsigma(n::Integer, σAnalytical::Number, σmodel::Number, σannealing::Number, λannealing::Number)
+    simannealsigma(n::Integer, σₑ::Number, σₐ::Number, λₐ::Number)
     ```
-    To avoid getting stuck in local optima, decrease uncertainty slowly by
-    simulated annealing. Parameters are specified as a tuple `simannealmodel` of the
-    form (σₘ, σᵢ, λ), where annealing uncertainty declines from `σᵢ+σₘ` to `σₘ`
-    with a decay constant of λ.
+    To avoid getting stuck in local optima, combines empirically observed 
+    uncertainty `σₑ` in quadrature with an annealling uncertainty which 
+    slowly declines from `σₐ` to `0` with a decay constant of `λₐ`, or in  
+    other words:
 
-    Returns the annealing uncertainty added in quadrature with analytical
-    uncertainty, or in other words
-
-        sigma = sqrt(σAnalytical^2 + (σᵢ*exp(-λ*n) + σₘ)^2)
+        σannealed = sqrt(σₑ^2 + (σₐ*exp(-λ*n))^2)
 
     """
-    function simannealsigma(n::Integer, σAnalytical::Number; simannealmodel::NamedTuple=(σmodel=25.0, σannealing=35.0, λannealing=10/10^5))
-        simannealsigma(n, σAnalytical, simannealmodel.σmodel, simannealmodel.σannealing, simannealmodel.λannealing)
-    end
-    function simannealsigma(n::Integer, σAnalytical::Number, σmodel::Number, σannealing::Number, λannealing::Number)
-        σCombined = σannealing * exp(-λannealing*n) + σmodel
-        return sqrt(σAnalytical^2 + σCombined^2)
+    function simannealsigma(n::Integer, σₑ::Number, σₐ::Number, λₐ::Number)
+        @assert λₐ >= 0
+        sqrt(σₑ^2 + (σₐ * exp(-λₐ*n))^2)
     end
     export simannealsigma
 
