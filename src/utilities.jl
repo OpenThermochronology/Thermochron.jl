@@ -391,32 +391,8 @@
         norm_ll(log(adm.EaTrap), adm.EaTrap_logsigma, log(admₚ.EaTrap))+
         norm_ll(adm.rmr0, adm.rmr0_sigma, admₚ.rmr0)
     end
-
-    # Fill the vector of mineral helium ages in-place
-    function modelages!(calcages, t, pr, teq, dt, tsteps, Tsteps, dm, minerals)
-        @assert length(minerals) == count(t)
-        @assert length(t) == length(calcages)
-        @assert length(tsteps) == length(Tsteps)
-        if any(t)
-            anneal!(pr, teq, dt, tsteps, Tsteps, dm)
-            mi = 1
-            for i in eachindex(t)
-                if t[i]
-                    first_index = 1 + Int((last(tsteps)-last(minerals[mi].tsteps))÷dt)
-                    if first_index > 1
-                        calcages[i] = modelage(minerals[mi], @views(Tsteps[first_index:end]), @views(pr[first_index:end,first_index:end]), dm)
-                    else
-                        calcages[i] = modelage(minerals[mi], Tsteps, pr, dm)
-                    end
-                    mi += 1
-                end
-            end
-        end
-        return calcages
-    end
-
     
-# Ensure non-allocation of linear algebra
+## --- Ensure non-allocation of linear algebra
 function lu!(A::Tridiagonal{T,V}, pivot::Union{RowMaximum,NoPivot} = RowMaximum();
         check::Bool = true, allowsingular::Bool = false) where {T,V}
     n = size(A, 1)
