@@ -8,9 +8,9 @@
 
 Open-source time-Temperature inversion of thermochronometric data.
 
-Implements a transdimensional Bayesian Markov chain Monte Carlo (MCMC) time-Temperature inversion with optional Simulated Annealing (e.g., [1](https://en.wikipedia.org/wiki/Simulated_annealing), [2](https://doi.org/10.1007/978-94-015-7744-1_2)) and kinetic uncertainty propagation/inversion, using a Crank-Nicholson forward diffusion model following the equations of [Ketcham, 2005](https://doi.org/10.2138/rmg.2005.58.11).
+Implements a transdimensional Bayesian Markov chain Monte Carlo (MCMC) time-Temperature inversion with optional Simulated Annealing (e.g., [1](https://en.wikipedia.org/wiki/Simulated_annealing), [2](https://doi.org/10.1007/978-94-015-7744-1_2)) and kinetic uncertainty propagation/inversion.
 
-This package currently supports the inversion of zircon helium data via the damage and annealing model of [Guenthner et al., 2013](https://doi.org/10.2475/03.2013.01) (ZRDAAM), and apatite helium via the damage and annealing model of [Flowers et al. 2009](https://doi.org/10.1016/j.gca.2009.01.015) (RDAAM). Additional systems and models are expected to be added in future releases.
+This package currently supports the inversion of apatite and zircon helium ages using a Crank-Nicholson forward diffusion model following the equations of [Ketcham, 2005](https://doi.org/10.2138/rmg.2005.58.11) along with the damage and annealing model of [Guenthner et al., 2013](https://doi.org/10.2475/03.2013.01) for zircon (ZRDAAM), apatite helium via the damage and annealing model of [Flowers et al. 2009](https://doi.org/10.1016/j.gca.2009.01.015) for apatite (RDAAM), and apatite fission track age and fission track length data using the annealing models of [Ketcham et al. 1999](https://doi.org/10.2138/am-1999-0903) and [Ketcham et al. 2007](https://doi.org/10.2138/am.2007.2281). Additional systems and models are expected to be added in future releases.
 
 ## Installation
 Thermochron.jl can be installed in the same ways you would install any other registered Julia package, i.e.
