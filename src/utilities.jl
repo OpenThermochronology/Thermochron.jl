@@ -372,7 +372,7 @@
     function norm_ll(mu::AbstractVector{T}, sigma::AbstractVector{T}, x::AbstractVector{T}, x_sigma::AbstractVector{T}) where {T<:Number}
         ll = zero(float(T))
         for i in eachindex(mu, sigma, x, x_sigma)
-            ll += norm_ll(mu[i], sigma[i], x[i])
+            ll += norm_ll(mu[i], sigma[i], x[i], x_sigma[i])
         end
         return ll
     end

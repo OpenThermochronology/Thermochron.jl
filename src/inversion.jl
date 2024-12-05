@@ -128,7 +128,7 @@
         # Log-likelihood for initial proposal
         modelages!(calc, calc_sigma, data, Tsteps, zdm, adm, aftm)
         llna = llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma) + (simplified ? -log(npoints) : zero(T))
-        ll = llₚ =  norm_ll(observed, σₐ, calc) + llna
+        ll = llₚ =  norm_ll(observed, σₐ, calc, calc_sigma) + llna
 
         # Variables to hold proposals
         npointsₚ = npoints
@@ -210,8 +210,8 @@
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
             simplified && (llnaₚ += -log(npointsₚ))
             σₐ .= simannealsigma.(n, observed_sigma, σmodel, σannealing, λannealing)
-            llₚ = norm_ll(observed, σₐ, calcₚ) + llnaₚ
-            llₗ = norm_ll(observed, σₐ, calc) + llna # Recalulate last one too with new σₐ
+            llₚ = norm_ll(observed, σₐ, calcₚ, calc_sigmaₚ) + llnaₚ
+            llₗ = norm_ll(observed, σₐ, calc, calc_sigma) + llna # Recalulate last one too with new σₐ
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - llₗ)
@@ -247,7 +247,7 @@
         finish!(bprogress)
  
         # Final log likelihood
-        ll = norm_ll(observed, σ, calc) + llna
+        ll = norm_ll(observed, σ, calc, calc_sigma) + llna
 
         # distributions to populate
         tpointdist = fill(T(NaN), totalpoints, nsteps)
@@ -323,7 +323,7 @@
             # Calculate log likelihood of proposal
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
             simplified && (llnaₚ += -log(npointsₚ))
-            llₚ = norm_ll(observed, σ, calcₚ) + llnaₚ
+            llₚ = norm_ll(observed, σ, calcₚ, calc_sigmaₚ) + llnaₚ
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - ll)
@@ -476,7 +476,7 @@
         # Log-likelihood for initial proposal
         modelages!(calc, calc_sigma, data, Tsteps, zdm, adm, aftm)
         llna = llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma) + loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀) + (simplified ? -log(npoints) : zero(T))
-        ll = llₚ =  norm_ll(observed, σₐ, calc) + llna
+        ll = llₚ =  norm_ll(observed, σₐ, calc, calc_sigma) + llna
 
         # Variables to hold proposals
         npointsₚ = npoints
@@ -567,8 +567,8 @@
             llnaₚ += loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀)
             simplified && (llnaₚ += -log(npointsₚ))
             σₐ .= simannealsigma.(n, observed_sigma, σmodel, σannealing, λannealing)
-            llₚ = norm_ll(observed, σₐ, calcₚ) + llnaₚ
-            llₗ = norm_ll(observed, σₐ, calc) + llna # Recalulate last one too with new σₐ
+            llₚ = norm_ll(observed, σₐ, calcₚ, calc_sigmaₚ) + llnaₚ
+            llₗ = norm_ll(observed, σₐ, calc, calc_sigma) + llna # Recalulate last one too with new σₐ
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - llₗ)
@@ -606,7 +606,7 @@
         finish!(bprogress)
 
         # Final log likelihood
-        ll = norm_ll(observed, σ, calc) + llna
+        ll = norm_ll(observed, σ, calc, calc_sigma) + llna
 
         # distributions to populate
         tpointdist = fill(T(NaN), totalpoints, nsteps)
@@ -692,7 +692,7 @@
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
             llnaₚ += loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀)
             simplified && (llnaₚ += -log(npointsₚ))
-            llₚ = norm_ll(observed, σₐ, calcₚ) + llnaₚ
+            llₚ = norm_ll(observed, σₐ, calcₚ, calc_sigmaₚ) + llnaₚ
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - ll)
@@ -727,7 +727,7 @@
             end
 
             # Record results for analysis and troubleshooting
-            lldist[n] = llna + norm_ll(observed, σ, calc) # Recalculated to constant baseline
+            lldist[n] = llna + norm_ll(observed, σ, calc, calc_sigma) # Recalculated to constant baseline
             ndist[n] = npoints # distribution of # of points
             σⱼtdist[n] = σⱼt[k]
             σⱼTdist[n] = σⱼT[k]
