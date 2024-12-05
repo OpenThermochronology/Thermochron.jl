@@ -1,5 +1,5 @@
 
-    function modelages!(calc::AbstractVector, calc_sigma::AbstractVector, data::Vector{<:Chronometer}, Tsteps::AbstractVector, zdm::ZirconHeliumModel{T}, adm::ApatiteHeliumModel{T}, aftm::AnnealingModel{T}) where {T<:AbstractFloat}
+    function modelages!(calc::AbstractVector{T}, calc_sigma::AbstractVector{T}, data::Vector{<:Chronometer{T}}, Tsteps::AbstractVector{T}, zdm::ZirconHeliumModel{T}, adm::ApatiteHeliumModel{T}, aftm::AnnealingModel{T}) where {T<:AbstractFloat}
         @assert eachindex(calc) == eachindex(calc_sigma) == eachindex(data)
         imax = argmax(i->length(data[i].agesteps), eachindex(data))
         tsteps = data[imax].tsteps
@@ -9,9 +9,9 @@
         @assert eachindex(tsteps) == eachindex(Tsteps)
 
         # Pre-anneal ZRDAAM samples, if any
-        isa(zdm, ZRDAAM) && anneal!(data, ZirconHe, tsteps, Tsteps, zdm)
+        isa(zdm, ZRDAAM) && anneal!(data, ZirconHe{T}, tsteps, Tsteps, zdm)
         # Pre-anneal RDAAM samples, if any
-        isa(adm, RDAAM) && anneal!(data, ApatiteHe, tsteps, Tsteps, adm)
+        isa(adm, RDAAM) && anneal!(data, ApatiteHe{T}, tsteps, Tsteps, adm)
 
         for i in eachindex(data)
             c = data[i]
