@@ -211,7 +211,6 @@ function modellength(track::ApatiteTrackLength{T}, Tsteps::AbstractVector, am::A
     end
     return nanmean(r, pr), nanstd(r, pr)
 end
-export modellength
 
 function model_ll(track::ApatiteTrackLength, Tsteps::AbstractVector, am::AnnealingModel)
     l,σ = modellength(track, Tsteps, am) .* am.l0

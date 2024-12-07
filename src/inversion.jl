@@ -378,7 +378,6 @@
         )
         return ttresult
     end
-    export MCMC
 
 
     """
@@ -754,4 +753,3 @@
         )
         return ttresult, kineticresult
     end
-    export MCMC_varkinetics

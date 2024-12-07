@@ -60,7 +60,6 @@ Base.@kwdef struct ZRDAAM{T<:AbstractFloat} <: ZirconHeliumModel{T}
     rmr0::T=0.2                 # Damage conversion parameter (not normally called this in ZRDAAM context, but effectively the same thing)
     rmr0_sigma::T=0.1           # Damage conversion parameter uncertainty
 end
-export ZRDAAM
 
 Base.@kwdef struct RDAAM{T<:AbstractFloat} <: ApatiteHeliumModel{T} 
     D0L::T=0.6071               # Diffusivity [cm^2/s]
@@ -86,7 +85,6 @@ Base.@kwdef struct RDAAM{T<:AbstractFloat} <: ApatiteHeliumModel{T}
     kappa::T=1.04-0.83          # Damage conversion parameter
     kappa_rmr0::T=1.04          # Damage conversion parameter (the sum of kappa and rmr0)
 end
-export RDAAM
 
 ## --- Define Boundary type to specify the working area
 
@@ -113,7 +111,6 @@ function Boundary(T::Type=Float64; agepoints, T₀, ΔT, Tpoints=collect(T₀), 
         2,
     )
 end
-export Boundary
 
 ## -- Define Constraint type to specify aribitrary t-T constraint boxes
 struct Constraint{T<:AbstractFloat}
@@ -138,11 +135,9 @@ function Constraint(T::Type=Float64; agedist=Uniform{T}[], Tdist=Uniform{T}[], a
         length(agepoints),
     )
 end
-export Constraint
 
 # For backwards compatibility with old scripts
 const Unconformity = Constraint
-export Unconformity
 
 ## --- Define DetailInterval type to specify a minumum number of t-T path nodes within a given time interval
 struct DetailInterval{T<:AbstractFloat}
@@ -153,7 +148,6 @@ end
 function DetailInterval(T::Type=Float64; agemin=0, agemax=0, minpoints=0)
     DetailInterval{T}(agemin, agemax, Int(minpoints))
 end
-export DetailInterval
 
 
 ## --- Model result types

@@ -32,7 +32,6 @@ function anneal(dt::Number, tsteps::AbstractVector, Tsteps::AbstractVector, dm::
     anneal!(ρᵣ, teq, dt, tsteps, Tsteps, dm)
     return ρᵣ, teq
 end
-export anneal
 
 """
 ```julia
@@ -181,7 +180,6 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, dt::Number, t
 
     return ρᵣ
 end
-export anneal!
 
 
 """
@@ -473,7 +471,6 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
 
     return max(heliumage, zero(T))
 end
-export modelage
 
 function model_ll(mineral::HeliumSample, Tsteps, dm::DiffusivityModel)
     anneal!(mineral, Tsteps, dm)

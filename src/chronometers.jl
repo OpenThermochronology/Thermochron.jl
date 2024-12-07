@@ -1,6 +1,6 @@
 # Abstract type to include any number of mineral chronometers (zircon, apatite, etc.)
 abstract type Chronometer{T} end
-export Chronometer
+
 Base.copy(x::Chronometer) = deepcopy(x)
 Base.:(==)(x::Chronometer, y::Chronometer) = false
 function Base.:(==)(x::T, y::T) where {T<:Chronometer}
@@ -81,7 +81,6 @@ ApatiteTrackLength(
     T(rmr0),
 )
 end
-export ApatiteTrackLength
 
 struct ApatiteFT{T<:AbstractFloat} <: FissionTrackSample{T}
     age::T                  # [Ma]
@@ -127,7 +126,6 @@ function ApatiteFT(T::Type{<:AbstractFloat}=Float64;
         T(rmr0),
     )
 end
-export ApatiteFT
 
 ## --- Helium sample types
 """
@@ -327,7 +325,6 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
         y,
     )
 end
-export ZirconHe
 
 
 """
@@ -527,7 +524,6 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
         y,
     )
 end
-export ApatiteHe
 
 
 ## -- Functions related to age and age uncertinty of absolute chronometers
@@ -551,7 +547,6 @@ function get_age_sigma(x::AbstractArray{<:Chronometer{T}}, ::Type{C}=AbsoluteChr
     end
     return result
 end
-export get_age, get_age_sigma
 # Set age and age sigma from a vector of chronometers
 function set_age!(x::AbstractArray{<:Chronometer{T}}, ages::AbstractArray{T}, ::Type{C}=AbsoluteChronometer{T}) where {T<:AbstractFloat, C<:AbsoluteChronometer}
     @assert count(xᵢ->isa(xᵢ, C), x) == length(ages)
@@ -575,7 +570,6 @@ function set_age_sigma!(x::AbstractArray{<:Chronometer{T}}, age_sigmas::Abstract
     end
     return x
 end
-export set_age!, set_age_sigma!
 
 function empiricaluncertainty!(x::AbstractArray{<:Chronometer{T}}, ::Type{C}; sigma_eU::Number = ((C<:ZirconHe) ? 100. : 10.)) where {T<:AbstractFloat, C<:HeliumSample}
     t = isa.(x, C)
@@ -592,7 +586,6 @@ function empiricaluncertainty!(x::AbstractArray{<:Chronometer{T}}, ::Type{C}; si
     end
     return x
 end
-export empiricaluncertainty!
 
 ## --- Importing of chronometers
 """
@@ -735,4 +728,3 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
     isempty(result) && @error "No chronometers found"
     return unionize(result)
 end
-export chronometers

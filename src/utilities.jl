@@ -197,7 +197,6 @@
         @assert λₐ >= 0
         sqrt(σₑ^2 + (σₐ * exp(-λₐ*n))^2)
     end
-    export simannealsigma
 
 
     # Utitlity functions for dealing with boundary conditions

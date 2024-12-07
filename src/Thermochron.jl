@@ -25,11 +25,27 @@ module Thermochron
     const λ147Sm = log(2)/(1.070*10^11)*10^6 # [1/Myr] Kossert et al. 2009
 
     include("types.jl")
+    export ZRDAAM, RDAAM, FanningCurvilinear, SimplifiedCurvilinear     # Damage and annealing model types
+    export Constraint, Unconformity, Boundary, DetailInterval           # Types used as inputs to MCMC functions
+
     include("utilities.jl")
+
     include("chronometers.jl")
     const ChronometerUnion{T} = Union{ZirconHe{T}, ApatiteHe{T}, ApatiteFT{T}, ApatiteTrackLength{T}}
+    export Chronometer, AbsoluteChronometer                             # Abstract types
+    export ApatiteTrackLength, ApatiteFT, ZirconHe, ApatiteHe           # Concrete types
+    export chronometers, empiricaluncertainty!,                         # Functions
+        get_age, get_age_sigma, set_age!, set_age_sigma!
+
     include("helium.jl")
+    export modelage                                                     # Functions
+
     include("fissiontrack.jl")
+    export modellength                                                  # Functions
+
     include("inversion.jl")
+    export MCMC, MCMC_varkinetics                                       # Functions
+
     include("show.jl")
+
 end
