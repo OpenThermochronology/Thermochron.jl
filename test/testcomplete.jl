@@ -72,6 +72,8 @@ unconf = Constraint()
 chrons = chronometers(ds, model)
 @test chrons isa Vector{<:Chronometer}
 @test length(chrons) == length(ds.mineral)
+@test get_age(chrons) ≈ [770, 659, 649, 638, 620, 557, 545, 500, 493, 357, 329, 253, 241, 225, 225, 217, 193, 190, 72, 57, 42, 29, 11, 234, 98, 233, 339, 378, 258, 158, 269, 313, 309, 392]
+@test get_age_sigma(chrons) ≈ [15.0, 51.0, 13.0, 12.6, 18.4, 10.0, 12.0, 10.0, 43.0, 7.0, 7.0, 5.2, 4.6, 4.6, 6.0, 5.0, 4.0, 4.0, 2.0, 1.1, 1.1, 0.8, 0.2, 9.4, 2.0, 5.0, 6.0, 9.3, 5.0, 3.3, 8.1, 5.8, 6.0, 8.0]
 
 tsteps = model.tsteps
 Tsteps = range(model.Tinit, model.Tnow, length=length(tsteps))
@@ -86,6 +88,16 @@ Thermochron.modelages!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), FCKe
 @test first(calc) ≈ modelage(first(chrons), Tsteps, ZRDAAM())
 # Test an individual apatite
 @test last(calc) ≈ modelage(last(chrons), Tsteps, RDAAM())
+
+# Test empirical uncertainty estimation
+empiricaluncertainty!(chrons, ZirconHe)
+@test get_age(chrons, ZirconHe) ≈ [770, 659, 649, 638, 620, 557, 545, 500, 493, 357, 329, 253, 241, 225, 225, 217, 193, 190, 72, 57, 42, 29, 11]
+@test get_age_sigma(chrons, ZirconHe) ≈ [52.2698713729179, 51.053778518883234, 13.209401994609117, 13.286914443120114, 18.877025597768146, 28.34963844091497, 17.099815276034985, 41.31311401927697, 44.69232216535829, 28.062533563258047, 40.66735902683201, 8.386395697591903, 27.56203530805814, 49.85843777933348, 8.597409122905969, 5.356078765351952, 22.771348128539447, 4.109962609517669, 45.46211158194865, 39.367844395595824, 28.76224035822593, 45.92309223206737, 42.850440327746504]
+
+set_age!(chrons, zeros(23), ZirconHe)
+set_age_sigma!(chrons, zeros(23), ZirconHe)
+@test get_age(chrons, ZirconHe) ≈ zeros(23)
+@test get_age_sigma(chrons, ZirconHe) ≈ zeros(23)
 
 # Legacy input format
 chrons2 = chronometers(data, model)

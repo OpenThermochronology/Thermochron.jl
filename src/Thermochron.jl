@@ -9,6 +9,7 @@ module Thermochron
     using LoopVectorization
     using ProgressMeter: Progress, update!, finish!
     using LsqFit: curve_fit
+    using BangBang: setproperty!!
 
     const FloatRange = typeof(1.0:1.0:10.0)
     floatrange(x) = range(Float64(first(x)), Float64(last(x)), length=length(x))
@@ -26,6 +27,7 @@ module Thermochron
     include("types.jl")
     include("utilities.jl")
     include("chronometers.jl")
+    const ChronometerUnion{T} = Union{ZirconHe{T}, ApatiteHe{T}, ApatiteFT{T}, ApatiteTrackLength{T}}
     include("helium.jl")
     include("fissiontrack.jl")
     include("inversion.jl")

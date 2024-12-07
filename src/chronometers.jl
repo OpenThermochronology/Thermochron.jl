@@ -10,16 +10,21 @@ function Base.:(==)(x::T, y::T) where {T<:Chronometer}
     return true
 end
 
+# Abstract subtype for chronometers that include an absolute age and age uncertainty
+abstract type AbsoluteChronometer{T} <:Chronometer{T} end  
+
 # Abstract subtypes for different categories of chronometers
 abstract type FissionTrackLength{T} <: Chronometer{T} end
-abstract type FissionTrackSample{T} <: Chronometer{T} end
-abstract type HeliumSample{T} <: Chronometer{T} end
+abstract type FissionTrackSample{T} <: AbsoluteChronometer{T} end
+abstract type HeliumSample{T} <: AbsoluteChronometer{T} end
+eU(x::HeliumSample) = nanmean(x.r238U) + 0.238*nanmean(x.r232Th) + 0.012*nanmean(x.r147Sm)
 
-# Internal functions to get values and uncertainties from any chronometers
-val(x::Chronometer{T}) where {T} = x.age::T
-err(x::Chronometer{T}) where {T} = x.age_sigma::T
+## --- Internal functions to get values and uncertainties from any chronometers
+val(x::AbsoluteChronometer{T}) where {T} = x.age::T
+err(x::AbsoluteChronometer{T}) where {T} = x.age_sigma::T
 val(x::FissionTrackLength{T}) where {T} = x.lcmod::T
 err(x::FissionTrackLength{T}) where {T} = zero(T)
+
 
 ## --- Fission track sample types
 
@@ -525,8 +530,71 @@ end
 export ApatiteHe
 
 
-const ChronometerUnion{T} = Union{ZirconHe{T}, ApatiteHe{T}, ApatiteFT{T}, ApatiteTrackLength{T}}
+## -- Functions related to age and age uncertinty of absolute chronometers
 
+# Get age and age sigma from a vector of chronometers
+function get_age(x::AbstractArray{<:Chronometer{T}}, ::Type{C}=AbsoluteChronometer{T}) where {T<:AbstractFloat, C<:AbsoluteChronometer}
+    result = sizehint!(T[], length(x))
+    for xᵢ in x
+        if isa(xᵢ, C)
+            push!(result, xᵢ.age)
+        end
+    end
+    return result
+end
+function get_age_sigma(x::AbstractArray{<:Chronometer{T}}, ::Type{C}=AbsoluteChronometer{T}) where {T<:AbstractFloat, C<:AbsoluteChronometer}
+    result = sizehint!(T[], length(x))
+    for xᵢ in x
+        if isa(xᵢ, C)
+            push!(result, xᵢ.age_sigma)
+        end
+    end
+    return result
+end
+export get_age, get_age_sigma
+# Set age and age sigma from a vector of chronometers
+function set_age!(x::AbstractArray{<:Chronometer{T}}, ages::AbstractArray{T}, ::Type{C}=AbsoluteChronometer{T}) where {T<:AbstractFloat, C<:AbsoluteChronometer}
+    @assert count(xᵢ->isa(xᵢ, C), x) == length(ages)
+    iₐ = firstindex(ages)
+    for iₓ in eachindex(x)
+        if isa(x[iₓ], C)
+            x[iₓ] = setproperty!!(x[iₓ], :age, ages[iₐ])
+            iₐ += 1
+        end
+    end
+    return x
+end
+function set_age_sigma!(x::AbstractArray{<:Chronometer{T}}, age_sigmas::AbstractArray{T}, ::Type{C}=AbsoluteChronometer{T}) where {T<:AbstractFloat, C<:AbsoluteChronometer}
+    @assert count(xᵢ->isa(xᵢ, C), x) == length(age_sigmas)
+    iₐ = firstindex(age_sigmas)
+    for iₓ in eachindex(x)
+        if isa(x[iₓ], C)
+            x[iₓ] = setproperty!!(x[iₓ], :age_sigma, age_sigmas[iₐ])
+            iₐ += 1
+        end
+    end
+    return x
+end
+export set_age!, set_age_sigma!
+
+function empiricaluncertainty!(x::AbstractArray{<:Chronometer{T}}, ::Type{C}; sigma_eU::Number = ((C<:ZirconHe) ? 100. : 10.)) where {T<:AbstractFloat, C<:HeliumSample}
+    t = isa.(x, C)
+    eU_C = eU.(x[t])
+    ages_C = get_age(x, C)
+    for i ∈ findall(t)
+        nearest_eU = minimum(j->abs(eU(x[j]) - eU(x[i])), setdiff(findall(t), i))
+        W = normpdf.(eU(x[i]), max(sigma_eU, nearest_eU/2), eU_C)
+        # Assume half of weighted variance is unknown external uncertainty
+        σₑ = nanstd(ages_C, W) / sqrt(2)    # External uncertainty (est)
+        σᵢ = x[i].age_sigma                 # Internal uncertainty
+        σₓ = sqrt(σₑ^2 + σᵢ^2)
+        x[i] = setproperty!!(x[i], :age_sigma, σₓ)
+    end
+    return x
+end
+export empiricaluncertainty!
+
+## --- Importing of chronometers
 """
 ```julia
 chronometers([T=Float64], data, model)
