@@ -1,9 +1,11 @@
 ## --- Test helium utilities
 
-    @test Thermochron.He(1000., 100, 100/137.818, 30) ≈ 151.8663003836161
-    @test Thermochron.He(1000., 100, 100/137.818, 30, 20) ≈ 151.99628115817814
-    @test Thermochron.dHe(1000., 100, 100/137.818, 30) ≈ 0.16764721917364458
-    @test Thermochron.dHe(1000., 100, 100/137.818, 30, 20) ≈ 0.16777762141120173
+    @test Thermochron.calc_He(1000., 100, 100/137.818, 30) ≈ 151.8663003836161
+    @test Thermochron.calc_He(1000., 100, 100/137.818, 30, 20) ≈ 151.99628115817814
+    @test Thermochron.calc_dHedt(1000., 100, 100/137.818, 30) ≈ 0.16764721917364458
+    @test Thermochron.calc_dHedt(1000., 100, 100/137.818, 30, 20) ≈ 0.16777762141120173
+    @test Thermochron.newton_he_age(151.8663003836161, 100, 100/137.818, 30) ≈ 1000
+    @test Thermochron.newton_he_age(151.99628115817814, 100, 100/137.818, 30, 20) ≈ 1000
 
 ## --- Test diff utilities
 

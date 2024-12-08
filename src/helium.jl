@@ -1,20 +1,20 @@
 # The amount of ingrown helium since time t
-function He(t, U238, U235, Th232)
-    8*U238*(exp(λ238U*t)-1) + 7*U235*(exp(λ235U*t)-1) + 6*Th232*(exp(λ232Th*t)-1)
-end
-function He(t, U238, U235, Th232, Sm147)
+function calc_He(t, U238, U235, Th232, Sm147=0.0)
     8*U238*(exp(λ238U*t)-1) + 7*U235*(exp(λ235U*t)-1) + 6*Th232*(exp(λ232Th*t)-1) + Sm147*(exp(λ147Sm*t)-1)
 end
 # First time derivative of the amount of ingrown helium since time t
-function dHe(t, U238, U235, Th232)
-    8*U238*λ238U*exp(λ238U*t) + 7*U235*λ235U*exp(λ235U*t) + 6*Th232*λ232Th*exp(λ232Th*t)
-end
-function dHe(t, U238, U235, Th232, Sm147)
+function calc_dHedt(t, U238, U235, Th232, Sm147=0.0)
     8*U238*λ238U*exp(λ238U*t) + 7*U235*λ235U*exp(λ235U*t) + 6*Th232*λ232Th*exp(λ232Th*t) + Sm147*λ147Sm*exp(λ147Sm*t)
 end
-function newton_he_age(U238, U235, Th232; iterations::Int=10)
-end
-function newton_he_age(U238, U235, Th232, Sm147; iterations::Int=10)
+# Use Newton's method to solve for He age
+function newton_he_age(He::T, U238, U235, Th232, Sm147=zero(T); iterations::Int=16) where {T<:AbstractFloat}
+    Tf = float(T)
+    heliumage = one(Tf)
+    for _ in 1:iterations
+        ∂He∂t = calc_dHedt(heliumage, U238, U235, Th232, Sm147) # Calculate derivative
+        heliumage += (He - calc_He(heliumage, U238, U235, Th232, Sm147))/∂He∂t # Move towards zero (He(heliumage) == μHe)
+    end
+    return max(heliumage, zero(Tf))
 end
 
 """
@@ -326,13 +326,7 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T})
     μ147Sm = nanmean(zircon.r147Sm::Vector{T})
 
     # Numerically solve for helium age of the grain
-    heliumage = one(T)
-    for _ in 1:10
-        ∂He∂t = dHe(heliumage, μ238U, μ235U, μ232Th, μ147Sm) # Calculate derivative
-        heliumage += (μHe - He(heliumage, μ238U, μ235U, μ232Th, μ147Sm))/∂He∂t # Move towards zero (He(heliumage) == μHe)
-    end
-
-    return max(heliumage, zero(T))
+    return newton_he_age(μHe, μ238U, μ235U, μ232Th, μ147Sm)
 end
 function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}) where T <: AbstractFloat
 
@@ -463,13 +457,7 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
     μ147Sm = nanmean(apatite.r147Sm::Vector{T})
 
     # Numerically solve for helium age of the grain
-    heliumage = one(T)
-    for _ in 1:10
-        ∂He∂t = dHe(heliumage, μ238U, μ235U, μ232Th, μ147Sm) # Calculate derivative
-        heliumage += (μHe - He(heliumage, μ238U, μ235U, μ232Th, μ147Sm))/∂He∂t # Move towards zero (He(heliumage) == μHe)
-    end
-
-    return max(heliumage, zero(T))
+    return newton_he_age(μHe, μ238U, μ235U, μ232Th, μ147Sm)
 end
 
 function model_ll(mineral::HeliumSample, Tsteps, dm::DiffusivityModel)
