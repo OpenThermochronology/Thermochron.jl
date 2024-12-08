@@ -18,7 +18,13 @@ abstract type FissionTrackLength{T} <: Chronometer{T} end
 abstract type FissionTrackSample{T} <: AbsoluteChronometer{T} end
 abstract type HeliumSample{T} <: AbsoluteChronometer{T} end
 eU(x::Chronometer{T}) where {T<:AbstractFloat} = T(NaN)
-eU(x::HeliumSample{T}) where {T<:AbstractFloat} = T(nanmean(x.r238U) + 0.238*nanmean(x.r232Th) + 0.012*nanmean(x.r147Sm))
+function eU(x::HeliumSample{T}) where {T<:AbstractFloat}
+    # Convert from atoms/g to ppm
+    eu = nanmean(x.r238U) / (6.022E23 / 1E6 / 238)
+    eu += 0.238*nanmean(x.r232Th) / (6.022E23 / 1E6 / 232)
+    eu += 0.012*nanmean(x.r147Sm) / (6.022E23 / 1E6 / 147)
+    return T(eu)
+end
 
 ## --- Internal functions to get values and uncertainties from any chronometers
 val(x::AbsoluteChronometer{T}) where {T} = x.age::T
