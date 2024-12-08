@@ -16,8 +16,8 @@ module PlotsExt
 
     # Age-eU plots
     Thermochron.ageeuplot(x::Vector{<:Chronometer}, args...; framestyle=:box, xlabel="eU [ppm]", ylabel="Age [Ma]", kwargs...) = ageeuplot!(plot(), x, args...; framestyle, xlabel, ylabel, kwargs...)
-    Thermochron.ageeuplot!(hdl::Plots.Plot, x::Vector{<:Chronometer}; seriestype=:scatter, mscolor=:auto, kwargs...) = plot!(hdl, eU.(x), Thermochron.val.(x); yerror=2*Thermochron.err.(x), seriestype, mscolor, kwargs...)
-    Thermochron.ageeuplot!(hdl::Plots.Subplot, x::Vector{<:Chronometer}; seriestype=:scatter, mscolor=:auto, kwargs...) = plot!(hdl, eU.(x), Thermochron.val.(x); yerror=2*Thermochron.err.(x), seriestype, mscolor, kwargs...)
+    Thermochron.ageeuplot!(hdl::Plots.Plot, x::Vector{<:Chronometer}; seriestype=:scatter, mscolor=:auto, kwargs...) = plot!(hdl, Thermochron.eU.(x), Thermochron.val.(x); yerror=2*Thermochron.err.(x), seriestype, mscolor, kwargs...)
+    Thermochron.ageeuplot!(hdl::Plots.Subplot, x::Vector{<:Chronometer}; seriestype=:scatter, mscolor=:auto, kwargs...) = plot!(hdl, Thermochron.eU.(x), Thermochron.val.(x); yerror=2*Thermochron.err.(x), seriestype, mscolor, kwargs...)
 
     lowerbound(x::Uniform) = x.a
     lowerbound(x::Distribution) = quantile(d, 0.025)

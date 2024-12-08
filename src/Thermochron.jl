@@ -34,7 +34,7 @@ module Thermochron
     const ChronometerUnion{T} = Union{ZirconHe{T}, ApatiteHe{T}, ApatiteFT{T}, ApatiteTrackLength{T}}
     export Chronometer, AbsoluteChronometer                             # Abstract types
     export ApatiteTrackLength, ApatiteFT, ZirconHe, ApatiteHe           # Concrete types
-    export chronometers, empiricaluncertainty!,                         # Functions
+    export chronometers, empiricaluncertainty!, eU,                     # Functions
         get_age, get_age_sigma, set_age!, set_age_sigma!
 
     include("helium.jl")
