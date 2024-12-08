@@ -48,4 +48,9 @@ module Thermochron
 
     include("show.jl")
 
+    # Methodless functions for plotting extensions
+    function ageeuplot end
+    function ageeuplot! end
+    export ageeuplot, ageeuplot!
+
 end
