@@ -3,12 +3,6 @@
 l₀ = 16.38 # [um] initial track length
 σl₀ = 0.09 # [um] initial track length uncertainty
 
-# "Simultaneous fit" Fanning Curvilinear models 
-const FCKetcham1999 = FanningCurvilinear(-19.84402202, 0.3895104539, -51.25312954, -7.642358713, -0.12327, -11.988, 16.38, 0.09)
-export FCKetcham1999
-
-const FCKetcham2007 = SimplifiedCurvilinear(0.39528, 0.01073, -65.12969, -7.91715, 0.04672, 16.38, 0.09)
-export FCKetcham2007
 
 function equivalenttime(t::Number, T::Number, Teq::Number, fc::Union{SimplifiedCurvilinear,FanningCurvilinear})
     exp(fc.C2 + (log(t*SEC_MYR)-fc.C2)*(log(1/(Teq+273.15))-fc.C3)/(log(1/(T+273.15))-fc.C3))/SEC_MYR

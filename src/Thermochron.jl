@@ -26,6 +26,7 @@ module Thermochron
 
     include("types.jl")
     export ZRDAAM, RDAAM, FanningCurvilinear, SimplifiedCurvilinear     # Damage and annealing model types
+    export FCKetcham1999, FCKetcham2007                                 # Aliases
     export Constraint, Unconformity, Boundary, DetailInterval           # Types used as inputs to MCMC functions
 
     include("utilities.jl")

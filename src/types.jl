@@ -7,26 +7,30 @@ Base.length(x::AnnealingModel) = 1
 Base.iterate(x::AnnealingModel) = (x, nothing)
 Base.iterate(x::AnnealingModel, state) = nothing
 
-struct FanningCurvilinear{T<:AbstractFloat} <: AnnealingModel{T} 
-    C0::T
-    C1::T
-    C2::T
-    C3::T
-    alpha::T
-    beta::T
-    l0::T
-    l0_sigma::T
+# Fanning Curvilinear models (Ketcham 1999)
+Base. @kwdef struct FanningCurvilinear{T<:AbstractFloat} <: AnnealingModel{T} 
+    C0::T = -19.844     # "Simultaneous fit" from Ketcham et al. 1999
+    C1::T = 0.38951     # "Simultaneous fit" from Ketcham et al. 1999
+    C2::T = -51.253     # "Simultaneous fit" from Ketcham et al. 1999
+    C3::T = -7.6423     # "Simultaneous fit" from Ketcham et al. 1999
+    alpha::T = -0.12327 # "Simultaneous fit" from Ketcham et al. 1999
+    beta::T = -11.988   # "Simultaneous fit" from Ketcham et al. 1999
+    l0::T = 16.38       # Initial track length
+    l0_sigma::T = 0.09  # Initial track length unertainty
 end
+const FCKetcham1999 = FanningCurvilinear()
 
-struct SimplifiedCurvilinear{T<:AbstractFloat} <: AnnealingModel{T} 
-    C0::T
-    C1::T
-    C2::T
-    C3::T
-    alpha::T
-    l0::T
-    l0_sigma::T
+# Simplified Fanning Curvilinear models (Ketcham 2007)
+Base.@kwdef struct SimplifiedCurvilinear{T<:AbstractFloat} <: AnnealingModel{T} 
+    C0::T = 0.39528     # "Simultaneous fit" from Ketcham et al. 2007
+    C1::T = 0.01073     # "Simultaneous fit" from Ketcham et al. 2007
+    C2::T = -65.12969   # "Simultaneous fit" from Ketcham et al. 2007
+    C3::T = -7.91715    # "Simultaneous fit" from Ketcham et al. 2007
+    alpha::T = 0.04672  # "Simultaneous fit" from Ketcham et al. 2007
+    l0::T = 16.38       # Initial track length
+    l0_sigma::T = 0.09  # Initial track length unertainty
 end
+const FCKetcham2007 = SimplifiedCurvilinear()
 
 ## --- Define DiffusivityModel types
 
