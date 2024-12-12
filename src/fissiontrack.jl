@@ -153,14 +153,14 @@ which they respetively implement include
 function modelage(apatite::ApatiteFT{T}, Tsteps::AbstractVector, am::AnnealingModel{T}) where {T <: AbstractFloat}
     tsteps = apatite.tsteps
     rmr0 = apatite.rmr0
-    dt = step(tsteps)
     @assert issorted(tsteps)
     @assert eachindex(tsteps) == eachindex(Tsteps)
-    Teq = logmeantemp(Tsteps)
-    teq = ftage = zero(T)
-    @inbounds for i in reverse(eachindex(Tsteps))
-        teq += equivalenttime(dt, Tsteps[i], Teq, am)
-        r = rlr(reltracklength(teq, Teq, am), rmr0)
+    teq = dt = step(tsteps)
+    r = rlr(reltracklength(teq, Tsteps[end], am), rmr0)
+    ftage = dt * reltrackdensity(r)
+    @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
+        teq = equivalenttime(teq, Tsteps[i+1], Tsteps[i], am) + dt
+        r = rlr(reltracklength(teq, Tsteps[i], am), rmr0)
         ftage += dt * reltrackdensity(r)
     end
     return ftage
@@ -191,16 +191,16 @@ which they respetively implement include
 function modellength(track::ApatiteTrackLength{T}, Tsteps::AbstractVector, am::AnnealingModel{T}) where {T <: AbstractFloat}
     tsteps = track.tsteps
     rmr0 = track.rmr0
-    dt = step(tsteps)
     r = track.r
     pr = track.pr
     @assert issorted(tsteps)
     @assert eachindex(tsteps) == eachindex(Tsteps) == eachindex(r)
-    Teq = logmeantemp(Tsteps)
-    teq = zero(T)
-    @inbounds for i in reverse(eachindex(Tsteps))
-        teq += equivalenttime(dt, Tsteps[i], Teq, am)
-        r[i] = rlr(reltracklength(teq, Teq, am), rmr0)
+    teq = dt = step(tsteps)
+    r[end] = rlr(reltracklength(teq, Tsteps[end], am), rmr0)
+    pr[end] = reltrackdensity(r[end])
+    @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
+        teq = equivalenttime(teq, Tsteps[i+1], Tsteps[i], am) + dt
+        r[i] = rlr(reltracklength(teq, Tsteps[i], am), rmr0)
         pr[i] = reltrackdensity(r[i])
     end
     return nanmean(r, pr), nanstd(r, pr)

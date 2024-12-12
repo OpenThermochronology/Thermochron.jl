@@ -77,21 +77,22 @@
     @test modelage(apatite, fill(100, 100), FCKetcham2007) ≈ 0.42338708872671615
 
     # Linear cooling
-    @test modelage(apatite, reverse(1:100), FCKetcham1999) ≈ 66.7612470244616
-    @test modelage(apatite, reverse(1:100), FCKetcham2007) ≈ 68.4228509734102
+    @test modelage(apatite, reverse(1:100), FCKetcham1999) ≈ 66.15470736807784 
+    @test modelage(apatite, reverse(1:100), FCKetcham2007) ≈ 67.87471588034019
 
     apatite = ApatiteFT(agesteps=reverse(cntr(0:200)), F=1.75, Cl=0.01, OH=0.24)
     @test apatite isa ApatiteFT{Float64}
     @test apatite.rmr0 ≈ 0.8573573076438294
 
-    @test modelage(apatite, reverse(1:200), FCKetcham1999) ≈ 65.20383965575716
-    @test modelage(apatite, reverse(1:200), FCKetcham2007) ≈ 67.08221305145062
+    # As above but longer history
+    @test modelage(apatite, reverse(1:200), FCKetcham1999) ≈ 66.15470736807784
+    @test modelage(apatite, reverse(1:200), FCKetcham2007) ≈ 67.87471588034019
 
-    @test modelage(apatite, reverse(1:200)./2, FCKetcham1999) ≈ 125.30907058717082
-    @test modelage(apatite, reverse(1:200)./2, FCKetcham2007) ≈ 128.59190431998582
+    @test modelage(apatite, reverse(1:200)./2, FCKetcham1999) ≈ 124.23025599587466
+    @test modelage(apatite, reverse(1:200)./2, FCKetcham2007) ≈ 127.60575486065872
 
-    @test modelage(apatite, reverse(1:200).*2, FCKetcham1999) ≈ 33.38974963378803
-    @test modelage(apatite, reverse(1:200).*2, FCKetcham2007) ≈ 34.52279548202092
+    @test modelage(apatite, reverse(1:200).*2, FCKetcham1999) ≈ 34.92192150860748
+    @test modelage(apatite, reverse(1:200).*2, FCKetcham2007) ≈ 35.79582640096202 
 
     apatite = ApatiteFT(age=25, age_sigma=3, agesteps=reverse(cntr(0:28)), dpar=2.16)
     @test modelage(apatite, fill(20., 28), FCKetcham2007) ≈ 25.25247092840902
@@ -122,22 +123,22 @@
     @test round.(track.r, sigdigits=4) ≈ [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.4888, 0.6017, 0.6895]
 
     l, σ = modellength(track, reverse(1:20).*5, FCKetcham1999) .* 16.38
-    @test l ≈ 14.353253239597725
-    @test σ ≈  1.1781557181942377
-    @test round.(track.r, sigdigits=4) ≈ [0.6248, 0.6874, 0.7303, 0.7631, 0.7896, 0.8117, 0.8307, 0.8471, 0.8615, 0.8743, 0.8857, 0.896, 0.9052, 0.9135, 0.9211, 0.928, 0.9344, 0.9405, 0.9466, 0.9536]
+    @test l ≈ 14.363662652747362
+    @test σ ≈  1.1822475087376938
+    @test round.(track.r, sigdigits=4) ≈ [0.6124, 0.6806, 0.726, 0.7602, 0.7876, 0.8104, 0.8298, 0.8466, 0.8614, 0.8744, 0.886, 0.8963, 0.9056, 0.914, 0.9216, 0.9286, 0.935, 0.941, 0.9469, 0.9536]
     l, σ = modellength(track, reverse(1:20).*5, FCKetcham2007) .* 16.38
-    @test l ≈ 14.548247656072547
-    @test σ ≈  1.1726032551206245
-    @test round.(track.r, sigdigits=4) ≈ [0.6095, 0.6893, 0.7388, 0.7749, 0.8031, 0.8261, 0.8454, 0.8618, 0.8761, 0.8885, 0.8994, 0.9091, 0.9178, 0.9256, 0.9326, 0.9389, 0.9448, 0.9503, 0.9557, 0.9619]
+    @test l ≈ 14.558435101305054
+    @test σ ≈  1.1716416735159647
+    @test round.(track.r, sigdigits=4) ≈ [0.5945, 0.6823, 0.7347, 0.7723, 0.8014, 0.825, 0.8447, 0.8615, 0.8759, 0.8885, 0.8996, 0.9094, 0.9181, 0.926, 0.933, 0.9394, 0.9452, 0.9506, 0.956, 0.9619]
 
     l, σ =  modellength(track, reverse(1:20).*10, FCKetcham1999) .* 16.38 
-    @test l ≈ 14.345912487894068 
-    @test σ ≈  1.1852462926118148
-    @test round.(track.r, sigdigits=4) ≈ [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6592, 0.7475, 0.8011, 0.8392, 0.8682, 0.891, 0.9095, 0.9247, 0.9375, 0.9494]
+    @test l ≈ 14.357128787814558
+    @test σ ≈  1.1841227131850056
+    @test round.(track.r, sigdigits=4) ≈ [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6597, 0.7484, 0.8021, 0.8403, 0.8693, 0.8921, 0.9105, 0.9255, 0.9381, 0.9494]
     l, σ = modellength(track, reverse(1:20).*10, FCKetcham2007) .* 16.38
-    @test l ≈ 14.529573753525176
-    @test σ ≈  1.190954235529948
-    @test round.(track.r, sigdigits=4) ≈ [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6558, 0.7584, 0.8153, 0.854, 0.8825, 0.9044, 0.9218, 0.9358, 0.9475, 0.9581]
+    @test l ≈ 14.538333058948192
+    @test σ ≈  1.1899130108299063
+    @test round.(track.r, sigdigits=4) ≈ [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6564, 0.7592, 0.8162, 0.8549, 0.8834, 0.9053, 0.9225, 0.9364, 0.9479, 0.9581]
 
 ## -- Check the mean track length of a modelled Fish Canyon Apatite to be 15.35 +/- 0.06 um
 
