@@ -65,6 +65,7 @@
         npoints = (haskey(model, :npoints) ? model.npoints : minpoints)::Int
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
         simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
+        dynamicsigma = (haskey(model, :dynamicsigma) ? model.dynamicsigma : true)::Bool
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
         dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10)::T
         dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : 5)::T
@@ -76,9 +77,9 @@
         Tnow, Tinit = extrema(boundary.T₀)
         Tr = T(haskey(model, :Tr) ? model.Tr : (Tinit+Tnow)/2)::T
         dt = T(model.dt)::T
-        σmodel = T(model.σmodel)::T
-        σannealing = T(model.σannealing)::T
-        λannealing = T(model.λannealing)::T
+        σmodel = T(haskey(model, :σmodel) ? model.σmodel : 0)::T
+        σannealing = T(haskey(model, :σannealing) ? model.σannealing : 125)::T
+        λannealing = T(haskey(model, :λannealing) ? model.λannealing : 2/burnin)::T
 
         # Arrays to hold all t and T points (up to npoints=maxpoints)
         agepoints = zeros(T, maxpoints) 
@@ -155,6 +156,7 @@
             copyto!(constraint.agepointsₚ, constraint.agepoints)
             copyto!(constraint.Tpointsₚ, constraint.Tpoints)
             copyto!(boundary.Tpointsₚ, boundary.Tpoints)
+            copyto!(σcalcₚ, σcalc)
             copyto!(σⱼtₚ, σⱼt)
             copyto!(σⱼTₚ, σⱼT)
 
@@ -185,6 +187,9 @@
                 movebounds!(boundary)
                 # If there's an imposed unconformity or other t-T constraint, adjust within bounds
                 movebounds!(constraint, boundary)
+
+                # Move uncertainties
+                dynamicsigma && movesigma!(σcalcₚ, data)
 
             end
 
@@ -269,6 +274,7 @@
             copyto!(constraint.agepointsₚ, constraint.agepoints)
             copyto!(constraint.Tpointsₚ, constraint.Tpoints)
             copyto!(boundary.Tpointsₚ, boundary.Tpoints)
+            copyto!(σcalcₚ, σcalc)
             copyto!(σⱼtₚ, σⱼt)
             copyto!(σⱼTₚ, σⱼT)
 
@@ -299,6 +305,9 @@
                 movebounds!(boundary)
                 # If there's an imposed unconformity or other t-T constraint, adjust within bounds
                 movebounds!(constraint, boundary)
+
+                # Move uncertainties
+                dynamicsigma && movesigma!(σcalcₚ, data)
 
             end
 
@@ -411,6 +420,7 @@
         npoints = (haskey(model, :npoints) ? model.npoints : minpoints)::Int
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
         simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
+        dynamicsigma = (haskey(model, :dynamicsigma) ? model.dynamicsigma : true)::Bool
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
         dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10)::T
         dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : 5)::T
@@ -422,9 +432,9 @@
         Tnow, Tinit = extrema(boundary.T₀)
         Tr = T(haskey(model, :Tr) ? model.Tr : (Tinit+Tnow)/2)::T
         dt = T(model.dt)::T
-        σmodel = T(model.σmodel)::T
-        σannealing = T(model.σannealing)::T
-        λannealing = T(model.λannealing)::T
+        σmodel = T(haskey(model, :σmodel) ? model.σmodel : 0)::T
+        σannealing = T(haskey(model, :σannealing) ? model.σannealing : 125)::T
+        λannealing = T(haskey(model, :λannealing) ? model.λannealing : 2/burnin)::T
 
         # Arrays to hold all t and T points (up to npoints=maxpoints)
         agepoints = zeros(T, maxpoints) 
@@ -504,6 +514,7 @@
             copyto!(constraint.agepointsₚ, constraint.agepoints)
             copyto!(constraint.Tpointsₚ, constraint.Tpoints)
             copyto!(boundary.Tpointsₚ, boundary.Tpoints)
+            copyto!(σcalcₚ, σcalc)
             copyto!(σⱼtₚ, σⱼt)
             copyto!(σⱼTₚ, σⱼT)
 
@@ -534,6 +545,9 @@
                 movebounds!(boundary)
                 # If there's an imposed unconformity or other t-T constraint, adjust within bounds
                 movebounds!(constraint, boundary)
+
+                # Move uncertainties
+                dynamicsigma && movesigma!(σcalcₚ, data)
 
             elseif (r < p_move+p_birth+p_death+p_bounds+p_kinetics)
                 # Adjust kinetic parameters, one at a time
@@ -630,6 +644,7 @@
             copyto!(constraint.agepointsₚ, constraint.agepoints)
             copyto!(constraint.Tpointsₚ, constraint.Tpoints)
             copyto!(boundary.Tpointsₚ, boundary.Tpoints)
+            copyto!(σcalcₚ, σcalc)
             copyto!(σⱼtₚ, σⱼt)
             copyto!(σⱼTₚ, σⱼT)
 
@@ -660,6 +675,9 @@
                 movebounds!(boundary)
                 # If there's an imposed unconformity or other t-T constraint, adjust within bounds
                 movebounds!(constraint, boundary)
+
+                # Move uncertainties
+                dynamicsigma && movesigma!(σcalcₚ, data)
 
             elseif (r < p_move+p_birth+p_death+p_bounds+p_kinetics)
                 # Adjust kinetic parameters, one at a time
