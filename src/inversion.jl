@@ -58,10 +58,10 @@
         # Process inputs
         observed = val.(data)::Vector{T}
         observed_sigma = err.(data)::Vector{T}
+        burnin = (haskey(model, :burnin) ? model.burnin : 5*10^5)::Int
         nsteps = (haskey(model, :nsteps) ? model.nsteps : 10^6)::Int
         minpoints = (haskey(model, :minpoints) ? model.minpoints : 1)::Int
         maxpoints = (haskey(model, :maxpoints) ? model.maxpoints : 50)::Int
-        burnin = (haskey(model, :burnin) ? model.burnin : 5*10^5)::Int
         npoints = (haskey(model, :npoints) ? model.npoints : minpoints)::Int
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
         simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
@@ -197,7 +197,7 @@
             ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, constraint.agepointsₚ)::StridedVector{T}
             temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, constraint.Tpointsₚ)::StridedVector{T}
             linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
-            
+
             # Ensure we have enough points in the "detail" interval, if any
             if detail.minpoints > 0
                 (pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto brestart
@@ -245,7 +245,7 @@
             (mod(n, progress_interval) == 0) && update!(bprogress, n)
         end
         finish!(bprogress)
- 
+
         # Final log likelihood
         ll = norm_ll(observed, σ, μcalc, σcalc) + llna
 
@@ -695,7 +695,7 @@
             if detail.minpoints > 0
                 (pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto crestart
             end
-               
+
             # Calculate model ages for each grain
             modelages!(μcalcₚ, σcalcₚ, data, Tsteps, zdmₚ, admₚ, aftm)
 
@@ -703,7 +703,7 @@
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
             llnaₚ += loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀)
             simplified && (llnaₚ += -log(npointsₚ))
-            llₚ = norm_ll(observed, σₐ, μcalcₚ, σcalcₚ) + llnaₚ
+            llₚ = norm_ll(observed, σ, μcalcₚ, σcalcₚ) + llnaₚ
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - ll)
@@ -738,7 +738,7 @@
             end
 
             # Record results for analysis and troubleshooting
-            lldist[n] = llna + norm_ll(observed, σ, μcalc, σcalc) # Recalculated to constant baseline
+            lldist[n] = ll
             ndist[n] = npoints # distribution of # of points
             σⱼtdist[n] = σⱼt[k]
             σⱼTdist[n] = σⱼT[k]
