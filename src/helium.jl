@@ -168,13 +168,13 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, dt::Number, t
             else
                 zero(T)
             end
-            
-            # # Additional Ketcham correction (questionable, given it does not pass through 0,0)
-            # if ρᵣ[i,j]>=0.765
-            #     ρᵣ[i,j] = 1.6*ρᵣ[i,j]-0.6
-            # else
-            #     ρᵣ[i,j] = 9.205*ρᵣ[i,j]*ρᵣ[i,j] - 9.157*ρᵣ[i,j] + 2.269
-            # end
+        end
+    end
+
+    # Convert from length to density
+    @inbounds for j ∈ 1:ntsteps
+        for i ∈ j:ntsteps
+            ρᵣ[i,j] = reltrackdensity(ρᵣ[i,j])
         end
     end
 
