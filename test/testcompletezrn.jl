@@ -9,30 +9,29 @@ BLAS.get_num_threads() > 2 && BLAS.set_num_threads(2)
 ## --- Prepare problem
 
 model = (
-    burnin = 350, # How long should we wait for MC to converge (become stationary)
-    nsteps = 250, # How many steps of the Markov chain should we run after burn-in?
-    dr = 1.0,    # Radius step, in microns
-    dt = 10.0,   # time step size in Myr
-    dTmax = 25.0, # Maximum reheating/burial per model timestep
-    Tinit = 400.0, # initial model temperature (in C) (i.e., crystallization temperature)
-    ΔTinit = -50.0, # Tinit can vary from Tinit to Tinit+ΔTinit
-    Tnow = 0.0, # Current surface temperature (in C)
-    ΔTnow = 10.0, # Tnow may vary from Tnow to Tnow+ΔTnow
-    tnow = 0.0 ,  # Today
-    tinitMax = 4000.0, # Ma -- forbid anything older than this
-    minpoints = 1,  # Minimum allowed number of t-T points
-    maxpoints = 40, # Maximum allowed number of t-T points
-    npoints = 5, # Number of initial t-T points
-    Tr = 250., # Residence temperature in initial proposal
-    simplified = false, # Prefer simpler tT paths?
-    tboundary = :reflecting, # Reflecting time boundary conditions
-    Tboundary = :reflecting, # Reflecting temperature boundary conditions
+    burnin = 350,               # [n] How long should we wait for MC to converge (become stationary)
+    nsteps = 250,               # [n] How many steps of the Markov chain should we run after burn-in?
+    dr = 1.0,                   # [μ] Radius step size
+    dt = 10.0,                  # [Ma] time step size
+    dTmax = 25.0,               # [C/step] Maximum reheating/burial per model timestep
+    Tinit = 400.0,              # [C] initial model temperature (i.e., crystallization temperature)
+    ΔTinit = -50.0,             # [C] Tinit can vary from Tinit to Tinit+ΔTinit
+    Tnow = 0.0,                 # [C] Current surface temperature
+    ΔTnow = 10.0,               # [C] Tnow may vary from Tnow to Tnow+ΔTnow
+    tnow = 0.0 ,                # [Ma] Today
+    tinitMax = 4000.0,          # [Ma] Forbid anything older than this
+    minpoints = 1,              # [n] Minimum allowed number of t-T points
+    maxpoints = 40,             # [n] Maximum allowed number of t-T points
+    npoints = 5,                # [n] Initial number of t-T points
+    Tr = 250.,                  # [C] Residence temperature of initial proposal
+    simplified = false,         # Prefer simpler tT paths?
+    dynamicsigma = true,        # Update model uncertainties?
     # Model uncertainty is not well known (depends on annealing parameters,
     # decay constants, diffusion parameters, etc.), but is certainly non-zero.
     # Here we add (in quadrature) a blanket model uncertainty of 25 Ma.
-    σmodel = 25.0, # Ma
-    σannealing = 35.0, # initial annealing uncertainty [Ma]
-    λannealing = 10 ./ 200 # annealing decay [1/n]
+    σmodel = 25.0,              # [Ma] assumed model uncertainty (resampled if dynamicsigma)
+    σannealing = 35.0,          # [Ma] initial annealing uncertainty
+    λannealing = 10 ./ 200,     # [1/n] annealing decay
 )
 
 # Populate data NamedTuple from imported dataset

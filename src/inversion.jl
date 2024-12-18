@@ -65,7 +65,7 @@
         npoints = (haskey(model, :npoints) ? model.npoints : minpoints)::Int
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
         simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
-        dynamicsigma = (haskey(model, :dynamicsigma) ? model.dynamicsigma : true)::Bool
+        dynamicsigma = (haskey(model, :dynamicsigma) ? model.dynamicsigma : false)::Bool
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
         dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10)::T
         dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : 5)::T
@@ -420,7 +420,7 @@
         npoints = (haskey(model, :npoints) ? model.npoints : minpoints)::Int
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
         simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
-        dynamicsigma = (haskey(model, :dynamicsigma) ? model.dynamicsigma : true)::Bool
+        dynamicsigma = (haskey(model, :dynamicsigma) ? model.dynamicsigma : false)::Bool
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
         dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10)::T
         dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : 5)::T
