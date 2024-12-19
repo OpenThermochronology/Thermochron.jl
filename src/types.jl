@@ -45,13 +45,13 @@ Base.iterate(x::DiffusivityModel, state) = nothing
 
 Base.@kwdef struct ZRDAAM{T<:AbstractFloat} <: ZirconHeliumModel{T} 
     DzD0::T = 193188.0          # Diffusivity [cm^2/sec], crystalline endmember
-    DzD0_logsigma::T=log(2)/2   # log units (default = log(2) = a factor of 2)
+    DzD0_logsigma::T=1/2        # log units (default = 1/2 = a factor of ℯ two-sigma)
     DzEa::T=165.0               # Activation energy [kJ/mol], crystalline endmember
-    DzEa_logsigma::T=log(2)/2   # log units (default = log(2) = a factor of 2)
+    DzEa_logsigma::T=1/2        # log units (default = 1/2 = a factor of ℯ two-sigma)
     DN17D0::T = 6.367E-3        # Diffusivity [cm^2/sec], amorphous endmember
-    DN17D0_logsigma::T=log(2)/2 # log units (default = log(2) = a factor of 2)
+    DN17D0_logsigma::T=1/2      # log units (default = 1/2 = a factor of ℯ two-sigma)
     DN17Ea::T=71.0              # Activation energy [kJ/mol], amorphous endmember
-    DN17Ea_logsigma::T=log(2)/2 # log units (default = log(2) = a factor of 2)
+    DN17Ea_logsigma::T=1/2      # log units (default = 1/2 = a factor of ℯ two-sigma)
     lint0::T=45920.0            # [nm]
     SV::T=1.669                 # [1/nm]
     Bα::T=5.48E-19              # Amorphous material produced per alpha decay [g/alpha]
@@ -67,11 +67,11 @@ end
 
 Base.@kwdef struct RDAAM{T<:AbstractFloat} <: ApatiteHeliumModel{T} 
     D0L::T=0.6071               # Diffusivity [cm^2/s]
-    D0L_logsigma::T=log(2)/2    # log units (default = log(2) = a factor of 2)
+    D0L_logsigma::T=1/2         # log units (default = 1/2 = a factor of ℯ two-sigma)
     EaL::T=122.3                # Activation energy [kJ/mol]
-    EaL_logsigma::T=log(2)/2    # log units (default = log(2) = a factor of 2)
+    EaL_logsigma::T=1/2         # log units (default = 1/2 = a factor of ℯ two-sigma)
     EaTrap::T=34.0              # Activation energy [kJ/mol]
-    EaTrap_logsigma::T=log(2)/2 # log units (default = log(2) = a factor of 2)
+    EaTrap_logsigma::T=1/2      # log units (default = 1/2 = a factor of ℯ two-sigma)
     psi::T=1e-13                # empirical polynomial coefficient
     omega::T=1e-22              # empirical polynomial coefficient
     etaq::T=0.91                # Durango ηq
