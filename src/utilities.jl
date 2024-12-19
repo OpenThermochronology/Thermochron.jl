@@ -313,20 +313,22 @@
     end
 
     function movekinetics(zdm::ZRDAAM)
+        p = 0.5
         ZRDAAM(
-            DzEa = (rand()<0.5) ? exp(log(zdm.DzEa)+randn()*zdm.DzEa_logsigma) : zdm.DzEa,
-            DzD0 = (rand()<0.5) ? exp(log(zdm.DzD0)+randn()*zdm.DzD0_logsigma) : zdm.DzD0,
-            DN17Ea = (rand()<0.5) ? exp(log(zdm.DN17Ea)+randn()*zdm.DN17Ea_logsigma) : zdm.DN17Ea,
-            DN17D0 = (rand()<0.5) ? exp(log(zdm.DN17D0)+randn()*zdm.DN17D0_logsigma) : zdm.DN17D0,
-            rmr0 = (rand()<0.5) ? reflecting(zdm.rmr0 + randn()*zdm.rmr0_sigma, 0, 1) : zdm.rmr0,
+            DzEa = (rand()<p) ? exp(log(zdm.DzEa)+randn()*zdm.DzEa_logsigma) : zdm.DzEa,
+            DzD0 = (rand()<p) ? exp(log(zdm.DzD0)+randn()*zdm.DzD0_logsigma) : zdm.DzD0,
+            DN17Ea = (rand()<p) ? exp(log(zdm.DN17Ea)+randn()*zdm.DN17Ea_logsigma) : zdm.DN17Ea,
+            DN17D0 = (rand()<p) ? exp(log(zdm.DN17D0)+randn()*zdm.DN17D0_logsigma) : zdm.DN17D0,
+            rmr0 = (rand()<p) ? reflecting(zdm.rmr0 + randn()*zdm.rmr0_sigma, 0, 1) : zdm.rmr0,
         )
     end
     function movekinetics(adm::RDAAM)
-        rmr0 = (rand()<0.5) ? reflecting(adm.rmr0 + randn()*adm.rmr0_sigma, 0, 1) : adm.rmr0
+        p = 0.5
+        rmr0 = (rand()<p) ? reflecting(adm.rmr0 + randn()*adm.rmr0_sigma, 0, 1) : adm.rmr0
         RDAAM(
-            D0L = (rand()<0.5) ? exp(log(adm.D0L)+randn()*adm.D0L_logsigma) : adm.D0L,
-            EaL = (rand()<0.5) ? exp(log(adm.EaL)+randn()*adm.EaL_logsigma) : adm.EaL,
-            EaTrap = (rand()<0.5) ? exp(log(adm.EaTrap)+randn()*adm.EaTrap_logsigma) : adm.EaTrap,
+            D0L = (rand()<p) ? exp(log(adm.D0L)+randn()*adm.D0L_logsigma) : adm.D0L,
+            EaL = (rand()<p) ? exp(log(adm.EaL)+randn()*adm.EaL_logsigma) : adm.EaL,
+            EaTrap = (rand()<p) ? exp(log(adm.EaTrap)+randn()*adm.EaTrap_logsigma) : adm.EaTrap,
             rmr0 = rmr0,
             kappa = adm.kappa_rmr0 - rmr0,
         )

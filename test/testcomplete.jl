@@ -19,7 +19,6 @@ model = (
     Tnow = 0.0,                 # [C] Current surface temperature
     ΔTnow = 10.0,               # [C] Tnow may vary from Tnow to Tnow+ΔTnow
     tnow = 0.0 ,                # [Ma] Today
-    tinitMax = 4000.0,          # [Ma] Forbid anything older than this
     minpoints = 1,              # [n] Minimum allowed number of t-T points
     maxpoints = 40,             # [n] Maximum allowed number of t-T points
     npoints = 5,                # [n] Initial number of t-T points
@@ -46,8 +45,7 @@ data = (
     mineral = ds.mineral                    # zircon or apatite
 )
 
-# Sort out crystallization ages and start time
-map!(x->min(x, model.tinitMax), data.crystAge, data.crystAge)
+# Crystallization ages and start time
 tinit = ceil(maximum(data.crystAge)/model.dt) * model.dt
 model = (model...,
     tinit = tinit,

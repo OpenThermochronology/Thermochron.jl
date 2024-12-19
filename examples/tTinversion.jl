@@ -44,11 +44,9 @@
         Tnow = 0.0,                 # Current surface temperature (in C)
         ΔTnow = 20.0,               # Tnow may vary from Tnow to Tnow+ΔTnow
         tnow = 0.0,                 # Today
-        tinitMax = 3500.0,          # Ma -- forbid anything older than this
-        minpoints = 20,             # Minimum allowed number of t-T points
+        minpoints = 15,             # Minimum allowed number of t-T points
         maxpoints = 50,             # Maximum allowed number of t-T points
-        simplified = false,         # Prefer simpler tT paths?
-        dynamicsigma = false,        # Update model uncertainties?
+        dynamicsigma = true,        # Update model uncertainties?
         dynamicjumping = true,      # Update the t and t jumping (proposal) distributions based on previously accepted jumps
         # Damage and annealing models for diffusivity (specify custom kinetics if desired)
         adm = RDAAM(),
@@ -56,14 +54,13 @@
         aftm = SimplifiedCurvilinear(),
         # Model uncertainty is not well known (depends on annealing parameters,
         # decay constants, diffusion parameters, etc.), but is certainly non-zero.
-        # Here we add (in quadrature) a blanket model uncertainty of 25 Ma.
+        # Here we add (in quadrature) a blanket model uncertainty of 5 Ma.
         σmodel = 5.0,               # [Ma]
-        σannealing = 135.0,         # initial annealing uncertainty [Ma]
+        σannealing = 35.0,          # initial annealing uncertainty [Ma]
         λannealing = 1 ./ 100_000   # annealing decay [1/n]
     )
 
-    # Sort out crystallization ages and start time
-    map!(x->min(x, model.tinitMax), ds.crystallization_age_Ma, ds.crystallization_age_Ma)
+    # Crystallization ages and start time
     tinit = ceil(maximum(ds.crystallization_age_Ma)/model.dt) * model.dt
     model = (model...,
         tinit = tinit,
@@ -74,12 +71,12 @@
     # Default: no detail interval
     detail = DetailInterval()
 
-    # Uncomment this section to require greater t-T node density in some time interval
-    detail = DetailInterval(
-        agemin = 0.0, # Youngest end of detail interval
-        agemax = 541.0, # Oldest end of detail interval
-        minpoints = 7, # Minimum number of points in detail interval
-    )
+    # # Uncomment this section to require greater t-T node density in some time interval
+    # detail = DetailInterval(
+    #     agemin = 0.0, # Youngest end of detail interval
+    #     agemax = 541.0, # Oldest end of detail interval
+    #     minpoints = 7, # Minimum number of points in detail interval
+    # )
 
     # Boundary conditions (e.g. 10C at present and 650 C at the time of zircon formation).
     boundary = Boundary(
@@ -241,6 +238,7 @@
     A = imsc(tTimage, ylcn, 0, nanpctile(tTimage[:],98.5))
     plot!(k[1], xlabel="Time (Ma)", ylabel="Temperature (°C)", yticks=model.Tnow:50:model.Tinit, xticks=model.tnow:500:model.tinit, yminorticks=5, xminorticks=5, tick_dir=:out, framestyle=:box)
     plot!(k[1], xq, cntr(ybinedges), A, yflip=true, xflip=true, legend=false, aspectratio=model.tinit/model.Tinit/1.5, xlims=(0,model.tinit), ylims=(model.Tnow,model.Tinit))
+    plot!(k[1], constraint) # Add constraint boxes
 
     # Add colorbar in second subplot
     cb = imsc(repeat(0:100, 1, 10), ylcn, 0, 100)
