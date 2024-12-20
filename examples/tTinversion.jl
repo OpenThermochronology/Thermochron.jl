@@ -34,30 +34,30 @@
 ## --- Prepare problem
 
     model = (
-        nsteps = 600000,            # How many steps of the Markov chain should we run?
-        burnin = 350000,            # How long should we wait for MC to converge (become stationary)
-        dr = 1.0,                   # Radius step, in microns
-        dt = 8.0,                   # Time step size in Myr
-        dTmax = 10.0,               # Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
-        Tinit = 300.0,              # Initial model temperature (in C) (i.e., crystallization temperature)
-        ΔTinit = -50.0,             # Tinit can vary from Tinit to Tinit+ΔTinit
-        Tnow = 0.0,                 # Current surface temperature (in C)
-        ΔTnow = 20.0,               # Tnow may vary from Tnow to Tnow+ΔTnow
-        tnow = 0.0,                 # Today
-        minpoints = 15,             # Minimum allowed number of t-T points
-        maxpoints = 50,             # Maximum allowed number of t-T points
-        dynamicsigma = true,        # Update model uncertainties?
-        dynamicjumping = true,      # Update the t and t jumping (proposal) distributions based on previously accepted jumps
+        nsteps = 600000,                # [n] How many steps of the Markov chain should we run?
+        burnin = 350000,                # [n] How long should we wait for MC to converge (become stationary)
+        dr = 1.0,                       # [μm] Radius step size
+        dt = 8.0,                       # [Ma] Time step size
+        dTmax = 10.0,                   # [Ma/dt] Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
+        Tinit = 400.0,                  # [C] Initial model temperature (i.e., crystallization temperature)
+        ΔTinit = -50.0,                 # [C] Tinit can vary from Tinit to Tinit+ΔTinit
+        Tnow = 0.0,                     # [C] Current surface temperature
+        ΔTnow = 20.0,                   # [Ma] Tnow may vary from Tnow to Tnow+ΔTnow
+        tnow = 0.0,                     # [Ma] Today
+        minpoints = 15,                 # [n] Minimum allowed number of t-T points
+        maxpoints = 50,                 # [n] Maximum allowed number of t-T points
+        dynamicsigma = true,            # Update model uncertainties?
+        dynamicjumping = true,          # Update the t and t jumping (proposal) distributions based on previously accepted jumps
         # Damage and annealing models for diffusivity (specify custom kinetics if desired)
-        adm = RDAAM(),
-        zdm = ZRDAAM(), 
-        aftm = SimplifiedCurvilinear(),
+        adm = RDAAM(),                  # Flowers et al. 2009 (doi: 10.1016/j.gca.2009.01.015)
+        zdm = ZRDAAM(),                 # Guenthner et al. 2013 (doi: 10.2475/03.2013.01)
+        aftm = SimplifiedCurvilinear(), # Ketcham et al. 2007 (doi: 10.2138/am.2007.2281)
         # Model uncertainty is not well known (depends on annealing parameters,
         # decay constants, diffusion parameters, etc.), but is certainly non-zero.
         # Here we add (in quadrature) a blanket model uncertainty of 5 Ma.
-        σmodel = 5.0,               # [Ma]
-        σannealing = 35.0,          # initial annealing uncertainty [Ma]
-        λannealing = 1 ./ 100_000   # annealing decay [1/n]
+        σmodel = 5.0,                   # [Ma] model uncertainty
+        σannealing = 55.0,              # [Ma] initial annealing uncertainty 
+        λannealing = 1 ./ 100_000       # [1/n] annealing decay 
     )
 
     # Crystallization ages and start time
