@@ -28,25 +28,31 @@
     # # # # # # # # # # Choice of regional thermochron data # # # # # # # # # #
 
     # Literature samples from Guenthner et al. 2013 (AJS), Minnesota
+    # (23 ZirconHe, 11 ApatiteHe)
     name = "Minnesota"
     ds = importdataset("minnesota.csv", ',', importas=:Tuple)
+
+    # # Literature samples from McDannell et al. 2022 (doi: 10.1130/G50315.1), Manitoba
+    # # (12 ZirconHe, 5 ApatiteHe, 47 ApatiteFT, 269 ApatiteTrackLength)
+    # name = "Manitoba"
+    # ds = importdataset("manitoba.csv", ',', importas=:Tuple)
 
 ## --- Prepare problem
 
     model = (
-        nsteps = 600000,                # [n] How many steps of the Markov chain should we run?
+        nsteps = 1000000,               # [n] How many steps of the Markov chain should we run?
         burnin = 350000,                # [n] How long should we wait for MC to converge (become stationary)
         dr = 1.0,                       # [μm] Radius step size
         dt = 8.0,                       # [Ma] Time step size
         dTmax = 10.0,                   # [Ma/dt] Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
         Tinit = 400.0,                  # [C] Initial model temperature (i.e., crystallization temperature)
-        ΔTinit = -50.0,                 # [C] Tinit can vary from Tinit to Tinit+ΔTinit
+        ΔTinit = -100.0,                # [C] Tinit can vary from Tinit to Tinit+ΔTinit
         Tnow = 0.0,                     # [C] Current surface temperature
         ΔTnow = 20.0,                   # [Ma] Tnow may vary from Tnow to Tnow+ΔTnow
         tnow = 0.0,                     # [Ma] Today
         minpoints = 15,                 # [n] Minimum allowed number of t-T points
         maxpoints = 50,                 # [n] Maximum allowed number of t-T points
-        dynamicsigma = true,            # Update model uncertainties?
+        dynamicsigma = false,           # Update model uncertainties?
         dynamicjumping = true,          # Update the t and t jumping (proposal) distributions based on previously accepted jumps
         # Damage and annealing models for diffusivity (specify custom kinetics if desired)
         adm = RDAAM(),                  # Flowers et al. 2009 (doi: 10.1016/j.gca.2009.01.015)
@@ -72,6 +78,7 @@
     detail = DetailInterval()
 
     # # Uncomment this section to require greater t-T node density in some time interval
+    # # (typically the youngest end of the total time interval, where you may expect the data more resolving power)
     # detail = DetailInterval(
     #     agemin = 0.0, # Youngest end of detail interval
     #     agemax = 541.0, # Oldest end of detail interval
@@ -210,16 +217,15 @@
 
 ## --- Create image of paths
 
-    # Desired rsolution of tTing image
+    # Desired rsolution of tT image
     xresolution = 2000
     yresolution = 1000
-    burnin = model.burnin
 
     # Resize the post-burnin part of the stationary distribution
-    tTdist = Array{Float64}(undef, xresolution, model.nsteps-burnin)
+    tTdist = Array{Float64}(undef, xresolution, model.nsteps)
     xq = range(0, model.tinit, length=xresolution)
-    @time @inbounds for i = 1:model.nsteps-burnin
-        linterp1s!(view(tTdist,:,i), view(tT.tpointdist,:,i+burnin), view(tT.Tpointdist,:,i+burnin), xq)
+    @time @inbounds for i = 1:model.nsteps
+        linterp1s!(view(tTdist,:,i), view(tT.tpointdist,:,i), view(tT.Tpointdist,:,i), xq)
     end
 
     # Calculate composite image
