@@ -1,7 +1,7 @@
 name = "Thermochron"
 uuid = "b9a8379e-ee1a-4388-b7ca-7852af1cef08"
 authors = ["C. Brenhin Keller and collaborators"]
-version = "0.11.1"
+version = "0.11.2"
 
 [deps]
 BangBang = "198e06fe-97b7-11e9-32a5-e1d131e6ad66"
@@ -30,5 +30,5 @@ LsqFit = "0.15.0"
 NaNStatistics = "0.6"
 ProgressMeter = "1"
 Reexport = "1"
-StatGeochemBase = "0.4.3, 0.5, 0.6"
+StatGeochemBase = "0.6.11"
 julia = "1.11"

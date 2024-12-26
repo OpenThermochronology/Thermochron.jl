@@ -433,3 +433,21 @@ DN17Eamean = mean(kinetics.zdmdist .|> x-> x.DN17Ea)
 rmr0mean = mean(kinetics.zdmdist .|> x-> x.rmr0)
 @test 0 < rmr0mean < 1
 @info "Mean zircon rmr0: $rmr0mean"
+
+## --- Test conversion of t-T images 
+
+ttimage, xq, yq = image_from_paths(tT, xresolution=200, yresolution=100, yrange=boundary.T₀)
+@test xq == 8.75:17.5:3491.25
+@test yq == 2.0:4.0:398.0
+@test ttimage isa Matrix
+@test axes(ttimage, 1) == 1:100
+@test axes(ttimage, 2) == 1:200
+
+ttimage2, xq2, yq2 = image_from_paths!(tT, xresolution=200, yresolution=100, yrange=boundary.T₀)
+@test xq2 == 8.75:17.5:3491.25
+@test yq2 == 2.0:4.0:398.0
+@test ttimage2 isa Matrix
+@test axes(ttimage2, 1) == 1:100
+@test axes(ttimage2, 2) == 1:200
+
+@test ttimage == ttimage2
