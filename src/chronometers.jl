@@ -137,9 +137,25 @@ end
 ## --- Helium sample types
 """
 ```julia
-ZirconHe(r, dr, U238, Th232, [Sm147], agesteps::AbstractVector)
+ZirconHe(T=Float64;
+    age::Number=T(NaN),
+    age_sigma::Number=T(NaN),
+    r::Number=one(T),
+    dr::Number, 
+    U238::Number,
+    Th232::Number,
+    Sm147::Number=zero(T),
+    agesteps::AbstractRange
+)
 ```
-Construct a `ZirconHe` object
+Construct a `ZirconHe` chronometer representing a zircon with a raw 
+helium age of `age` ± `age_sigma` Ma, a  radius of `r` μm, and uniform 
+U, Th and Sm concentrations in ppm specified by `U238`, `Th232`, and `Sm147`. 
+A present day U-235/U-238 ratio of 1/137.818 is assumed.
+
+Spatial discretization follows a radius step of `dr` μm, and temporal
+discretization follows the age steps specified by the `agesteps` range,
+in Ma.
 """
 # Concretely-typed immutable struct to hold information about a single zircon (Helium) crystal
 struct ZirconHe{T<:AbstractFloat} <: HeliumSample{T}
@@ -215,8 +231,8 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
     dint = zeros(T, length(redges) - 1)
     
     r238UHe = zeros(T, size(r238U))
-    @inbounds for ri = 1:length(rsteps)
-        for i=1:length(alpharadii238U)
+    @inbounds for ri in eachindex(rsteps, relvolumes, r238U)
+        for i in eachindex(alpharadii238U)
             # Effective radial alpha deposition from 238U
             intersectiondensity!(dint,redges,relvolumes,alpharadii238U[i],rsteps[ri])
             @. r238UHe += relvolumes[ri] * dint * r238U[ri]
@@ -225,8 +241,8 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
 
     # Effective radial alpha deposition from U-235
     r235UHe = zeros(T, size(r235U))
-    @inbounds for ri = 1:length(rsteps)
-        for i=1:length(alpharadii235U)
+    @inbounds for ri in eachindex(rsteps, relvolumes, r235U)
+        for i in eachindex(alpharadii235U)
             # Effective radial alpha deposition from 235U
             intersectiondensity!(dint, redges,relvolumes,alpharadii235U[i],rsteps[ri])
             @. r235UHe += relvolumes[ri] * dint * r235U[ri]
@@ -235,8 +251,8 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
 
     # Effective radial alpha deposition from Th-232
     r232ThHe = zeros(T, size(r232Th))
-    @inbounds for ri = 1:length(rsteps)
-        for i=1:length(alpharadii232Th)
+    @inbounds for ri in eachindex(rsteps, relvolumes, r232Th)
+        for i in eachindex(alpharadii232Th)
             # Effective radial alpha deposition from 232Th
             intersectiondensity!(dint, redges,relvolumes,alpharadii232Th[i],rsteps[ri])
             @. r232ThHe += relvolumes[ri] * dint * r232Th[ri]
@@ -245,8 +261,8 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
 
     # Effective radial alpha deposition from Sm-147
     r147SmHe = zeros(T, size(r147Sm))
-    @inbounds for ri = 1:length(rsteps)
-        for i=1:length(alpharadii147Sm)
+    @inbounds for ri in eachindex(rsteps, relvolumes, r147Sm)
+        for i in eachindex(alpharadii147Sm)
             intersectiondensity!(dint, redges,relvolumes,alpharadii147Sm[i],rsteps[ri])
             @. r147SmHe += relvolumes[ri] * dint * r147Sm[ri]
         end
@@ -336,9 +352,25 @@ end
 
 """
 ```julia
-ApatiteHe(r, dr, U238, Th232, [Sm147], agesteps::AbstractVector)
+ApatiteHe(T=Float64;
+    age::Number=T(NaN),
+    age_sigma::Number=T(NaN),
+    r::Number, 
+    dr::Number=one(T), 
+    U238::Number, 
+    Th232::Number, 
+    Sm147::Number=zero(T), 
+    agesteps::AbstractRange,
+)
 ```
-Construct an `ApatiteHe` object
+Construct an `ApatiteHe` chronometer representing an apatite with a raw 
+helium age of `age` ± `age_sigma` Ma, a  radius of `r` μm, and uniform 
+U, Th and Sm concentrations in ppm specified by `U238`, `Th232`, and `Sm147`. 
+A present day U-235/U-238 ratio of 1/137.818 is assumed.
+
+Spatial discretization follows a radius step of `dr` μm, and temporal
+discretization follows the age steps specified by the `agesteps` range,
+in Ma.
 """
 # Concretely-typed immutable struct to hold information about a single apatite (Helium) crystal
 struct ApatiteHe{T<:AbstractFloat} <: HeliumSample{T}
@@ -414,8 +446,8 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
 
     # Effective radial alpha deposition from U-238
     r238UHe = zeros(T, size(r238U))
-    @inbounds for ri = 1:length(rsteps)
-        for i=1:length(alpharadii238U)
+    @inbounds for ri in eachindex(rsteps, relvolumes, r238U)
+        for i in eachindex(alpharadii238U)
             # Effective radial alpha deposition from 238U
             intersectiondensity!(dint,redges,relvolumes,alpharadii238U[i],rsteps[ri])
             @. r238UHe += relvolumes[ri] * dint * r238U[ri]
@@ -424,8 +456,8 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
 
     # Effective radial alpha deposition from U-235
     r235UHe = zeros(T, size(r235U))
-    @inbounds for ri = 1:length(rsteps)
-        for i=1:length(alpharadii235U)
+    @inbounds for ri in eachindex(rsteps, relvolumes, r235U)
+        for i in eachindex(alpharadii235U)
             # Effective radial alpha deposition from 235U
             intersectiondensity!(dint, redges,relvolumes,alpharadii235U[i],rsteps[ri])
             @. r235UHe += relvolumes[ri] * dint * r235U[ri]
@@ -434,8 +466,8 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
 
     # Effective radial alpha deposition from Th-232
     r232ThHe = zeros(T, size(r232Th))
-    @inbounds for ri = 1:length(rsteps)
-        for i=1:length(alpharadii232Th)
+    @inbounds for ri in eachindex(rsteps, relvolumes, r232Th)
+        for i in eachindex(alpharadii232Th)
             # Effective radial alpha deposition from 232Th
             intersectiondensity!(dint, redges,relvolumes,alpharadii232Th[i],rsteps[ri])
             @. r232ThHe += relvolumes[ri] * dint * r232Th[ri]
@@ -444,8 +476,8 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
 
     # Effective radial alpha deposition from Sm-147
     r147SmHe = zeros(T, size(r147Sm))
-    @inbounds for ri = 1:length(rsteps)
-        for i=1:length(alpharadii147Sm)
+    @inbounds for ri in eachindex(rsteps, relvolumes, r147Sm)
+        for i in eachindex(alpharadii147Sm)
             intersectiondensity!(dint, redges,relvolumes,alpharadii147Sm[i],rsteps[ri])
             @. r147SmHe += relvolumes[ri] * dint * r147Sm[ri]
         end
