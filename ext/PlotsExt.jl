@@ -20,9 +20,9 @@ module PlotsExt
     Thermochron.ageeuplot!(hdl::Plots.Subplot, x::Vector{<:Chronometer}; seriestype=:scatter, mscolor=:auto, kwargs...) = plot!(hdl, Thermochron.eU.(x), Thermochron.val.(x); yerror=2*Thermochron.err.(x), seriestype, mscolor, kwargs...)
 
     lowerbound(x::Uniform) = x.a
-    lowerbound(x::Distribution) = quantile(d, 0.025)
+    lowerbound(x::Distribution) = quantile(x, 0.025)
     upperbound(x::Uniform) = x.b
-    upperbound(x::Distribution) = quantile(d, 0.975)
+    upperbound(x::Distribution) = quantile(x, 0.975)
 
     Plots.plot(c::Constraint; framestyle=:box, kwargs...) = plot!(plot(), c; framestyle, kwargs...)
     for P in (Plots.Plot, Plots.Subplot)
