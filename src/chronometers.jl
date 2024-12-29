@@ -565,6 +565,208 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
 end
 
 
+"""
+```julia
+GenericHe(T=Float64;
+    age::Number=T(NaN),
+    age_sigma::Number=T(NaN),
+    D0::Number,
+    Ea::Number,
+    r::Number, 
+    dr::Number=one(T), 
+    U238::Number, 
+    Th232::Number, 
+    Sm147::Number=zero(T), 
+    agesteps::AbstractRange,
+)
+```
+Construct an `GenericHe` chronometer representing a mineral with a raw 
+helium age of `age` ± `age_sigma` Ma, a uniform diffusivity specified by
+a D₀ of `D0` cm^2/sec and an activation energy of `Ea` kJ/mol, a 
+radius of `r` μm, and uniform U, Th and Sm concentrations in ppm
+specified by `U238`, `Th232`, and `Sm147`. (A present day U-235/U-238 
+ratio of 1/137.818 is assumed)
+
+Spatial discretization follows a radius step of `dr` μm, and temporal
+discretization follows the age steps specified by the `agesteps` range,
+in Ma.
+"""
+# Concretely-typed immutable struct to hold information about a single mineral (Helium) crystal
+struct GenericHe{T<:AbstractFloat} <: HeliumSample{T}
+    age::T
+    age_sigma::T
+    D0::T
+    Ea::T
+    agesteps::FloatRange
+    tsteps::FloatRange
+    rsteps::FloatRange
+    redges::FloatRange
+    nrsteps::Int
+    r238U::Vector{T}
+    r235U::Vector{T}
+    r232Th::Vector{T}
+    r147Sm::Vector{T}
+    alphadeposition::Matrix{T}
+    u::Matrix{T}
+    β::Vector{T}
+    De::Vector{T}
+    A::Tridiagonal{T, Vector{T}}
+    F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}}
+    y::Vector{T}
+end
+# Constructor for the GenericHe type, given grain radius, U and Th concentrations and t-T discretization information
+function GenericHe(T::Type{<:AbstractFloat}=Float64;
+        age::Number=T(NaN),
+        age_sigma::Number=T(NaN),
+        D0::Number,
+        Ea::Number,
+        r::Number, 
+        dr::Number=one(T), 
+        U238::Number, 
+        Th232::Number, 
+        Sm147::Number=zero(T), 
+        agesteps::AbstractRange,
+    )
+
+    # Temporal discretization
+    agesteps = floatrange(agesteps)
+    tsteps = reverse(agesteps)
+    @assert issorted(tsteps)
+
+    # crystal size and spatial discretization
+    rsteps = floatrange(0+dr/2 : dr : r-dr/2)
+    redges = floatrange(     0 : dr : r     )   # Edges of each radius element
+    nrsteps = length(rsteps)+2                  # number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
+    relvolumes = (redges[2:end].^3 - redges[1:end-1].^3)/redges[end]^3 # Relative volume fraction of spherical shell corresponding to each radius element
+
+    # Alpha stopping distances for each isotope in each decay chain, from
+    # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
+    alpharadii238U = (13.54, 16.26, 15.84, 16.31, 20.09, 22.89, 33.39, 19.10,)
+    alpharadii235U = (14.48, 17.39, 22.5, 20.97, 26.89, 31.40, 26.18,)
+    alpharadii232Th = (12.60, 19.32, 21.08, 20.09, 27.53, 34.14,)
+    # Ketchem et al. (2011), doi: 10.1016/j.gca.2011.10.011
+    alpharadii147Sm = (5.93,)
+
+    # Observed radial HPE profiles at present day
+    r238U = fill(T(U238), size(rsteps))         # [PPMw]
+    r235U = fill(T(U238/137.818), size(rsteps)) # [PPMw]
+    r232Th = fill(T(Th232), size(rsteps))       # [PPMw]
+    r147Sm = fill(T(Sm147), size(rsteps))       # [PPMw]
+
+    # Convert to atoms per gram
+    r238U .*= 6.022E23 / 1E6 / 238
+    r235U .*= 6.022E23 / 1E6 / 235
+    r232Th .*= 6.022E23 / 1E6 / 232
+    r147Sm .*= 6.022E23 / 1E6 / 147
+
+    # Calculate effective He deposition for each decay chain, corrected for alpha
+    # stopping distance
+    dint = zeros(T, length(redges) - 1)
+
+    # Effective radial alpha deposition from U-238
+    r238UHe = zeros(T, size(r238U))
+    @inbounds for ri in eachindex(rsteps, relvolumes, r238U)
+        for i in eachindex(alpharadii238U)
+            # Effective radial alpha deposition from 238U
+            intersectiondensity!(dint,redges,relvolumes,alpharadii238U[i],rsteps[ri])
+            @. r238UHe += relvolumes[ri] * dint * r238U[ri]
+        end
+    end
+
+    # Effective radial alpha deposition from U-235
+    r235UHe = zeros(T, size(r235U))
+    @inbounds for ri in eachindex(rsteps, relvolumes, r235U)
+        for i in eachindex(alpharadii235U)
+            # Effective radial alpha deposition from 235U
+            intersectiondensity!(dint, redges,relvolumes,alpharadii235U[i],rsteps[ri])
+            @. r235UHe += relvolumes[ri] * dint * r235U[ri]
+        end
+    end
+
+    # Effective radial alpha deposition from Th-232
+    r232ThHe = zeros(T, size(r232Th))
+    @inbounds for ri in eachindex(rsteps, relvolumes, r232Th)
+        for i in eachindex(alpharadii232Th)
+            # Effective radial alpha deposition from 232Th
+            intersectiondensity!(dint, redges,relvolumes,alpharadii232Th[i],rsteps[ri])
+            @. r232ThHe += relvolumes[ri] * dint * r232Th[ri]
+        end
+    end
+
+    # Effective radial alpha deposition from Sm-147
+    r147SmHe = zeros(T, size(r147Sm))
+    @inbounds for ri in eachindex(rsteps, relvolumes, r147Sm)
+        for i in eachindex(alpharadii147Sm)
+            intersectiondensity!(dint, redges,relvolumes,alpharadii147Sm[i],rsteps[ri])
+            @. r147SmHe += relvolumes[ri] * dint * r147Sm[ri]
+        end
+    end
+
+    # Calculate corrected alpha deposition and recoil damage each time step for each radius
+    dt_2 = step(tsteps)/2
+    decay = zeros(T, length(tsteps))
+    # Allocate deposition arrays
+    alphadeposition = zeros(T, length(tsteps), nrsteps-2)
+
+    # U-238
+    @. decay = exp(λ238U*(agesteps + dt_2)) - exp(λ238U*(agesteps - dt_2))
+    mul!(alphadeposition, decay, r238UHe', one(T), one(T))
+    # U-235
+    @. decay = exp(λ235U*(agesteps + dt_2)) - exp(λ235U*(agesteps - dt_2))
+    mul!(alphadeposition, decay, r235UHe', one(T), one(T))
+    # Th-232
+    @. decay = exp(λ232Th*(agesteps + dt_2)) - exp(λ232Th*(agesteps - dt_2))
+    mul!(alphadeposition, decay, r232ThHe', one(T), one(T))
+    # Sm-147
+    @. decay = exp(λ147Sm*(agesteps + dt_2)) - exp(λ147Sm*(agesteps - dt_2))
+    mul!(alphadeposition, decay, r147SmHe', one(T), one(T))
+
+    # Allocate additional variables that will be needed for Crank-Nicholson
+    β = zeros(T, nrsteps) # First row of annealeddamage
+
+    # Allocate arrays for diffusivities
+    De = zeros(T, length(tsteps))
+
+    # Allocate output matrix for all timesteps
+    u = zeros(T, nrsteps, length(tsteps))
+
+    # Allocate variables for tridiagonal matrix and RHS
+    dl = ones(T, nrsteps-1)    # Sub-diagonal row
+    d = ones(T, nrsteps)       # Diagonal
+    du = ones(T, nrsteps-1)    # Supra-diagonal row
+    du2 = ones(T, nrsteps-2)   # sup-sup-diagonal row for pivoting
+
+    # Tridiagonal matrix for LHS of Crank-Nicholson equation with regular grid cells
+    A = Tridiagonal(dl, d, du, du2)
+    F = lu(A, allowsingular=true)
+
+    # Vector for RHS of Crank-Nicholson equation with regular grid cells
+    y = zeros(T, nrsteps)
+
+    return GenericHe(
+        T(age),
+        T(age_sigma),
+        T(D0),
+        T(Ea),
+        agesteps,
+        tsteps,
+        rsteps,
+        redges,
+        nrsteps,
+        r238U,
+        r235U,
+        r232Th,
+        r147Sm,
+        alphadeposition,
+        u,
+        β,
+        De,
+        A,
+        F,
+        y,
+    )
+end
+
 ## -- Functions related to age and age uncertinty of absolute chronometers
 
 # Get age and age sigma from a vector of chronometers

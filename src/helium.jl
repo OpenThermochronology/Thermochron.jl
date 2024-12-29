@@ -186,6 +186,7 @@ end
 ```julia
 modelage(mineral::ZirconHe, Tsteps, [ρᵣ], dm::ZRDAAM)
 modelage(mineral::ApatiteHe, Tsteps, [ρᵣ], dm::RDAAM)
+modelage(mineral::GenericHe, Tsteps)
 ```
 Calculate the precdicted U-Th/He age of a zircon or apatite that has experienced a given 
 t-T path (specified by `mineral.tsteps` for time and `Tsteps` for temperature, at a
@@ -198,7 +199,11 @@ Ketcham, Richard A. (2005) "Forward and Inverse Modeling of Low-Temperature
 Thermochronometry Data" Reviews in Mineralogy and Geochemistry 58 (1), 275–314.
 https://doi.org/10.2138/rmg.2005.58.11
 """
-function modelage(mineral::HeliumSample, Tsteps::AbstractVector, ρᵣ::AbstractMatrix, dm::DiffusivityModel)
+function modelage(mineral::ZirconHe, Tsteps::AbstractVector, ρᵣ::AbstractMatrix, dm::ZirconHeliumModel)
+    mul!(mineral.annealeddamage, ρᵣ, mineral.alphadamage)
+    modelage(mineral, Tsteps, dm)
+end
+function modelage(mineral::ApatiteHe, Tsteps::AbstractVector, ρᵣ::AbstractMatrix, dm::ApatiteHeliumModel)
     mul!(mineral.annealeddamage, ρᵣ, mineral.alphadamage)
     modelage(mineral, Tsteps, dm)
 end
@@ -459,10 +464,122 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
     # Numerically solve for helium age of the grain
     return newton_he_age(μHe, μ238U, μ235U, μ232Th, μ147Sm)
 end
+function modelage(mineral::GenericHe{T}, Tsteps::AbstractVector{T}) where T <: AbstractFloat
+
+    # Damage and annealing constants
+    D0 = mineral.D0*10000^2*SEC_MYR::T      # cm^2/sec, converted to micron^2/Myr  
+    Ea = mineral.Ea::T                      # kJ/mol
+    R = 0.008314472                         # kJ/(K*mol)
+
+    # Diffusivities of crystalline and amorphous endmembers
+    De = mineral.De::Vector{T}
+    @assert eachindex(De) == eachindex(Tsteps)
+    @turbo for i ∈ eachindex(De)
+        De[i] = D0 * exp(-Ea / R / (Tsteps[i] + 273.15)) # micron^2/Myr
+    end
+
+    # Get time and radius discretization
+    dr = step(mineral.rsteps)
+    rsteps = mineral.rsteps
+    nrsteps = mineral.nrsteps
+    dt = step(mineral.tsteps)
+    ntsteps = length(mineral.tsteps)
+    alphadeposition = mineral.alphadeposition::Matrix{T}
+
+    # Calculate initial alpha damage
+    β = mineral.β::Vector{T}
+    @turbo for k = 1:(nrsteps-2)
+        β[k+1] = 2 * dr^2 / (De[1]*dt) # Common β factor
+    end
+    β[1] = β[2]
+    β[end] = β[end-1]
+
+    # Output matrix for all timesteps
+    # u = v*r is the coordinate transform (u-substitution) for the Crank-
+    # Nicholson equations where v is the He profile and r is radius
+    u = mineral.u::DenseMatrix{T}
+    fill!(u, zero(T)) # initial u = v = 0 everywhere
+
+    # Vector for RHS of Crank-Nicholson equation with regular grid cells
+    y = mineral.y
+
+    # Tridiagonal matrix for LHS of Crank-Nicholson equation with regular grid cells
+    A = mineral.A
+    fill!(A.dl, 1)          # Sub-diagonal row
+    @. A.d = -2 - β         # Diagonal
+    fill!(A.du, 1)          # Supra-diagonal row
+    F = mineral.F               # For LU factorization
+
+    # Neumann inner boundary condition (u[i,1] + u[i,2] = 0)
+    A.d[1] = 1
+    A.du[1] = 1
+
+    # Dirichlet outer boundary condition (u[i,end] = u[i-1,end])
+    A.dl[nrsteps-1] = 0
+    A.d[nrsteps] = 1
+
+    @inbounds for i = 2:ntsteps
+
+        # Calculate betas
+        @turbo for k = 1:(nrsteps-2)
+            β[k+1] = 2 * dr^2 / (De[i]*dt) # Common β factor
+        end
+        β[1] = β[2]
+        β[end] = β[end-1]
+
+        # Update tridiagonal matrix
+        fill!(A.dl, 1)         # Sub-diagonal
+        @. A.d = -2 - β        # Diagonal
+        fill!(A.du, 1)         # Supra-diagonal
+
+        # Neumann inner boundary condition (u(i,1) + u(i,2) = 0)
+        A.du[1] = 1
+        A.d[1] = 1
+        y[1] = 0
+
+        # Dirichlet outer boundary condition (u(i,end) = u(i-1,end))
+        A.dl[nrsteps-1] = 0
+        A.d[nrsteps] = 1
+        y[nrsteps] = u[nrsteps,i-1]
+
+        # RHS of tridiagonal Crank-Nicholson equation for regular grid cells.
+        # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
+        @turbo for k = 2:nrsteps-1
+            𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i-1], u[k-1, i-1], u[k+1, i-1]
+            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - alphadeposition[i, k-1]*rsteps[k-1]*β[k]
+        end
+
+        # Invert using tridiagonal matrix algorithm
+        # equivalent to u[:,i] = A\y
+        lu!(F, A, allowsingular=true)
+        ldiv!(F, y)
+        u[:,i] = y
+    end
+
+    # Convert from u (coordinate-transform'd conc.) to v (real He conc.)
+    vFinal = @views u[2:end-1,end]
+    vFinal ./= rsteps
+    μHe = nanmean(vFinal) # Atoms/gram
+
+    # Raw Age (i.e., as measured)
+    μ238U = nanmean(mineral.r238U::Vector{T}) # Atoms/gram
+    μ235U = nanmean(mineral.r235U::Vector{T})
+    μ232Th = nanmean(mineral.r232Th::Vector{T})
+    μ147Sm = nanmean(mineral.r147Sm::Vector{T})
+
+    # Numerically solve for helium age of the grain
+    return newton_he_age(μHe, μ238U, μ235U, μ232Th, μ147Sm)
+end
 
 function model_ll(mineral::HeliumSample, Tsteps, dm::DiffusivityModel)
     anneal!(mineral, Tsteps, dm)
     age = modelage(mineral, Tsteps, dm)
+    δ = age - mineral.age
+    σ² = mineral.age_sigma^2
+    -0.5*(log(2*pi*σ²) + δ^2/σ²)
+end
+function model_ll(mineral::GenericHe, Tsteps)
+    age = modelage(mineral, Tsteps)
     δ = age - mineral.age
     σ² = mineral.age_sigma^2
     -0.5*(log(2*pi*σ²) + δ^2/σ²)
