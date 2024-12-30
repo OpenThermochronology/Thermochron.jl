@@ -1,4 +1,4 @@
-# Test damage annealing function for ZRDAAM
+## --- Test damage annealing function for ZRDAAM
     tCryst = 3000.0 # Crystallization age [Myr]
     dt = 100 # time step size [Myr]
     dr = 1
@@ -35,7 +35,7 @@
         @test round.(pr, sigdigits=6) ≈ pr_known
     end
 
-# Test creating and allocating a ZirconHe
+## --- Test creating and allocating a ZirconHe
 
     crystalradius = 29.26
     U = 462.98
@@ -66,7 +66,7 @@
     @test round.(zircon.alphadamage, sigdigits=5) ≈ alphadamage_known
 
 
-# Test integrated age program for ZirconHe
+## --- Test integrated age program for ZirconHe
     dm = ZRDAAM(
         DzEa = 165.0,       # kJ/mol
         DzD0 = 193188.0,    # cm^2/sec
@@ -109,7 +109,7 @@
         @test modelage(zircon,Tsteps,pr,dm) ≈ 777.5627957477788
     end
 
-## Test integrated age program 10 Ma timestep
+## --- Test integrated age program 10 Ma timestep
 
     tCryst = 3000.0 # Time (in Myr)
     TCryst = 600 # C

@@ -1,4 +1,4 @@
-# Test creating and allocating an GenericHe
+## Test creating and allocating an GenericHe
 
     tCryst = 3000.0 # Crystallization age [Myr]
     dt = 100        # time step size [Myr]
@@ -31,7 +31,7 @@
     @test round.(mineral.alphadeposition, sigdigits=5) ≈ alphadeposition_known
     # println( round.(mineral.alphadeposition, sigdigits=5))
 
-# Test integrated age program for GenericHe
+## --- Test integrated age program for GenericHe
 
     modelage(mineral,Tsteps) # to not time compilation
     @time "Running modelage" age = modelage(mineral,Tsteps)

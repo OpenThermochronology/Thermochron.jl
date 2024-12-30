@@ -1,4 +1,4 @@
-# Test damage annealing function for RDAAM
+## --- Test damage annealing function for RDAAM
 
     dm = RDAAM(rmr0=0.0, kappa=1.0) # RDAAM, without rmr0 correction
     tCryst = 3000.0 # Time (in AMyr)
@@ -40,7 +40,7 @@
     end
     # println(round.(pr, sigdigits=6))
 
-# Test creating and allocating an ApatiteHe
+## --- Test creating and allocating an ApatiteHe
 
     crystalradius = 29.26
     U = 33.0
@@ -73,7 +73,7 @@
     # println( round.(apatite.alphadamage, sigdigits=5))
 
 
-# Test integrated age program for ApatiteHe
+## --- Test integrated age program for ApatiteHe
 
     modelage(apatite,Tsteps,pr,dm) # to not time compilation
     @time "Running modelage" age = modelage(apatite,Tsteps,pr,dm)
