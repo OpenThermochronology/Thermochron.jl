@@ -1,4 +1,4 @@
-## Test creating and allocating an GenericHe
+## --- Test creating and allocating an GenericHe
 
     tCryst = 3000.0 # Crystallization age [Myr]
     dt = 100        # time step size [Myr]
