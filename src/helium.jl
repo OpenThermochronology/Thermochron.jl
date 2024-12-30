@@ -17,6 +17,8 @@ function newton_he_age(He::T, U238, U235, Th232, Sm147=zero(T); iterations::Int=
     return max(heliumage, zero(Tf))
 end
 
+## --- Damage and annealing functions
+
 """
 ```julia
 ρᵣ = anneal(dt::Number, tsteps::Vector, Tsteps::Matrix, [model::DiffusivityModel=ZRDAAM()])
@@ -181,20 +183,21 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, dt::Number, t
     return ρᵣ
 end
 
-
+## --- Calculate apparent age given a particular t-T path
 """
 ```julia
 modelage(mineral::ZirconHe, Tsteps, [ρᵣ], dm::ZRDAAM)
 modelage(mineral::ApatiteHe, Tsteps, [ρᵣ], dm::RDAAM)
 modelage(mineral::GenericHe, Tsteps)
 ```
-Calculate the precdicted U-Th/He age of a zircon or apatite that has experienced a given 
-t-T path (specified by `mineral.tsteps` for time and `Tsteps` for temperature, at a
-time resolution of `step(mineral.tsteps)`) using a Crank-Nicholson diffusion solution for a
-spherical grain of radius `mineral.r` at spatial resolution `mineral.dr`.
+Calculate the predicted bulk U-Th/He age of a zircon, apatite, or other mineral
+that has experienced a given t-T path (specified by `mineral.tsteps` for time
+and `Tsteps` for temperature, at a time resolution of `step(mineral.tsteps)`) 
+using a Crank-Nicholson diffusion solution for a spherical grain of radius 
+`mineral.r` at spatial resolution `mineral.dr`.
 
 Implemented based on the the Crank-Nicholson solution for diffusion out of a
-spherical zircon or apatite crystal in:
+spherical mineral crystal in:
 Ketcham, Richard A. (2005) "Forward and Inverse Modeling of Low-Temperature
 Thermochronometry Data" Reviews in Mineralogy and Geochemistry 58 (1), 275–314.
 https://doi.org/10.2138/rmg.2005.58.11
@@ -234,7 +237,9 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T})
     rsteps = zircon.rsteps
     nrsteps = zircon.nrsteps
     dt = step(zircon.tsteps)
-    ntsteps = length(zircon.tsteps)
+    tsteps = zircon.tsteps
+    ntsteps = length(tsteps)
+    @assert eachindex(tsteps) == eachindex(Tsteps) == Base.OneTo(ntsteps)
     alphadeposition = zircon.alphadeposition::Matrix{T}
 
     # The annealed damage matrix is the summation of the ρᵣ for each
@@ -365,7 +370,9 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
     rsteps = apatite.rsteps
     nrsteps = apatite.nrsteps
     dt = step(apatite.tsteps)
-    ntsteps = length(apatite.tsteps)
+    tsteps = apatite.tsteps
+    ntsteps = length(tsteps)
+    @assert eachindex(tsteps) == eachindex(Tsteps) == Base.OneTo(ntsteps)
     alphadeposition = apatite.alphadeposition::Matrix{T}
 
     # The annealed damage matrix is the summation of the ρᵣ for each

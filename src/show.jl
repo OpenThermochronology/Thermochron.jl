@@ -1,4 +1,11 @@
 # Compact show for chronometers
+function Base.show(io::IO, x::T) where {T<:ArgonSample}
+    t = Base.typename(T).wrapper
+    σ = round(x.age_sigma, sigdigits=2)
+    d = log10(x.age)-log10(x.age_sigma)
+    μ = round(x.age, sigdigits=2+floor(Int, d*!isnan(d)))
+    print(io, "$t($(μ)±$(σ) Ma)")
+end
 function Base.show(io::IO, x::T) where {T<:HeliumSample}
     t = Base.typename(T).wrapper
     σ = round(x.age_sigma, sigdigits=2)
@@ -21,6 +28,16 @@ end
 
 # Verbose show methods
 printshort(x::AbstractArray) = "[$(first(x)) … $(last(x))]"
+function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:ArgonSample}
+    print(io, """$T:
+      age       : $(x.age) Ma
+      age_sigma : $(x.age_sigma) Ma
+      K-40      : $(printshort(x.r40K / (6.022E23 / 1E6 / 39.96399848))) ppm
+      rsteps    : $(x.rsteps) μm
+      agesteps  : $(x.agesteps) Ma
+    """
+    )
+end
 function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:HeliumSample}
     print(io, """$T:
       age       : $(x.age) Ma

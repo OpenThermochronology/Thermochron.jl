@@ -19,11 +19,17 @@ module Thermochron
     const LOG_SEC_MYR = log(SEC_MYR)
 
     # Decay constants
-    const λ235U = log(2)/(7.0381*10^8)*10^6 # [1/Myr] Jaffey et al. 1971
-    const λ238U = log(2)/(4.4683*10^9)*10^6 # [1/Myr] Jaffey et al. 1971
-    const λ232Th = log(2)/(1.405*10^10)*10^6 # [1/Myr]
-    const λ147Sm = log(2)/(1.070*10^11)*10^6 # [1/Myr] Kossert et al. 2009
-
+    const λ235U = log(2)/(7.0381e8)*10^6    # [1/Myr] Jaffey et al. 1971
+    const λ238U = log(2)/(4.4683e9)*10^6    # [1/Myr] Jaffey et al. 1971
+    const λ232Th = log(2)/(1.405e10)*10^6   # [1/Myr] 
+    const λ147Sm = log(2)/(1.070e11)*10^6   # [1/Myr] Kossert et al. 2009
+    const λ40K = 5.5545e-10*10^6            # [1/Myr] Renne et al. 2010
+    const λ40Kβ = 4.884e-10*10^6            # [1/Myr] Renne et al. 2010
+    const λ40Kϵ = 0.580e-10*10^6            # [1/Myr] Renne et al. 2010
+    const BR40K = λ40Kϵ/λ40K                # [unitless] branching ratio
+    const κ40K = 1.1672e-4                  # [unitless] Garner et al., 1975 40K/K fraction
+    export κ40K
+    
     include("types.jl")
     export ZRDAAM, RDAAM, FanningCurvilinear, SimplifiedCurvilinear     # Damage and annealing model types
     export FCKetcham1999, FCKetcham2007                                 # Aliases
@@ -34,12 +40,14 @@ module Thermochron
     include("chronometers.jl")
     const ChronometerUnion{T} = Union{ZirconHe{T}, ApatiteHe{T}, GenericHe{T}, ApatiteFT{T}, ApatiteTrackLength{T}}
     export Chronometer, AbsoluteChronometer                             # Abstract types
-    export GenericHe, ZirconHe, ApatiteHe                               # Concrete helium types
+    export GenericHe, ZirconHe, ApatiteHe                               # Concrete U-Th/He types
     export ApatiteTrackLength, ApatiteFT                                # Concrete fission track types
+    export GenericAr                                                    # Concrete K/Ar types
     export chronometers, empiricaluncertainty!, eU,                     # Functions
         get_age, get_age_sigma, set_age!, set_age_sigma!
 
     include("helium.jl")
+    include("argon.jl")
     export modelage                                                     # Functions
 
     include("fissiontrack.jl")
