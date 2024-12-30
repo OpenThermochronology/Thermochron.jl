@@ -17,7 +17,7 @@
             c = data[i]
             first_index = 1 + Int((tmax - last(c.tsteps))÷dt)
             if isa(c, ZirconHe)
-                μcalc[i] = modelage(data[i], @views(Tsteps[first_index:end]), zdm)
+                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), zdm)
             elseif isa(c, ApatiteHe)
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), adm)
             elseif isa(c, ApatiteFT)
@@ -26,6 +26,8 @@
                 l,σ = modellength(c, @views(Tsteps[first_index:end]), aftm) .* aftm.l0
                 μcalc[i] = l
                 σcalc[i] = sqrt(σ^2 + aftm.l0_sigma^2)
+            elseif isa(c, GenericHe) || isa(c, GenericAr)
+                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]))
             else
                 # NaN if not calculated
                 μcalc[i] = T(NaN)

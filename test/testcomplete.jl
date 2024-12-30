@@ -1,7 +1,7 @@
 
 # Read in data from file using StatGeochem
-datapath = joinpath("..", "examples", "minnesota.csv")
-ds = importdataset(datapath, ',', importas=:Tuple);
+datapath = joinpath("..", "examples")
+ds = importdataset(joinpath(datapath, "minnesota.csv"), ',', importas=:Tuple);
 
 using LinearAlgebra
 BLAS.get_num_threads() > 2 && BLAS.set_num_threads(2)
@@ -49,8 +49,8 @@ data = (
 tinit = ceil(maximum(data.crystAge)/model.dt) * model.dt
 model = (model...,
     tinit = tinit,
-    agesteps = Array{Float64}(tinit-model.dt/2 : -model.dt : 0+model.dt/2),
-    tsteps = Array{Float64}(0+model.dt/2 : model.dt : tinit-model.dt/2),
+    agesteps = (tinit-model.dt/2 : -model.dt : 0+model.dt/2),
+    tsteps = (0+model.dt/2 : model.dt : tinit-model.dt/2),
 )
 
 # Boundary conditions (e.g. 10C at present and 650 C at the time of zircon formation).
@@ -67,7 +67,27 @@ unconf = Constraint()
 
 ## --- Test generation of Chronometer objects
 
-# Modern input format
+# Modern input format, generic
+dsg = importdataset(joinpath(datapath, "generic.csv"), ',', importas=:Tuple);
+chrons = chronometers(dsg, model)
+@test chrons isa Vector{<:Chronometer}
+@test length(chrons) == 4
+@test count(x->isa(x,GenericHe), chrons) == 2
+@test count(x->isa(x,GenericAr), chrons) == 2
+@test get_age(chrons) ≈ [150.37, 263.92, 917.84, 1023.73] 
+@test get_age_sigma(chrons) ≈ [5,5,5,5]
+
+dt = 10.0
+tsteps = (0+dt/2 : dt : 3000-dt/2)
+Tsteps = range(650, 0, length=length(tsteps))
+
+calc = zeros(length(chrons))
+calcuncert = zeros(length(chrons))
+Thermochron.modelages!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), SimplifiedCurvilinear())
+@test round.(calc, sigdigits=5) ≈ [121.57, 230.22, 902.57, 1011.0]
+@test calcuncert ≈ zeros(length(chrons))
+
+# Modern input format, Minnesota dataset
 chrons = chronometers(ds, model)
 @test chrons isa Vector{<:Chronometer}
 @test length(chrons) == length(ds.mineral)

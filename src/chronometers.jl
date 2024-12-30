@@ -1073,6 +1073,38 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                 )
                 push!(result, c)
             end
+        elseif haskey(data, :D0_cm_2_s) && haskey(data, :Ea_kJ_mol) && !isnan(data.D0_cm_2_s[i]/data.Ea_kJ_mol[i])
+            # Generic helium
+            if haskey(data, :raw_He_age_Ma) && haskey(data, :raw_He_age_sigma_Ma) && !isnan(data.raw_He_age_Ma[i]/data.raw_He_age_sigma_Ma[i])
+                # Modern format
+                c = GenericHe(T;
+                    age = data.raw_He_age_Ma[i], 
+                    age_sigma = data.raw_He_age_sigma_Ma[i], 
+                    D0 = data.D0_cm_2_s[i],
+                    Ea = data.Ea_kJ_mol[i],
+                    r = data.halfwidth_um[i], 
+                    dr = dr, 
+                    U238 = (haskey(data, :Th232_ppm) && !isnan(data.Th232_ppm[i])) ? data.Th232_ppm[i] : 0,
+                    Th232 = (haskey(data, :Th232_ppm) && !isnan(data.Th232_ppm[i])) ? data.Th232_ppm[i] : 0,
+                    Sm147 = (haskey(data, :Sm147_ppm) && !isnan(data.Sm147_ppm[i])) ? data.Sm147_ppm[i] : 0,
+                    agesteps = agesteps[first_index:end],
+                )
+                push!(result, c)
+            end
+            if haskey(data, :raw_Ar_age_Ma) && haskey(data, :raw_Ar_age_sigma_Ma) && !isnan(data.raw_Ar_age_Ma[i]/data.raw_Ar_age_sigma_Ma[i])
+                # Modern format
+                c = GenericAr(T;
+                    age = data.raw_Ar_age_Ma[i], 
+                    age_sigma = data.raw_Ar_age_sigma_Ma[i], 
+                    D0 = data.D0_cm_2_s[i],
+                    Ea = data.Ea_kJ_mol[i],
+                    r = data.halfwidth_um[i], 
+                    dr = dr, 
+                    K40 = (haskey(data, :K40_ppm) && !isnan(data.K40_ppm[i])) ? data.K40_ppm[i] : 0,
+                    agesteps = agesteps[first_index:end],
+                )
+                push!(result, c)
+            end
         end
     end
 

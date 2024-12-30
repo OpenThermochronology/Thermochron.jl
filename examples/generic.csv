@@ -1,0 +1,5 @@
+grain name,mineral,crystallization age [Ma],halfwidth [um],D0 [cm^2/s],Ea [kJ/mol],raw Ar age [Ma],raw Ar age sigma [Ma],raw He age [Ma],raw He age sigma [Ma],FT age [Ma],FT age sigma [Ma],track length [um],track angle [degrees],dpar [um],F [apfu],Cl [apfu],OH [apfu],rmr0,U238 [ppm],Th232 [ppm],Sm147 [ppm],K40 [ppm],reference
+test1,hematite,3000,35,0.6071,122.3,,,150.37,5,,,,,,,,,,110.7,35.1,,,
+test2,hematite,3000,135,0.6071,122.3,,,263.92,5,,,,,,,,,,110.7,35.1,,,
+test3,feldspar,3000,35,59.98,205.94,917.84,5,,,,,,,,,,,,,,,16.34,
+test4,feldspar,3000,135,59.98,205.94,1023.73,5,,,,,,,,,,,,,,,16.34,
