@@ -71,11 +71,15 @@ unconf = Constraint()
 dsg = importdataset(joinpath(datapath, "generic.csv"), ',', importas=:Tuple);
 chrons = chronometers(dsg, model)
 @test chrons isa Vector{<:Chronometer}
-@test length(chrons) == 4
+@test length(chrons) == 8
 @test count(x->isa(x,GenericHe), chrons) == 2
 @test count(x->isa(x,GenericAr), chrons) == 2
-@test get_age(chrons) ≈ [150.37, 263.92, 917.84, 1023.73] 
-@test get_age_sigma(chrons) ≈ [5,5,5,5]
+@test count(x->isa(x,ZirconHe), chrons) == 1
+@test count(x->isa(x,ApatiteHe), chrons) == 1
+@test count(x->isa(x,ApatiteFT), chrons) == 1
+@test count(x->isa(x,ApatiteTrackLength), chrons) == 1
+@test get_age(chrons) ≈ [150.37, 263.92, 917.84, 1023.73, 380., 120., 300.] 
+@test get_age_sigma(chrons) ≈ [5,5,5,5,5,5,5]
 
 dt = 10.0
 tsteps = (0+dt/2 : dt : 3000-dt/2)
@@ -84,8 +88,8 @@ Tsteps = range(650, 0, length=length(tsteps))
 calc = zeros(length(chrons))
 calcuncert = zeros(length(chrons))
 Thermochron.modelages!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), SimplifiedCurvilinear())
-@test round.(calc, sigdigits=5) ≈ [121.57, 230.22, 902.57, 1011.0]
-@test calcuncert ≈ zeros(length(chrons))
+@test round.(calc, sigdigits=5) ≈ [121.57, 230.22, 902.57, 1011.0, 386.86, 122.81, 303.42, 14.318]
+@test calcuncert ≈ [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.1710533944657444]
 
 # Modern input format, Minnesota dataset
 chrons = chronometers(ds, model)
