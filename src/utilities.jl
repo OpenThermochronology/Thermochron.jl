@@ -18,7 +18,7 @@
             # See e.g., http://mathworld.wolfram.com/Sphere-SphereIntersection.html
             # x = (d^2 - r₁^2 + r₂^2) / (2 * d)
 
-            # Let omega be is the solid angle of intersection normalized by 4pi,
+            # Let omega be the solid angle of intersection normalized by 4pi,
             # where the solid angle of a cone is 2pi*(1-cos(theta)) and cos(theta)
             # is adjacent/hypotenuse = x/r₂.
             # omega = (1 - x/r₂)/2
@@ -51,10 +51,10 @@
     function intersectiondensity!(dint::DenseVector{T}, redges::AbstractVector{T}, rvolumes::AbstractVector{T}, ralpha::T, d::T) where T <: AbstractFloat
         I = firstindex(redges):lastindex(redges)-1
         @assert eachindex(dint) == eachindex(rvolumes) == I
-        fintlast = intersectionfraction(first(redges),ralpha,d)
+        fintlast = intersectionfraction(first(redges), ralpha, d)
         @inbounds for i ∈ I
             # Integrated intersection fraction for each concentric sphere (redges) of crystal
-            fint = intersectionfraction(redges[i+1],ralpha,d)
+            fint = intersectionfraction(redges[i+1], ralpha, d)
 
             # Intersection fraction for each spherical shell of the crystal (subtracting
             # one concentric sphere from the next) normalized by shell volume
