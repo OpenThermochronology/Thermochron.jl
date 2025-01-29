@@ -51,43 +51,43 @@ struct ApatiteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
     rmr0::T                 # [unitless]
 end
 function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64; 
-    length=T(NaN), 
-    angle=T(NaN), 
-    lcmod=lcmod(length, angle),
-    agesteps, 
-    tsteps=reverse(agesteps), 
-    r=zeros(T, size(agesteps)),
-    pr=zeros(T, size(agesteps)),
-    dpar=T(NaN), 
-    F=T(NaN), 
-    Cl=T(NaN), 
-    OH=T(NaN), 
-    rmr0=T(NaN),
-)
-if isnan(rmr0)
-    s = F + Cl + OH
-    rmr0 = if !isnan(s)
-        rmr0model(F/s*2, Cl/s*2, OH/s*2)
-    elseif !isnan(dpar)
-        rmr0fromdpar(dpar)
-    else
-        0.83
+        length=T(NaN), 
+        angle=T(NaN), 
+        lcmod=lcmod(length, angle),
+        agesteps, 
+        tsteps=reverse(agesteps), 
+        r=zeros(T, size(agesteps)),
+        pr=zeros(T, size(agesteps)),
+        dpar=T(NaN), 
+        F=T(NaN), 
+        Cl=T(NaN), 
+        OH=T(NaN), 
+        rmr0=T(NaN),
+    )
+    if isnan(rmr0)
+        s = F + Cl + OH
+        rmr0 = if !isnan(s)
+            rmr0model(F/s*2, Cl/s*2, OH/s*2)
+        elseif !isnan(dpar)
+            rmr0fromdpar(dpar)
+        else
+            0.83
+        end
     end
-end
-ApatiteTrackLength(
-    T(length),
-    T(angle),
-    T(lcmod),
-    floatrange(agesteps),
-    floatrange(tsteps),
-    T.(r),
-    T.(pr),
-    T(dpar),
-    T(F),
-    T(Cl),
-    T(OH),
-    T(rmr0),
-)
+    ApatiteTrackLength(
+        T(length),
+        T(angle),
+        T(lcmod),
+        floatrange(agesteps),
+        floatrange(tsteps),
+        T.(r),
+        T.(pr),
+        T(dpar),
+        T(F),
+        T(Cl),
+        T(OH),
+        T(rmr0),
+    )
 end
 
 struct ApatiteFT{T<:AbstractFloat} <: FissionTrackSample{T}
