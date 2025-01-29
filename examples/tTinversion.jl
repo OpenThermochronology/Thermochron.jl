@@ -217,23 +217,7 @@
 
 ## --- Create image of paths
 
-    # Desired rsolution of tT image
-    xresolution = 2000
-    yresolution = 1000
-
-    # Resize the post-burnin part of the stationary distribution
-    tTdist = Array{Float64}(undef, xresolution, model.nsteps)
-    xq = range(0, model.tinit, length=xresolution)
-    @time @inbounds for i = 1:model.nsteps
-        linterp1s!(view(tTdist,:,i), view(tT.tpointdist,:,i), view(tT.Tpointdist,:,i), xq)
-    end
-
-    # Calculate composite image
-    ybinedges = range(model.Tnow, model.Tinit, length=yresolution+1)
-    tTimage = zeros(yresolution, size(tTdist,1))
-    @time @inbounds for i=1:size(tTdist,1)
-        histcounts!(view(tTimage,:,i), view(tTdist,i,:), ybinedges)
-    end
+    @time (tTimage, xc, yc) = image_from_paths!(tT; xresolution=1800, yresolution=1200, xrange=boundary.agepoints, yrange=boundary.T₀)
 
 ## --- Plot image with 'ylcn' custom colorscale
 
@@ -243,7 +227,7 @@
     # Plot image with colorscale in first subplot
     A = imsc(tTimage, ylcn, 0, nanpctile(tTimage[:],98.5))
     plot!(k[1], xlabel="Time (Ma)", ylabel="Temperature (°C)", yticks=model.Tnow:50:model.Tinit, xticks=model.tnow:500:model.tinit, yminorticks=5, xminorticks=5, tick_dir=:out, framestyle=:box)
-    plot!(k[1], xq, cntr(ybinedges), A, yflip=true, xflip=true, legend=false, aspectratio=model.tinit/model.Tinit/1.5, xlims=(0,model.tinit), ylims=(model.Tnow,model.Tinit))
+    plot!(k[1], xc, yc, A, yflip=true, xflip=true, legend=false, aspectratio=model.tinit/model.Tinit/1.5, xlims=(0,model.tinit), ylims=(model.Tnow,model.Tinit))
     plot!(k[1], constraint) # Add constraint boxes
 
     # Add colorbar in second subplot
