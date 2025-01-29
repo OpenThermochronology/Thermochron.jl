@@ -9,28 +9,37 @@ Base.iterate(x::AnnealingModel, state) = nothing
 
 # Fanning Curvilinear models (Ketcham 1999)
 Base. @kwdef struct FanningCurvilinear{T<:AbstractFloat} <: AnnealingModel{T} 
-    C0::T = -19.844     # "Simultaneous fit" from Ketcham et al. 1999
-    C1::T = 0.38951     # "Simultaneous fit" from Ketcham et al. 1999
-    C2::T = -51.253     # "Simultaneous fit" from Ketcham et al. 1999
-    C3::T = -7.6423     # "Simultaneous fit" from Ketcham et al. 1999
-    alpha::T = -0.12327 # "Simultaneous fit" from Ketcham et al. 1999
-    beta::T = -11.988   # "Simultaneous fit" from Ketcham et al. 1999
-    l0::T = 16.38       # Initial track length
-    l0_sigma::T = 0.09  # Initial track length unertainty
+    C0::T = -19.844     # "Simultaneous fit" from Ketcham et al. 1999 apatite
+    C1::T = 0.38951     # "Simultaneous fit" from Ketcham et al. 1999 apatite
+    C2::T = -51.253     # "Simultaneous fit" from Ketcham et al. 1999 apatite
+    C3::T = -7.6423     # "Simultaneous fit" from Ketcham et al. 1999 apatite
+    alpha::T = -0.12327 # "Simultaneous fit" from Ketcham et al. 1999 apatite
+    beta::T = -11.988   # "Simultaneous fit" from Ketcham et al. 1999 apatite
+    l0::T = 16.38       # [um] Initial track length
+    l0_sigma::T = 0.09  # [um] Initial track length unertainty
 end
-const FCKetcham1999 = FanningCurvilinear()
+const Ketcham1999FC = FanningCurvilinear()
 
 # Simplified Fanning Curvilinear models (Ketcham 2007)
 Base.@kwdef struct SimplifiedCurvilinear{T<:AbstractFloat} <: AnnealingModel{T} 
-    C0::T = 0.39528     # "Simultaneous fit" from Ketcham et al. 2007
-    C1::T = 0.01073     # "Simultaneous fit" from Ketcham et al. 2007
-    C2::T = -65.12969   # "Simultaneous fit" from Ketcham et al. 2007
-    C3::T = -7.91715    # "Simultaneous fit" from Ketcham et al. 2007
-    alpha::T = 0.04672  # "Simultaneous fit" from Ketcham et al. 2007
-    l0::T = 16.38       # Initial track length
-    l0_sigma::T = 0.09  # Initial track length unertainty
+    C0::T = 0.39528     # "Simultaneous fit" from Ketcham et al. 2007 apatite
+    C1::T = 0.01073     # "Simultaneous fit" from Ketcham et al. 2007 apatite
+    C2::T = -65.12969   # "Simultaneous fit" from Ketcham et al. 2007 apatite
+    C3::T = -7.91715    # "Simultaneous fit" from Ketcham et al. 2007 apatite
+    alpha::T = 0.04672  # "Simultaneous fit" from Ketcham et al. 2007 apatite
+    l0::T = 16.38       # [um] Initial track length
+    l0_sigma::T = 0.09  # [um] Initial track length unertainty
 end
-const FCKetcham2007 = SimplifiedCurvilinear()
+const Ketcham2007FC = SimplifiedCurvilinear()
+
+Base.@kwdef struct ParallelCurvilinear{T<:AbstractFloat} <: AnnealingModel{T} 
+    c0p::T = -63.37     # Yamada et al. 2007 zircon
+    c1p::T = 0.212      # Yamada et al. 2007 zircon
+    bp::T = 43.00       # Yamada et al. 2007 zircon
+    l0::T = 11.17       # [um] effective inital mean track length (μmax)
+    l0_sigma::T = 0.051 # [um] effective length uncertainty (σ)
+end
+const Yamada2005PC = ParallelCurvilinear()
 
 ## --- Define DiffusivityModel types
 

@@ -106,7 +106,7 @@
         # Damage models for each mineral
         zdm = (haskey(model, :zdm) ? model.zdm : ZRDAAM())::ZirconHeliumModel{T}
         adm = (haskey(model, :adm) ? model.adm : RDAAM())::ApatiteHeliumModel{T}
-        aftm = (haskey(model, :aftm) ? model.aftm : FCKetcham2007)::AnnealingModel{T}
+        aftm = (haskey(model, :aftm) ? model.aftm : Ketcham2007FC)::AnnealingModel{T}
 
         # See what minerals we have
         (haszhe = any(x->isa(x, ZirconHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, ZirconHe), data)) zircons"
@@ -461,7 +461,7 @@
         # Damage models for each mineral
         zdm₀ = zdm = zdmₚ = (haskey(model, :zdm) ? model.zdm : ZRDAAM())::ZirconHeliumModel{T}
         adm₀ = adm = admₚ =  (haskey(model, :adm) ? model.adm : RDAAM())::ApatiteHeliumModel{T}
-        aftm = (haskey(model, :aftm) ? model.aftm : FCKetcham2007)::AnnealingModel{T}
+        aftm = (haskey(model, :aftm) ? model.aftm : Ketcham2007FC)::AnnealingModel{T}
 
         # See what minerals we have
         (haszhe = any(x->isa(x, ZirconHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, ZirconHe), data)) zircons"

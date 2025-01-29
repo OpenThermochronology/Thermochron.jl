@@ -31,9 +31,10 @@ module Thermochron
     export κ40K
     
     include("types.jl")
-    export ZRDAAM, RDAAM, FanningCurvilinear, SimplifiedCurvilinear     # Damage and annealing model types
-    export FCKetcham1999, FCKetcham2007                                 # Aliases
-    export Constraint, Unconformity, Boundary, DetailInterval           # Types used as inputs to MCMC functions
+    export ZRDAAM, RDAAM                                                    # Damage-and-annealing based helium diffusivity models 
+    export FanningCurvilinear, SimplifiedCurvilinear, ParallelCurvilinear   # Fission track annealing model types
+    export Ketcham1999FC, Ketcham2007FC, Yamada2005PC                       # Aliases
+    export Constraint, Unconformity, Boundary, DetailInterval               # Types used as inputs to MCMC functions
 
     include("utilities.jl")
 
