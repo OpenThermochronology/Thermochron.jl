@@ -1,3 +1,5 @@
+## -- Helium age functions
+
 # The amount of ingrown helium since time t
 function calc_He(t, U238, U235, Th232, Sm147=0.0)
     8*U238*(exp(λ238U*t)-1) + 7*U235*(exp(λ235U*t)-1) + 6*Th232*(exp(λ232Th*t)-1) + Sm147*(exp(λ147Sm*t)-1)

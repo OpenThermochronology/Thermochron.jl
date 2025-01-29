@@ -34,7 +34,7 @@ val(x::FissionTrackLength{T}) where {T} = x.lcmod::T
 err(x::FissionTrackLength{T}) where {T} = zero(T)
 
 
-## --- Fission track sample types
+## --- Fission track length types
 
 struct ApatiteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
     length::T               # [um]
@@ -87,6 +87,28 @@ function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
         T(Cl),
         T(OH),
         T(rmr0),
+    )
+end
+
+## --- Fission track age types
+
+struct ZirconFT{T<:AbstractFloat} <: FissionTrackSample{T}
+    age::T                  # [Ma]
+    age_sigma::T            # [Ma]
+    agesteps::FloatRange    # [Ma]
+    tsteps::FloatRange      # [Ma]
+end
+function ZirconFT(T::Type{<:AbstractFloat}=Float64; 
+        age=T(NaN), 
+        age_sigma=T(NaN), 
+        agesteps, 
+        tsteps=reverse(agesteps), 
+    )
+    ZirconFT(
+        T(age),
+        T(age_sigma),
+        floatrange(agesteps),
+        floatrange(tsteps),
     )
 end
 
