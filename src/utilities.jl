@@ -1,5 +1,31 @@
 ## ---  Various useful internal utility functions
 
+    # Normal log likelihood
+    @inline function norm_ll(mu::Number, sigma::Number, x::Number)
+        δ = x - mu
+        σ² = sigma^2
+        -0.5*(log(2*pi*σ²) + δ^2/σ²)
+    end
+    function norm_ll(mu::AbstractVector{T}, sigma::AbstractVector{T}, x::AbstractVector{T}) where {T<:Number}
+        ll = zero(float(T))
+        for i in eachindex(mu, sigma, x)
+            ll += norm_ll(mu[i], sigma[i], x[i])
+        end
+        return ll
+    end
+    @inline function norm_ll(mu::Number, sigma::Number, x::Number, x_sigma::Number)
+        δ = x - mu
+        σ² = sigma^2 + x_sigma^2
+        -0.5*(log(2*pi*σ²) + δ^2/σ²)
+    end
+    function norm_ll(mu::AbstractVector{T}, sigma::AbstractVector{T}, x::AbstractVector{T}, x_sigma::AbstractVector{T}) where {T<:Number}
+        ll = zero(float(T))
+        for i in eachindex(mu, sigma, x, x_sigma)
+            ll += norm_ll(mu[i], sigma[i], x[i], x_sigma[i])
+        end
+        return ll
+    end
+
     """
     ```julia
     intersectionfraction(r₁, r₂, d)
@@ -76,6 +102,39 @@
         return view(buffer, firstindex(buffer):i₀-1)
     end
 
+    # Utility functions for checking the nummber of distinct t-T nodes in a given time interval
+    function pointsininterval(points::DenseArray, npoints::Int, min::Number, max::Number)
+        n = 0
+        @inbounds for i = 1:npoints
+            if  min < points[i] < max
+                n += 1
+            end
+        end
+        return n
+    end
+    function pointsininterval(points::DenseArray, npoints::Int, min::Number, max::Number, δ::Number)
+        n = 0
+        @inbounds for i = 1:npoints
+            if  min < points[i] < max
+                n += isdistinct(points, i, δ, npoints)
+            end
+        end
+        return n
+    end
+
+    # Check if point k is distinct from other points in list within ± δ
+    function isdistinct(points::AbstractArray, k::Int, δ::Number, npoints::Int=length(points))
+        @assert npoints <= length(points)
+        I = firstindex(points):firstindex(points)+npoints-1
+        @inbounds for i in I
+            if i!=k && abs(points[i] - points[k]) <= δ
+                return false
+            end
+        end
+        return true
+    end
+
+
     # Utility functions for checking maximum reheating or cooling rate
     function maxdiff(x::AbstractArray{T}) where {T}
         i₀ = firstindex(x)
@@ -141,37 +200,21 @@
         return ll
     end
 
-    # Check if point k is distinct from other points in list within ± δ
-    function isdistinct(points::AbstractArray, k::Int, δ::Number, npoints::Int=length(points))
-        @assert npoints <= length(points)
-        I = firstindex(points):firstindex(points)+npoints-1
-        @inbounds for i in I
-            if i!=k && abs(points[i] - points[k]) <= δ
-                return false
-            end
-        end
-        return true
+    # Log likelihood functions for ZRDAAM and RDAAM kinetic uncertainties
+    function model_ll(zdmₚ::ZRDAAM, zdm::ZRDAAM)
+        norm_ll(log(zdm.DzD0), zdm.DzD0_logsigma, log(zdmₚ.DzD0)) + 
+        norm_ll(log(zdm.DzEa), zdm.DzEa_logsigma, log(zdmₚ.DzEa)) + 
+        norm_ll(log(zdm.DN17D0), zdm.DN17D0_logsigma, log(zdmₚ.DN17D0)) + 
+        norm_ll(log(zdm.DN17Ea), zdm.DN17Ea_logsigma, log(zdmₚ.DN17Ea)) +
+        norm_ll(zdm.rmr0, zdm.rmr0_sigma, zdmₚ.rmr0)
     end
-
-    function pointsininterval(points::DenseArray, npoints::Int, min::Number, max::Number)
-        n = 0
-        @inbounds for i = 1:npoints
-            if  min < points[i] < max
-                n += 1
-            end
-        end
-        return n
+    function model_ll(admₚ::RDAAM, adm::RDAAM)
+        norm_ll(log(adm.D0L), adm.D0L_logsigma, log(admₚ.D0L)) + 
+        norm_ll(log(adm.EaL), adm.EaL_logsigma, log(admₚ.EaL)) + 
+        norm_ll(log(adm.EaTrap), adm.EaTrap_logsigma, log(admₚ.EaTrap))+
+        norm_ll(adm.rmr0, adm.rmr0_sigma, admₚ.rmr0)
     end
-    function pointsininterval(points::DenseArray, npoints::Int, min::Number, max::Number, δ::Number)
-        n = 0
-        @inbounds for i = 1:npoints
-            if  min < points[i] < max
-                n += isdistinct(points, i, δ, npoints)
-            end
-        end
-        return n
-    end
-
+    
     """
     ```julia
     simannealsigma(n::Integer, σₑ::Number, σₐ::Number, λₐ::Number)
@@ -389,47 +432,6 @@
             end
         end
         return μcalc, σcalc
-    end
-
-    # Normal log likelihood
-    @inline function norm_ll(mu::Number, sigma::Number, x::Number)
-        δ = x - mu
-        σ² = sigma^2
-        -0.5*(log(2*pi*σ²) + δ^2/σ²)
-    end
-    function norm_ll(mu::AbstractVector{T}, sigma::AbstractVector{T}, x::AbstractVector{T}) where {T<:Number}
-        ll = zero(float(T))
-        for i in eachindex(mu, sigma, x)
-            ll += norm_ll(mu[i], sigma[i], x[i])
-        end
-        return ll
-    end
-    @inline function norm_ll(mu::Number, sigma::Number, x::Number, x_sigma::Number)
-        δ = x - mu
-        σ² = sigma^2 + x_sigma^2
-        -0.5*(log(2*pi*σ²) + δ^2/σ²)
-    end
-    function norm_ll(mu::AbstractVector{T}, sigma::AbstractVector{T}, x::AbstractVector{T}, x_sigma::AbstractVector{T}) where {T<:Number}
-        ll = zero(float(T))
-        for i in eachindex(mu, sigma, x, x_sigma)
-            ll += norm_ll(mu[i], sigma[i], x[i], x_sigma[i])
-        end
-        return ll
-    end
-
-    # Specialized log likelihood functions for ZRDAAM and RDAAM
-    function model_ll(zdmₚ::ZRDAAM, zdm::ZRDAAM)
-        norm_ll(log(zdm.DzD0), zdm.DzD0_logsigma, log(zdmₚ.DzD0)) + 
-        norm_ll(log(zdm.DzEa), zdm.DzEa_logsigma, log(zdmₚ.DzEa)) + 
-        norm_ll(log(zdm.DN17D0), zdm.DN17D0_logsigma, log(zdmₚ.DN17D0)) + 
-        norm_ll(log(zdm.DN17Ea), zdm.DN17Ea_logsigma, log(zdmₚ.DN17Ea)) +
-        norm_ll(zdm.rmr0, zdm.rmr0_sigma, zdmₚ.rmr0)
-    end
-    function model_ll(admₚ::RDAAM, adm::RDAAM)
-        norm_ll(log(adm.D0L), adm.D0L_logsigma, log(admₚ.D0L)) + 
-        norm_ll(log(adm.EaL), adm.EaL_logsigma, log(admₚ.EaL)) + 
-        norm_ll(log(adm.EaTrap), adm.EaTrap_logsigma, log(admₚ.EaTrap))+
-        norm_ll(adm.rmr0, adm.rmr0_sigma, admₚ.rmr0)
     end
     
 ## --- Ensure non-allocation of linear algebra
