@@ -3,7 +3,7 @@
 function equivalenttime(t::Number, T::Number, Teq::Number, fc::FanningCurvilinearApatite)
     exp(fc.C2 + (log(t*SEC_MYR)-fc.C2)*(log(1/(Teq+273.15))-fc.C3)/(log(1/(T+273.15))-fc.C3))/SEC_MYR
 end
-function equivalenttime(t::Number, T::Number, Teq::Number, am::Yamada2005PC)
+function equivalenttime(t::Number, T::Number, Teq::Number, am::Yamada2007PC)
     exp(am.bp*log(1/(Teq+273.15)) + (log(t*SEC_MYR) - am.bp*log(1/(T+273.15))))/SEC_MYR
 end
 
@@ -18,7 +18,7 @@ Possible annealing model types and the references for the equations
 which they respetively implement include 
   `Ketcham1999FC`       Fanning Curvilinear apatite model of Ketcham et al. 1999 (doi: 10.2138/am-1999-0903)
   `Ketcham2007FC`       Fanning Curvilinear apatite model of Ketcham et al. 2007 (doi: 10.2138/am.2007.2281)
-  `Yamada2005PC`        Parallel Curvilinear zircon model of Yamada et al. 2005 (doi: 10.1016/j.chemgeo.2006.09.002)
+  `Yamada2007PC`        Parallel Curvilinear zircon model of Yamada et al. 2007 (doi: 10.1016/j.chemgeo.2006.09.002)
 
 See also: `reltrackdensity`.
 """
@@ -30,7 +30,7 @@ function reltracklength(t::Number, T::Number, fc::Ketcham2007FC)
     g = fc.C0 + fc.C1*(log(t*SEC_MYR)-fc.C2)/(log(1/(T+273.15))-fc.C3)
     r = 1/(g^(1/fc.alpha) + 1)
 end
-function reltracklength(t::Number, T::Number, am::Yamada2005PC)
+function reltracklength(t::Number, T::Number, am::Yamada2007PC)
     r = exp(-exp(am.c0p + am.c1p*(log(t*SEC_MYR) - am.bp*log(1/(T+273.15)))))
 end
 
@@ -165,7 +165,7 @@ Possible annealing model types and the references for the equations
 which they respetively implement include 
   `Ketcham1999FC`       Fanning Curvilinear apatite model of Ketcham et al. 1999 (doi: 10.2138/am-1999-0903)
   `Ketcham2007FC`       Fanning Curvilinear apatite model of Ketcham et al. 2007 (doi: 10.2138/am.2007.2281)
-  `Yamada2005PC`        Parallel Curvilinear zircon model of Yamada et al. 2005 (doi: 10.1016/j.chemgeo.2006.09.002)
+  `Yamada2007PC`        Parallel Curvilinear zircon model of Yamada et al. 2007 (doi: 10.1016/j.chemgeo.2006.09.002)
 """
 function modelage(zircon::ZirconFT{T}, Tsteps::AbstractVector, am::ZirconAnnealingModel{T}) where {T <: AbstractFloat}
     tsteps = zircon.tsteps

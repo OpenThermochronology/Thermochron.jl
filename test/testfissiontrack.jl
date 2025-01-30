@@ -2,7 +2,7 @@
 
     @test Ketcham1999FC() isa Thermochron.ApatiteAnnealingModel{Float64}
     @test Ketcham2007FC() isa Thermochron.ApatiteAnnealingModel{Float64}
-    @test Yamada2005PC() isa Thermochron.ZirconAnnealingModel{Float64}
+    @test Yamada2007PC() isa Thermochron.ZirconAnnealingModel{Float64}
 
 ## --- Ketcham et al. 1999 Fanning Curvilinear apatite
     am = Ketcham1999FC()
@@ -47,8 +47,8 @@
 
 ## --- Ketcham et al. 2007 Simplified Curvilinear apatite
 
-    am = Yamada2005PC()
-    @test am isa Thermochron.Yamada2005PC{Float64}
+    am = Yamada2007PC()
+    @test am isa Thermochron.Yamada2007PC{Float64}
 
     @test Thermochron.reltracklength(1, 0, am) ≈ 0.9964516173825159
     @test Thermochron.reltracklength(1, 10, am) ≈ 0.995078688092618
@@ -85,26 +85,26 @@
     display(zircon)
 
     # Isothermal residence
-    @test modelage(zircon, fill(0, 100), Yamada2005PC()) ≈ 99.0263284502223
-    @test modelage(zircon, fill(50, 100), Yamada2005PC()) ≈ 95.55787511259514
-    @test modelage(zircon, fill(75, 100), Yamada2005PC()) ≈ 91.39371027871266 
-    @test modelage(zircon, fill(100, 100), Yamada2005PC()) ≈ 84.31219878239003
+    @test modelage(zircon, fill(0, 100), Yamada2007PC()) ≈ 99.0263284502223
+    @test modelage(zircon, fill(50, 100), Yamada2007PC()) ≈ 95.55787511259514
+    @test modelage(zircon, fill(75, 100), Yamada2007PC()) ≈ 91.39371027871266 
+    @test modelage(zircon, fill(100, 100), Yamada2007PC()) ≈ 84.31219878239003
 
     # Linear cooling
-    @test modelage(zircon, reverse(1:100), Yamada2005PC()) ≈ 95.84543737681496
+    @test modelage(zircon, reverse(1:100), Yamada2007PC()) ≈ 95.84543737681496
 
     # As above but longer history
     zircon = ZirconFT(agesteps=reverse(cntr(0:200)))
     @test zircon isa ZirconFT{Float64}
 
-    @test modelage(zircon, reverse(1:200), Yamada2005PC()) ≈ 158.732395422251
-    @test modelage(zircon, reverse(1:200)./2, Yamada2005PC()) ≈ 190.5424305134446
-    @test modelage(zircon, reverse(1:200).*2, Yamada2005PC()) ≈ 84.2529410694908
+    @test modelage(zircon, reverse(1:200), Yamada2007PC()) ≈ 158.732395422251
+    @test modelage(zircon, reverse(1:200)./2, Yamada2007PC()) ≈ 190.5424305134446
+    @test modelage(zircon, reverse(1:200).*2, Yamada2007PC()) ≈ 84.2529410694908
 
     # Fish Canyon Tuff zircon example
     zircon = ZirconFT(age=27, age_sigma=3, agesteps=reverse(cntr(0:28)))
-    @test modelage(zircon, fill(20., 28), Yamada2005PC()) ≈ 27.600459673764092
-    @test Thermochron.model_ll(zircon, fill(20., 28), Yamada2005PC()) ≈ -2.0375814785292756
+    @test modelage(zircon, fill(20., 28), Yamada2007PC()) ≈ 27.600459673764092
+    @test Thermochron.model_ll(zircon, fill(20., 28), Yamada2007PC()) ≈ -2.0375814785292756
 
 ## --- Test apatite fission track model ages
 

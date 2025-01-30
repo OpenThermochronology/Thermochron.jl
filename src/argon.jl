@@ -1,3 +1,5 @@
+## -- Argon age functions
+
 # The amount of ingrown argon since time t
 calc_Ar(t, K40) = K40*BR40K*(exp(λ40K*t)-1)
 # First time derivative of the amount of ingrown argon since time t

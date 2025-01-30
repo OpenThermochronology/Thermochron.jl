@@ -67,7 +67,7 @@
         # Damage models for each mineral
         zdm = (haskey(model, :zdm) ? model.zdm : ZRDAAM())::ZirconHeliumModel{T}
         adm = (haskey(model, :adm) ? model.adm : RDAAM())::ApatiteHeliumModel{T}
-        zftm = (haskey(model, :zftm) ? model.zftm : Yamada2005PC())::ZirconAnnealingModel{T}
+        zftm = (haskey(model, :zftm) ? model.zftm : Yamada2007PC())::ZirconAnnealingModel{T}
         aftm = (haskey(model, :aftm) ? model.aftm : Ketcham2007FC())::ApatiteAnnealingModel{T}
 
         # See what minerals we have
@@ -423,7 +423,7 @@
         # Damage models for each mineral
         zdm₀ = zdm = zdmₚ = (haskey(model, :zdm) ? model.zdm : ZRDAAM())::ZirconHeliumModel{T}
         adm₀ = adm = admₚ =  (haskey(model, :adm) ? model.adm : RDAAM())::ApatiteHeliumModel{T}
-        zftm = (haskey(model, :zftm) ? model.zftm : Yamada2005PC())::ZirconAnnealingModel{T}
+        zftm = (haskey(model, :zftm) ? model.zftm : Yamada2007PC())::ZirconAnnealingModel{T}
         aftm = (haskey(model, :aftm) ? model.aftm : Ketcham2007FC())::ApatiteAnnealingModel{T}
 
         # See what minerals we have

@@ -580,6 +580,7 @@ function modelage(mineral::GenericHe{T}, Tsteps::AbstractVector{T}) where T <: A
     return newton_he_age(μHe, μ238U, μ235U, μ232Th, μ147Sm)
 end
 
+# Log likelihood for model ages
 function model_ll(mineral::HeliumSample, Tsteps, dm::DiffusivityModel)
     anneal!(mineral, Tsteps, dm)
     age = modelage(mineral, Tsteps, dm)

@@ -10,8 +10,8 @@ Base.length(x::AnnealingModel) = 1
 Base.iterate(x::AnnealingModel) = (x, nothing)
 Base.iterate(x::AnnealingModel, state) = nothing
 
-# Parallel Curvilinear apatite model of Yamada, 2005 (doi: 10.1016/j.chemgeo.2006.09.002)
-Base.@kwdef struct Yamada2005PC{T<:AbstractFloat} <: ZirconAnnealingModel{T} 
+# Parallel Curvilinear apatite model of Yamada, 2007 (doi: 10.1016/j.chemgeo.2006.09.002)
+Base.@kwdef struct Yamada2007PC{T<:AbstractFloat} <: ZirconAnnealingModel{T} 
     c0p::T = -63.37     # Yamada et al. 2007 zircon
     c1p::T = 0.212      # Yamada et al. 2007 zircon
     bp::T = 43.00       # Yamada et al. 2007 zircon
