@@ -1,11 +1,12 @@
 # Test fission track annealing
 
-    @test Ketcham1999FC isa Thermochron.FanningCurvilinear{Float64}
-    @test Ketcham2007FC isa Thermochron.SimplifiedCurvilinear{Float64}
+    @test Ketcham1999FC() isa Thermochron.ApatiteAnnealingModel{Float64}
+    @test Ketcham2007FC() isa Thermochron.ApatiteAnnealingModel{Float64}
+    @test Yamada2005PC() isa Thermochron.ZirconAnnealingModel{Float64}
 
 ## --- Ketcham et al. 1999 Fanning Curvilinear apatite
-    am = Ketcham1999FC
-    @test am isa Thermochron.FanningCurvilinear{Float64}
+    am = Ketcham1999FC()
+    @test am isa Thermochron.Ketcham1999FC{Float64}
 
     @test Thermochron.reltracklength(1, 0, am) ≈ 0.969772147771495
     @test Thermochron.reltracklength(1, 10, am) ≈ 0.964689584499856
@@ -25,8 +26,8 @@
 
 ## --- Ketcham et al. 2007 Simplified Curvilinear apatite
 
-    am = Ketcham2007FC
-    @test am isa Thermochron.SimplifiedCurvilinear{Float64}
+    am = Ketcham2007FC()
+    @test am isa Thermochron.Ketcham2007FC{Float64}
 
     @test Thermochron.reltracklength(1, 0, am) ≈ 0.9749628064438557
     @test Thermochron.reltracklength(1, 10, am) ≈ 0.9701964063931915
@@ -46,8 +47,8 @@
 
 ## --- Ketcham et al. 2007 Simplified Curvilinear apatite
 
-    am = Yamada2005PC
-    @test am isa Thermochron.ParallelCurvilinear{Float64}
+    am = Yamada2005PC()
+    @test am isa Thermochron.Yamada2005PC{Float64}
 
     @test Thermochron.reltracklength(1, 0, am) ≈ 0.9964516173825159
     @test Thermochron.reltracklength(1, 10, am) ≈ 0.995078688092618
@@ -67,7 +68,7 @@
     @test rmr0model.(F, Cl, OH) ≈ [0.8573573076438294, 0.857484193068046, 0.8569770580132927, 0.856210256388646, 0.8569770580132927, 0.857991689484071, 0.8569759763207477, 0.8567211907298894, 0.8572313896305666, 0.856210256388646]
 
     rmr0 = rmr0model.(F, Cl, OH)
-    rmr = Thermochron.reltracklength.(1:10, 95, Ketcham2007FC)
+    rmr = Thermochron.reltracklength.(1:10, 95, Ketcham2007FC())
     @test Thermochron.rlr.(rmr, rmr0) ≈ [0.7390142328562013, 0.6849516733686434, 0.6428585390459669, 0.6061834471512542, 0.5490365748013377, 0.44555008284518977, 0.33418938122916036, 0.0, 0.0, 0.0]
 
 ## --- Test fission track model ages
@@ -79,39 +80,39 @@
     display(apatite)
 
     # Isothermal residence
-    @test modelage(apatite, fill(0, 100), Ketcham1999FC) ≈ 89.47899236366592
-    @test modelage(apatite, fill(0, 100), Ketcham2007FC) ≈ 91.18888272552469
+    @test modelage(apatite, fill(0, 100), Ketcham1999FC()) ≈ 89.47899236366592
+    @test modelage(apatite, fill(0, 100), Ketcham2007FC()) ≈ 91.18888272552469
 
-    @test modelage(apatite, fill(50, 100), Ketcham1999FC) ≈ 71.75968375010271
-    @test modelage(apatite, fill(50, 100), Ketcham2007FC) ≈ 74.20874464530966
+    @test modelage(apatite, fill(50, 100), Ketcham1999FC()) ≈ 71.75968375010271
+    @test modelage(apatite, fill(50, 100), Ketcham2007FC()) ≈ 74.20874464530966
 
-    @test modelage(apatite, fill(75, 100), Ketcham1999FC) ≈ 22.088815691960797
-    @test modelage(apatite, fill(75, 100), Ketcham2007FC) ≈ 21.6047849747377
+    @test modelage(apatite, fill(75, 100), Ketcham1999FC()) ≈ 22.088815691960797
+    @test modelage(apatite, fill(75, 100), Ketcham2007FC()) ≈ 21.6047849747377
 
-    @test modelage(apatite, fill(100, 100), Ketcham1999FC) ≈ 0.4682983384208703 
-    @test modelage(apatite, fill(100, 100), Ketcham2007FC) ≈ 0.42338708872671615
+    @test modelage(apatite, fill(100, 100), Ketcham1999FC()) ≈ 0.4682983384208703 
+    @test modelage(apatite, fill(100, 100), Ketcham2007FC()) ≈ 0.42338708872671615
 
     # Linear cooling
-    @test modelage(apatite, reverse(1:100), Ketcham1999FC) ≈ 66.15470736807784 
-    @test modelage(apatite, reverse(1:100), Ketcham2007FC) ≈ 67.87471588034019
+    @test modelage(apatite, reverse(1:100), Ketcham1999FC()) ≈ 66.15470736807784 
+    @test modelage(apatite, reverse(1:100), Ketcham2007FC()) ≈ 67.87471588034019
 
     apatite = ApatiteFT(agesteps=reverse(cntr(0:200)), F=1.75, Cl=0.01, OH=0.24)
     @test apatite isa ApatiteFT{Float64}
     @test apatite.rmr0 ≈ 0.8573573076438294
 
     # As above but longer history
-    @test modelage(apatite, reverse(1:200), Ketcham1999FC) ≈ 66.15470736807784
-    @test modelage(apatite, reverse(1:200), Ketcham2007FC) ≈ 67.87471588034019
+    @test modelage(apatite, reverse(1:200), Ketcham1999FC()) ≈ 66.15470736807784
+    @test modelage(apatite, reverse(1:200), Ketcham2007FC()) ≈ 67.87471588034019
 
-    @test modelage(apatite, reverse(1:200)./2, Ketcham1999FC) ≈ 124.23025599587466
-    @test modelage(apatite, reverse(1:200)./2, Ketcham2007FC) ≈ 127.60575486065872
+    @test modelage(apatite, reverse(1:200)./2, Ketcham1999FC()) ≈ 124.23025599587466
+    @test modelage(apatite, reverse(1:200)./2, Ketcham2007FC()) ≈ 127.60575486065872
 
-    @test modelage(apatite, reverse(1:200).*2, Ketcham1999FC) ≈ 34.92192150860748
-    @test modelage(apatite, reverse(1:200).*2, Ketcham2007FC) ≈ 35.79582640096202 
+    @test modelage(apatite, reverse(1:200).*2, Ketcham1999FC()) ≈ 34.92192150860748
+    @test modelage(apatite, reverse(1:200).*2, Ketcham2007FC()) ≈ 35.79582640096202 
 
     apatite = ApatiteFT(age=25, age_sigma=3, agesteps=reverse(cntr(0:28)), dpar=2.16)
-    @test modelage(apatite, fill(20., 28), Ketcham2007FC) ≈ 25.25247092840902
-    @test Thermochron.model_ll(apatite, fill(20., 28), Ketcham2007FC) ≈ -2.0210920201889886
+    @test modelage(apatite, fill(20., 28), Ketcham2007FC()) ≈ 25.25247092840902
+    @test Thermochron.model_ll(apatite, fill(20., 28), Ketcham2007FC()) ≈ -2.0210920201889886
 
 ## --- Test track lengths
 
@@ -119,38 +120,38 @@
     show(track)
     display(track)
 
-    l, σ = modellength(track, fill(75, 20), Ketcham1999FC) .* 16.38
+    l, σ = modellength(track, fill(75, 20), Ketcham1999FC()) .* 16.38
     @test l ≈ 12.432312726056672
     @test σ ≈  0.5736749779212151
     @test round.(track.r, sigdigits=4) ≈ [0.7101, 0.7134, 0.7167, 0.7202, 0.7238, 0.7275, 0.7314, 0.7354, 0.7396, 0.7441, 0.7488, 0.7539, 0.7593, 0.7653, 0.7718, 0.7792, 0.7877, 0.7979, 0.8111, 0.8311]
-    l, σ = modellength(track, fill(75, 20), Ketcham2007FC) .* 16.38
+    l, σ = modellength(track, fill(75, 20), Ketcham2007FC()) .* 16.38
     @test l ≈ 12.610086362166317
     @test σ ≈  0.6062929557510826
     @test round.(track.r, sigdigits=4) ≈ [0.7176, 0.7212, 0.725, 0.7289, 0.7329, 0.737, 0.7413, 0.7457, 0.7503, 0.7552, 0.7603, 0.7657, 0.7716, 0.7779, 0.7848, 0.7925, 0.8014, 0.8119, 0.8254, 0.8454]
 
-    l, σ = modellength(track, fill(100, 20), Ketcham1999FC) .* 16.38
+    l, σ = modellength(track, fill(100, 20), Ketcham1999FC()) .* 16.38
     @test l ≈ 10.874500968379554 
     @test σ ≈  0.6344191502094181
     @test round.(track.r, sigdigits=4) ≈ [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.4544, 0.55, 0.6184, 0.6876]
-    l, σ = modellength(track, fill(100, 20), Ketcham2007FC) .* 16.38
+    l, σ = modellength(track, fill(100, 20), Ketcham2007FC()) .* 16.38
     @test l ≈ 10.982218818618923
     @test σ ≈  0.608187681868191
     @test round.(track.r, sigdigits=4) ≈ [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.4888, 0.6017, 0.6895]
 
-    l, σ = modellength(track, reverse(1:20).*5, Ketcham1999FC) .* 16.38
+    l, σ = modellength(track, reverse(1:20).*5, Ketcham1999FC()) .* 16.38
     @test l ≈ 14.363662652747362
     @test σ ≈  1.1822475087376938
     @test round.(track.r, sigdigits=4) ≈ [0.6124, 0.6806, 0.726, 0.7602, 0.7876, 0.8104, 0.8298, 0.8466, 0.8614, 0.8744, 0.886, 0.8963, 0.9056, 0.914, 0.9216, 0.9286, 0.935, 0.941, 0.9469, 0.9536]
-    l, σ = modellength(track, reverse(1:20).*5, Ketcham2007FC) .* 16.38
+    l, σ = modellength(track, reverse(1:20).*5, Ketcham2007FC()) .* 16.38
     @test l ≈ 14.558435101305054
     @test σ ≈  1.1716416735159647
     @test round.(track.r, sigdigits=4) ≈ [0.5945, 0.6823, 0.7347, 0.7723, 0.8014, 0.825, 0.8447, 0.8615, 0.8759, 0.8885, 0.8996, 0.9094, 0.9181, 0.926, 0.933, 0.9394, 0.9452, 0.9506, 0.956, 0.9619]
 
-    l, σ =  modellength(track, reverse(1:20).*10, Ketcham1999FC) .* 16.38 
+    l, σ =  modellength(track, reverse(1:20).*10, Ketcham1999FC()) .* 16.38 
     @test l ≈ 14.357128787814558
     @test σ ≈  1.1841227131850056
     @test round.(track.r, sigdigits=4) ≈ [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6597, 0.7484, 0.8021, 0.8403, 0.8693, 0.8921, 0.9105, 0.9255, 0.9381, 0.9494]
-    l, σ = modellength(track, reverse(1:20).*10, Ketcham2007FC) .* 16.38
+    l, σ = modellength(track, reverse(1:20).*10, Ketcham2007FC()) .* 16.38
     @test l ≈ 14.538333058948192
     @test σ ≈  1.1899130108299063
     @test round.(track.r, sigdigits=4) ≈ [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6564, 0.7592, 0.8162, 0.8549, 0.8834, 0.9053, 0.9225, 0.9364, 0.9479, 0.9581]
@@ -158,12 +159,12 @@
 ## -- Check the mean track length of a modelled Fish Canyon Apatite to be 15.35 +/- 0.06 um
 
     track = ApatiteTrackLength(length=15, angle=35, agesteps=reverse(cntr(0:28)), dpar=2.16)
-    l, σ = modellength(track, fill(20., 28), Ketcham2007FC) .* 16.38
+    l, σ = modellength(track, fill(20., 28), Ketcham2007FC()) .* 16.38
     @test l ≈ 15.35 atol=0.06
     @test l ≈ 15.376461527029509 
     @test σ ≈  0.09967577151793756
 
-    @test Thermochron.model_ll(track, fill(20., 28), Ketcham2007FC) ≈ 1.0651088634382597
+    @test Thermochron.model_ll(track, fill(20., 28), Ketcham2007FC()) ≈ 1.0651088634382597
 
 ## --- Test c-axis equivalent model lengths
 

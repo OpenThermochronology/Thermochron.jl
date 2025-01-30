@@ -1,14 +1,26 @@
 ## --- Define AnnealingModel types
 
 abstract type AnnealingModel{T} end
+abstract type ZirconAnnealingModel{T} <: AnnealingModel{T} end
+abstract type ApatiteAnnealingModel{T} <: AnnealingModel{T} end
+abstract type FanningCurvilinearApatite{T} <: ApatiteAnnealingModel{T} end
 
 # Implement methods to allow broadcasting
 Base.length(x::AnnealingModel) = 1
 Base.iterate(x::AnnealingModel) = (x, nothing)
 Base.iterate(x::AnnealingModel, state) = nothing
 
-# Fanning Curvilinear models (Ketcham 1999)
-Base. @kwdef struct FanningCurvilinear{T<:AbstractFloat} <: AnnealingModel{T} 
+# Parallel Curvilinear apatite model of Yamada, 2005 (doi: 10.1016/j.chemgeo.2006.09.002)
+Base.@kwdef struct Yamada2005PC{T<:AbstractFloat} <: ZirconAnnealingModel{T} 
+    c0p::T = -63.37     # Yamada et al. 2007 zircon
+    c1p::T = 0.212      # Yamada et al. 2007 zircon
+    bp::T = 43.00       # Yamada et al. 2007 zircon
+    l0::T = 11.17       # [um] effective inital mean track length (μmax)
+    l0_sigma::T = 0.051 # [um] effective length uncertainty (σ)
+end
+
+# Fanning Curvilinear apatite model of Ketcham, 1999 (doi: 10.2138/am-1999-0903)
+Base.@kwdef struct Ketcham1999FC{T<:AbstractFloat} <: FanningCurvilinearApatite{T} 
     C0::T = -19.844     # "Simultaneous fit" from Ketcham et al. 1999 apatite
     C1::T = 0.38951     # "Simultaneous fit" from Ketcham et al. 1999 apatite
     C2::T = -51.253     # "Simultaneous fit" from Ketcham et al. 1999 apatite
@@ -18,10 +30,9 @@ Base. @kwdef struct FanningCurvilinear{T<:AbstractFloat} <: AnnealingModel{T}
     l0::T = 16.38       # [um] Initial track length
     l0_sigma::T = 0.09  # [um] Initial track length unertainty
 end
-const Ketcham1999FC = FanningCurvilinear()
 
-# Simplified Fanning Curvilinear models (Ketcham 2007)
-Base.@kwdef struct SimplifiedCurvilinear{T<:AbstractFloat} <: AnnealingModel{T} 
+# Simplified Fanning Curvilinear apatite model of Ketcham, 2007 (doi: 10.2138/am.2007.2281)
+Base.@kwdef struct Ketcham2007FC{T<:AbstractFloat} <: FanningCurvilinearApatite{T} 
     C0::T = 0.39528     # "Simultaneous fit" from Ketcham et al. 2007 apatite
     C1::T = 0.01073     # "Simultaneous fit" from Ketcham et al. 2007 apatite
     C2::T = -65.12969   # "Simultaneous fit" from Ketcham et al. 2007 apatite
@@ -30,16 +41,6 @@ Base.@kwdef struct SimplifiedCurvilinear{T<:AbstractFloat} <: AnnealingModel{T}
     l0::T = 16.38       # [um] Initial track length
     l0_sigma::T = 0.09  # [um] Initial track length unertainty
 end
-const Ketcham2007FC = SimplifiedCurvilinear()
-
-Base.@kwdef struct ParallelCurvilinear{T<:AbstractFloat} <: AnnealingModel{T} 
-    c0p::T = -63.37     # Yamada et al. 2007 zircon
-    c1p::T = 0.212      # Yamada et al. 2007 zircon
-    bp::T = 43.00       # Yamada et al. 2007 zircon
-    l0::T = 11.17       # [um] effective inital mean track length (μmax)
-    l0_sigma::T = 0.051 # [um] effective length uncertainty (σ)
-end
-const Yamada2005PC = ParallelCurvilinear()
 
 ## --- Define DiffusivityModel types
 

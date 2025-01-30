@@ -57,7 +57,7 @@
         # Damage and annealing models for diffusivity (specify custom kinetics if desired)
         adm = RDAAM(),                  # Flowers et al. 2009 (doi: 10.1016/j.gca.2009.01.015)
         zdm = ZRDAAM(),                 # Guenthner et al. 2013 (doi: 10.2475/03.2013.01)
-        aftm = SimplifiedCurvilinear(), # Ketcham et al. 2007 (doi: 10.2138/am.2007.2281)
+        aftm = Ketcham2007FC(),         # Ketcham et al. 2007 (doi: 10.2138/am.2007.2281)
         # Model uncertainty is not well known (depends on annealing parameters,
         # decay constants, diffusion parameters, etc.), but is certainly non-zero.
         # Here we add (in quadrature) a blanket model uncertainty of 5 Ma.

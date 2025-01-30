@@ -1,9 +1,9 @@
 ## --- Fission track functions
 
-function equivalenttime(t::Number, T::Number, Teq::Number, fc::Union{SimplifiedCurvilinear,FanningCurvilinear})
+function equivalenttime(t::Number, T::Number, Teq::Number, fc::FanningCurvilinearApatite)
     exp(fc.C2 + (log(t*SEC_MYR)-fc.C2)*(log(1/(Teq+273.15))-fc.C3)/(log(1/(T+273.15))-fc.C3))/SEC_MYR
 end
-function equivalenttime(t::Number, T::Number, Teq::Number, am::ParallelCurvilinear)
+function equivalenttime(t::Number, T::Number, Teq::Number, am::Yamada2005PC)
     exp(am.bp*log(1/(Teq+273.15)) + (log(t*SEC_MYR) - am.bp*log(1/(T+273.15))))/SEC_MYR
 end
 
@@ -16,21 +16,21 @@ isothermal heating at `T` C for `t` Myr and annealing parameters `am`.
     
 Possible annealing model types and the references for the equations 
 which they respetively implement include 
-  `FanningCurvilinear`      Ketcham et al. 1999 apatite (doi: 10.2138/am-1999-0903)
-  `SimplifiedCurvilinear`   Ketcham et al. 2007 apatite (doi: 10.2138/am.2007.2281)
-  `ParallelCurvilinear`     Yamada et al. 2005 zircon (doi: 10.1016/j.chemgeo.2006.09.002)
+  `Ketcham1999FC`       Fanning Curvilinear apatite model of Ketcham et al. 1999 (doi: 10.2138/am-1999-0903)
+  `Ketcham2007FC`       Fanning Curvilinear apatite model of Ketcham et al. 2007 (doi: 10.2138/am.2007.2281)
+  `Yamada2005PC`        Parallel Curvilinear zircon model of Yamada et al. 2005 (doi: 10.1016/j.chemgeo.2006.09.002)
 
 See also: `reltrackdensity`.
 """
-function reltracklength(t::Number, T::Number, fc::FanningCurvilinear{Tf}) where {Tf}
+function reltracklength(t::Number, T::Number, fc::Ketcham1999FC{Tf}) where {Tf}
     g = fc.C0 + fc.C1*(log(t*SEC_MYR)-fc.C2)/(log(1/(T+273.15))-fc.C3)
     (1-max(g*fc.alpha+1, zero(Tf))^(1/fc.alpha)*fc.beta)^(1/fc.beta)
 end
-function reltracklength(t::Number, T::Number, fc::SimplifiedCurvilinear)
+function reltracklength(t::Number, T::Number, fc::Ketcham2007FC)
     g = fc.C0 + fc.C1*(log(t*SEC_MYR)-fc.C2)/(log(1/(T+273.15))-fc.C3)
     r = 1/(g^(1/fc.alpha) + 1)
 end
-function reltracklength(t::Number, T::Number, am::ParallelCurvilinear)
+function reltracklength(t::Number, T::Number, am::Yamada2005PC)
     r = exp(-exp(am.c0p + am.c1p*(log(t*SEC_MYR) - am.bp*log(1/(T+273.15)))))
 end
 
@@ -150,10 +150,10 @@ time resolution of `step(mineral.tsteps)`) and given annealing model parameters 
 
 Possible annealing model types and the references for the equations 
 which they respetively implement include 
-  `FanningCurvilinear`      Ketcham et al. 1999 (doi: 10.2138/am-1999-0903)
-  `SimplifiedCurvilinear`   Ketcham et al. 2007 (doi: 10.2138/am.2007.2281)
+  `Ketcham1999FC`       Fanning Curvilinear apatite model of Ketcham et al. 1999 (doi: 10.2138/am-1999-0903)
+  `Ketcham2007FC`       Fanning Curvilinear apatite model of Ketcham et al. 2007 (doi: 10.2138/am.2007.2281)
 """
-function modelage(apatite::ApatiteFT{T}, Tsteps::AbstractVector, am::AnnealingModel{T}) where {T <: AbstractFloat}
+function modelage(apatite::ApatiteFT{T}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}) where {T <: AbstractFloat}
     tsteps = apatite.tsteps
     rmr0 = apatite.rmr0
     @assert issorted(tsteps)
@@ -179,7 +179,7 @@ end
 
 """
 ```julia
-modellength(track::ApatiteTrackLength, Tsteps, am::AnnealingModel)
+modellength(track::ApatiteTrackLength, Tsteps, am::ApatiteAnnealingModel)
 ```
 Calculate the predicted mean and standard deviation of the distribution of fission  
 track lengths of an apatite that has experienced a given t-T path (specified by 
@@ -188,10 +188,10 @@ track lengths of an apatite that has experienced a given t-T path (specified by
 
 Possible annealing model types and the references for the equations 
 which they respetively implement include 
-  `FanningCurvilinear`      Ketcham et al. 1999 (doi: 10.2138/am-1999-0903)
-  `SimplifiedCurvilinear`   Ketcham et al. 2007 (doi: 10.2138/am.2007.2281)
+  `Ketcham1999FC`       Fanning Curvilinear apatite model of Ketcham et al. 1999 (doi: 10.2138/am-1999-0903)
+  `Ketcham2007FC`       Fanning Curvilinear apatite model of Ketcham et al. 2007 (doi: 10.2138/am.2007.2281)
 """
-function modellength(track::ApatiteTrackLength{T}, Tsteps::AbstractVector, am::AnnealingModel{T}) where {T <: AbstractFloat}
+function modellength(track::ApatiteTrackLength{T}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}) where {T <: AbstractFloat}
     tsteps = track.tsteps
     rmr0 = track.rmr0
     r = track.r
@@ -209,7 +209,7 @@ function modellength(track::ApatiteTrackLength{T}, Tsteps::AbstractVector, am::A
     return nanmean(r, pr), nanstd(r, pr)
 end
 
-function model_ll(track::ApatiteTrackLength, Tsteps::AbstractVector, am::AnnealingModel)
+function model_ll(track::ApatiteTrackLength, Tsteps::AbstractVector, am::ApatiteAnnealingModel)
     l,σ = modellength(track, Tsteps, am) .* am.l0
     lc = lcmod(track)
     δ = l - lc
