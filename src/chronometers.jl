@@ -1010,6 +1010,7 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
         first_index = 1 + round(Int,(maximum(agesteps) - crystage[i])/step(tsteps))
 
         if data.mineral[i] == "zircon"
+            # Zircon helium
             if haskey(data, :raw_He_age_Ma) && haskey(data, :raw_He_age_sigma_Ma) && !isnan(data.raw_He_age_Ma[i]/data.raw_He_age_sigma_Ma[i])
                 # Modern format
                 c = ZirconHe(T;
@@ -1033,6 +1034,15 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                     U238 = data.U[i], 
                     Th232 = data.Th[i], 
                     Sm147 = (haskey(data, :Sm) && !isnan(data.Sm[i])) ? data.Sm[i] : 0,
+                    agesteps = agesteps[first_index:end],
+                )
+                push!(result, c)
+            end
+            # Zircon fission track
+            if haskey(data, :FT_age_Ma) && haskey(data, :FT_age_sigma_Ma) && !isnan(data.FT_age_Ma[i]/data.FT_age_sigma_Ma[i])
+                c = ZirconFT(T;
+                    age = data.FT_age_Ma[i], 
+                    age_sigma = data.FT_age_sigma_Ma[i], 
                     agesteps = agesteps[first_index:end],
                 )
                 push!(result, c)
@@ -1113,6 +1123,7 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                 )
                 push!(result, c)
             end
+            # Generic argon
             if haskey(data, :raw_Ar_age_Ma) && haskey(data, :raw_Ar_age_sigma_Ma) && !isnan(data.raw_Ar_age_Ma[i]/data.raw_Ar_age_sigma_Ma[i])
                 # Modern format
                 c = GenericAr(T;

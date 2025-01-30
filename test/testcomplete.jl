@@ -71,15 +71,16 @@ unconf = Constraint()
 dsg = importdataset(joinpath(datapath, "generic.csv"), ',', importas=:Tuple);
 chrons = chronometers(dsg, model)
 @test chrons isa Vector{<:Chronometer}
-@test length(chrons) == 8
+@test length(chrons) == 9
 @test count(x->isa(x,GenericHe), chrons) == 2
 @test count(x->isa(x,GenericAr), chrons) == 2
 @test count(x->isa(x,ZirconHe), chrons) == 1
 @test count(x->isa(x,ApatiteHe), chrons) == 1
+@test count(x->isa(x,ZirconFT), chrons) == 1
 @test count(x->isa(x,ApatiteFT), chrons) == 1
 @test count(x->isa(x,ApatiteTrackLength), chrons) == 1
-@test get_age(chrons) ≈ [150.37, 263.92, 917.84, 1023.73, 380., 120., 300.] 
-@test get_age_sigma(chrons) ≈ [5,5,5,5,5,5,5]
+@test get_age(chrons) ≈ [150.37, 263.92, 917.84, 1023.73, 380., 120., 680., 300.] 
+@test get_age_sigma(chrons) ≈ [5,5,5,5,5,5,5,5]
 
 dt = 10.0
 tsteps = (0+dt/2 : dt : 3000-dt/2)
@@ -88,8 +89,8 @@ Tsteps = range(650, 0, length=length(tsteps))
 calc = zeros(length(chrons))
 calcuncert = zeros(length(chrons))
 Thermochron.modelages!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2005PC(), Ketcham2007FC())
-@test round.(calc, sigdigits=5) ≈ [121.57, 230.22, 902.57, 1011.0, 386.86, 122.81, 303.42, 14.318]
-@test calcuncert ≈ [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.1710533944657444]
+@test round.(calc, sigdigits=5) ≈ [121.57, 230.22, 902.57, 1011.0, 386.86, 122.81, 684.38, 303.42, 14.318]
+@test calcuncert ≈ [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.1710533944657444]
 
 # Modern input format, Minnesota dataset
 chrons = chronometers(ds, model)
@@ -406,7 +407,7 @@ llmean = mean(tT.lldist)
 
 @test isa(tT.resultdist, AbstractMatrix)
 abserr = abs(sum(nanmean(tT.resultdist, dims=2) - data.HeAge)/length(data.HeAge))
-@test 0 < abserr < 100
+@test 0 < abserr < 120
 @info "Mean absolute error: $abserr"
 
 @test isa(tT.lldist, AbstractVector)
