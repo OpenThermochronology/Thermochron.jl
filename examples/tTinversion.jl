@@ -55,9 +55,10 @@
         dynamicsigma = false,           # Update model uncertainties?
         dynamicjumping = true,          # Update the t and t jumping (proposal) distributions based on previously accepted jumps
         # Damage and annealing models for diffusivity (specify custom kinetics if desired)
-        adm = RDAAM(),                  # Flowers et al. 2009 (doi: 10.1016/j.gca.2009.01.015)
-        zdm = ZRDAAM(),                 # Guenthner et al. 2013 (doi: 10.2475/03.2013.01)
-        aftm = Ketcham2007FC(),         # Ketcham et al. 2007 (doi: 10.2138/am.2007.2281)
+        adm = RDAAM(),                  # Flowers et al. 2009 (doi: 10.1016/j.gca.2009.01.015) apatite diffusivity model
+        zdm = ZRDAAM(),                 # Guenthner et al. 2013 (doi: 10.2475/03.2013.01) zircon diffusivity model
+        aftm = Ketcham2007FC(),         # Ketcham et al. 2007 (doi: 10.2138/am.2007.2281) apatite fission track model
+        zftm = Yamada2007PC(),          # Yamada et al. 2007 (doi: 10.1016/j.chemgeo.2006.09.002) zircon fission track model
         # Model uncertainty is not well known (depends on annealing parameters,
         # decay constants, diffusion parameters, etc.), but is certainly non-zero.
         # Here we add (in quadrature) a blanket model uncertainty of 5 Ma.
