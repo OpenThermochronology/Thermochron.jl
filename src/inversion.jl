@@ -1,5 +1,5 @@
 
-    function modelages!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, data::Vector{<:Chronometer{T}}, Tsteps::AbstractVector{T}, zdm::ZirconHeliumModel{T}, adm::ApatiteHeliumModel{T}, aftm::ApatiteAnnealingModel{T}) where {T<:AbstractFloat}
+    function modelages!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, data::Vector{<:Chronometer{T}}, Tsteps::AbstractVector{T}, zdm::ZirconHeliumModel{T}, adm::ApatiteHeliumModel{T}, zftm::ZirconAnnealingModel, aftm::ApatiteAnnealingModel{T}) where {T<:AbstractFloat}
         @assert eachindex(μcalc) == eachindex(σcalc) == eachindex(data)
         imax = argmax(i->length(data[i].agesteps), eachindex(data))
         tsteps = data[imax].tsteps
@@ -20,6 +20,8 @@
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), zdm)
             elseif isa(c, ApatiteHe)
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), adm)
+            elseif isa(c, ZirconFT)
+                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), zftm)
             elseif isa(c, ApatiteFT)
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), aftm)
             elseif isa(c, ApatiteTrackLength)
@@ -106,7 +108,8 @@
         # Damage models for each mineral
         zdm = (haskey(model, :zdm) ? model.zdm : ZRDAAM())::ZirconHeliumModel{T}
         adm = (haskey(model, :adm) ? model.adm : RDAAM())::ApatiteHeliumModel{T}
-        aftm = (haskey(model, :aftm) ? model.aftm : Ketcham2007FC())::AnnealingModel{T}
+        zftm = (haskey(model, :zftm) ? model.zftm : Yamada2005PC())::ZirconAnnealingModel{T}
+        aftm = (haskey(model, :aftm) ? model.aftm : Ketcham2007FC())::ApatiteAnnealingModel{T}
 
         # See what minerals we have
         (haszhe = any(x->isa(x, ZirconHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, ZirconHe), data)) zircons"
@@ -124,7 +127,7 @@
         σ = observed_sigma
 
         # Log-likelihood for initial proposal
-        modelages!(μcalc, σcalc, data, Tsteps, zdm, adm, aftm)
+        modelages!(μcalc, σcalc, data, Tsteps, zdm, adm, zftm, aftm)
         llna = llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma) + (simplified ? -log(npoints) : zero(T))
         ll = llₚ =  norm_ll(observed, σₐ, μcalc, σcalc) + llna
 
@@ -206,7 +209,7 @@
             end
 
             # Calculate model ages for each grain
-            modelages!(μcalcₚ, σcalcₚ, data, Tsteps, zdm, adm, aftm)
+            modelages!(μcalcₚ, σcalcₚ, data, Tsteps, zdm, adm, zftm, aftm)
 
             # Calculate log likelihood of proposal
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
@@ -324,7 +327,7 @@
             end
 
             # Calculate model ages for each grain
-            modelages!(μcalcₚ, σcalcₚ, data, Tsteps, zdm, adm, aftm)
+            modelages!(μcalcₚ, σcalcₚ, data, Tsteps, zdm, adm, zftm, aftm)
 
             # Calculate log likelihood of proposal
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
@@ -461,7 +464,8 @@
         # Damage models for each mineral
         zdm₀ = zdm = zdmₚ = (haskey(model, :zdm) ? model.zdm : ZRDAAM())::ZirconHeliumModel{T}
         adm₀ = adm = admₚ =  (haskey(model, :adm) ? model.adm : RDAAM())::ApatiteHeliumModel{T}
-        aftm = (haskey(model, :aftm) ? model.aftm : Ketcham2007FC())::AnnealingModel{T}
+        zftm = (haskey(model, :zftm) ? model.zftm : Yamada2005PC())::ZirconAnnealingModel{T}
+        aftm = (haskey(model, :aftm) ? model.aftm : Ketcham2007FC())::ApatiteAnnealingModel{T}
 
         # See what minerals we have
         (haszhe = any(x->isa(x, ZirconHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, ZirconHe), data)) zircons"
@@ -479,7 +483,7 @@
         σ = observed_sigma
         
         # Log-likelihood for initial proposal
-        modelages!(μcalc, σcalc, data, Tsteps, zdm, adm, aftm)
+        modelages!(μcalc, σcalc, data, Tsteps, zdm, adm, zftm, aftm)
         llna = llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma) + loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀) + (simplified ? -log(npoints) : zero(T))
         ll = llₚ =  norm_ll(observed, σₐ, μcalc, σcalc) + llna
 
@@ -569,7 +573,7 @@
             end
                
             # Calculate model ages for each grain
-            modelages!(μcalcₚ, σcalcₚ, data, Tsteps, zdmₚ, admₚ, aftm)
+            modelages!(μcalcₚ, σcalcₚ, data, Tsteps, zdmₚ, admₚ, zftm, aftm)
 
             # Calculate log likelihood of proposal
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
@@ -699,7 +703,7 @@
             end
 
             # Calculate model ages for each grain
-            modelages!(μcalcₚ, σcalcₚ, data, Tsteps, zdmₚ, admₚ, aftm)
+            modelages!(μcalcₚ, σcalcₚ, data, Tsteps, zdmₚ, admₚ, zftm, aftm)
 
             # Calculate log likelihood of proposal
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)

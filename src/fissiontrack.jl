@@ -37,28 +37,40 @@ end
 
 """
 ```julia
-reltrackdensity(r)
 reltrackdensity(t, T, am::AnnealingModel)
 ```
-Calculate the relative track density `ρ` corresponding to a given relative
-track length `r` following the approach of Ketcham et al. 2000, 
-equations 7a and 7b.
+Calculate the relative track density `ρ` corresponding to a given 
+relative track length `r` 
+
+Follows the relations of Ketcham et al. (2000), equations 7a and 7b 
+for apatite and Tagami et al. (1999) for zircon
 
 See also: `reltracklength`.
 """
-function reltrackdensity(r::T) where T<:Number
+reltrackdensity(t::Number, T::Number, am::ApatiteAnnealingModel) = reltrackdensityap(reltracklength(t, T, am))
+reltrackdensity(t::Number, T::Number, am::ZirconAnnealingModel) = reltrackdensityzrn(reltracklength(t, T, am))
+function reltrackdensityap(r::T) where T<:Number
     Tf = float(T)
     if r < 0.5274435106696789
         zero(Tf)
     elseif r < 0.765
-        9.205*r^2 - 9.157*r + 2.269
+        Tf(9.205)*r^2 - Tf(9.157)*r + Tf(2.269)
     elseif r < 1
-        1.6*r-0.6
+        Tf(1.6)*r-Tf(0.6)
     else
         one(Tf)
     end
 end
-reltrackdensity(t::Number, T::Number, am::AnnealingModel) = reltrackdensity(reltracklength(t, T, am))
+function reltrackdensityzrn(r::T) where T<:Number
+    Tf = float(T)
+    if r < 0.2
+        zero(Tf)
+    elseif r < 1
+        Tf(1.25)*(r-Tf(0.2))
+    else
+        one(Tf)
+    end
+end
 
 
 ellipse(x, lc) = @. sqrt(abs((1 - x^2/lc^2)*( 1.632*lc - 10.879)^2))
@@ -142,7 +154,8 @@ end
 
 """
 ```julia
-modelage(mineral::ApatiteFT, Tsteps, am::AnnealingModel)
+modelage(mineral::ZirconFT, Tsteps, am::ZirconAnnealingModel)
+modelage(mineral::ApatiteFT, Tsteps, am::ApatiteAnnealingModel)
 ```
 Calculate the precdicted fission track age of an apatite that has experienced a given 
 t-T path (specified by `mineral.tsteps` for time and `Tsteps` for temperature, at a
@@ -152,7 +165,22 @@ Possible annealing model types and the references for the equations
 which they respetively implement include 
   `Ketcham1999FC`       Fanning Curvilinear apatite model of Ketcham et al. 1999 (doi: 10.2138/am-1999-0903)
   `Ketcham2007FC`       Fanning Curvilinear apatite model of Ketcham et al. 2007 (doi: 10.2138/am.2007.2281)
+  `Yamada2005PC`        Parallel Curvilinear zircon model of Yamada et al. 2005 (doi: 10.1016/j.chemgeo.2006.09.002)
 """
+function modelage(zircon::ZirconFT{T}, Tsteps::AbstractVector, am::ZirconAnnealingModel{T}) where {T <: AbstractFloat}
+    tsteps = zircon.tsteps
+    @assert issorted(tsteps)
+    @assert eachindex(tsteps) == eachindex(Tsteps)
+    teq = dt = step(tsteps)
+    r = reltracklength(teq, Tsteps[end], am)
+    ftage = dt * reltrackdensityzrn(r)
+    @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
+        teq = equivalenttime(teq, Tsteps[i+1], Tsteps[i], am) + dt
+        r = reltracklength(teq, Tsteps[i], am)
+        ftage += dt * reltrackdensityzrn(r)
+    end
+    return ftage
+end
 function modelage(apatite::ApatiteFT{T}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}) where {T <: AbstractFloat}
     tsteps = apatite.tsteps
     rmr0 = apatite.rmr0
@@ -160,11 +188,11 @@ function modelage(apatite::ApatiteFT{T}, Tsteps::AbstractVector, am::ApatiteAnne
     @assert eachindex(tsteps) == eachindex(Tsteps)
     teq = dt = step(tsteps)
     r = rlr(reltracklength(teq, Tsteps[end], am), rmr0)
-    ftage = dt * reltrackdensity(r)
+    ftage = dt * reltrackdensityap(r)
     @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
         teq = equivalenttime(teq, Tsteps[i+1], Tsteps[i], am) + dt
         r = rlr(reltracklength(teq, Tsteps[i], am), rmr0)
-        ftage += dt * reltrackdensity(r)
+        ftage += dt * reltrackdensityap(r)
     end
     return ftage
 end
@@ -200,11 +228,11 @@ function modellength(track::ApatiteTrackLength{T}, Tsteps::AbstractVector, am::A
     @assert eachindex(tsteps) == eachindex(Tsteps) == eachindex(r)
     teq = dt = step(tsteps)
     r[end] = rlr(reltracklength(teq, Tsteps[end], am), rmr0)
-    pr[end] = reltrackdensity(r[end])
+    pr[end] = reltrackdensityap(r[end])
     @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
         teq = equivalenttime(teq, Tsteps[i+1], Tsteps[i], am) + dt
         r[i] = rlr(reltracklength(teq, Tsteps[i], am), rmr0)
-        pr[i] = reltrackdensity(r[i])
+        pr[i] = reltrackdensityap(r[i])
     end
     return nanmean(r, pr), nanstd(r, pr)
 end

@@ -55,6 +55,14 @@ function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:FissionTrackSampl
     print(io, """$T:
       age       : $(x.age) Ma
       age_sigma : $(x.age_sigma) Ma
+      agesteps  : $(x.agesteps) Ma
+    """
+    )
+end
+function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:ApatiteFT}
+    print(io, """$T:
+      age       : $(x.age) Ma
+      age_sigma : $(x.age_sigma) Ma
       dpar      : $(x.dpar) μm
       F         : $(x.F) APFU
       Cl        : $(x.Cl) APFU
@@ -64,10 +72,10 @@ function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:FissionTrackSampl
     """
     )
 end
-function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:FissionTrackLength}
+function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:ApatiteTrackLength}
     print(io, """$T:
       length    : $(x.length) μm
-      angle     : $(x.angle) μm
+      angle     : $(x.angle) degrees
       dpar      : $(x.dpar) μm
       F         : $(x.F) APFU
       Cl        : $(x.Cl) APFU

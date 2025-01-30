@@ -60,6 +60,12 @@
     @test Thermochron.equivalenttime.(1:10, 50, 100, am) ≈ [0.0020577410195178228, 0.0041154820390356525, 0.006173223058553454, 0.00823096407807132, 0.010288705097588996, 0.01234644611710693, 0.014404187136625298, 0.016461928156142672, 0.018519669175660315, 0.02057741019517803]
     @test Thermochron.equivalenttime.(1:10, 150, 100, am) ≈ [222.98141544261495, 445.9628308852307, 668.9442463278432, 891.9256617704631, 1114.907077213062, 1337.8884926556889, 1560.8699080982742, 1783.8513235409293, 2006.8327389835247, 2229.814154426128] 
 
+    @test Thermochron.reltrackdensity(1, 0, am) ≈ 0.9955645217281448
+    @test Thermochron.reltrackdensity(1, 10, am) ≈ 0.9938483601157724
+    @test Thermochron.reltrackdensity(1, 100, am) ≈ 0.92594172062218 
+    @test Thermochron.reltrackdensity(1, 200, am) ≈  0.48433424047464124
+    @test Thermochron.reltrackdensity(1, 500, am) ≈ 0.0
+
 ## --- Test "multikinetic" rmr0 model
 
     F = [1.75, 1.76, 1.64, 1.66, 1.64, 1.72, 1.72, 1.7, 1.66, 1.66]
@@ -71,7 +77,36 @@
     rmr = Thermochron.reltracklength.(1:10, 95, Ketcham2007FC())
     @test Thermochron.rlr.(rmr, rmr0) ≈ [0.7390142328562013, 0.6849516733686434, 0.6428585390459669, 0.6061834471512542, 0.5490365748013377, 0.44555008284518977, 0.33418938122916036, 0.0, 0.0, 0.0]
 
-## --- Test fission track model ages
+## --- Test zircon fission track model ages
+
+    zircon = ZirconFT(agesteps=reverse(cntr(0:100)))
+    @test zircon isa ZirconFT{Float64}
+    show(zircon)
+    display(zircon)
+
+    # Isothermal residence
+    @test modelage(zircon, fill(0, 100), Yamada2005PC()) ≈ 99.0263284502223
+    @test modelage(zircon, fill(50, 100), Yamada2005PC()) ≈ 95.55787511259514
+    @test modelage(zircon, fill(75, 100), Yamada2005PC()) ≈ 91.39371027871266 
+    @test modelage(zircon, fill(100, 100), Yamada2005PC()) ≈ 84.31219878239003
+
+    # Linear cooling
+    @test modelage(zircon, reverse(1:100), Yamada2005PC()) ≈ 95.84543737681496
+
+    # As above but longer history
+    zircon = ZirconFT(agesteps=reverse(cntr(0:200)))
+    @test zircon isa ZirconFT{Float64}
+
+    @test modelage(zircon, reverse(1:200), Yamada2005PC()) ≈ 158.732395422251
+    @test modelage(zircon, reverse(1:200)./2, Yamada2005PC()) ≈ 190.5424305134446
+    @test modelage(zircon, reverse(1:200).*2, Yamada2005PC()) ≈ 84.2529410694908
+
+    # Fish Canyon Tuff zircon example
+    zircon = ZirconFT(age=27, age_sigma=3, agesteps=reverse(cntr(0:28)))
+    @test modelage(zircon, fill(20., 28), Yamada2005PC()) ≈ 27.600459673764092
+    @test Thermochron.model_ll(zircon, fill(20., 28), Yamada2005PC()) ≈ -2.0375814785292756
+
+## --- Test apatite fission track model ages
 
     apatite = ApatiteFT(agesteps=reverse(cntr(0:100)), F=1.75, Cl=0.01, OH=0.24)
     @test apatite isa ApatiteFT{Float64}
@@ -96,11 +131,11 @@
     @test modelage(apatite, reverse(1:100), Ketcham1999FC()) ≈ 66.15470736807784 
     @test modelage(apatite, reverse(1:100), Ketcham2007FC()) ≈ 67.87471588034019
 
+    # As above but longer history
     apatite = ApatiteFT(agesteps=reverse(cntr(0:200)), F=1.75, Cl=0.01, OH=0.24)
     @test apatite isa ApatiteFT{Float64}
     @test apatite.rmr0 ≈ 0.8573573076438294
 
-    # As above but longer history
     @test modelage(apatite, reverse(1:200), Ketcham1999FC()) ≈ 66.15470736807784
     @test modelage(apatite, reverse(1:200), Ketcham2007FC()) ≈ 67.87471588034019
 
@@ -110,6 +145,7 @@
     @test modelage(apatite, reverse(1:200).*2, Ketcham1999FC()) ≈ 34.92192150860748
     @test modelage(apatite, reverse(1:200).*2, Ketcham2007FC()) ≈ 35.79582640096202 
 
+    # Fish Canyon Tuff apatite example
     apatite = ApatiteFT(age=25, age_sigma=3, agesteps=reverse(cntr(0:28)), dpar=2.16)
     @test modelage(apatite, fill(20., 28), Ketcham2007FC()) ≈ 25.25247092840902
     @test Thermochron.model_ll(apatite, fill(20., 28), Ketcham2007FC()) ≈ -2.0210920201889886

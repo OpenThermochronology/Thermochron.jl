@@ -178,7 +178,7 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, dt::Number, t
     # Convert from length to density
     @inbounds for j ∈ 1:ntsteps
         for i ∈ j:ntsteps
-            ρᵣ[i,j] = reltrackdensity(ρᵣ[i,j])
+            ρᵣ[i,j] = reltrackdensityap(ρᵣ[i,j])
         end
     end
 

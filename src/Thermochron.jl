@@ -38,10 +38,10 @@ module Thermochron
     include("utilities.jl")
 
     include("chronometers.jl")
-    const ChronometerUnion{T} = Union{ZirconHe{T}, ApatiteHe{T}, GenericHe{T}, GenericAr{T}, ApatiteFT{T}, ApatiteTrackLength{T}}
+    const ChronometerUnion{T} = Union{ZirconFT{T}, ApatiteFT{T}, ApatiteTrackLength{T}, ZirconHe{T}, ApatiteHe{T}, GenericHe{T}, GenericAr{T}}
     export Chronometer, AbsoluteChronometer                             # Abstract types
+    export ZirconFT, ApatiteFT, ApatiteTrackLength                      # Concrete fission track types
     export GenericHe, ZirconHe, ApatiteHe                               # Concrete U-Th/He types
-    export ApatiteTrackLength, ApatiteFT                                # Concrete fission track types
     export GenericAr                                                    # Concrete K/Ar types
     export chronometers, empiricaluncertainty!, eU,                     # Functions
         get_age, get_age_sigma, set_age!, set_age_sigma!
