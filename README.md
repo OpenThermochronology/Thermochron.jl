@@ -10,9 +10,9 @@ Open-source time-Temperature inversion of thermochronometric data.
 
 Implements a transdimensional Bayesian Markov chain Monte Carlo (MCMC) time-Temperature inversion with optional Simulated Annealing (e.g., [1](https://en.wikipedia.org/wiki/Simulated_annealing), [2](https://doi.org/10.1007/978-94-015-7744-1_2)) and kinetic uncertainty propagation/inversion.
 
-This package supports the inversion of mineral helium and argon ages using a spherical Crank-Nicholson forward diffusion model following the equations of [Ketcham, 2005](https://doi.org/10.2138/rmg.2005.58.11) along with the damage and annealing model of [Guenthner et al., 2013](https://doi.org/10.2475/03.2013.01) for zircon helium (ZRDAAM), the damage and annealing model of [Flowers et al. 2009](https://doi.org/10.1016/j.gca.2009.01.015) for apatite helium (RDAAM), or any constant user-specified $D_0$ and $E_a$ for any other generic He or Ar chronometer.
+Currently, this package supports the inversion of mineral helium and argon ages using a spherical Crank-Nicholson forward diffusion model following the equations of [Ketcham, 2005](https://doi.org/10.2138/rmg.2005.58.11) along with the damage and annealing model of [Guenthner et al., 2013](https://doi.org/10.2475/03.2013.01) for zircon helium (ZRDAAM), the damage and annealing model of [Flowers et al. 2009](https://doi.org/10.1016/j.gca.2009.01.015) for apatite helium (RDAAM), or any constant user-specified $D_0$ and $E_a$ for any other generic He or Ar chronometer.
 
-Apatite fission track age and fission track length data are supported using the annealing models of [Ketcham et al. 1999](https://doi.org/10.2138/am-1999-0903) and [Ketcham et al. 2007](https://doi.org/10.2138/am.2007.2281). 
+In addition, apatite fission track age and fission track length data are supported with the annealing models of [Ketcham et al. 1999](https://doi.org/10.2138/am-1999-0903) and [Ketcham et al. 2007](https://doi.org/10.2138/am.2007.2281), while zircon fission track data are supported with the annealing model of [Yamada et al. 2007](https://doi.org/10.1016/j.chemgeo.2006.09.002).
 
 Additional systems and models are expected to be added in future releases.
 
@@ -28,7 +28,7 @@ Pkg.add("Thermochron")
 ```
 
 ## Usage
-Download an example script such as [ZrnHeInversionVartCryst.jl](examples/ZrnHeInversionVartCryst.jl) from the [examples](examples) folder, along with any relevant data files, and run it in your favorite Julia-connected editor or IDE. A Manifest.toml is also provided in the examples folder, which you may `Pkg.instantiate` to ensure you have the same versions of all relevant packages that the example was built for.
+Download an example script such as [tTinversion.jl](examples/tTinversion.jl) from the [examples](examples) folder, along with any relevant data files, and run it in your favorite Julia-connected editor or IDE. A Manifest.toml is also provided in the examples folder, which you may `Pkg.instantiate` to ensure you have the same versions of all relevant packages that the example was built for.
 
 See also the test suite for more information and examples.
 
