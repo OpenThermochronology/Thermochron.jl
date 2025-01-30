@@ -35,8 +35,6 @@ module Thermochron
     export Ketcham1999FC, Ketcham2007FC, Yamada2005PC                       # Fission track annealing model types
     export Constraint, Unconformity, Boundary, DetailInterval               # Types used as inputs to MCMC functions
 
-    include("utilities.jl")
-
     include("chronometers.jl")
     const ChronometerUnion{T} = Union{ZirconFT{T}, ApatiteFT{T}, ApatiteTrackLength{T}, ZirconHe{T}, ApatiteHe{T}, GenericHe{T}, GenericAr{T}}
     export Chronometer, AbsoluteChronometer                             # Abstract types
@@ -46,6 +44,7 @@ module Thermochron
     export chronometers, empiricaluncertainty!, eU,                     # Functions
         get_age, get_age_sigma, set_age!, set_age_sigma!
 
+    include("utilities.jl")
     include("helium.jl")
     include("argon.jl")
     export modelage                                                     # Functions

@@ -1,44 +1,3 @@
-
-    function modelages!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, data::Vector{<:Chronometer{T}}, Tsteps::AbstractVector{T}, zdm::ZirconHeliumModel{T}, adm::ApatiteHeliumModel{T}, zftm::ZirconAnnealingModel, aftm::ApatiteAnnealingModel{T}) where {T<:AbstractFloat}
-        @assert eachindex(μcalc) == eachindex(σcalc) == eachindex(data)
-        imax = argmax(i->length(data[i].agesteps), eachindex(data))
-        tsteps = data[imax].tsteps
-        tmax = last(tsteps)
-        dt = step(tsteps)
-        @assert issorted(tsteps)
-        @assert eachindex(tsteps) == eachindex(Tsteps)
-
-        # Pre-anneal ZRDAAM samples, if any
-        isa(zdm, ZRDAAM) && anneal!(data, ZirconHe{T}, tsteps, Tsteps, zdm)
-        # Pre-anneal RDAAM samples, if any
-        isa(adm, RDAAM) && anneal!(data, ApatiteHe{T}, tsteps, Tsteps, adm)
-
-        for i in eachindex(data)
-            c = data[i]
-            first_index = 1 + Int((tmax - last(c.tsteps))÷dt)
-            if isa(c, ZirconHe)
-                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), zdm)
-            elseif isa(c, ApatiteHe)
-                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), adm)
-            elseif isa(c, ZirconFT)
-                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), zftm)
-            elseif isa(c, ApatiteFT)
-                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), aftm)
-            elseif isa(c, ApatiteTrackLength)
-                l,σ = modellength(c, @views(Tsteps[first_index:end]), aftm) .* aftm.l0
-                μcalc[i] = l
-                σcalc[i] = sqrt(σ^2 + aftm.l0_sigma^2)
-            elseif isa(c, GenericHe) || isa(c, GenericAr)
-                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]))
-            else
-                # NaN if not calculated
-                μcalc[i] = T(NaN)
-
-            end
-        end
-        return μcalc, σcalc
-    end
-
     """
     ```julia
     MCMC(data::Vector{<:Chronometer}, model::NamedTuple, npoints::Int, agepoints::Vector, Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval])
@@ -484,7 +443,7 @@
         
         # Log-likelihood for initial proposal
         modelages!(μcalc, σcalc, data, Tsteps, zdm, adm, zftm, aftm)
-        llna = llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma) + loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀) + (simplified ? -log(npoints) : zero(T))
+        llna = llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma) + model_ll(admₚ, adm₀) + model_ll(zdmₚ, zdm₀) + (simplified ? -log(npoints) : zero(T))
         ll = llₚ =  norm_ll(observed, σₐ, μcalc, σcalc) + llna
 
         # Variables to hold proposals
@@ -577,7 +536,7 @@
 
             # Calculate log likelihood of proposal
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
-            llnaₚ += loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀)
+            llnaₚ += model_ll(admₚ, adm₀) + model_ll(zdmₚ, zdm₀)
             simplified && (llnaₚ += -log(npointsₚ))
             σₐ .= simannealsigma.(n, observed_sigma, σannealing, λannealing)
             llₚ = norm_ll(observed, σₐ, μcalcₚ, σcalcₚ) + llnaₚ
@@ -707,7 +666,7 @@
 
             # Calculate log likelihood of proposal
             llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
-            llnaₚ += loglikelihood(admₚ, adm₀) + loglikelihood(zdmₚ, zdm₀)
+            llnaₚ += model_ll(admₚ, adm₀) + model_ll(zdmₚ, zdm₀)
             simplified && (llnaₚ += -log(npointsₚ))
             llₚ = norm_ll(observed, σ, μcalcₚ, σcalcₚ) + llnaₚ
 

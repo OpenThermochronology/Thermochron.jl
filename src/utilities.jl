@@ -257,6 +257,7 @@
         return agepointsₚ[k], Tpointsₚ[k]
     end
 
+    # Add a t-T point
     function addpoint!(agepointsₚ::Vector{T}, Tpointsₚ::Vector{T}, σⱼt::Vector{T}, σⱼT::Vector{T}, k::Int, boundary::Boundary{T}) where {T}
         @assert eachindex(agepointsₚ) == eachindex(Tpointsₚ) == eachindex(σⱼt) == eachindex(σⱼT)
 
@@ -298,6 +299,7 @@
         return agepointsₚ[k], Tpointsₚ[k]
     end
 
+    # Adjust initial and final t-T boundaries
     function movebounds!(boundary::Boundary)
         @inbounds for i in eachindex(boundary.Tpointsₚ)
             boundary.Tpointsₚ[i] = boundary.T₀[i] + rand()*boundary.ΔT[i]
@@ -312,6 +314,7 @@
         constraint
     end
 
+    # Adjust kinetic models
     function movekinetics(zdm::ZRDAAM)
         p = 0.5
         ZRDAAM(
@@ -332,6 +335,60 @@
             rmr0 = rmr0,
             kappa = adm.kappa_rmr0 - rmr0,
         )
+    end
+
+    # Adjust model uncertainties of chronometers
+    function movesigma!(σcalc::AbstractVector{T}, chrons::AbstractVector{<:Chronometer}) where {T<:AbstractFloat}
+        for C in (ZirconFT, ApatiteFT, ZirconHe, ApatiteHe, GenericHe, GenericAr,)
+            r = abs(randn(T))
+            for i in eachindex(σcalc, chrons)
+                if chrons[i] isa C
+                    σcalc[i] *= r
+                end
+            end
+        end
+        return σcalc
+    end
+
+    # Utility function to calculate model ages for all chronometers at once
+    function modelages!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, data::Vector{<:Chronometer{T}}, Tsteps::AbstractVector{T}, zdm::ZirconHeliumModel{T}, adm::ApatiteHeliumModel{T}, zftm::ZirconAnnealingModel, aftm::ApatiteAnnealingModel{T}) where {T<:AbstractFloat}
+        @assert eachindex(μcalc) == eachindex(σcalc) == eachindex(data)
+        imax = argmax(i->length(data[i].agesteps), eachindex(data))
+        tsteps = data[imax].tsteps
+        tmax = last(tsteps)
+        dt = step(tsteps)
+        @assert issorted(tsteps)
+        @assert eachindex(tsteps) == eachindex(Tsteps)
+
+        # Pre-anneal ZRDAAM samples, if any
+        isa(zdm, ZRDAAM) && anneal!(data, ZirconHe{T}, tsteps, Tsteps, zdm)
+        # Pre-anneal RDAAM samples, if any
+        isa(adm, RDAAM) && anneal!(data, ApatiteHe{T}, tsteps, Tsteps, adm)
+
+        for i in eachindex(data)
+            c = data[i]
+            first_index = 1 + Int((tmax - last(c.tsteps))÷dt)
+            if isa(c, ZirconHe)
+                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), zdm)
+            elseif isa(c, ApatiteHe)
+                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), adm)
+            elseif isa(c, ZirconFT)
+                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), zftm)
+            elseif isa(c, ApatiteFT)
+                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), aftm)
+            elseif isa(c, ApatiteTrackLength)
+                l,σ = modellength(c, @views(Tsteps[first_index:end]), aftm) .* aftm.l0
+                μcalc[i] = l
+                σcalc[i] = sqrt(σ^2 + aftm.l0_sigma^2)
+            elseif isa(c, GenericHe) || isa(c, GenericAr)
+                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]))
+            else
+                # NaN if not calculated
+                μcalc[i] = T(NaN)
+
+            end
+        end
+        return μcalc, σcalc
     end
 
     # Normal log likelihood
@@ -360,15 +417,15 @@
         return ll
     end
 
-    # Specialized ll functions for ZRDAAM and RDAAM
-    function loglikelihood(zdmₚ::ZRDAAM, zdm::ZRDAAM)
+    # Specialized log likelihood functions for ZRDAAM and RDAAM
+    function model_ll(zdmₚ::ZRDAAM, zdm::ZRDAAM)
         norm_ll(log(zdm.DzD0), zdm.DzD0_logsigma, log(zdmₚ.DzD0)) + 
         norm_ll(log(zdm.DzEa), zdm.DzEa_logsigma, log(zdmₚ.DzEa)) + 
         norm_ll(log(zdm.DN17D0), zdm.DN17D0_logsigma, log(zdmₚ.DN17D0)) + 
         norm_ll(log(zdm.DN17Ea), zdm.DN17Ea_logsigma, log(zdmₚ.DN17Ea)) +
         norm_ll(zdm.rmr0, zdm.rmr0_sigma, zdmₚ.rmr0)
     end
-    function loglikelihood(admₚ::RDAAM, adm::RDAAM)
+    function model_ll(admₚ::RDAAM, adm::RDAAM)
         norm_ll(log(adm.D0L), adm.D0L_logsigma, log(admₚ.D0L)) + 
         norm_ll(log(adm.EaL), adm.EaL_logsigma, log(admₚ.EaL)) + 
         norm_ll(log(adm.EaTrap), adm.EaTrap_logsigma, log(admₚ.EaTrap))+

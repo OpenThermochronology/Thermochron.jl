@@ -1162,17 +1162,3 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
     isempty(result) && @error "No chronometers found"
     return unionize(result)
 end
-
-## --- model uncertainties of chronometers
-
-function movesigma!(σcalc::AbstractVector{T}, chrons::AbstractVector{<:Chronometer}) where {T<:AbstractFloat}
-    for C in (ZirconHe, ApatiteHe, ApatiteFT)
-        r = abs(randn(T))
-        for i in eachindex(σcalc, chrons)
-            if chrons[i] isa C
-                σcalc[i] *= r
-            end
-        end
-    end
-    return σcalc
-end
