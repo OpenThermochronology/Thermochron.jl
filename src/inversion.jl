@@ -73,8 +73,11 @@
         # See what minerals we have
         (haszhe = any(x->isa(x, ZirconHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, ZirconHe), data)) zircons"
         (hasahe = any(x->isa(x, ApatiteHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, ApatiteHe), data)) apatites"
-        (hasaft = any(x->isa(x, ApatiteFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, ApatiteFT), data)) apatites"
-        (hasatl = any(x->isa(x, ApatiteTrackLength), data)) && @info "Inverting for track lengths of $(count(x->isa(x, ApatiteTrackLength), data)) apatite fission tracks"
+        (any(x->isa(x, GenericHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, GenericHe), data)) generic He chronometers"
+        (any(x->isa(x, ZirconFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, ZirconFT), data)) zircons"
+        (any(x->isa(x, ApatiteFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, ApatiteFT), data)) apatites"
+        (any(x->isa(x, ApatiteTrackLength), data)) && @info "Inverting for track lengths of $(count(x->isa(x, ApatiteTrackLength), data)) apatite fission tracks"
+        (any(x->isa(x, GenericAr), data)) && @info "Inverting for Ar ages of $(count(x->isa(x, GenericAr), data)) generic Ar chronometers"
         
         # Standard deviations of Gaussian proposal ("jumping") distributions
         # for temperature and time
@@ -429,8 +432,11 @@
         # See what minerals we have
         (haszhe = any(x->isa(x, ZirconHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, ZirconHe), data)) zircons"
         (hasahe = any(x->isa(x, ApatiteHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, ApatiteHe), data)) apatites"
-        (hasaft = any(x->isa(x, ApatiteFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, ApatiteFT), data)) apatites"
-        (hasatl = any(x->isa(x, ApatiteTrackLength), data)) && @info "Inverting for track lengths of $(count(x->isa(x, ApatiteTrackLength), data)) apatite fission tracks"
+        (any(x->isa(x, GenericHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, GenericHe), data)) generic He chronometers"
+        (any(x->isa(x, ZirconFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, ZirconFT), data)) zircons"
+        (any(x->isa(x, ApatiteFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, ApatiteFT), data)) apatites"
+        (any(x->isa(x, ApatiteTrackLength), data)) && @info "Inverting for track lengths of $(count(x->isa(x, ApatiteTrackLength), data)) apatite fission tracks"
+        (any(x->isa(x, GenericAr), data)) && @info "Inverting for Ar ages of $(count(x->isa(x, GenericAr), data)) generic Ar chronometers"
 
         # Standard deviations of Gaussian proposal ("jumping") distributions
         # for temperature and time
