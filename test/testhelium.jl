@@ -8,12 +8,13 @@
     Th = 24.2       # [ppm]
     D0 = 0.6071     # [cm^2/s]
     Ea = 122.3      # [kJ/mol]
+    stoppingpower = Thermochron.alphastoppingpower("apatite")
 
     tsteps = (0+dt/2 : dt : tCryst-dt/2)
     Tsteps = collect(range(650, 0, length=length(tsteps)))
 
-    GenericHe(r=r,dr=dr,U238=U,Th232=Th,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
-    @time "Allocating a mineral" mineral = GenericHe(r=r,dr=dr,U238=U,Th232=Th,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
+    GenericHe(r=r,dr=dr,U238=U,Th232=Th,D0=D0,Ea=Ea,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
+    @time "Allocating a mineral" mineral = GenericHe(r=r,dr=dr,U238=U,Th232=Th,D0=D0,Ea=Ea,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
     @test isa(mineral, GenericHe)
     show(mineral)
     display(mineral)
@@ -44,7 +45,7 @@
     r = 35.
     U = 110.7
     Th = 35.1
-    mineral = GenericHe(r=r,dr=dr,U238=U,Th232=Th,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
+    mineral = GenericHe(r=r,dr=dr,U238=U,Th232=Th,D0=D0,Ea=Ea,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
     # Re-run to ensure internal state does not change
     for _ in 1:4
         @test modelage(mineral,Tsteps) ≈ 150.3747470390784
@@ -53,7 +54,7 @@
     r = 135.
     U = 173.8
     Th = 117.1
-    mineral = GenericHe(r=r,dr=dr,U238=U,Th232=Th,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
+    mineral = GenericHe(r=r,dr=dr,U238=U,Th232=Th,D0=D0,Ea=Ea,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
     # Re-run to ensure internal state does not change
     for _ in 1:4
         @test modelage(mineral,Tsteps) ≈ 263.91617592983346
@@ -62,7 +63,7 @@
     r = 135.
     U = 50.0
     Th = 40.0
-    mineral = GenericHe(r=r,dr=dr,U238=U,Th232=Th,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
+    mineral = GenericHe(r=r,dr=dr,U238=U,Th232=Th,D0=D0,Ea=Ea,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
     # Re-run to ensure internal state does not change
     for _ in 1:4
         @test modelage(mineral,Tsteps) ≈ 263.8748754169358 
@@ -74,7 +75,7 @@
     U = 110.7
     Th = 35.1
     Sm = 38.13
-    mineral = GenericHe(age=150, age_sigma=5, r=r,dr=dr,U238=U,Th232=Th,Sm147=Sm,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
+    mineral = GenericHe(age=150, age_sigma=5, r=r,dr=dr,U238=U,Th232=Th,Sm147=Sm,D0=D0,Ea=Ea,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
     @test mineral.r147Sm ≈ fill(1.56203306122449e17, 35)
     @test modelage(mineral,Tsteps) ≈ 150.4696259997467
 

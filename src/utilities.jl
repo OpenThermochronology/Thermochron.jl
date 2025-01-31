@@ -90,6 +90,38 @@
         return dint
     end
 
+    # Alpha particle stopping power relative to apatite
+    # as calculated from the mean alpha stopping distances of  
+    # Ketcham et al. 2011 (doi: 10.1016/j.gca.2011.10.011)
+    alphastoppingpower(mineral::String) = alphastoppingpower(Symbol(lowercase(mineral)))
+    function alphastoppingpower(mineral::Symbol)
+        if mineral===:apatite
+            1.0
+        elseif mineral===:zircon
+            1.2082235609872582
+        elseif mineral===:titanite || mineral===:sphene
+            1.076593548244311
+        elseif mineral===:monazite   
+            1.1633813225022829
+        elseif mineral===:xenotime   
+            1.2369421530297124
+        elseif mineral===:rutile     
+            1.227818975881152
+        elseif mineral===:magnetite  
+            1.3482551879811657
+        elseif mineral===:hematite   
+            1.3860091775480607
+        elseif mineral===:goethite   
+            1.2106968510177099
+        elseif mineral===:barite     
+            1.0358153480322465
+        else
+            @warn "Mineral $mineral not recognized.
+            Alpha stopping power unknown; using average."
+            1.189 # Average of all the above
+        end
+    end
+
     # Utility function for agepoint and Tpoint buffers
     function collectto!(buffer, a, b, c)
         i₀ = firstindex(buffer)

@@ -228,7 +228,7 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
     nrsteps = length(rsteps)+2                  # number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
     relvolumes = (redges[2:end].^3 - redges[1:end-1].^3)/redges[end]^3 # Relative volume fraction of spherical shell corresponding to each radius element
 
-    # Alpha stopping distances for each isotope in each decay chain, from
+    # Zircon alpha stopping distances for each isotope in each decay chain, from
     # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
     alpharadii238U = (11.78, 14.09, 13.73, 14.13, 17.32, 16.69, 28.56, 16.48,)
     alpharadii235U = (12.58, 15.04, 19.36, 18.06, 23.07, 26.87, 22.47,)
@@ -443,7 +443,7 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
     nrsteps = length(rsteps)+2                  # number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
     relvolumes = (redges[2:end].^3 - redges[1:end-1].^3)/redges[end]^3 # Relative volume fraction of spherical shell corresponding to each radius element
 
-    # Alpha stopping distances for each isotope in each decay chain, from
+    # Apatite alpha stopping distances for each isotope in each decay chain, from
     # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
     alpharadii238U = (13.54, 16.26, 15.84, 16.31, 20.09, 22.89, 33.39, 19.10,)
     alpharadii235U = (14.48, 17.39, 22.5, 20.97, 26.89, 31.40, 26.18,)
@@ -595,6 +595,7 @@ GenericHe(T=Float64;
     age_sigma::Number=T(NaN),
     D0::Number,
     Ea::Number,
+    stoppingpower::Number=T(1.189),
     r::Number, 
     dr::Number=one(T), 
     U238::Number, 
@@ -643,6 +644,7 @@ function GenericHe(T::Type{<:AbstractFloat}=Float64;
         age_sigma::Number=T(NaN),
         D0::Number,
         Ea::Number,
+        stoppingpower::Number=T(1.189),
         r::Number, 
         dr::Number=one(T), 
         U238::Number, 
@@ -662,13 +664,13 @@ function GenericHe(T::Type{<:AbstractFloat}=Float64;
     nrsteps = length(rsteps)+2                  # number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
     relvolumes = (redges[2:end].^3 - redges[1:end-1].^3)/redges[end]^3 # Relative volume fraction of spherical shell corresponding to each radius element
 
-    # Alpha stopping distances for each isotope in each decay chain, from
+    # Apatite stopping distances for each isotope in each decay chain, from
     # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
-    alpharadii238U = (13.54, 16.26, 15.84, 16.31, 20.09, 22.89, 33.39, 19.10,)
-    alpharadii235U = (14.48, 17.39, 22.5, 20.97, 26.89, 31.40, 26.18,)
-    alpharadii232Th = (12.60, 19.32, 21.08, 20.09, 27.53, 34.14,)
+    alpharadii238U = (13.54, 16.26, 15.84, 16.31, 20.09, 22.89, 33.39, 19.10,)./stoppingpower
+    alpharadii235U = (14.48, 17.39, 22.5, 20.97, 26.89, 31.40, 26.18,)./stoppingpower
+    alpharadii232Th = (12.60, 19.32, 21.08, 20.09, 27.53, 34.14,)./stoppingpower
     # Ketchem et al. (2011), doi: 10.1016/j.gca.2011.10.011
-    alpharadii147Sm = (5.93,)
+    alpharadii147Sm = (5.93,)./stoppingpower
 
     # Observed radial HPE profiles at present day
     r238U = fill(T(U238), size(rsteps))         # [PPMw]
@@ -1114,6 +1116,7 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                     age_sigma = data.raw_He_age_sigma_Ma[i], 
                     D0 = data.D0_cm_2_s[i],
                     Ea = data.Ea_kJ_mol[i],
+                    stoppingpower = alphastoppingpower(data.mineral[i]),
                     r = data.halfwidth_um[i], 
                     dr = dr, 
                     U238 = (haskey(data, :Th232_ppm) && !isnan(data.Th232_ppm[i])) ? data.Th232_ppm[i] : 0,

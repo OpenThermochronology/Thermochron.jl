@@ -89,7 +89,7 @@ Tsteps = range(650, 0, length=length(tsteps))
 calc = zeros(length(chrons))
 calcuncert = zeros(length(chrons))
 Thermochron.modelages!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Ketcham2007FC())
-@test round.(calc, sigdigits=5) ≈ [121.57, 230.22, 902.57, 1011.0, 386.86, 122.81, 684.38, 303.42, 14.318]
+@test round.(calc, sigdigits=5) ≈ [137.82, 232.69, 902.57, 1011.0, 386.86, 122.81, 684.38, 303.42, 14.318]
 @test calcuncert ≈ [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.1710533944657444]
 
 # Modern input format, Minnesota dataset
