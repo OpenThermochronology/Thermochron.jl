@@ -168,6 +168,9 @@ ZirconHe(T=Float64;
     U238::Number,
     Th232::Number,
     Sm147::Number=zero(T),
+    U238_matrix::Number=zero(T), 
+    Th232_matrix::Number=zero(T), 
+    Sm147_matrix::Number=zero(T), 
     agesteps::AbstractRange
 )
 ```
@@ -214,28 +217,34 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
         U238::Number,
         Th232::Number,
         Sm147::Number=zero(T),
+        U238_matrix::Number=zero(T), 
+        Th232_matrix::Number=zero(T), 
+        Sm147_matrix::Number=zero(T), 
         agesteps::AbstractRange
     )
     
-    # Temporal discretization
-    agesteps = floatrange(agesteps)
-    tsteps = reverse(agesteps)
-    @assert issorted(tsteps)
-
-    # crystal size and spatial discretization
-    rsteps = floatrange(0+dr/2 : dr : r-dr/2)
-    redges = floatrange(     0 : dr : r     )   # Edges of each radius element
-    nrsteps = length(rsteps)+2                  # number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
-    relvolumes = (redges[2:end].^3 - redges[1:end-1].^3)/redges[end]^3 # Relative volume fraction of spherical shell corresponding to each radius element
-
     # Zircon alpha stopping distances for each isotope in each decay chain, from
     # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
     alpharadii238U = (11.78, 14.09, 13.73, 14.13, 17.32, 16.69, 28.56, 16.48,)
     alpharadii235U = (12.58, 15.04, 19.36, 18.06, 23.07, 26.87, 22.47,)
     alpharadii232Th = (10.99, 16.67, 18.16, 17.32, 23.61, 29.19,)
-    # Ketchem et al. (2011), doi: 10.1016/j.gca.2011.10.011
+    # Ketcham et al. (2011), doi: 10.1016/j.gca.2011.10.011
     alpharadii147Sm = (4.76,)
 
+    # Temporal discretization
+    agesteps = floatrange(agesteps)
+    tsteps = reverse(agesteps)
+    @assert issorted(tsteps)
+
+    # Crystal size and spatial discretization
+    redges = floatrange(0 : dr : r)                 # Edges of each radius element
+    rsteps = cntr(redges)                           # Centers of each radius element
+    nrsteps = length(rsteps)+2                      # Number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
+    relvolumes = (redges[2:end].^3 - redges[1:end-1].^3)/r^3 # Relative volume fraction of spherical shell corresponding to each radius element
+    # Additional discretization outside of grain, for alpha injection
+    outsideredges = floatrange(r : dr : r+maximum(alpharadii238U))
+    outsidersteps = cntr(outsideredges)
+    outsiderelvolumes = (outsideredges[2:end].^3 - outsideredges[1:end-1].^3)/r^3
 
     # Observed radial HPE profiles at present day
     r238U = fill(T(U238), size(rsteps))         # [PPMw]
@@ -249,47 +258,97 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
     r232Th .*= 6.022E23 / 1E6 / 232
     r147Sm .*= 6.022E23 / 1E6 / 147
 
+    # Outside (bulk/matrix) HPE concentrations, in atoms per gram
+    o238U = U238_matrix * 6.022E23 / 1E6 / 238
+    o235U = U238_matrix/137.818 * 6.022E23 / 1E6 / 235
+    o232Th = Th232_matrix * 6.022E23 / 1E6 / 232
+    o147Sm = Sm147_matrix * 6.022E23 / 1E6 / 147
+
     # Calculate effective He deposition for each decay chain, corrected for alpha
     # stopping distance
+
+    # Allocate intersection density vector
     dint = zeros(T, length(redges) - 1)
     
+    # Radial alpha deposition from U-238
     r238UHe = zeros(T, size(r238U))
+    # Correct for alpha ejection
     @inbounds for ri in eachindex(rsteps, relvolumes, r238U)
-        for i in eachindex(alpharadii238U)
-            # Effective radial alpha deposition from 238U
-            intersectiondensity!(dint,redges,relvolumes,alpharadii238U[i],rsteps[ri])
+        for alpharadius in alpharadii238U
+            intersectiondensity!(dint,redges,relvolumes,alpharadius,rsteps[ri])
             @. r238UHe += relvolumes[ri] * dint * r238U[ri]
         end
     end
+    # Correct for alpha injection
+    if o238U > 0
+        @inbounds for ri in eachindex(outsidersteps, outsiderelvolumes)
+            for alpharadius in alpharadii238U
+                (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
+                intersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
+                @. r238UHe += outsiderelvolumes[ri] * dint * o238U
+            end
+        end
+    end
 
-    # Effective radial alpha deposition from U-235
+    # Radial alpha deposition from U-235
     r235UHe = zeros(T, size(r235U))
+    # Correct for alpha ejection
     @inbounds for ri in eachindex(rsteps, relvolumes, r235U)
-        for i in eachindex(alpharadii235U)
-            # Effective radial alpha deposition from 235U
-            intersectiondensity!(dint, redges,relvolumes,alpharadii235U[i],rsteps[ri])
+        for alpharadius in alpharadii235U
+            intersectiondensity!(dint, redges,relvolumes,alpharadius,rsteps[ri])
             @. r235UHe += relvolumes[ri] * dint * r235U[ri]
         end
     end
-
-    # Effective radial alpha deposition from Th-232
-    r232ThHe = zeros(T, size(r232Th))
-    @inbounds for ri in eachindex(rsteps, relvolumes, r232Th)
-        for i in eachindex(alpharadii232Th)
-            # Effective radial alpha deposition from 232Th
-            intersectiondensity!(dint, redges,relvolumes,alpharadii232Th[i],rsteps[ri])
-            @. r232ThHe += relvolumes[ri] * dint * r232Th[ri]
+    # Correct for alpha injection
+    if o235U > 0
+        @inbounds for ri in eachindex(outsidersteps, outsiderelvolumes)
+            for alpharadius in alpharadii235U
+                (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
+                intersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
+                @. r235UHe += outsiderelvolumes[ri] * dint * o235U
+            end
         end
     end
 
-    # Effective radial alpha deposition from Sm-147
+    # Radial alpha deposition from Th-232
+    r232ThHe = zeros(T, size(r232Th))
+    # Correct for alpha ejection
+    @inbounds for ri in eachindex(rsteps, relvolumes, r232Th)
+        for alpharadius in alpharadii232Th
+            intersectiondensity!(dint, redges,relvolumes,alpharadius,rsteps[ri])
+            @. r232ThHe += relvolumes[ri] * dint * r232Th[ri]
+        end
+    end
+    # Correct for alpha injection
+    if o232Th > 0
+        @inbounds for ri in eachindex(outsidersteps, outsiderelvolumes)
+            for alpharadius in alpharadii232Th
+                (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
+                intersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
+                @. r232ThHe += outsiderelvolumes[ri] * dint * o232Th
+            end
+        end
+    end
+
+    # Radial alpha deposition from Sm-147
     r147SmHe = zeros(T, size(r147Sm))
+    # Correct for alpha ejection
     @inbounds for ri in eachindex(rsteps, relvolumes, r147Sm)
-        for i in eachindex(alpharadii147Sm)
-            intersectiondensity!(dint, redges,relvolumes,alpharadii147Sm[i],rsteps[ri])
+        for alpharadius in alpharadii147Sm
+            intersectiondensity!(dint, redges,relvolumes,alpharadius,rsteps[ri])
             @. r147SmHe += relvolumes[ri] * dint * r147Sm[ri]
         end
-    end    
+    end
+    # Correct for alpha injection
+    if o147Sm > 0
+        @inbounds for ri in eachindex(outsidersteps, outsiderelvolumes)
+            for alpharadius in alpharadii147Sm
+                (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
+                intersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
+                @. r147SmHe += outsiderelvolumes[ri] * dint * o147Sm
+            end
+        end
+    end   
 
     # Alpha decay recoil damage
     r238Udam = 8*r238U # No smoothing of alpha damage, 8 alphas per 238U
@@ -383,6 +442,9 @@ ApatiteHe(T=Float64;
     U238::Number, 
     Th232::Number, 
     Sm147::Number=zero(T), 
+    U238_matrix::Number=zero(T), 
+    Th232_matrix::Number=zero(T), 
+    Sm147_matrix::Number=zero(T), 
     agesteps::AbstractRange,
 )
 ```
@@ -429,27 +491,34 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
         U238::Number, 
         Th232::Number, 
         Sm147::Number=zero(T), 
+        U238_matrix::Number=zero(T), 
+        Th232_matrix::Number=zero(T), 
+        Sm147_matrix::Number=zero(T), 
         agesteps::AbstractRange,
     )
-
-    # Temporal discretization
-    agesteps = floatrange(agesteps)
-    tsteps = reverse(agesteps)
-    @assert issorted(tsteps)
-
-    # crystal size and spatial discretization
-    rsteps = floatrange(0+dr/2 : dr : r-dr/2)
-    redges = floatrange(     0 : dr : r     )   # Edges of each radius element
-    nrsteps = length(rsteps)+2                  # number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
-    relvolumes = (redges[2:end].^3 - redges[1:end-1].^3)/redges[end]^3 # Relative volume fraction of spherical shell corresponding to each radius element
 
     # Apatite alpha stopping distances for each isotope in each decay chain, from
     # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
     alpharadii238U = (13.54, 16.26, 15.84, 16.31, 20.09, 22.89, 33.39, 19.10,)
     alpharadii235U = (14.48, 17.39, 22.5, 20.97, 26.89, 31.40, 26.18,)
     alpharadii232Th = (12.60, 19.32, 21.08, 20.09, 27.53, 34.14,)
-    # Ketchem et al. (2011), doi: 10.1016/j.gca.2011.10.011
+    # Ketcham et al. (2011), doi: 10.1016/j.gca.2011.10.011
     alpharadii147Sm = (5.93,)
+
+    # Temporal discretization
+    agesteps = floatrange(agesteps)
+    tsteps = reverse(agesteps)
+    @assert issorted(tsteps)
+
+    # Crystal size and spatial discretization
+    redges = floatrange(0 : dr : r)                 # Edges of each radius element
+    rsteps = cntr(redges)                           # Centers of each radius element
+    nrsteps = length(rsteps)+2                      # Number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
+    relvolumes = (redges[2:end].^3 - redges[1:end-1].^3)/r^3 # Relative volume fraction of spherical shell corresponding to each radius element
+    # Additional discretization outside of grain, for alpha injection
+    outsideredges = floatrange(r : dr : r+maximum(alpharadii238U))
+    outsidersteps = cntr(outsideredges)
+    outsiderelvolumes = (outsideredges[2:end].^3 - outsideredges[1:end-1].^3)/r^3
 
     # Observed radial HPE profiles at present day
     r238U = fill(T(U238), size(rsteps))         # [PPMw]
@@ -463,46 +532,95 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
     r232Th .*= 6.022E23 / 1E6 / 232
     r147Sm .*= 6.022E23 / 1E6 / 147
 
+    # Outside (bulk/matrix) HPE concentrations, in atoms per gram
+    o238U = U238_matrix * 6.022E23 / 1E6 / 238
+    o235U = U238_matrix/137.818 * 6.022E23 / 1E6 / 235
+    o232Th = Th232_matrix * 6.022E23 / 1E6 / 232
+    o147Sm = Sm147_matrix * 6.022E23 / 1E6 / 147
+
     # Calculate effective He deposition for each decay chain, corrected for alpha
     # stopping distance
+
+    # Allocate intersection density vector
     dint = zeros(T, length(redges) - 1)
 
-    # Effective radial alpha deposition from U-238
+    # Radial alpha deposition from U-238
     r238UHe = zeros(T, size(r238U))
+    # Correct for alpha ejection
     @inbounds for ri in eachindex(rsteps, relvolumes, r238U)
-        for i in eachindex(alpharadii238U)
-            # Effective radial alpha deposition from 238U
-            intersectiondensity!(dint,redges,relvolumes,alpharadii238U[i],rsteps[ri])
+        for alpharadius in alpharadii238U
+            intersectiondensity!(dint,redges,relvolumes,alpharadius,rsteps[ri])
             @. r238UHe += relvolumes[ri] * dint * r238U[ri]
         end
     end
+    # Correct for alpha injection
+    if o238U > 0
+        @inbounds for ri in eachindex(outsidersteps, outsiderelvolumes)
+            for alpharadius in alpharadii238U
+                (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
+                intersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
+                @. r238UHe += outsiderelvolumes[ri] * dint * o238U
+            end
+        end
+    end
 
-    # Effective radial alpha deposition from U-235
+    # Radial alpha deposition from U-235
     r235UHe = zeros(T, size(r235U))
+    # Correct for alpha ejection
     @inbounds for ri in eachindex(rsteps, relvolumes, r235U)
-        for i in eachindex(alpharadii235U)
-            # Effective radial alpha deposition from 235U
-            intersectiondensity!(dint, redges,relvolumes,alpharadii235U[i],rsteps[ri])
+        for alpharadius in alpharadii235U
+            intersectiondensity!(dint, redges,relvolumes,alpharadius,rsteps[ri])
             @. r235UHe += relvolumes[ri] * dint * r235U[ri]
         end
     end
-
-    # Effective radial alpha deposition from Th-232
-    r232ThHe = zeros(T, size(r232Th))
-    @inbounds for ri in eachindex(rsteps, relvolumes, r232Th)
-        for i in eachindex(alpharadii232Th)
-            # Effective radial alpha deposition from 232Th
-            intersectiondensity!(dint, redges,relvolumes,alpharadii232Th[i],rsteps[ri])
-            @. r232ThHe += relvolumes[ri] * dint * r232Th[ri]
+    # Correct for alpha injection
+    if o235U > 0
+        @inbounds for ri in eachindex(outsidersteps, outsiderelvolumes)
+            for alpharadius in alpharadii235U
+                (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
+                intersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
+                @. r235UHe += outsiderelvolumes[ri] * dint * o235U
+            end
         end
     end
 
-    # Effective radial alpha deposition from Sm-147
+    # Radial alpha deposition from Th-232
+    r232ThHe = zeros(T, size(r232Th))
+    # Correct for alpha ejection
+    @inbounds for ri in eachindex(rsteps, relvolumes, r232Th)
+        for alpharadius in alpharadii232Th
+            intersectiondensity!(dint, redges,relvolumes,alpharadius,rsteps[ri])
+            @. r232ThHe += relvolumes[ri] * dint * r232Th[ri]
+        end
+    end
+    # Correct for alpha injection
+    if o232Th > 0
+        @inbounds for ri in eachindex(outsidersteps, outsiderelvolumes)
+            for alpharadius in alpharadii232Th
+                (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
+                intersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
+                @. r232ThHe += outsiderelvolumes[ri] * dint * o232Th
+            end
+        end
+    end
+
+    # Radial alpha deposition from Sm-147
     r147SmHe = zeros(T, size(r147Sm))
+    # Correct for alpha ejection
     @inbounds for ri in eachindex(rsteps, relvolumes, r147Sm)
-        for i in eachindex(alpharadii147Sm)
-            intersectiondensity!(dint, redges,relvolumes,alpharadii147Sm[i],rsteps[ri])
+        for alpharadius in alpharadii147Sm
+            intersectiondensity!(dint, redges,relvolumes,alpharadius,rsteps[ri])
             @. r147SmHe += relvolumes[ri] * dint * r147Sm[ri]
+        end
+    end
+    # Correct for alpha injection
+    if o147Sm > 0
+        @inbounds for ri in eachindex(outsidersteps, outsiderelvolumes)
+            for alpharadius in alpharadii147Sm
+                (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
+                intersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
+                @. r147SmHe += outsiderelvolumes[ri] * dint * o147Sm
+            end
         end
     end
 
@@ -601,6 +719,9 @@ GenericHe(T=Float64;
     U238::Number, 
     Th232::Number, 
     Sm147::Number=zero(T), 
+    U238_matrix::Number=zero(T), 
+    Th232_matrix::Number=zero(T), 
+    Sm147_matrix::Number=zero(T), 
     agesteps::AbstractRange,
 )
 ```
@@ -650,27 +771,34 @@ function GenericHe(T::Type{<:AbstractFloat}=Float64;
         U238::Number, 
         Th232::Number, 
         Sm147::Number=zero(T), 
+        U238_matrix::Number=zero(T), 
+        Th232_matrix::Number=zero(T), 
+        Sm147_matrix::Number=zero(T), 
         agesteps::AbstractRange,
     )
+
+    # Alpha stopping distances for each isotope in each decay chain, adjusted from those of apatite
+    # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
+    alpharadii238U = (13.54, 16.26, 15.84, 16.31, 20.09, 22.89, 33.39, 19.10,)./stoppingpower
+    alpharadii235U = (14.48, 17.39, 22.5, 20.97, 26.89, 31.40, 26.18,)./stoppingpower
+    alpharadii232Th = (12.60, 19.32, 21.08, 20.09, 27.53, 34.14,)./stoppingpower
+    # Ketcham et al. (2011), doi: 10.1016/j.gca.2011.10.011
+    alpharadii147Sm = (5.93,)./stoppingpower
 
     # Temporal discretization
     agesteps = floatrange(agesteps)
     tsteps = reverse(agesteps)
     @assert issorted(tsteps)
 
-    # crystal size and spatial discretization
-    rsteps = floatrange(0+dr/2 : dr : r-dr/2)
-    redges = floatrange(     0 : dr : r     )   # Edges of each radius element
-    nrsteps = length(rsteps)+2                  # number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
-    relvolumes = (redges[2:end].^3 - redges[1:end-1].^3)/redges[end]^3 # Relative volume fraction of spherical shell corresponding to each radius element
-
-    # Apatite stopping distances for each isotope in each decay chain, from
-    # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
-    alpharadii238U = (13.54, 16.26, 15.84, 16.31, 20.09, 22.89, 33.39, 19.10,)./stoppingpower
-    alpharadii235U = (14.48, 17.39, 22.5, 20.97, 26.89, 31.40, 26.18,)./stoppingpower
-    alpharadii232Th = (12.60, 19.32, 21.08, 20.09, 27.53, 34.14,)./stoppingpower
-    # Ketchem et al. (2011), doi: 10.1016/j.gca.2011.10.011
-    alpharadii147Sm = (5.93,)./stoppingpower
+    # Crystal size and spatial discretization
+    redges = floatrange(0 : dr : r)                 # Edges of each radius element
+    rsteps = cntr(redges)                           # Centers of each radius element
+    nrsteps = length(rsteps)+2                      # Number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
+    relvolumes = (redges[2:end].^3 - redges[1:end-1].^3)/r^3 # Relative volume fraction of spherical shell corresponding to each radius element
+    # Additional discretization outside of grain, for alpha injection
+    outsideredges = floatrange(r : dr : r+maximum(alpharadii238U))
+    outsidersteps = cntr(outsideredges)
+    outsiderelvolumes = (outsideredges[2:end].^3 - outsideredges[1:end-1].^3)/r^3
 
     # Observed radial HPE profiles at present day
     r238U = fill(T(U238), size(rsteps))         # [PPMw]
@@ -684,46 +812,95 @@ function GenericHe(T::Type{<:AbstractFloat}=Float64;
     r232Th .*= 6.022E23 / 1E6 / 232
     r147Sm .*= 6.022E23 / 1E6 / 147
 
+    # Outside (bulk/matrix) HPE concentrations, in atoms per gram
+    o238U = U238_matrix * 6.022E23 / 1E6 / 238
+    o235U = U238_matrix/137.818 * 6.022E23 / 1E6 / 235
+    o232Th = Th232_matrix * 6.022E23 / 1E6 / 232
+    o147Sm = Sm147_matrix * 6.022E23 / 1E6 / 147
+
     # Calculate effective He deposition for each decay chain, corrected for alpha
     # stopping distance
+
+    # Allocate intersection density vector
     dint = zeros(T, length(redges) - 1)
 
-    # Effective radial alpha deposition from U-238
+    # Radial alpha deposition from U-238
     r238UHe = zeros(T, size(r238U))
+    # Correct for alpha ejection
     @inbounds for ri in eachindex(rsteps, relvolumes, r238U)
-        for i in eachindex(alpharadii238U)
-            # Effective radial alpha deposition from 238U
-            intersectiondensity!(dint,redges,relvolumes,alpharadii238U[i],rsteps[ri])
+        for alpharadius in alpharadii238U
+            intersectiondensity!(dint,redges,relvolumes,alpharadius,rsteps[ri])
             @. r238UHe += relvolumes[ri] * dint * r238U[ri]
         end
     end
+    # Correct for alpha injection
+    if o238U > 0
+        @inbounds for ri in eachindex(outsidersteps, outsiderelvolumes)
+            for alpharadius in alpharadii238U
+                (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
+                intersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
+                @. r238UHe += outsiderelvolumes[ri] * dint * o238U
+            end
+        end
+    end
 
-    # Effective radial alpha deposition from U-235
+    # Radial alpha deposition from U-235
     r235UHe = zeros(T, size(r235U))
+    # Correct for alpha ejection
     @inbounds for ri in eachindex(rsteps, relvolumes, r235U)
-        for i in eachindex(alpharadii235U)
-            # Effective radial alpha deposition from 235U
-            intersectiondensity!(dint, redges,relvolumes,alpharadii235U[i],rsteps[ri])
+        for alpharadius in alpharadii235U
+            intersectiondensity!(dint, redges,relvolumes,alpharadius,rsteps[ri])
             @. r235UHe += relvolumes[ri] * dint * r235U[ri]
         end
     end
-
-    # Effective radial alpha deposition from Th-232
-    r232ThHe = zeros(T, size(r232Th))
-    @inbounds for ri in eachindex(rsteps, relvolumes, r232Th)
-        for i in eachindex(alpharadii232Th)
-            # Effective radial alpha deposition from 232Th
-            intersectiondensity!(dint, redges,relvolumes,alpharadii232Th[i],rsteps[ri])
-            @. r232ThHe += relvolumes[ri] * dint * r232Th[ri]
+    # Correct for alpha injection
+    if o235U > 0
+        @inbounds for ri in eachindex(outsidersteps, outsiderelvolumes)
+            for alpharadius in alpharadii235U
+                (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
+                intersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
+                @. r235UHe += outsiderelvolumes[ri] * dint * o235U
+            end
         end
     end
 
-    # Effective radial alpha deposition from Sm-147
+    # Radial alpha deposition from Th-232
+    r232ThHe = zeros(T, size(r232Th))
+    # Correct for alpha ejection
+    @inbounds for ri in eachindex(rsteps, relvolumes, r232Th)
+        for alpharadius in alpharadii232Th
+            intersectiondensity!(dint, redges,relvolumes,alpharadius,rsteps[ri])
+            @. r232ThHe += relvolumes[ri] * dint * r232Th[ri]
+        end
+    end
+    # Correct for alpha injection
+    if o232Th > 0
+        @inbounds for ri in eachindex(outsidersteps, outsiderelvolumes)
+            for alpharadius in alpharadii232Th
+                (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
+                intersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
+                @. r232ThHe += outsiderelvolumes[ri] * dint * o232Th
+            end
+        end
+    end
+
+    # Radial alpha deposition from Sm-147
     r147SmHe = zeros(T, size(r147Sm))
+    # Correct for alpha ejection
     @inbounds for ri in eachindex(rsteps, relvolumes, r147Sm)
-        for i in eachindex(alpharadii147Sm)
-            intersectiondensity!(dint, redges,relvolumes,alpharadii147Sm[i],rsteps[ri])
+        for alpharadius in alpharadii147Sm
+            intersectiondensity!(dint, redges,relvolumes,alpharadius,rsteps[ri])
             @. r147SmHe += relvolumes[ri] * dint * r147Sm[ri]
+        end
+    end
+    # Correct for alpha injection
+    if o147Sm > 0
+        @inbounds for ri in eachindex(outsidersteps, outsiderelvolumes)
+            for alpharadius in alpharadii147Sm
+                (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
+                intersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
+                @. r147SmHe += outsiderelvolumes[ri] * dint * o147Sm
+            end
         end
     end
 
@@ -852,7 +1029,7 @@ function GenericAr(T::Type{<:AbstractFloat}=Float64;
     tsteps = reverse(agesteps)
     @assert issorted(tsteps)
 
-    # crystal size and spatial discretization
+    # Crystal size and spatial discretization
     rsteps = floatrange(0+dr/2 : dr : r-dr/2)
     redges = floatrange(     0 : dr : r     )   # Edges of each radius element
     nrsteps = length(rsteps)+2                  # number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
@@ -1020,9 +1197,12 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                     age_sigma = data.raw_He_age_sigma_Ma[i], 
                     r = data.halfwidth_um[i], 
                     dr = dr, 
-                    U238 = data.U238_ppm[i], 
-                    Th232 = data.Th232_ppm[i], 
+                    U238 = (haskey(data, :U238_ppm) && !isnan(data.U238_ppm[i])) ? data.U238_ppm[i] : 0,
+                    Th232 = (haskey(data, :Th232_ppm) && !isnan(data.Th232_ppm[i])) ? data.Th232_ppm[i] : 0,
                     Sm147 = (haskey(data, :Sm147_ppm) && !isnan(data.Sm147_ppm[i])) ? data.Sm147_ppm[i] : 0,
+                    U238_matrix = (haskey(data, :U238_matrix_ppm) && !isnan(data.U238_matrix_ppm[i])) ? data.U238_matrix_ppm[i] : 0,
+                    Th232_matrix = (haskey(data, :Th232_matrix_ppm) && !isnan(data.Th232_matrix_ppm[i])) ? data.Th232_matrix_ppm[i] : 0,
+                    Sm147_matrix = (haskey(data, :Sm147_matrix_ppm) && !isnan(data.Sm147_matrix_ppm[i])) ? data.Sm147_matrix_ppm[i] : 0,
                     agesteps = agesteps[first_index:end],
                 )
                 push!(result, c)
@@ -1059,9 +1239,12 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                     age_sigma = data.raw_He_age_sigma_Ma[i], 
                     r = data.halfwidth_um[i], 
                     dr = dr, 
-                    U238 = data.U238_ppm[i], 
-                    Th232 = data.Th232_ppm[i], 
+                    U238 = (haskey(data, :U238_ppm) && !isnan(data.U238_ppm[i])) ? data.U238_ppm[i] : 0,
+                    Th232 = (haskey(data, :Th232_ppm) && !isnan(data.Th232_ppm[i])) ? data.Th232_ppm[i] : 0,
                     Sm147 = (haskey(data, :Sm147_ppm) && !isnan(data.Sm147_ppm[i])) ? data.Sm147_ppm[i] : 0,
+                    U238_matrix = (haskey(data, :U238_matrix_ppm) && !isnan(data.U238_matrix_ppm[i])) ? data.U238_matrix_ppm[i] : 0,
+                    Th232_matrix = (haskey(data, :Th232_matrix_ppm) && !isnan(data.Th232_matrix_ppm[i])) ? data.Th232_matrix_ppm[i] : 0,
+                    Sm147_matrix = (haskey(data, :Sm147_matrix_ppm) && !isnan(data.Sm147_matrix_ppm[i])) ? data.Sm147_matrix_ppm[i] : 0,
                     agesteps = agesteps[first_index:end],
                 )
                 push!(result, c)
@@ -1119,9 +1302,12 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                     stoppingpower = alphastoppingpower(data.mineral[i]),
                     r = data.halfwidth_um[i], 
                     dr = dr, 
-                    U238 = (haskey(data, :Th232_ppm) && !isnan(data.Th232_ppm[i])) ? data.Th232_ppm[i] : 0,
+                    U238 = (haskey(data, :U238_ppm) && !isnan(data.U238_ppm[i])) ? data.U238_ppm[i] : 0,
                     Th232 = (haskey(data, :Th232_ppm) && !isnan(data.Th232_ppm[i])) ? data.Th232_ppm[i] : 0,
                     Sm147 = (haskey(data, :Sm147_ppm) && !isnan(data.Sm147_ppm[i])) ? data.Sm147_ppm[i] : 0,
+                    U238_matrix = (haskey(data, :U238_matrix_ppm) && !isnan(data.U238_matrix_ppm[i])) ? data.U238_matrix_ppm[i] : 0,
+                    Th232_matrix = (haskey(data, :Th232_matrix_ppm) && !isnan(data.Th232_matrix_ppm[i])) ? data.Th232_matrix_ppm[i] : 0,
+                    Sm147_matrix = (haskey(data, :Sm147_matrix_ppm) && !isnan(data.Sm147_matrix_ppm[i])) ? data.Sm147_matrix_ppm[i] : 0,
                     agesteps = agesteps[first_index:end],
                 )
                 push!(result, c)
