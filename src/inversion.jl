@@ -47,20 +47,17 @@
         # Arrays to hold all t and T points (up to npoints=maxpoints)
         agepoints = zeros(T, maxpoints) 
         Tpoints = zeros(T, maxpoints)
-    
-        # Fill some intermediate points to give the MCMC something to work with
-        agepoints[1:npoints] .= range(tnow, tinit, length=npoints)
-        Tpoints[1:npoints] .= Tr # Degrees C
 
         # Calculate number of boundary and unconformity points and allocate buffer for interpolating
         agepointbuffer = similar(agepoints, totalpoints)::Vector{T}
         Tpointbuffer = similar(agepoints, totalpoints)::Vector{T}
         knot_index = similar(agesteps, Int)::Vector{Int}
+        Tsteps = similar(agesteps)::Vector{T}
+
+        # Initial propopsal
+        initialproposal!(Tsteps, agesteps, knot_index, agepointbuffer, Tpointbuffer, view(agepoints, 1:npoints), view(Tpoints, 1:npoints), constraint, boundary, dTmax) 
 
         # Prepare to calculate model ages for initial proposal
-        ages = collectto!(agepointbuffer, view(agepoints, 1:npoints), boundary.agepoints, constraint.agepoints)::StridedVector{T}
-        temperatures = collectto!(Tpointbuffer, view(Tpoints, 1:npoints), boundary.Tpoints, constraint.Tpoints)::StridedVector{T}
-        Tsteps = linterp1s(ages, temperatures, agesteps)::Vector{T}
         μcalc = zeros(T, length(observed))
         σcalc = fill(T(σmodel), length(observed))
 
@@ -406,20 +403,17 @@
         # Arrays to hold all t and T points (up to npoints=maxpoints)
         agepoints = zeros(T, maxpoints) 
         Tpoints = zeros(T, maxpoints)
-    
-        # Fill some intermediate points to give the MCMC something to work with
-        agepoints[1:npoints] .= range(tnow, tinit, length=npoints)
-        Tpoints[1:npoints] .= Tr # Degrees C
 
         # Calculate number of boundary and unconformity points and allocate buffer for interpolating
         agepointbuffer = similar(agepoints, totalpoints)::Vector{T}
         Tpointbuffer = similar(agepoints, totalpoints)::Vector{T}
         knot_index = similar(agesteps, Int)::Vector{Int}
+        Tsteps = similar(agesteps)::Vector{T}
+
+        # Initial propopsal
+        initialproposal!(Tsteps, agesteps, knot_index, agepointbuffer, Tpointbuffer, view(agepoints, 1:npoints), view(Tpoints, 1:npoints), constraint, boundary, dTmax) 
 
         # Prepare to calculate model ages for initial proposal
-        ages = collectto!(agepointbuffer, view(agepoints, 1:npoints), boundary.agepoints, constraint.agepoints)::StridedVector{T}
-        temperatures = collectto!(Tpointbuffer, view(Tpoints, 1:npoints), boundary.Tpoints, constraint.Tpoints)::StridedVector{T}
-        Tsteps = linterp1s(ages, temperatures, agesteps)::Vector{T}
         μcalc = zeros(T, length(observed))
         σcalc = fill(T(σmodel), length(observed))
         

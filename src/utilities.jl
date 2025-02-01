@@ -286,8 +286,16 @@
         min(max(x, xmin), xmax)
     end
 
+    function textrema(boundary::Boundary)
+        a, b = first(boundary.agepoints), last(boundary.agepoints)
+        a < b ? (a, b) : (b, a)
+    end
+    function Textrema(boundary::Boundary)
+        a, b = first(boundary.T₀), last(boundary.T₀)
+        a < b ? (a, b) : (b, a)
+    end
     function boundtime(t::Number, boundary::Boundary)
-        tmin, tmax = extrema(boundary.agepoints)
+        tmin, tmax = textrema(boundary)
         if boundary.tboundary === :reflecting
             reflecting(t, tmin, tmax)
         elseif boundary.tboundary === :hard
@@ -301,7 +309,7 @@
     end
 
     function boundtemp(T::Number, boundary::Boundary)
-        Tmin, Tmax = extrema(boundary.T₀)
+        Tmin, Tmax = Textrema(boundary)
         if boundary.Tboundary === :reflecting
             reflecting(T, Tmin, Tmax)
         elseif boundary.Tboundary === :hard
@@ -382,11 +390,54 @@
         boundary
     end
     function movebounds!(constraint::Constraint, boundary::Boundary)
-        @inbounds for i in eachindex(constraint.Tpointsₚ)
+        @inbounds for i in eachindex(constraint.agepointsₚ, constraint.Tpointsₚ)
             constraint.agepointsₚ[i] = boundtime(rand(constraint.agedist[i]), boundary)
             constraint.Tpointsₚ[i] = boundtemp(rand(constraint.Tdist[i]), boundary)
         end
         constraint
+    end
+    
+    function randomize!(boundary::Boundary)
+        @inbounds for i in eachindex(boundary.Tpoints)
+            boundary.Tpoints[i] = boundary.T₀[i] + rand()*boundary.ΔT[i]
+        end
+       return boundary
+    end
+    function randomize!(constraint::Constraint, boundary::Boundary)
+        @inbounds for i in eachindex(constraint.agepoints, constraint.Tpoints)
+            constraint.agepoints[i] = boundtime(rand(constraint.agedist[i]), boundary)
+            constraint.Tpoints[i] = boundtemp(rand(constraint.Tdist[i]), boundary)
+        end
+        return constraint
+    end
+    function randomize!(agepoints::AbstractVector, Tpoints::AbstractVector, boundary::Boundary)
+        tmin, tmax = textrema(boundary)
+        Tmin, Tmax = Textrema(boundary)
+        for i in eachindex(agepoints, Tpoints)
+            agepoints[i] = rand(Uniform(tmin, tmax))
+            Tpoints[i] = rand(Uniform(Tmin, Tmax))
+        end
+        return agepoints, Tpoints
+    end
+
+    function initialproposal!(Tsteps, agesteps, knot_index, agepointbuffer, Tpointbuffer, agepoints, Tpoints, constraint::Constraint, boundary::Boundary, dTmax::Number; nattempts = 100_000) 
+        for _ in 1:nattempts
+            randomize!(agepoints, Tpoints, boundary)
+            randomize!(constraint, boundary)
+            randomize!(boundary)
+            
+            ages = collectto!(agepointbuffer, agepoints, boundary.agepoints, constraint.agepoints)
+            temperatures = collectto!(Tpointbuffer, Tpoints, boundary.Tpoints, constraint.Tpoints)
+            linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
+
+            if maxdiff(Tsteps) < dTmax
+                break
+            end
+        end
+        if maxdiff(Tsteps) > dTmax
+            @warn "Could not generate initial proposal to satisfy max reheating rate in $nattempts attempts"
+        end
+        return Tsteps
     end
 
     # Adjust kinetic models

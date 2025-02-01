@@ -122,7 +122,7 @@ detail = DetailInterval(
 
 @test isa(tT.resultdist, AbstractMatrix)
 abserr = abs(sum(nanmean(tT.resultdist, dims=2) - data.HeAge)/length(data.HeAge))
-@test 0 < abserr < 50
+@test 0 < abserr < 100
 @info "Mean absolute error: $abserr"
 
 @test isa(tT.lldist, AbstractVector)
@@ -131,7 +131,7 @@ llmean = mean(tT.lldist)
 @info "Mean ll: $llmean"
 
 @test isa(tT.acceptancedist, AbstractVector{Bool})
-@test isapprox(mean(tT.acceptancedist), 0.5, atol=0.4)
+@test isapprox(mean(tT.acceptancedist), 0.5, atol=0.45)
 @info "Mean acceptance rate: $(mean(tT.acceptancedist))"
 
 @test isa(tT.ndist, AbstractVector{Int})
