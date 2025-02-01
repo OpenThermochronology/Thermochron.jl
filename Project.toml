@@ -1,7 +1,7 @@
 name = "Thermochron"
 uuid = "b9a8379e-ee1a-4388-b7ca-7852af1cef08"
 authors = ["C. Brenhin Keller and collaborators"]
-version = "0.12.0"
+version = "0.12.1"
 
 [deps]
 BangBang = "198e06fe-97b7-11e9-32a5-e1d131e6ad66"
