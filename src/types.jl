@@ -163,6 +163,49 @@ function DetailInterval(T::Type=Float64; agemin=0, agemax=0, minpoints=0)
     DetailInterval{T}(agemin, agemax, Int(minpoints))
 end
 
+struct TtPath{T<:AbstractFloat}
+    agesteps::FloatRange
+    Tsteps::Vector{T}
+    agepoints::Vector{T}
+    Tpoints::Vector{T}
+    agepointsₚ::Vector{T}
+    Tpointsₚ::Vector{T}
+    agepointbuffer::Vector{T}
+    Tpointbuffer::Vector{T}
+    knot_index::Vector{Int}
+    constraint::Constraint{T}
+    boundary::Boundary{T}
+end
+function TtPath(agesteps::AbstractArray, constraint::Constraint{T}, boundary::Boundary{T}, maxpoints::Int) where {T}
+    # Discretized temperature
+    agesteps = floatrange(agesteps)
+    Tsteps = zeros(T, length(agesteps))
+    knot_index = zeros(Int, length(agesteps))
+
+    # Arrays to hold all t and T points (up to npoints=maxpoints)
+    agepoints = zeros(T, maxpoints) 
+    Tpoints = zeros(T, maxpoints)
+    agepointsₚ = zeros(T, maxpoints) 
+    Tpointsₚ = zeros(T, maxpoints)
+
+    # Calculate number of boundary and unconformity points and allocate pointbuffer for interpolating
+    totalpoints = maxpoints + boundary.npoints + constraint.npoints
+    agepointbuffer = similar(agepoints, totalpoints)
+    Tpointbuffer = similar(agepoints, totalpoints)
+    TtPath{T}(
+        agesteps,
+        Tsteps,
+        agepoints,
+        Tpoints,
+        agepointsₚ,
+        Tpointsₚ,
+        agepointbuffer,
+        Tpointbuffer,
+        knot_index,
+        constraint,
+        boundary,
+    )
+end
 
 ## --- Model result types
 

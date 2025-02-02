@@ -1,9 +1,11 @@
 module Thermochron
 
     using Reexport
-    @reexport using StatGeochemBase
-    @reexport using NaNStatistics
     @reexport using Distributions
+    @reexport using NaNStatistics
+    @reexport using StatGeochemBase
+    import StatGeochemBase.image_from_paths
+    import StatGeochemBase.image_from_paths!
 
     using LinearAlgebra
     using LoopVectorization

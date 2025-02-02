@@ -323,63 +323,62 @@
     end
 
     # Move a t-T point and apply boundary conditions
-    function movepoint!(agepointsₚ::Vector{T}, Tpointsₚ::Vector{T}, k::Int, σⱼt::T, σⱼT::T, boundary::Boundary{T}) where {T}
-
+    function movepoint!(path::TtPath{T}, k::Int, σⱼt::T, σⱼT::T) where {T}
         # Move the age of one model point
-        agepointsₚ[k] += randn() * σⱼt
+        path.agepointsₚ[k] += randn() * σⱼt
 
         # Move the Temperature of one model point
-        Tpointsₚ[k] += randn() * σⱼT
+        path.Tpointsₚ[k] += randn() * σⱼT
 
         # Apply time boundary conditions
-        agepointsₚ[k] = boundtime(agepointsₚ[k], boundary)
+        path.agepointsₚ[k] = boundtime(path.agepointsₚ[k], path.boundary)
 
         # Apply Temperature boundary conditions
-        Tpointsₚ[k] = boundtemp(Tpointsₚ[k], boundary)
+        path.Tpointsₚ[k] = boundtemp(path.Tpointsₚ[k], path.boundary)
 
-        return agepointsₚ[k], Tpointsₚ[k]
+        return path
     end
 
     # Add a t-T point
-    function addpoint!(agepointsₚ::Vector{T}, Tpointsₚ::Vector{T}, σⱼt::Vector{T}, σⱼT::Vector{T}, k::Int, boundary::Boundary{T}) where {T}
-        @assert eachindex(agepointsₚ) == eachindex(Tpointsₚ) == eachindex(σⱼt) == eachindex(σⱼT)
+    function addpoint!(path::TtPath{T}, σⱼt::Vector{T}, σⱼT::Vector{T}, k::Int) where {T}
+        @assert eachindex(path.agepointsₚ) == eachindex(path.Tpointsₚ) == eachindex(σⱼt) == eachindex(σⱼT)
 
-        tmin, tmax = extrema(boundary.agepoints)
-        Tmin, Tmax = extrema(boundary.T₀)
+        tmin, tmax = textrema(path.boundary)
+        Tmin, Tmax = Textrema(path.boundary)
 
         # Pick an age uniformly within the boundaries
-        agepointsₚ[k] = tmin + rand()*(tmax-tmin)
+        path.agepointsₚ[k] = rand(Uniform(tmin, tmax))
 
         # Find the closest existing points (if any)
-        ages = view(agepointsₚ, 1:k-1)
-        i₋ = findclosestbelow(agepointsₚ[k], ages)
-        i₊ = findclosestabove(agepointsₚ[k], ages)
+        ages = view(path.agepointsₚ, Base.OneTo(k-1))
+        i₋ = findclosestbelow(path.agepointsₚ[k], ages)
+        i₊ = findclosestabove(path.agepointsₚ[k], ages)
 
         # Find values for the closest younger point
         inbounds₋ = firstindex(ages) <= i₋ <= lastindex(ages)
-        t₋ = inbounds₋ ? agepointsₚ[i₋] : tmin
-        T₋ = inbounds₋ ? Tpointsₚ[i₋] : Tmin
+        t₋ = inbounds₋ ? path.agepointsₚ[i₋] : tmin
+        T₋ = inbounds₋ ? path.Tpointsₚ[i₋] : Tmin
         σⱼt₋ = inbounds₋ ? σⱼt[i₋] : (tmax-tmin)/60
         σⱼT₋ = inbounds₋ ? σⱼT[i₋] : (Tmax-Tmin)/60
 
         # Find values for the closest older point
         inbounds₊ = firstindex(ages) <= i₊ <= lastindex(ages)
-        t₊ = inbounds₊ ? agepointsₚ[i₊] : tmax
-        T₊ = inbounds₊ ? Tpointsₚ[i₊] : Tmax
+        t₊ = inbounds₊ ? path.agepointsₚ[i₊] : tmax
+        T₊ = inbounds₊ ? path.Tpointsₚ[i₊] : Tmax
         σⱼt₊ = inbounds₊ ? σⱼt[i₊] : (tmax-tmin)/60
         σⱼT₊ = inbounds₊ ? σⱼT[i₊] : (Tmax-Tmin)/60
 
         # Interpolate
-        f = (agepointsₚ[k] - t₋) / (t₊ - t₋)
+        f = (path.agepointsₚ[k] - t₋) / (t₊ - t₋)
         f *= !isnan(f)
-        Tpointsₚ[k] = f*T₊ + (1-f)*T₋
+        path.Tpointsₚ[k] = f*T₊ + (1-f)*T₋
         σⱼt[k] = f*σⱼt₊ + (1-f)*σⱼt₋
         σⱼT[k] = f*σⱼT₊ + (1-f)*σⱼT₋
 
         # Move the point from the interpolated value
-        movepoint!(agepointsₚ, Tpointsₚ, k, σⱼt[k], σⱼT[k], boundary)
+        movepoint!(path, k, σⱼt[k], σⱼT[k])
 
-        return agepointsₚ[k], Tpointsₚ[k]
+        return path.agepointsₚ[k], path.Tpointsₚ[k]
     end
 
     # Adjust initial and final t-T boundaries
@@ -387,21 +386,21 @@
         @inbounds for i in eachindex(boundary.Tpointsₚ)
             boundary.Tpointsₚ[i] = boundary.T₀[i] + rand()*boundary.ΔT[i]
         end
-        boundary
+        return boundary
     end
     function movebounds!(constraint::Constraint, boundary::Boundary)
         @inbounds for i in eachindex(constraint.agepointsₚ, constraint.Tpointsₚ)
             constraint.agepointsₚ[i] = boundtime(rand(constraint.agedist[i]), boundary)
             constraint.Tpointsₚ[i] = boundtemp(rand(constraint.Tdist[i]), boundary)
         end
-        constraint
+        return constraint
     end
     
     function randomize!(boundary::Boundary)
         @inbounds for i in eachindex(boundary.Tpoints)
             boundary.Tpoints[i] = boundary.T₀[i] + rand()*boundary.ΔT[i]
         end
-       return boundary
+        return boundary
     end
     function randomize!(constraint::Constraint, boundary::Boundary)
         @inbounds for i in eachindex(constraint.agepoints, constraint.Tpoints)
@@ -419,25 +418,56 @@
         end
         return agepoints, Tpoints
     end
+    function randomize!(path::TtPath)
+        randomize!(path.agepoints, path.Tpoints, path.boundary)
+        randomize!(path.constraint, path.boundary)
+        randomize!(path.boundary)
+        return path
+    end
 
-    function initialproposal!(Tsteps, agesteps, knot_index, agepointbuffer, Tpointbuffer, agepoints, Tpoints, constraint::Constraint, boundary::Boundary, dTmax::Number; nattempts = 100_000) 
+    function collectaccepted!(path::TtPath{T}, npoints::Int) where {T<:AbstractFloat}
+        agepoints = view(path.agepoints, Base.OneTo(npoints))
+        ages = collectto!(path.agepointbuffer, agepoints, path.boundary.agepoints, path.constraint.agepoints)
+        Tpoints = view(path.Tpoints, Base.OneTo(npoints))
+        temperatures = collectto!(path.Tpointbuffer, Tpoints, path.boundary.Tpoints, path.constraint.Tpoints)
+        linterp1s!(path.Tsteps, path.knot_index, ages, temperatures, path.agesteps)
+        return path
+    end
+    function collectproposal!(path::TtPath{T}, npointsₚ::Int) where {T<:AbstractFloat}
+        agepointsₚ = view(path.agepointsₚ, Base.OneTo(npointsₚ))
+        ages = collectto!(path.agepointbuffer, agepointsₚ, path.boundary.agepoints, path.constraint.agepointsₚ)
+        Tpointsₚ = view(path.Tpointsₚ, Base.OneTo(npointsₚ))
+        temperatures = collectto!(path.Tpointbuffer, Tpointsₚ, path.boundary.Tpointsₚ, path.constraint.Tpointsₚ)
+        linterp1s!(path.Tsteps, path.knot_index, ages, temperatures, path.agesteps)
+        return path
+    end
+    function resetproposal!(path::TtPath)
+        copyto!(path.agepointsₚ, path.agepoints)
+        copyto!(path.Tpointsₚ, path.Tpoints)
+        copyto!(path.constraint.agepointsₚ, path.constraint.agepoints)
+        copyto!(path.constraint.Tpointsₚ, path.constraint.Tpoints)
+        copyto!(path.boundary.Tpointsₚ, path.boundary.Tpoints)
+    end
+    function acceptproposal!(path::TtPath)
+        copyto!(path.agepoints, path.agepointsₚ)
+        copyto!(path.Tpoints, path.Tpointsₚ)
+        copyto!(path.constraint.agepoints, path.constraint.agepointsₚ)
+        copyto!(path.constraint.Tpoints, path.constraint.Tpointsₚ)
+        copyto!(path.boundary.Tpoints, path.boundary.Tpointsₚ)
+    end
+    
+    function initialproposal!(path::TtPath, npoints::Int, dTmax::Number; nattempts = 100_000) 
         for _ in 1:nattempts
-            randomize!(agepoints, Tpoints, boundary)
-            randomize!(constraint, boundary)
-            randomize!(boundary)
-            
-            ages = collectto!(agepointbuffer, agepoints, boundary.agepoints, constraint.agepoints)
-            temperatures = collectto!(Tpointbuffer, Tpoints, boundary.Tpoints, constraint.Tpoints)
-            linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
-
-            if maxdiff(Tsteps) < dTmax
+            randomize!(path)
+            collectaccepted!(path, npoints)
+            if maxdiff(path.Tsteps) < dTmax
                 break
             end
         end
-        if maxdiff(Tsteps) > dTmax
+        if maxdiff(path.Tsteps) > dTmax
             @warn "Could not generate initial proposal to satisfy max reheating rate in $nattempts attempts"
         end
-        return Tsteps
+        return path
     end
 
     # Adjust kinetic models

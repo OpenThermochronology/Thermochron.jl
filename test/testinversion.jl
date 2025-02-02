@@ -49,4 +49,52 @@ d = diff(x)
 @test Thermochron.hard(201, 0, 100) == 100
 @test Thermochron.hard(-101, 0, 100) == 0
 
+
+constraint = Constraint(
+    agedist = [Uniform(500,580),],  # [Ma] Age distribution
+    Tdist =   [   Uniform(0,50),],  # [C] Temperature distribution
+)
+@test constraint isa Constraint{Float64}
+
+boundary = Boundary(
+    agepoints = [0.0, 1000.0],  # [Ma] Final and initial time
+    T₀ = [0.0, 400.0],          # [C] Final and initial temperature
+    ΔT = [50, -100.0],          # [C] Final and initial temperature range (positive or negative)
+    tboundary = :reflecting,    # Reflecting time boundary conditions
+    Tboundary = :reflecting,    # Reflecting temperature boundary conditions
+)
+@test boundary isa Boundary{Float64}
+
+agesteps = reverse(1:10:1000.)
+path = Thermochron.TtPath(agesteps, constraint, boundary, 50)
+@test path isa Thermochron.TtPath{Float64}
+@test path.agepoints == path.agepointsₚ == zeros(50)
+@test path.Tpoints == path.Tpointsₚ == zeros(50)
+@test path.Tsteps == zeros(100)
+
+Thermochron.randomize!(path)
+@test path.agepoints != path.agepointsₚ
+@test path.Tpoints != path.Tpointsₚ
+a,T = copy(path.agepoints), copy(path.Tpoints)
+
+Thermochron.resetproposal!(path)
+@test path.agepoints == path.agepointsₚ == a
+@test path.Tpoints == path.Tpointsₚ == T
+
+Thermochron.randomize!(path)
+@test path.agepoints != path.agepointsₚ
+@test path.Tpoints != path.Tpointsₚ
+a,T = copy(path.agepointsₚ), copy(path.Tpointsₚ)
+
+Thermochron.acceptproposal!(path)
+@test path.agepoints == path.agepointsₚ == a
+@test path.Tpoints == path.Tpointsₚ == T
+
+Thermochron.randomize!(path)
+Thermochron.collectaccepted!(path, 10)
+Tsteps = copy(path.Tsteps)
+Thermochron.collectproposal!(path, 10)
+Tstepsₚ = copy(path.Tsteps)
+@test Tsteps != Tstepsₚ != zeros(100)
+
 ## ---Test generation of Chronometer objects

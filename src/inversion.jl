@@ -1,6 +1,6 @@
     """
     ```julia
-    MCMC(data::Vector{<:Chronometer}, model::NamedTuple, npoints::Int, agepoints::Vector, Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval])
+    MCMC(data::Vector{<:Chronometer}, model::NamedTuple, npoints::Int, path.agepoints::Vector, path.Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval])
     ```
     Markov chain Monte Carlo time-Temperature inversion of the thermochronometric data 
     specified as a vector `chrons` of `Chronometer` objects (`ZirconHe`, `ApatiteHe`, 
@@ -13,7 +13,7 @@
 
     ## Examples
     ```julia
-    tT = MCMC(data, model, npoints, agepoints, Tpoints, constraint, boundary)
+    tT = MCMC(data, model, npoints, path.agepoints, path.Tpoints, constraint, boundary)
     ```
     """
     MCMC(data::NamedTuple, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where {T <: AbstractFloat} = MCMC(chronometers(T, data, model), model, boundary, constraint, detail)
@@ -38,24 +38,16 @@
         @assert issorted(tsteps)
         tnow, tinit = extrema(boundary.agepoints)
         Tnow, Tinit = extrema(boundary.T₀)
-        Tr = T(haskey(model, :Tr) ? model.Tr : (Tinit+Tnow)/2)::T
         dt = T(model.dt)::T
         σmodel = T(haskey(model, :σmodel) ? model.σmodel : 0)::T
         σannealing = T(haskey(model, :σannealing) ? model.σannealing : 125)::T
         λannealing = T(haskey(model, :λannealing) ? model.λannealing : 2/burnin)::T
 
-        # Arrays to hold all t and T points (up to npoints=maxpoints)
-        agepoints = zeros(T, maxpoints) 
-        Tpoints = zeros(T, maxpoints)
-
-        # Calculate number of boundary and unconformity points and allocate buffer for interpolating
-        agepointbuffer = similar(agepoints, totalpoints)::Vector{T}
-        Tpointbuffer = similar(agepoints, totalpoints)::Vector{T}
-        knot_index = similar(agesteps, Int)::Vector{Int}
-        Tsteps = similar(agesteps)::Vector{T}
+        # Struct to hold t-T path proposals and related variables
+        path = TtPath(agesteps, constraint, boundary, maxpoints)
 
         # Initial propopsal
-        initialproposal!(Tsteps, agesteps, knot_index, agepointbuffer, Tpointbuffer, view(agepoints, 1:npoints), view(Tpoints, 1:npoints), constraint, boundary, dTmax) 
+        initialproposal!(path, npoints, dTmax) 
 
         # Prepare to calculate model ages for initial proposal
         μcalc = zeros(T, length(observed))
@@ -86,14 +78,12 @@
         σ = observed_sigma
 
         # Log-likelihood for initial proposal
-        modelages!(μcalc, σcalc, data, Tsteps, zdm, adm, zftm, aftm)
-        llna = llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma) + (simplified ? -log(npoints) : zero(T))
+        modelages!(μcalc, σcalc, data, path.Tsteps, zdm, adm, zftm, aftm)
+        llna = llnaₚ = diff_ll(path.Tsteps, dTmax, dTmax_sigma) + (simplified ? -log(npoints) : zero(T))
         ll = llₚ =  norm_ll(observed, σₐ, μcalc, σcalc) + llna
 
         # Variables to hold proposals
         npointsₚ = npoints
-        agepointsₚ = copy(agepoints)::Vector{T}
-        Tpointsₚ = copy(Tpoints)::Vector{T}
         μcalcₚ = copy(μcalc)::Vector{T}
         σcalcₚ = copy(σcalc)::Vector{T}
         σⱼtₚ = copy(σⱼt)
@@ -109,40 +99,36 @@
         progress_interval = ceil(Int,sqrt(burnin))
         for n = 1:burnin
             if detail.minpoints > 0
-                enoughpoints = min(pointsininterval(agepoints, npoints, detail.agemin, detail.agemax, dt), detail.minpoints)::Int
+                enoughpoints = min(pointsininterval(path.agepoints, npoints, detail.agemin, detail.agemax, dt), detail.minpoints)::Int
             end
             @label brestart
 
             # Copy proposal from last accepted solution
+            resetproposal!(path)
             npointsₚ = npoints
-            copyto!(agepointsₚ, agepoints)
-            copyto!(Tpointsₚ, Tpoints)
-            copyto!(constraint.agepointsₚ, constraint.agepoints)
-            copyto!(constraint.Tpointsₚ, constraint.Tpoints)
-            copyto!(boundary.Tpointsₚ, boundary.Tpoints)
             copyto!(σcalcₚ, σcalc)
             copyto!(σⱼtₚ, σⱼt)
             copyto!(σⱼTₚ, σⱼT)
 
             # Randomly choose an option and point (if applicable) to adjust
             r = rand()
-            k = rand(1:npoints)
+            k = rand(Base.OneTo(npoints))
 
             # Adjust the proposal
             if r < p_move
                 # Move one t-T point
-                movepoint!(agepointsₚ, Tpointsₚ, k, σⱼtₚ[k], σⱼTₚ[k], boundary)
+                movepoint!(path, k, σⱼtₚ[k], σⱼTₚ[k])
 
             elseif (r < p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point
                 k = npointsₚ = npoints + 1
-                addpoint!(agepointsₚ, Tpointsₚ, σⱼtₚ, σⱼTₚ, k, boundary)
+                addpoint!(path, σⱼtₚ, σⱼTₚ, k)
 
             elseif (r < p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
                 npointsₚ = npoints - 1
-                agepointsₚ[k] = agepointsₚ[npoints]
-                Tpointsₚ[k] = Tpointsₚ[npoints]
+                path.agepointsₚ[k] = path.agepointsₚ[npoints]
+                path.Tpointsₚ[k] = path.Tpointsₚ[npoints]
                 σⱼtₚ[k] = σⱼtₚ[npoints]
                 σⱼTₚ[k] = σⱼTₚ[npoints]
 
@@ -158,20 +144,18 @@
             end
 
             # Recalculate interpolated proposed t-T path
-            ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, constraint.agepointsₚ)::StridedVector{T}
-            temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, constraint.Tpointsₚ)::StridedVector{T}
-            linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
+            collectproposal!(path, npointsₚ)
 
             # Ensure we have enough points in the "detail" interval, if any
             if detail.minpoints > 0
-                (pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto brestart
+                (pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto brestart
             end
 
             # Calculate model ages for each grain
-            modelages!(μcalcₚ, σcalcₚ, data, Tsteps, zdm, adm, zftm, aftm)
+            modelages!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdm, adm, zftm, aftm)
 
             # Calculate log likelihood of proposal
-            llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
+            llnaₚ = diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             simplified && (llnaₚ += -log(npointsₚ))
             σₐ .= simannealsigma.(n, observed_sigma, σannealing, λannealing)
             llₚ = norm_ll(observed, σₐ, μcalcₚ, σcalcₚ) + llnaₚ
@@ -182,23 +166,19 @@
 
                 # Update jumping distribution based on size of current accepted p_move
                 if dynamicjumping && r < p_move
-                    if agepointsₚ[k] != agepoints[k]
-                        σⱼtₚ[k] = ℯ * abs(agepointsₚ[k] - agepoints[k])
+                    if path.agepointsₚ[k] != path.agepoints[k]
+                        σⱼtₚ[k] = ℯ * abs(path.agepointsₚ[k] - path.agepoints[k])
                     end
-                    if Tpointsₚ[k] != Tpoints[k]
-                        σⱼTₚ[k] = ℯ * abs(Tpointsₚ[k] - Tpoints[k])
+                    if path.Tpointsₚ[k] != path.Tpoints[k]
+                        σⱼTₚ[k] = ℯ * abs(path.Tpointsₚ[k] - path.Tpoints[k])
                     end
                 end
 
                 # Update the currently accepted proposal
+                acceptproposal!(path)
                 ll = llₚ
                 llna = llnaₚ
                 npoints = npointsₚ
-                copyto!(agepoints, 1, agepointsₚ, 1, npoints)
-                copyto!(Tpoints, 1, Tpointsₚ, 1, npoints)
-                copyto!(constraint.agepoints, constraint.agepointsₚ)
-                copyto!(constraint.Tpoints, constraint.Tpointsₚ)
-                copyto!(boundary.Tpoints, boundary.Tpointsₚ)
                 copyto!(μcalc, μcalcₚ)
                 copyto!(σcalc, σcalcₚ)
                 copyto!(σⱼt, σⱼtₚ)
@@ -227,40 +207,36 @@
         progress_interval = ceil(Int,sqrt(nsteps))
         for n = 1:nsteps
             if detail.minpoints > 0
-                enoughpoints = min(pointsininterval(agepoints, npoints, detail.agemin, detail.agemax, dt), detail.minpoints)::Int
+                enoughpoints = min(pointsininterval(path.agepoints, npoints, detail.agemin, detail.agemax, dt), detail.minpoints)::Int
             end
             @label crestart
 
             # Copy proposal from last accepted solution
+            resetproposal!(path)
             npointsₚ = npoints
-            copyto!(agepointsₚ, agepoints)
-            copyto!(Tpointsₚ, Tpoints)
-            copyto!(constraint.agepointsₚ, constraint.agepoints)
-            copyto!(constraint.Tpointsₚ, constraint.Tpoints)
-            copyto!(boundary.Tpointsₚ, boundary.Tpoints)
             copyto!(σcalcₚ, σcalc)
             copyto!(σⱼtₚ, σⱼt)
             copyto!(σⱼTₚ, σⱼT)
 
             # Randomly choose an option and point (if applicable) to adjust
             r = rand()
-            k = rand(1:npoints)
+            k = rand(Base.OneTo(npoints))
 
             # Adjust the proposal
             if r < p_move
                 # Move one t-T point
-                movepoint!(agepointsₚ, Tpointsₚ, k, σⱼtₚ[k], σⱼTₚ[k], boundary)
+                movepoint!(path, k, σⱼtₚ[k], σⱼTₚ[k])
 
             elseif (r < p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point
                 k = npointsₚ = npoints + 1
-                addpoint!(agepointsₚ, Tpointsₚ, σⱼtₚ, σⱼTₚ, k, boundary)
+                addpoint!(path, σⱼtₚ, σⱼTₚ, k)
 
             elseif (r < p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
                 npointsₚ = npoints - 1
-                agepointsₚ[k] = agepointsₚ[npoints]
-                Tpointsₚ[k] = Tpointsₚ[npoints]
+                path.agepointsₚ[k] = path.agepointsₚ[npoints]
+                path.Tpointsₚ[k] = path.Tpointsₚ[npoints]
                 σⱼtₚ[k] = σⱼtₚ[npoints]
                 σⱼTₚ[k] = σⱼTₚ[npoints]
 
@@ -276,20 +252,18 @@
             end
 
             # Recalculate interpolated proposed t-T path
-            ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, constraint.agepointsₚ)::StridedVector{T}
-            temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, constraint.Tpointsₚ)::StridedVector{T}
-            linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
+            collectproposal!(path, npointsₚ)
             
             # Ensure we have enough points in the "detail" interval, if any
             if detail.minpoints > 0
-                (pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto crestart
+                (pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto crestart
             end
 
             # Calculate model ages for each grain
-            modelages!(μcalcₚ, σcalcₚ, data, Tsteps, zdm, adm, zftm, aftm)
+            modelages!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdm, adm, zftm, aftm)
 
             # Calculate log likelihood of proposal
-            llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
+            llnaₚ = diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             simplified && (llnaₚ += -log(npointsₚ))
             llₚ = norm_ll(observed, σ, μcalcₚ, σcalcₚ) + llnaₚ
 
@@ -298,22 +272,18 @@
 
                 # Update jumping distribution based on size of current accepted p_move
                 if dynamicjumping && r < p_move
-                    if agepointsₚ[k] != agepoints[k]
-                        σⱼtₚ[k] = ℯ * abs(agepointsₚ[k] - agepoints[k])
+                    if path.agepointsₚ[k] != path.agepoints[k]
+                        σⱼtₚ[k] = ℯ * abs(path.agepointsₚ[k] - path.agepoints[k])
                     end
-                    if Tpointsₚ[k] != Tpoints[k]
-                        σⱼTₚ[k] = ℯ * abs(Tpointsₚ[k] - Tpoints[k])
+                    if path.Tpointsₚ[k] != path.Tpoints[k]
+                        σⱼTₚ[k] = ℯ * abs(path.Tpointsₚ[k] - path.Tpoints[k])
                     end
                 end
 
                 # Update the currently accepted proposal
+                acceptproposal!(path)
                 ll = llₚ
-                npoints = npointsₚ
-                copyto!(agepoints, 1, agepointsₚ, 1, npoints)
-                copyto!(Tpoints, 1, Tpointsₚ, 1, npoints)
-                copyto!(constraint.agepoints, constraint.agepointsₚ)
-                copyto!(constraint.Tpoints, constraint.Tpointsₚ)
-                copyto!(boundary.Tpoints, boundary.Tpointsₚ)
+                npoints = npointsₚ                
                 copyto!(μcalc, μcalcₚ)
                 copyto!(σcalc, σcalcₚ)
                 copyto!(σⱼt, σⱼtₚ)
@@ -331,8 +301,8 @@
             resultdist[:,n] .= μcalc # distribution of He ages
 
             # This is the actual output we want -- the distribution of t-T paths (t path is always identical)
-            collectto!(view(tpointdist, :, n), view(agepoints, 1:npoints), boundary.agepoints, constraint.agepoints)
-            collectto!(view(Tpointdist, :, n), view(Tpoints, 1:npoints), boundary.Tpoints, constraint.Tpoints)
+            collectto!(view(tpointdist, :, n), view(path.agepoints, Base.OneTo(npoints)), path.boundary.agepoints, path.constraint.agepoints)
+            collectto!(view(Tpointdist, :, n), view(path.Tpoints, Base.OneTo(npoints)), path.boundary.Tpoints, path.constraint.Tpoints)
 
             # Update progress meter every `progress_interval` steps
             (mod(n, progress_interval) == 0) && update!(progress, n)
@@ -355,7 +325,7 @@
 
     """
     ```julia
-    MCMC_varkinetics(chrons::Vector{<:Chronometer}, model::NamedTuple, npoints::Int, agepoints::Vector, Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval])
+    MCMC_varkinetics(chrons::Vector{<:Chronometer}, model::NamedTuple, npoints::Int, path.agepoints::Vector, path.Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval])
     ```
     Markov chain Monte Carlo time-Temperature inversion of the thermochronometric data 
     specified as a vector `chrons` of `Chronometer` objects (`ZirconHe`, `ApatiteHe`, 
@@ -369,7 +339,7 @@
 
     ## Examples
     ```julia
-    tT, kinetics = MCMC_varkinetics(data, model, npoints, agepoints, Tpoints, constraint, boundary)
+    tT, kinetics = MCMC_varkinetics(data, model, npoints, path.agepoints, path.Tpoints, constraint, boundary)
     ```
     """
     MCMC_varkinetics(data::NamedTuple, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where {T <: AbstractFloat} = MCMC_varkinetics(chronometers(T, data, model), model, boundary, constraint, detail)
@@ -394,24 +364,16 @@
         @assert issorted(tsteps)
         tnow, tinit = extrema(boundary.agepoints)
         Tnow, Tinit = extrema(boundary.T₀)
-        Tr = T(haskey(model, :Tr) ? model.Tr : (Tinit+Tnow)/2)::T
         dt = T(model.dt)::T
         σmodel = T(haskey(model, :σmodel) ? model.σmodel : 0)::T
         σannealing = T(haskey(model, :σannealing) ? model.σannealing : 125)::T
         λannealing = T(haskey(model, :λannealing) ? model.λannealing : 2/burnin)::T
 
-        # Arrays to hold all t and T points (up to npoints=maxpoints)
-        agepoints = zeros(T, maxpoints) 
-        Tpoints = zeros(T, maxpoints)
-
-        # Calculate number of boundary and unconformity points and allocate buffer for interpolating
-        agepointbuffer = similar(agepoints, totalpoints)::Vector{T}
-        Tpointbuffer = similar(agepoints, totalpoints)::Vector{T}
-        knot_index = similar(agesteps, Int)::Vector{Int}
-        Tsteps = similar(agesteps)::Vector{T}
+        # Struct to hold t-T path proposals and related variables
+        path = TtPath(agesteps, constraint, boundary, maxpoints)
 
         # Initial propopsal
-        initialproposal!(Tsteps, agesteps, knot_index, agepointbuffer, Tpointbuffer, view(agepoints, 1:npoints), view(Tpoints, 1:npoints), constraint, boundary, dTmax) 
+        initialproposal!(path, npoints, dTmax) 
 
         # Prepare to calculate model ages for initial proposal
         μcalc = zeros(T, length(observed))
@@ -442,16 +404,14 @@
         σ = observed_sigma
         
         # Log-likelihood for initial proposal
-        modelages!(μcalc, σcalc, data, Tsteps, zdm, adm, zftm, aftm)
-        llna = llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma) + model_ll(admₚ, adm₀) + model_ll(zdmₚ, zdm₀) + (simplified ? -log(npoints) : zero(T))
+        modelages!(μcalc, σcalc, data, path.Tsteps, zdm, adm, zftm, aftm)
+        llna = llnaₚ = diff_ll(path.Tsteps, dTmax, dTmax_sigma) + model_ll(admₚ, adm₀) + model_ll(zdmₚ, zdm₀) + (simplified ? -log(npoints) : zero(T))
         ll = llₚ =  norm_ll(observed, σₐ, μcalc, σcalc) + llna
 
         # Variables to hold proposals
         npointsₚ = npoints
-        agepointsₚ = copy(agepoints)::Vector{T}
-        Tpointsₚ = copy(Tpoints)::Vector{T}
         μcalcₚ = copy(μcalc)::Vector{T}
-        σcalcₚ = copy(σcalc)
+        σcalcₚ = copy(σcalc)::Vector{T}
         σⱼtₚ = copy(σⱼt)
         σⱼTₚ = copy(σⱼT)
 
@@ -466,42 +426,38 @@
         progress_interval = ceil(Int,sqrt(burnin))
         for n = 1:burnin
             if detail.minpoints > 0
-                enoughpoints = min(pointsininterval(agepoints, npoints, detail.agemin, detail.agemax, dt), detail.minpoints)::Int
+                enoughpoints = min(pointsininterval(path.agepoints, npoints, detail.agemin, detail.agemax, dt), detail.minpoints)::Int
             end
             @label brestart
 
             # Copy proposal from last accepted solution
+            resetproposal!(path)
             admₚ = adm
             zdmₚ = zdm
             npointsₚ = npoints
-            copyto!(agepointsₚ, agepoints)
-            copyto!(Tpointsₚ, Tpoints)
-            copyto!(constraint.agepointsₚ, constraint.agepoints)
-            copyto!(constraint.Tpointsₚ, constraint.Tpoints)
-            copyto!(boundary.Tpointsₚ, boundary.Tpoints)
             copyto!(σcalcₚ, σcalc)
             copyto!(σⱼtₚ, σⱼt)
             copyto!(σⱼTₚ, σⱼT)
 
             # Randomly choose an option and point (if applicable) to adjust
             r = rand()
-            k = rand(1:npoints)
+            k = rand(Base.OneTo(npoints))
 
             # Adjust the proposal
             if r < p_move
                 # Move one t-T point
-                movepoint!(agepointsₚ, Tpointsₚ, k, σⱼtₚ[k], σⱼTₚ[k], boundary)
+                movepoint!(path, k, σⱼtₚ[k], σⱼTₚ[k])
 
             elseif (r < p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point
                 k = npointsₚ = npoints + 1
-                addpoint!(agepointsₚ, Tpointsₚ, σⱼtₚ, σⱼTₚ, k, boundary)
+                addpoint!(path, σⱼtₚ, σⱼTₚ, k)
 
             elseif (r < p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
                 npointsₚ = npoints - 1
-                agepointsₚ[k] = agepointsₚ[npoints]
-                Tpointsₚ[k] = Tpointsₚ[npoints]
+                path.agepointsₚ[k] = path.agepointsₚ[npoints]
+                path.Tpointsₚ[k] = path.Tpointsₚ[npoints]
                 σⱼtₚ[k] = σⱼtₚ[npoints]
                 σⱼTₚ[k] = σⱼTₚ[npoints]
 
@@ -522,20 +478,18 @@
             end
 
             # Recalculate interpolated proposed t-T path
-            ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, constraint.agepointsₚ)::StridedVector{T}
-            temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, constraint.Tpointsₚ)::StridedVector{T}
-            linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
+            collectproposal!(path, npointsₚ)
 
             # Ensure we have enough points in the "detail" interval, if any
             if detail.minpoints > 0
-                (pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto brestart
+                (pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto brestart
             end
                
             # Calculate model ages for each grain
-            modelages!(μcalcₚ, σcalcₚ, data, Tsteps, zdmₚ, admₚ, zftm, aftm)
+            modelages!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdmₚ, admₚ, zftm, aftm)
 
             # Calculate log likelihood of proposal
-            llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
+            llnaₚ = diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             llnaₚ += model_ll(admₚ, adm₀) + model_ll(zdmₚ, zdm₀)
             simplified && (llnaₚ += -log(npointsₚ))
             σₐ .= simannealsigma.(n, observed_sigma, σannealing, λannealing)
@@ -547,25 +501,21 @@
 
                 # Update jumping distribution based on size of current accepted p_move
                 if dynamicjumping && r < p_move
-                    if agepointsₚ[k] != agepoints[k]
-                        σⱼtₚ[k] = ℯ * abs(agepointsₚ[k] - agepoints[k])
+                    if path.agepointsₚ[k] != path.agepoints[k]
+                        σⱼtₚ[k] = ℯ * abs(path.agepointsₚ[k] - path.agepoints[k])
                     end
-                    if Tpointsₚ[k] != Tpoints[k]
-                        σⱼTₚ[k] = ℯ * abs(Tpointsₚ[k] - Tpoints[k])
+                    if path.Tpointsₚ[k] != path.Tpoints[k]
+                        σⱼTₚ[k] = ℯ * abs(path.Tpointsₚ[k] - path.Tpoints[k])
                     end
                 end
 
                 # Update the currently accepted proposal
+                acceptproposal!(path)
                 adm = admₚ
                 zdm = zdmₚ
                 ll = llₚ
                 llna = llnaₚ
                 npoints = npointsₚ
-                copyto!(agepoints, 1, agepointsₚ, 1, npoints)
-                copyto!(Tpoints, 1, Tpointsₚ, 1, npoints)
-                copyto!(constraint.agepoints, constraint.agepointsₚ)
-                copyto!(constraint.Tpoints, constraint.Tpointsₚ)
-                copyto!(boundary.Tpoints, boundary.Tpointsₚ)
                 copyto!(μcalc, μcalcₚ)
                 copyto!(σcalc, σcalcₚ)
                 copyto!(σⱼt, σⱼtₚ)
@@ -596,42 +546,38 @@
         progress_interval = ceil(Int,sqrt(nsteps))
         for n = 1:nsteps
             if detail.minpoints > 0
-                enoughpoints = min(pointsininterval(agepoints, npoints, detail.agemin, detail.agemax, dt), detail.minpoints)::Int
+                enoughpoints = min(pointsininterval(path.agepoints, npoints, detail.agemin, detail.agemax, dt), detail.minpoints)::Int
             end
             @label crestart
 
             # Copy proposal from last accepted solution
+            resetproposal!(path)
             admₚ = adm
             zdmₚ = zdm
             npointsₚ = npoints
-            copyto!(agepointsₚ, agepoints)
-            copyto!(Tpointsₚ, Tpoints)
-            copyto!(constraint.agepointsₚ, constraint.agepoints)
-            copyto!(constraint.Tpointsₚ, constraint.Tpoints)
-            copyto!(boundary.Tpointsₚ, boundary.Tpoints)
             copyto!(σcalcₚ, σcalc)
             copyto!(σⱼtₚ, σⱼt)
             copyto!(σⱼTₚ, σⱼT)
 
             # Randomly choose an option and point (if applicable) to adjust
             r = rand()
-            k = rand(1:npoints)
+            k = rand(Base.OneTo(npoints))
 
             # Adjust the proposal
             if r < p_move
                 # Move one t-T point
-                movepoint!(agepointsₚ, Tpointsₚ, k, σⱼtₚ[k], σⱼTₚ[k], boundary)
+                movepoint!(path, k, σⱼtₚ[k], σⱼTₚ[k])
 
             elseif (r < p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point
                 k = npointsₚ = npoints + 1
-                addpoint!(agepointsₚ, Tpointsₚ, σⱼtₚ, σⱼTₚ, k, boundary)
+                addpoint!(path, σⱼtₚ, σⱼTₚ, k)
 
             elseif (r < p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
                 npointsₚ = npoints - 1
-                agepointsₚ[k] = agepointsₚ[npoints]
-                Tpointsₚ[k] = Tpointsₚ[npoints]
+                path.agepointsₚ[k] = path.agepointsₚ[npoints]
+                path.Tpointsₚ[k] = path.Tpointsₚ[npoints]
                 σⱼtₚ[k] = σⱼtₚ[npoints]
                 σⱼTₚ[k] = σⱼTₚ[npoints]
 
@@ -652,20 +598,18 @@
             end
 
             # Recalculate interpolated proposed t-T path
-            ages = collectto!(agepointbuffer, view(agepointsₚ, 1:npointsₚ), boundary.agepoints, constraint.agepointsₚ)::StridedVector{T}
-            temperatures = collectto!(Tpointbuffer, view(Tpointsₚ, 1:npointsₚ), boundary.Tpointsₚ, constraint.Tpointsₚ)::StridedVector{T}
-            linterp1s!(Tsteps, knot_index, ages, temperatures, agesteps)
-
+            collectproposal!(path, npointsₚ)
+            
             # Ensure we have enough points in the "detail" interval, if any
             if detail.minpoints > 0
-                (pointsininterval(agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto crestart
+                (pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto crestart
             end
 
             # Calculate model ages for each grain
-            modelages!(μcalcₚ, σcalcₚ, data, Tsteps, zdmₚ, admₚ, zftm, aftm)
+            modelages!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdmₚ, admₚ, zftm, aftm)
 
             # Calculate log likelihood of proposal
-            llnaₚ = diff_ll(Tsteps, dTmax, dTmax_sigma)
+            llnaₚ = diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             llnaₚ += model_ll(admₚ, adm₀) + model_ll(zdmₚ, zdm₀)
             simplified && (llnaₚ += -log(npointsₚ))
             llₚ = norm_ll(observed, σ, μcalcₚ, σcalcₚ) + llnaₚ
@@ -675,24 +619,20 @@
 
                 # Update jumping distribution based on size of current accepted p_move
                 if dynamicjumping && r < p_move
-                    if agepointsₚ[k] != agepoints[k]
-                        σⱼtₚ[k] = ℯ * abs(agepointsₚ[k] - agepoints[k])
+                    if path.agepointsₚ[k] != path.agepoints[k]
+                        σⱼtₚ[k] = ℯ * abs(path.agepointsₚ[k] - path.agepoints[k])
                     end
-                    if Tpointsₚ[k] != Tpoints[k]
-                        σⱼTₚ[k] = ℯ * abs(Tpointsₚ[k] - Tpoints[k])
+                    if path.Tpointsₚ[k] != path.Tpoints[k]
+                        σⱼTₚ[k] = ℯ * abs(path.Tpointsₚ[k] - path.Tpoints[k])
                     end
                 end
 
                 # Update the currently accepted proposal
+                acceptproposal!(path)
                 adm = admₚ
                 zdm = zdmₚ
                 ll = llₚ
                 npoints = npointsₚ
-                copyto!(agepoints, 1, agepointsₚ, 1, npoints)
-                copyto!(Tpoints, 1, Tpointsₚ, 1, npoints)
-                copyto!(constraint.agepoints, constraint.agepointsₚ)
-                copyto!(constraint.Tpoints, constraint.Tpointsₚ)
-                copyto!(boundary.Tpoints, boundary.Tpointsₚ)
                 copyto!(μcalc, μcalcₚ)
                 copyto!(σcalc, σcalcₚ)
                 copyto!(σⱼt, σⱼtₚ)
@@ -712,8 +652,8 @@
             zdmdist[n] = zdm
 
             # This is the actual output we want -- the distribution of t-T paths (t path is always identical)
-            collectto!(view(tpointdist, :, n), view(agepoints, 1:npoints), boundary.agepoints, constraint.agepoints)
-            collectto!(view(Tpointdist, :, n), view(Tpoints, 1:npoints), boundary.Tpoints, constraint.Tpoints)
+            collectto!(view(tpointdist, :, n), view(path.agepoints, Base.OneTo(npoints)), path.boundary.agepoints, path.constraint.agepoints)
+            collectto!(view(Tpointdist, :, n), view(path.Tpoints, Base.OneTo(npoints)), path.boundary.Tpoints, path.constraint.Tpoints)
 
             # Update progress meter every `progress_interval` steps
             (mod(n, progress_interval) == 0) && update!(progress, n)
@@ -753,7 +693,7 @@
     julia> imgcounts, xq, yq = image_from_paths(tT; xrange=boundary.agepoints, yrange=boundary.T₀)
     ```
     """
-    function StatGeochemBase.image_from_paths(tT::TTResult;
+    function image_from_paths(tT::TTResult;
             xresolution::Int = 1800, 
             yresolution::Int = 1200, 
             xrange = nanextrema(tT.tpointdist), 
@@ -761,7 +701,7 @@
         )
         image_from_paths(tT.tpointdist, tT.Tpointdist; xresolution, yresolution, xrange, yrange)
     end
-    function StatGeochemBase.image_from_paths!(tT::TTResult;
+    function image_from_paths!(tT::TTResult;
             xresolution::Int = 1800, 
             yresolution::Int = 1200, 
             xrange = nanextrema(tT.tpointdist), 
