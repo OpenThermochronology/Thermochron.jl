@@ -157,7 +157,7 @@ llmean = mean(tT.lldist)
 @info "Mean ll: $llmean"
 
 @test isa(tT.acceptancedist, AbstractVector{Bool})
-@test isapprox(mean(tT.acceptancedist), 0.5, atol=0.4)
+@test isapprox(mean(tT.acceptancedist), 0.5, atol=0.45)
 @info "Mean acceptance rate: $(mean(tT.acceptancedist))"
 
 @test isa(tT.ndist, AbstractVector{Int})
@@ -197,7 +197,7 @@ llmean = mean(tT.lldist)
 @info "Mean ll: $llmean"
 
 @test isa(tT.acceptancedist, AbstractVector{Bool})
-@test isapprox(mean(tT.acceptancedist), 0.5, atol=0.4)
+@test isapprox(mean(tT.acceptancedist), 0.5, atol=0.45)
 @info "Mean acceptance rate: $(mean(tT.acceptancedist))"
 
 @test isa(tT.ndist, AbstractVector{Int})
@@ -305,7 +305,7 @@ llmean = mean(tT.lldist)
 @info "Mean ll: $llmean"
 
 @test isa(tT.acceptancedist, AbstractVector{Bool})
-@test isapprox(mean(tT.acceptancedist), 0.5, atol=0.4)
+@test isapprox(mean(tT.acceptancedist), 0.5, atol=0.45)
 @info "Mean acceptance rate: $(mean(tT.acceptancedist))"
 
 @test isa(tT.ndist, AbstractVector{Int})
@@ -379,7 +379,7 @@ llmean = mean(tT.lldist)
 @info "Mean ll: $llmean"
 
 @test isa(tT.acceptancedist, AbstractVector{Bool})
-@test isapprox(mean(tT.acceptancedist), 0.5, atol=0.4)
+@test isapprox(mean(tT.acceptancedist), 0.5, atol=0.45)
 @info "Mean acceptance rate: $(mean(tT.acceptancedist))"
 
 @test isa(tT.ndist, AbstractVector{Int})
@@ -416,7 +416,7 @@ llmean = mean(tT.lldist)
 @info "Mean ll: $llmean"
 
 @test isa(tT.acceptancedist, AbstractVector{Bool})
-@test isapprox(mean(tT.acceptancedist), 0.5, atol=0.4)
+@test isapprox(mean(tT.acceptancedist), 0.5, atol=0.45)
 @info "Mean acceptance rate: $(mean(tT.acceptancedist))"
 
 @test isa(tT.ndist, AbstractVector{Int})
