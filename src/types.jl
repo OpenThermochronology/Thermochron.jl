@@ -170,6 +170,10 @@ struct TtPath{T<:AbstractFloat}
     Tpoints::Vector{T}
     agepointsₚ::Vector{T}
     Tpointsₚ::Vector{T}
+    σⱼt::Vector{T}
+    σⱼT::Vector{T}
+    σⱼtₚ::Vector{T}
+    σⱼTₚ::Vector{T}
     agepointbuffer::Vector{T}
     Tpointbuffer::Vector{T}
     knot_index::Vector{Int}
@@ -188,6 +192,12 @@ function TtPath(agesteps::AbstractArray, constraint::Constraint{T}, boundary::Bo
     agepointsₚ = zeros(T, maxpoints) 
     Tpointsₚ = zeros(T, maxpoints)
 
+    # Arrays to hold standard deviations of Gaussian proposal ("jumping") distributions for t and T
+    σⱼt = fill(nanrange(textrema(boundary))/60, maxpoints)
+    σⱼT = fill(nanrange(Textrema(boundary))/60, maxpoints)
+    σⱼtₚ = copy(σⱼt)
+    σⱼTₚ = copy(σⱼT)
+
     # Calculate number of boundary and unconformity points and allocate pointbuffer for interpolating
     totalpoints = maxpoints + boundary.npoints + constraint.npoints
     agepointbuffer = similar(agepoints, totalpoints)
@@ -199,6 +209,10 @@ function TtPath(agesteps::AbstractArray, constraint::Constraint{T}, boundary::Bo
         Tpoints,
         agepointsₚ,
         Tpointsₚ,
+        σⱼt,
+        σⱼT,
+        σⱼtₚ,
+        σⱼTₚ,
         agepointbuffer,
         Tpointbuffer,
         knot_index,

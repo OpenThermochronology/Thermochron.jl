@@ -286,14 +286,17 @@
         min(max(x, xmin), xmax)
     end
 
+    textrema(path::TtPath) = textrema(path.boundary)
     function textrema(boundary::Boundary)
         a, b = first(boundary.agepoints), last(boundary.agepoints)
         a < b ? (a, b) : (b, a)
     end
+    Textrema(path::TtPath) = Textrema(path.boundary)
     function Textrema(boundary::Boundary)
         a, b = first(boundary.T₀), last(boundary.T₀)
         a < b ? (a, b) : (b, a)
     end
+
     function boundtime(t::Number, boundary::Boundary)
         tmin, tmax = textrema(boundary)
         if boundary.tboundary === :reflecting
@@ -307,7 +310,6 @@
             reflecting(t, tmin, tmax)
         end
     end
-
     function boundtemp(T::Number, boundary::Boundary)
         Tmin, Tmax = Textrema(boundary)
         if boundary.Tboundary === :reflecting
@@ -323,12 +325,12 @@
     end
 
     # Move a t-T point and apply boundary conditions
-    function movepoint!(path::TtPath{T}, k::Int, σⱼt::T, σⱼT::T) where {T}
+    function movepoint!(path::TtPath{T}, k::Int) where {T}
         # Move the age of one model point
-        path.agepointsₚ[k] += randn() * σⱼt
+        path.agepointsₚ[k] += rand(Normal{T}(zero(T), path.σⱼtₚ[k]))
 
         # Move the Temperature of one model point
-        path.Tpointsₚ[k] += randn() * σⱼT
+        path.Tpointsₚ[k] += rand(Normal{T}(zero(T), path.σⱼTₚ[k]))
 
         # Apply time boundary conditions
         path.agepointsₚ[k] = boundtime(path.agepointsₚ[k], path.boundary)
@@ -340,8 +342,8 @@
     end
 
     # Add a t-T point
-    function addpoint!(path::TtPath{T}, σⱼt::Vector{T}, σⱼT::Vector{T}, k::Int) where {T}
-        @assert eachindex(path.agepointsₚ) == eachindex(path.Tpointsₚ) == eachindex(σⱼt) == eachindex(σⱼT)
+    function addpoint!(path::TtPath{T}, k::Int) where {T}
+        @assert eachindex(path.agepointsₚ) == eachindex(path.Tpointsₚ) == eachindex(path.σⱼtₚ) == eachindex(path.σⱼTₚ)
 
         tmin, tmax = textrema(path.boundary)
         Tmin, Tmax = Textrema(path.boundary)
@@ -358,27 +360,33 @@
         inbounds₋ = firstindex(ages) <= i₋ <= lastindex(ages)
         t₋ = inbounds₋ ? path.agepointsₚ[i₋] : tmin
         T₋ = inbounds₋ ? path.Tpointsₚ[i₋] : Tmin
-        σⱼt₋ = inbounds₋ ? σⱼt[i₋] : (tmax-tmin)/60
-        σⱼT₋ = inbounds₋ ? σⱼT[i₋] : (Tmax-Tmin)/60
+        σⱼt₋ = inbounds₋ ? path.σⱼtₚ[i₋] : (tmax-tmin)/60
+        σⱼT₋ = inbounds₋ ? path.σⱼTₚ[i₋] : (Tmax-Tmin)/60
 
         # Find values for the closest older point
         inbounds₊ = firstindex(ages) <= i₊ <= lastindex(ages)
         t₊ = inbounds₊ ? path.agepointsₚ[i₊] : tmax
         T₊ = inbounds₊ ? path.Tpointsₚ[i₊] : Tmax
-        σⱼt₊ = inbounds₊ ? σⱼt[i₊] : (tmax-tmin)/60
-        σⱼT₊ = inbounds₊ ? σⱼT[i₊] : (Tmax-Tmin)/60
+        σⱼt₊ = inbounds₊ ? path.σⱼtₚ[i₊] : (tmax-tmin)/60
+        σⱼT₊ = inbounds₊ ? path.σⱼTₚ[i₊] : (Tmax-Tmin)/60
 
         # Interpolate
         f = (path.agepointsₚ[k] - t₋) / (t₊ - t₋)
         f *= !isnan(f)
         path.Tpointsₚ[k] = f*T₊ + (1-f)*T₋
-        σⱼt[k] = f*σⱼt₊ + (1-f)*σⱼt₋
-        σⱼT[k] = f*σⱼT₊ + (1-f)*σⱼT₋
+        path.σⱼtₚ[k] = f*σⱼt₊ + (1-f)*σⱼt₋
+        path.σⱼTₚ[k] = f*σⱼT₊ + (1-f)*σⱼT₋
 
         # Move the point from the interpolated value
-        movepoint!(path, k, σⱼt[k], σⱼT[k])
+        return movepoint!(path, k)
+    end
 
-        return path.agepointsₚ[k], path.Tpointsₚ[k]
+    function replacepoint!(path::TtPath{T}, k::Int, n::Int) where {T}
+        path.agepointsₚ[k] = path.agepointsₚ[n]
+        path.Tpointsₚ[k] = path.Tpointsₚ[n]
+        path.σⱼtₚ[k] = path.σⱼtₚ[n]
+        path.σⱼTₚ[k] = path.σⱼTₚ[n]
+        return path
     end
 
     # Adjust initial and final t-T boundaries
@@ -394,6 +402,11 @@
             constraint.Tpointsₚ[i] = boundtemp(rand(constraint.Tdist[i]), boundary)
         end
         return constraint
+    end
+    function movebounds!(path::TtPath)
+        movebounds!(path.constraint, path.boundary)
+        movebounds!(path.boundary)
+        return path
     end
     
     function randomize!(boundary::Boundary)
@@ -444,6 +457,8 @@
     function resetproposal!(path::TtPath)
         copyto!(path.agepointsₚ, path.agepoints)
         copyto!(path.Tpointsₚ, path.Tpoints)
+        copyto!(path.σⱼtₚ, path.σⱼt)
+        copyto!(path.σⱼTₚ, path.σⱼT)
         copyto!(path.constraint.agepointsₚ, path.constraint.agepoints)
         copyto!(path.constraint.Tpointsₚ, path.constraint.Tpoints)
         copyto!(path.boundary.Tpointsₚ, path.boundary.Tpoints)
@@ -451,6 +466,8 @@
     function acceptproposal!(path::TtPath)
         copyto!(path.agepoints, path.agepointsₚ)
         copyto!(path.Tpoints, path.Tpointsₚ)
+        copyto!(path.σⱼt, path.σⱼtₚ)
+        copyto!(path.σⱼT, path.σⱼTₚ)
         copyto!(path.constraint.agepoints, path.constraint.agepointsₚ)
         copyto!(path.constraint.Tpoints, path.constraint.Tpointsₚ)
         copyto!(path.boundary.Tpoints, path.boundary.Tpointsₚ)

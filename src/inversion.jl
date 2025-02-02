@@ -67,11 +67,6 @@
         (any(x->isa(x, ApatiteFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, ApatiteFT), data)) apatites"
         (any(x->isa(x, ApatiteTrackLength), data)) && @info "Inverting for track lengths of $(count(x->isa(x, ApatiteTrackLength), data)) apatite fission tracks"
         (any(x->isa(x, GenericAr), data)) && @info "Inverting for Ar ages of $(count(x->isa(x, GenericAr), data)) generic Ar chronometers"
-        
-        # Standard deviations of Gaussian proposal ("jumping") distributions
-        # for temperature and time
-        σⱼt = fill((tinit-tnow)/60, maxpoints)
-        σⱼT = fill((Tinit-Tnow)/60, maxpoints)
 
         # Simulated annealing of uncertainty
         σₐ = simannealsigma.(1, observed_sigma, σannealing, λannealing)::Vector{T}
@@ -86,8 +81,6 @@
         npointsₚ = npoints
         μcalcₚ = copy(μcalc)::Vector{T}
         σcalcₚ = copy(σcalc)::Vector{T}
-        σⱼtₚ = copy(σⱼt)
-        σⱼTₚ = copy(σⱼT)
 
         # Proposal probabilities (must sum to 1)
         p_move = 0.64
@@ -107,8 +100,6 @@
             resetproposal!(path)
             npointsₚ = npoints
             copyto!(σcalcₚ, σcalc)
-            copyto!(σⱼtₚ, σⱼt)
-            copyto!(σⱼTₚ, σⱼT)
 
             # Randomly choose an option and point (if applicable) to adjust
             r = rand()
@@ -117,26 +108,22 @@
             # Adjust the proposal
             if r < p_move
                 # Move one t-T point
-                movepoint!(path, k, σⱼtₚ[k], σⱼTₚ[k])
+                movepoint!(path, k)
 
             elseif (r < p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point
                 k = npointsₚ = npoints + 1
-                addpoint!(path, σⱼtₚ, σⱼTₚ, k)
+                addpoint!(path, k)
 
             elseif (r < p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
                 npointsₚ = npoints - 1
-                path.agepointsₚ[k] = path.agepointsₚ[npoints]
-                path.Tpointsₚ[k] = path.Tpointsₚ[npoints]
-                σⱼtₚ[k] = σⱼtₚ[npoints]
-                σⱼTₚ[k] = σⱼTₚ[npoints]
+                replacepoint!(path, k, npoints)
 
             elseif (r < p_move+p_birth+p_death+p_bounds)
                 # Move the temperatures of the starting and ending boundaries
-                movebounds!(boundary)
                 # If there's an imposed unconformity or other t-T constraint, adjust within bounds
-                movebounds!(constraint, boundary)
+                movebounds!(path)
 
                 # Move uncertainties
                 dynamicsigma && movesigma!(σcalcₚ, data)
@@ -167,10 +154,10 @@
                 # Update jumping distribution based on size of current accepted p_move
                 if dynamicjumping && r < p_move
                     if path.agepointsₚ[k] != path.agepoints[k]
-                        σⱼtₚ[k] = ℯ * abs(path.agepointsₚ[k] - path.agepoints[k])
+                        path.σⱼtₚ[k] = ℯ * abs(path.agepointsₚ[k] - path.agepoints[k])
                     end
                     if path.Tpointsₚ[k] != path.Tpoints[k]
-                        σⱼTₚ[k] = ℯ * abs(path.Tpointsₚ[k] - path.Tpoints[k])
+                        path.σⱼTₚ[k] = ℯ * abs(path.Tpointsₚ[k] - path.Tpoints[k])
                     end
                 end
 
@@ -181,8 +168,6 @@
                 npoints = npointsₚ
                 copyto!(μcalc, μcalcₚ)
                 copyto!(σcalc, σcalcₚ)
-                copyto!(σⱼt, σⱼtₚ)
-                copyto!(σⱼT, σⱼTₚ)
             end
 
             # Update progress meter every `progress_interval` steps
@@ -215,8 +200,6 @@
             resetproposal!(path)
             npointsₚ = npoints
             copyto!(σcalcₚ, σcalc)
-            copyto!(σⱼtₚ, σⱼt)
-            copyto!(σⱼTₚ, σⱼT)
 
             # Randomly choose an option and point (if applicable) to adjust
             r = rand()
@@ -225,26 +208,22 @@
             # Adjust the proposal
             if r < p_move
                 # Move one t-T point
-                movepoint!(path, k, σⱼtₚ[k], σⱼTₚ[k])
+                movepoint!(path, k)
 
             elseif (r < p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point
                 k = npointsₚ = npoints + 1
-                addpoint!(path, σⱼtₚ, σⱼTₚ, k)
+                addpoint!(path, k)
 
             elseif (r < p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
                 npointsₚ = npoints - 1
-                path.agepointsₚ[k] = path.agepointsₚ[npoints]
-                path.Tpointsₚ[k] = path.Tpointsₚ[npoints]
-                σⱼtₚ[k] = σⱼtₚ[npoints]
-                σⱼTₚ[k] = σⱼTₚ[npoints]
+                replacepoint!(path, k, npoints)
 
             elseif (r < p_move+p_birth+p_death+p_bounds)
                 # Move the temperatures of the starting and ending boundaries
-                movebounds!(boundary)
                 # If there's an imposed unconformity or other t-T constraint, adjust within bounds
-                movebounds!(constraint, boundary)
+                movebounds!(path)
 
                 # Move uncertainties
                 dynamicsigma && movesigma!(σcalcₚ, data)
@@ -273,10 +252,10 @@
                 # Update jumping distribution based on size of current accepted p_move
                 if dynamicjumping && r < p_move
                     if path.agepointsₚ[k] != path.agepoints[k]
-                        σⱼtₚ[k] = ℯ * abs(path.agepointsₚ[k] - path.agepoints[k])
+                        path.σⱼtₚ[k] = ℯ * abs(path.agepointsₚ[k] - path.agepoints[k])
                     end
                     if path.Tpointsₚ[k] != path.Tpoints[k]
-                        σⱼTₚ[k] = ℯ * abs(path.Tpointsₚ[k] - path.Tpoints[k])
+                        path.σⱼTₚ[k] = ℯ * abs(path.Tpointsₚ[k] - path.Tpoints[k])
                     end
                 end
 
@@ -286,8 +265,6 @@
                 npoints = npointsₚ                
                 copyto!(μcalc, μcalcₚ)
                 copyto!(σcalc, σcalcₚ)
-                copyto!(σⱼt, σⱼtₚ)
-                copyto!(σⱼT, σⱼTₚ)
 
                 # Not critical to the function of the MCMC loop, but critical for recording stationary distribution!
                 acceptancedist[n] = true
@@ -296,8 +273,8 @@
             # Record results for analysis and troubleshooting
             lldist[n] = ll
             ndist[n] = npoints # distribution of # of points
-            σⱼtdist[n] = σⱼt[k]
-            σⱼTdist[n] = σⱼT[k]
+            σⱼtdist[n] = path.σⱼt[k]
+            σⱼTdist[n] = path.σⱼT[k]
             resultdist[:,n] .= μcalc # distribution of He ages
 
             # This is the actual output we want -- the distribution of t-T paths (t path is always identical)
@@ -394,11 +371,6 @@
         (any(x->isa(x, ApatiteTrackLength), data)) && @info "Inverting for track lengths of $(count(x->isa(x, ApatiteTrackLength), data)) apatite fission tracks"
         (any(x->isa(x, GenericAr), data)) && @info "Inverting for Ar ages of $(count(x->isa(x, GenericAr), data)) generic Ar chronometers"
 
-        # Standard deviations of Gaussian proposal ("jumping") distributions
-        # for temperature and time
-        σⱼt = fill((tinit-tnow)/60, maxpoints)
-        σⱼT = fill((Tinit-Tnow)/60, maxpoints)
-
         # Simulated annealing of uncertainty
         σₐ = simannealsigma.(1, observed_sigma, σannealing, λannealing)::Vector{T}
         σ = observed_sigma
@@ -412,8 +384,6 @@
         npointsₚ = npoints
         μcalcₚ = copy(μcalc)::Vector{T}
         σcalcₚ = copy(σcalc)::Vector{T}
-        σⱼtₚ = copy(σⱼt)
-        σⱼTₚ = copy(σⱼT)
 
         # Proposal probabilities (must sum to 1)
         p_move = 0.6
@@ -436,8 +406,6 @@
             zdmₚ = zdm
             npointsₚ = npoints
             copyto!(σcalcₚ, σcalc)
-            copyto!(σⱼtₚ, σⱼt)
-            copyto!(σⱼTₚ, σⱼT)
 
             # Randomly choose an option and point (if applicable) to adjust
             r = rand()
@@ -446,26 +414,22 @@
             # Adjust the proposal
             if r < p_move
                 # Move one t-T point
-                movepoint!(path, k, σⱼtₚ[k], σⱼTₚ[k])
+                movepoint!(path, k)
 
             elseif (r < p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point
                 k = npointsₚ = npoints + 1
-                addpoint!(path, σⱼtₚ, σⱼTₚ, k)
+                addpoint!(path, k)
 
             elseif (r < p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
                 npointsₚ = npoints - 1
-                path.agepointsₚ[k] = path.agepointsₚ[npoints]
-                path.Tpointsₚ[k] = path.Tpointsₚ[npoints]
-                σⱼtₚ[k] = σⱼtₚ[npoints]
-                σⱼTₚ[k] = σⱼTₚ[npoints]
+                replacepoint!(path, k, npoints)
 
             elseif (r < p_move+p_birth+p_death+p_bounds)
                 # Move the temperatures of the starting and ending boundaries
-                movebounds!(boundary)
                 # If there's an imposed unconformity or other t-T constraint, adjust within bounds
-                movebounds!(constraint, boundary)
+                movebounds!(path)
 
                 # Move uncertainties
                 dynamicsigma && movesigma!(σcalcₚ, data)
@@ -502,10 +466,10 @@
                 # Update jumping distribution based on size of current accepted p_move
                 if dynamicjumping && r < p_move
                     if path.agepointsₚ[k] != path.agepoints[k]
-                        σⱼtₚ[k] = ℯ * abs(path.agepointsₚ[k] - path.agepoints[k])
+                        path.σⱼtₚ[k] = ℯ * abs(path.agepointsₚ[k] - path.agepoints[k])
                     end
                     if path.Tpointsₚ[k] != path.Tpoints[k]
-                        σⱼTₚ[k] = ℯ * abs(path.Tpointsₚ[k] - path.Tpoints[k])
+                        path.σⱼTₚ[k] = ℯ * abs(path.Tpointsₚ[k] - path.Tpoints[k])
                     end
                 end
 
@@ -518,8 +482,6 @@
                 npoints = npointsₚ
                 copyto!(μcalc, μcalcₚ)
                 copyto!(σcalc, σcalcₚ)
-                copyto!(σⱼt, σⱼtₚ)
-                copyto!(σⱼT, σⱼTₚ)
             end
 
             # Update progress meter every `progress_interval` steps
@@ -556,8 +518,6 @@
             zdmₚ = zdm
             npointsₚ = npoints
             copyto!(σcalcₚ, σcalc)
-            copyto!(σⱼtₚ, σⱼt)
-            copyto!(σⱼTₚ, σⱼT)
 
             # Randomly choose an option and point (if applicable) to adjust
             r = rand()
@@ -566,26 +526,22 @@
             # Adjust the proposal
             if r < p_move
                 # Move one t-T point
-                movepoint!(path, k, σⱼtₚ[k], σⱼTₚ[k])
+                movepoint!(path, k)
 
             elseif (r < p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point
                 k = npointsₚ = npoints + 1
-                addpoint!(path, σⱼtₚ, σⱼTₚ, k)
+                addpoint!(path, k)
 
             elseif (r < p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
                 npointsₚ = npoints - 1
-                path.agepointsₚ[k] = path.agepointsₚ[npoints]
-                path.Tpointsₚ[k] = path.Tpointsₚ[npoints]
-                σⱼtₚ[k] = σⱼtₚ[npoints]
-                σⱼTₚ[k] = σⱼTₚ[npoints]
+                replacepoint!(path, k, npoints)
 
             elseif (r < p_move+p_birth+p_death+p_bounds)
                 # Move the temperatures of the starting and ending boundaries
-                movebounds!(boundary)
                 # If there's an imposed unconformity or other t-T constraint, adjust within bounds
-                movebounds!(constraint, boundary)
+                movebounds!(path)
 
                 # Move uncertainties
                 dynamicsigma && movesigma!(σcalcₚ, data)
@@ -620,10 +576,10 @@
                 # Update jumping distribution based on size of current accepted p_move
                 if dynamicjumping && r < p_move
                     if path.agepointsₚ[k] != path.agepoints[k]
-                        σⱼtₚ[k] = ℯ * abs(path.agepointsₚ[k] - path.agepoints[k])
+                        path.σⱼtₚ[k] = ℯ * abs(path.agepointsₚ[k] - path.agepoints[k])
                     end
                     if path.Tpointsₚ[k] != path.Tpoints[k]
-                        σⱼTₚ[k] = ℯ * abs(path.Tpointsₚ[k] - path.Tpoints[k])
+                        path.σⱼTₚ[k] = ℯ * abs(path.Tpointsₚ[k] - path.Tpoints[k])
                     end
                 end
 
@@ -635,8 +591,6 @@
                 npoints = npointsₚ
                 copyto!(μcalc, μcalcₚ)
                 copyto!(σcalc, σcalcₚ)
-                copyto!(σⱼt, σⱼtₚ)
-                copyto!(σⱼT, σⱼTₚ)
 
                 # Not critical to the function of the MCMC loop, but critical for recording stationary distribution!
                 acceptancedist[n] = true
@@ -645,8 +599,8 @@
             # Record results for analysis and troubleshooting
             lldist[n] = ll
             ndist[n] = npoints # distribution of # of points
-            σⱼtdist[n] = σⱼt[k]
-            σⱼTdist[n] = σⱼT[k]
+            σⱼtdist[n] = path.σⱼt[k]
+            σⱼTdist[n] = path.σⱼT[k]
             resultdist[:,n] .= μcalc # distribution of He ages
             admdist[n] = adm
             zdmdist[n] = zdm
