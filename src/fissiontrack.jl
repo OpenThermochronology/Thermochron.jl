@@ -168,33 +168,41 @@ which they respetively implement include
   `Yamada2007PC`        Parallel Curvilinear zircon model of Yamada et al. 2007 (doi: 10.1016/j.chemgeo.2006.09.002)
 """
 function modelage(zircon::ZirconFT{T}, Tsteps::AbstractVector, am::ZirconAnnealingModel{T}) where {T <: AbstractFloat}
+    agesteps = zircon.agesteps
     tsteps = zircon.tsteps
     @assert issorted(tsteps)
-    @assert eachindex(tsteps) == eachindex(Tsteps)
+    @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps)
     teq = dt = step(tsteps)
     r = reltracklength(teq, Tsteps[end], am)
-    ftage = dt * reltrackdensityzrn(r)
+    ΣUw = Uw = exp(λ238U * agesteps[end]) # To correct for U decay
+    ftage = dt * reltrackdensityzrn(r) * Uw
     @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
         teq = equivalenttime(teq, Tsteps[i+1], Tsteps[i], am) + dt
         r = reltracklength(teq, Tsteps[i], am)
-        ftage += dt * reltrackdensityzrn(r)
+        ΣUw += Uw = exp(λ238U * agesteps[i])
+        ftage += dt * reltrackdensityzrn(r) * Uw
     end
-    return ftage
+    μUw = ΣUw/length(tsteps)
+    return ftage/μUw
 end
 function modelage(apatite::ApatiteFT{T}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}) where {T <: AbstractFloat}
+    agesteps = apatite.agesteps
     tsteps = apatite.tsteps
     rmr0 = apatite.rmr0
     @assert issorted(tsteps)
-    @assert eachindex(tsteps) == eachindex(Tsteps)
+    @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps)
     teq = dt = step(tsteps)
     r = rlr(reltracklength(teq, Tsteps[end], am), rmr0)
-    ftage = dt * reltrackdensityap(r)
+    ΣUw = Uw = exp(λ238U * agesteps[end]) # To correct for U decay
+    ftage = dt * reltrackdensityap(r) * Uw
     @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
         teq = equivalenttime(teq, Tsteps[i+1], Tsteps[i], am) + dt
         r = rlr(reltracklength(teq, Tsteps[i], am), rmr0)
-        ftage += dt * reltrackdensityap(r)
+        ΣUw += Uw = exp(λ238U * agesteps[i])
+        ftage += dt * reltrackdensityap(r) * Uw
     end
-    return ftage
+    μUw = ΣUw/length(tsteps)
+    return ftage/μUw
 end
 
 function model_ll(mineral::FissionTrackSample, Tsteps::AbstractVector, am::AnnealingModel)
@@ -220,19 +228,20 @@ which they respetively implement include
   `Ketcham2007FC`       Fanning Curvilinear apatite model of Ketcham et al. 2007 (doi: 10.2138/am.2007.2281)
 """
 function modellength(track::ApatiteTrackLength{T}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}) where {T <: AbstractFloat}
+    agesteps = track.agesteps
     tsteps = track.tsteps
     rmr0 = track.rmr0
     r = track.r
     pr = track.pr
     @assert issorted(tsteps)
-    @assert eachindex(tsteps) == eachindex(Tsteps) == eachindex(r)
+    @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps) == eachindex(r)
     teq = dt = step(tsteps)
     r[end] = rlr(reltracklength(teq, Tsteps[end], am), rmr0)
-    pr[end] = reltrackdensityap(r[end])
+    pr[end] = reltrackdensityap(r[end]) * exp(λ238U * agesteps[end])
     @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
         teq = equivalenttime(teq, Tsteps[i+1], Tsteps[i], am) + dt
         r[i] = rlr(reltracklength(teq, Tsteps[i], am), rmr0)
-        pr[i] = reltrackdensityap(r[i])
+        pr[i] = reltrackdensityap(r[i]) * exp(λ238U * agesteps[i])
     end
     return nanmean(r, pr), nanstd(r, pr)
 end

@@ -89,8 +89,8 @@ Tsteps = range(650, 0, length=length(tsteps))
 calc = zeros(length(chrons))
 calcuncert = zeros(length(chrons))
 Thermochron.modelages!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Ketcham2007FC())
-@test round.(calc, sigdigits=7) ≈ [138.4124, 232.8114, 144.2487, 233.9706, 902.567, 1010.98, 386.8558, 388.6112, 122.8127, 130.7147, 684.3814, 303.4248, 14.31783]
-@test calcuncert ≈ [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.1710533944657444]
+@test round.(calc, sigdigits=7) ≈ [138.4124, 232.8114, 144.2487, 233.9706, 902.567, 1010.98, 386.8558, 388.6112, 122.8127, 130.7147, 570.1749, 244.9894, 14.29893]
+@test calcuncert ≈ [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.1785910438098222]
 
 # Modern input format, Minnesota dataset
 chrons = chronometers(ds, model)
