@@ -44,6 +44,8 @@ struct ApatiteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
     tsteps::FloatRange      # [Ma]
     r::Vector{T}            # [unitless]
     pr::Vector{T}           # [unitless]
+    ledges::FloatRange      # [um] Length distribution edges
+    lll::Vector{T}          # [um] Length log likelihood
     dpar::T                 # [μm]
     F::T                    # [APFU]
     Cl::T                   # [APFU]
@@ -56,8 +58,7 @@ function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
         lcmod=lcmod(length, angle),
         agesteps, 
         tsteps=reverse(agesteps), 
-        r=zeros(T, size(agesteps)),
-        pr=zeros(T, size(agesteps)),
+        ledges=(5.0:0.03:20.0),
         dpar=T(NaN), 
         F=T(NaN), 
         Cl=T(NaN), 
@@ -74,6 +75,9 @@ function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
             0.83
         end
     end
+    r=zeros(T, size(agesteps))
+    pr=zeros(T, size(agesteps))
+    lll=fill(typemin(T), Base.length(ledges)-1)
     ApatiteTrackLength(
         T(length),
         T(angle),
@@ -82,6 +86,8 @@ function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
         floatrange(tsteps),
         T.(r),
         T.(pr),
+        floatrange(ledges),
+        T.(lll),
         T(dpar),
         T(F),
         T(Cl),

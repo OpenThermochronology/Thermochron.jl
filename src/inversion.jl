@@ -36,8 +36,6 @@
         tsteps = floatrange(model.tsteps)
         @assert tsteps == reverse(agesteps)
         @assert issorted(tsteps)
-        tnow, tinit = extrema(boundary.agepoints)
-        Tnow, Tinit = extrema(boundary.T₀)
         dt = T(model.dt)::T
         σmodel = T(haskey(model, :σmodel) ? model.σmodel : 0)::T
         σannealing = T(haskey(model, :σannealing) ? model.σannealing : 125)::T
@@ -339,8 +337,6 @@
         tsteps = floatrange(model.tsteps)
         @assert tsteps == reverse(agesteps)
         @assert issorted(tsteps)
-        tnow, tinit = extrema(boundary.agepoints)
-        Tnow, Tinit = extrema(boundary.T₀)
         dt = T(model.dt)::T
         σmodel = T(haskey(model, :σmodel) ? model.σmodel : 0)::T
         σannealing = T(haskey(model, :σannealing) ? model.σannealing : 125)::T

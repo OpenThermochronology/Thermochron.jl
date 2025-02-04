@@ -550,7 +550,7 @@
             elseif isa(c, ApatiteFT)
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), aftm)
             elseif isa(c, ApatiteTrackLength)
-                l,σ = modellength(c, @views(Tsteps[first_index:end]), aftm) .* aftm.l0
+                l,σ = modellength(c, @views(Tsteps[first_index:end]), aftm)
                 μcalc[i] = l
                 σcalc[i] = sqrt(σ^2 + aftm.l0_sigma^2)
             elseif isa(c, GenericHe) || isa(c, GenericAr)

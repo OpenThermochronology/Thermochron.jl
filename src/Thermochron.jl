@@ -12,6 +12,7 @@ module Thermochron
     using ProgressMeter: Progress, update!, finish!
     using LsqFit: curve_fit
     using BangBang: setproperty!!
+    using LogExpFunctions: logaddexp, logsubexp, logsumexp
 
     const FloatRange = typeof(1.0:1.0:10.0)
     floatrange(x) = range(Float64(first(x)), Float64(last(x)), length=length(x))
