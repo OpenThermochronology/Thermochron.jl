@@ -6,24 +6,10 @@
         σ² = sigma^2
         -0.5*(log(2*pi*σ²) + δ^2/σ²)
     end
-    function norm_ll(mu::AbstractVector{T}, sigma::AbstractVector{T}, x::AbstractVector{T}) where {T<:Number}
-        ll = zero(float(T))
-        for i in eachindex(mu, sigma, x)
-            ll += norm_ll(mu[i], sigma[i], x[i])
-        end
-        return ll
-    end
     @inline function norm_ll(mu::Number, sigma::Number, x::Number, x_sigma::Number)
         δ = x - mu
         σ² = sigma^2 + x_sigma^2
         -0.5*(log(2*pi*σ²) + δ^2/σ²)
-    end
-    function norm_ll(mu::AbstractVector{T}, sigma::AbstractVector{T}, x::AbstractVector{T}, x_sigma::AbstractVector{T}) where {T<:Number}
-        ll = zero(float(T))
-        for i in eachindex(mu, sigma, x, x_sigma)
-            ll += norm_ll(mu[i], sigma[i], x[i], x_sigma[i])
-        end
-        return ll
     end
 
     """
@@ -233,14 +219,14 @@
     end
 
     # Log likelihood functions for ZRDAAM and RDAAM kinetic uncertainties
-    function model_ll(zdmₚ::ZRDAAM, zdm::ZRDAAM)
+    function kinetic_ll(zdmₚ::ZRDAAM, zdm::ZRDAAM)
         norm_ll(log(zdm.DzD0), zdm.DzD0_logsigma, log(zdmₚ.DzD0)) + 
         norm_ll(log(zdm.DzEa), zdm.DzEa_logsigma, log(zdmₚ.DzEa)) + 
         norm_ll(log(zdm.DN17D0), zdm.DN17D0_logsigma, log(zdmₚ.DN17D0)) + 
         norm_ll(log(zdm.DN17Ea), zdm.DN17Ea_logsigma, log(zdmₚ.DN17Ea)) +
         norm_ll(zdm.rmr0, zdm.rmr0_sigma, zdmₚ.rmr0)
     end
-    function model_ll(admₚ::RDAAM, adm::RDAAM)
+    function kinetic_ll(admₚ::RDAAM, adm::RDAAM)
         norm_ll(log(adm.D0L), adm.D0L_logsigma, log(admₚ.D0L)) + 
         norm_ll(log(adm.EaL), adm.EaL_logsigma, log(admₚ.EaL)) + 
         norm_ll(log(adm.EaTrap), adm.EaTrap_logsigma, log(admₚ.EaTrap))+
@@ -520,8 +506,7 @@
     end
 
     # Utility function to calculate model ages for all chronometers at once
-    function modelages!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, data::Vector{<:Chronometer{T}}, Tsteps::AbstractVector{T}, zdm::ZirconHeliumModel{T}, adm::ApatiteHeliumModel{T}, zftm::ZirconAnnealingModel, aftm::ApatiteAnnealingModel{T}) where {T<:AbstractFloat}
-        @assert eachindex(μcalc) == eachindex(σcalc) == eachindex(data)
+    function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, data::Vector{<:Chronometer{T}}, Tsteps::AbstractVector{T}, zdm::ZirconHeliumModel{T}, adm::ApatiteHeliumModel{T}, zftm::ZirconAnnealingModel, aftm::ApatiteAnnealingModel{T}) where {T<:AbstractFloat}
         imax = argmax(i->length(data[i].agesteps), eachindex(data))
         tsteps = data[imax].tsteps
         tmax = last(tsteps)
@@ -533,31 +518,35 @@
         isa(zdm, ZRDAAM) && anneal!(data, ZirconHe{T}, tsteps, Tsteps, zdm)
         # Pre-anneal RDAAM samples, if any
         isa(adm, RDAAM) && anneal!(data, ApatiteHe{T}, tsteps, Tsteps, adm)
-
-        for i in eachindex(data)
+        
+        ll = zero(T)
+        for i in eachindex(data, μcalc, σcalc)
             c = data[i]
             first_index = 1 + Int((tmax - last(c.tsteps))÷dt)
-            if isa(c, ZirconHe)
+            if isa(c, GenericAr) || isa(c, GenericHe)
+                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]))
+                ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))
+            elseif isa(c, ZirconHe)
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), zdm)
+                ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))
             elseif isa(c, ApatiteHe)
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), adm)
+                ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))
             elseif isa(c, ZirconFT)
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), zftm)
+                ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))
             elseif isa(c, ApatiteFT)
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), aftm)
+                ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))
             elseif isa(c, ApatiteTrackLength)
-                l,σ = modellength(c, @views(Tsteps[first_index:end]), aftm)
-                μcalc[i] = l
-                σcalc[i] = sqrt(σ^2 + aftm.l0_sigma^2)
-            elseif isa(c, GenericHe) || isa(c, GenericAr)
-                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]))
+                μcalc[i], _ = modellength(c, @views(Tsteps[first_index:end]), aftm)
+                ll += model_ll(c)
             else
                 # NaN if not calculated
                 μcalc[i] = T(NaN)
-
             end
         end
-        return μcalc, σcalc
+        return ll
     end
     
 ## --- Ensure non-allocation of linear algebra

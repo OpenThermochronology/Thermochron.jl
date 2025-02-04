@@ -10,7 +10,7 @@ BLAS.get_num_threads() > 2 && BLAS.set_num_threads(2)
 
 model = (
     burnin = 350,               # [n] How long should we wait for MC to converge (become stationary)
-    nsteps = 250,               # [n] How many steps of the Markov chain should we run after burn-in?
+    nsteps = 350,               # [n] How many steps of the Markov chain should we run after burn-in?
     dr = 1.0,                   # [μ] Radius step size
     dt = 10.0,                  # [Ma] time step size
     dTmax = 25.0,               # [C/step] Maximum reheating/burial per model timestep

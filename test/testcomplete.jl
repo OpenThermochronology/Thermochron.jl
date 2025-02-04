@@ -10,7 +10,7 @@ BLAS.get_num_threads() > 2 && BLAS.set_num_threads(2)
 
 model = (
     burnin = 350,               # [n] How long should we wait for MC to converge (become stationary)
-    nsteps = 250,               # [n] How many steps of the Markov chain should we run after burn-in?
+    nsteps = 350,               # [n] How many steps of the Markov chain should we run after burn-in?
     dr = 1.0,                   # [μ] Radius step size
     dt = 10.0,                  # [Ma] time step size
     dTmax = 25.0,               # [C/step] Maximum reheating/burial per model timestep
@@ -88,9 +88,9 @@ Tsteps = range(650, 0, length=length(tsteps))
 
 calc = zeros(length(chrons))
 calcuncert = zeros(length(chrons))
-Thermochron.modelages!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Ketcham2007FC())
+@test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Ketcham2007FC()) ≈ -386.50340171318004
 @test round.(calc, sigdigits=7) ≈ [138.4124, 232.8114, 144.2487, 233.9706, 902.567, 1010.98, 386.8558, 388.6112, 122.8127, 130.7147, 570.1749, 244.9894, 14.29893]
-@test calcuncert ≈ [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.1785910438098222]
+@test calcuncert ≈ zeros(13)
 
 # Modern input format, Minnesota dataset
 chrons = chronometers(ds, model)
@@ -104,7 +104,7 @@ Tsteps = range(model.Tinit, model.Tnow, length=length(tsteps))
 
 calc = zeros(length(chrons))
 calcuncert = zeros(length(chrons))
-Thermochron.modelages!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Ketcham2007FC())
+@test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Ketcham2007FC()) ≈  -26867.66124989401
 @test round.(calc, sigdigits=5) ≈ [1313.9, 1320.7, 1185.0, 1243.0, 1216.1, 1335.4, 1141.7, 1094.4, 1170.2, 923.8, 723.59, 201.76, 429.67, 95.576, 259.05, 419.15, 2.9065, 6.1464, 0.00063415, 27.545, 0.007082, 55.056, 2.0682, 174.81, 283.3, 287.74, 266.09, 240.19, 267.84, 244.36, 274.74, 328.26, 322.88, 352.43]
 @test calcuncert ≈ zeros(length(chrons))
 # println(round.(calc, sigdigits=5))
@@ -127,7 +127,7 @@ set_age_sigma!(chrons, zeros(23), ZirconHe)
 # Legacy input format
 chrons2 = chronometers(data, model)
 @test typeof.(chrons) == typeof.(chrons2)
-Thermochron.modelages!(calc, calcuncert, chrons2, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Ketcham2007FC())
+Thermochron.model!(calc, calcuncert, chrons2, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Ketcham2007FC())
 @test round.(calc, sigdigits=5) ≈ [1313.9, 1320.7, 1185.0, 1243.0, 1216.1, 1335.4, 1141.7, 1094.4, 1170.2, 923.8, 723.59, 201.76, 429.67, 95.576, 259.05, 419.15, 2.9065, 6.1464, 0.00063415, 27.545, 0.007082, 55.056, 2.0682, 174.81, 283.3, 287.74, 266.09, 240.19, 267.84, 244.36, 274.74, 328.26, 322.88, 352.43]
 @test calcuncert ≈ zeros(length(chrons))
 # println(round.(calc, sigdigits=5))

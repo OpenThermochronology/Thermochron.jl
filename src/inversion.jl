@@ -19,8 +19,6 @@
     MCMC(data::NamedTuple, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where {T <: AbstractFloat} = MCMC(chronometers(T, data, model), model, boundary, constraint, detail)
     function MCMC(data::Vector{<:ChronometerUnion{T}}, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
         # Process inputs
-        observed = val.(data)::Vector{T}
-        observed_sigma = err.(data)::Vector{T}
         burnin = (haskey(model, :burnin) ? model.burnin : 5*10^5)::Int
         nsteps = (haskey(model, :nsteps) ? model.nsteps : 10^6)::Int
         minpoints = (haskey(model, :minpoints) ? model.minpoints : 1)::Int
@@ -41,16 +39,6 @@
         T0annealing = T(haskey(model, :σannealing) ? model.σannealing : 125)::T
         λannealing = T(haskey(model, :λannealing) ? model.λannealing : 10/burnin)::T
 
-        # Struct to hold t-T path proposals and related variables
-        path = TtPath(agesteps, constraint, boundary, maxpoints)
-
-        # Initial propopsal
-        initialproposal!(path, npoints, dTmax) 
-
-        # Prepare to calculate model ages for initial proposal
-        μcalc = zeros(T, length(observed))
-        σcalc = fill(T(σmodel), length(observed))
-
         # Damage models for each mineral
         zdm = (haskey(model, :zdm) ? model.zdm : ZRDAAM())::ZirconHeliumModel{T}
         adm = (haskey(model, :adm) ? model.adm : RDAAM())::ApatiteHeliumModel{T}
@@ -66,9 +54,19 @@
         (any(x->isa(x, ApatiteTrackLength), data)) && @info "Inverting for track lengths of $(count(x->isa(x, ApatiteTrackLength), data)) apatite fission tracks"
         (any(x->isa(x, GenericAr), data)) && @info "Inverting for Ar ages of $(count(x->isa(x, GenericAr), data)) generic Ar chronometers"
 
+        # Struct to hold t-T path proposals and related variables
+        path = TtPath(agesteps, constraint, boundary, maxpoints)
+
+        # Initial propopsal
+        initialproposal!(path, npoints, dTmax) 
+
+        # Prepare to calculate model ages for initial proposal
+        μcalc = zeros(T, length(data))
+        σcalc = fill(T(σmodel), length(data))
+
         # Log-likelihood for initial proposal
-        modelages!(μcalc, σcalc, data, path.Tsteps, zdm, adm, zftm, aftm)
-        ll = llₚ = norm_ll(observed, observed_sigma, μcalc, σcalc) + diff_ll(path.Tsteps, dTmax, dTmax_sigma) + (simplified ? -log(npoints) : zero(T))
+        ll = llₚ = model!(μcalc, σcalc, data, path.Tsteps, zdm, adm, zftm, aftm) + 
+            diff_ll(path.Tsteps, dTmax, dTmax_sigma) + (simplified ? -log(npoints) : zero(T))
 
         # Variables to hold proposals
         npointsₚ = npoints
@@ -131,12 +129,9 @@
                 (pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto brestart
             end
 
-            # Calculate model ages for each grain
-            modelages!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdm, adm, zftm, aftm)
-
-            # Calculate log likelihood of proposal
-            llₚ = diff_ll(path.Tsteps, dTmax, dTmax_sigma)
-            llₚ += norm_ll(observed, observed_sigma, μcalcₚ, σcalcₚ)
+            # Calculate model ages for each grain, log likelihood of proposal
+            llₚ = model!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdm, adm, zftm, aftm)
+            llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             simplified && (llₚ += -log(npointsₚ))
 
             # Accept or reject proposal based on likelihood
@@ -168,7 +163,7 @@
         # distributions to populate
         tpointdist = fill(T(NaN), totalpoints, nsteps)
         Tpointdist = fill(T(NaN), totalpoints, nsteps)
-        resultdist = fill(T(NaN), length(observed), nsteps)
+        resultdist = fill(T(NaN), length(data), nsteps)
         σⱼtdist = zeros(T, nsteps)
         σⱼTdist = zeros(T, nsteps)
         lldist = zeros(T, nsteps)
@@ -225,12 +220,9 @@
                 (pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto crestart
             end
 
-            # Calculate model ages for each grain
-            modelages!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdm, adm, zftm, aftm)
-
-            # Calculate log likelihood of proposal
-            llₚ = diff_ll(path.Tsteps, dTmax, dTmax_sigma)
-            llₚ += norm_ll(observed, observed_sigma, μcalcₚ, σcalcₚ)
+            # Calculate model ages for each grain, log likelihood of proposal
+            llₚ = model!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdm, adm, zftm, aftm)
+            llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             simplified && (llₚ += -log(npointsₚ))
 
             # Accept or reject proposal based on likelihood
@@ -309,8 +301,6 @@
     MCMC_varkinetics(data::NamedTuple, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where {T <: AbstractFloat} = MCMC_varkinetics(chronometers(T, data, model), model, boundary, constraint, detail)
     function MCMC_varkinetics(data::Vector{<:ChronometerUnion{T}}, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
         # Process inputs
-        observed = val.(data)::Vector{T}
-        observed_sigma = err.(data)::Vector{T}
         burnin = (haskey(model, :burnin) ? model.burnin : 5*10^5)::Int
         nsteps = (haskey(model, :nsteps) ? model.nsteps : 10^6)::Int
         minpoints = (haskey(model, :minpoints) ? model.minpoints : 1)::Int
@@ -330,16 +320,6 @@
         σmodel = T(haskey(model, :σmodel) ? model.σmodel : 0)::T
         T0annealing = T(haskey(model, :σannealing) ? model.σannealing : 25)::T
         λannealing = T(haskey(model, :λannealing) ? model.λannealing : 10/burnin)::T
-
-        # Struct to hold t-T path proposals and related variables
-        path = TtPath(agesteps, constraint, boundary, maxpoints)
-
-        # Initial propopsal
-        initialproposal!(path, npoints, dTmax) 
-
-        # Prepare to calculate model ages for initial proposal
-        μcalc = zeros(T, length(observed))
-        σcalc = fill(T(σmodel), length(observed))
         
         # Damage models for each mineral
         zdm₀ = zdm = zdmₚ = (haskey(model, :zdm) ? model.zdm : ZRDAAM())::ZirconHeliumModel{T}
@@ -356,9 +336,19 @@
         (any(x->isa(x, ApatiteTrackLength), data)) && @info "Inverting for track lengths of $(count(x->isa(x, ApatiteTrackLength), data)) apatite fission tracks"
         (any(x->isa(x, GenericAr), data)) && @info "Inverting for Ar ages of $(count(x->isa(x, GenericAr), data)) generic Ar chronometers"
         
+        # Struct to hold t-T path proposals and related variables
+        path = TtPath(agesteps, constraint, boundary, maxpoints)
+
+        # Initial propopsal
+        initialproposal!(path, npoints, dTmax)
+        
+        # Prepare to calculate model ages for initial proposal
+        μcalc = zeros(T, length(data))
+        σcalc = fill(T(σmodel), length(data))
+
         # Log-likelihood for initial proposal
-        modelages!(μcalc, σcalc, data, path.Tsteps, zdm, adm, zftm, aftm)
-        ll = llₚ = norm_ll(observed, observed_sigma, μcalc, σcalc) + diff_ll(path.Tsteps, dTmax, dTmax_sigma) + model_ll(admₚ, adm₀) + model_ll(zdmₚ, zdm₀) + (simplified ? -log(npoints) : zero(T))
+        ll = llₚ = model!(μcalc, σcalc, data, path.Tsteps, zdm, adm, zftm, aftm) + 
+            diff_ll(path.Tsteps, dTmax, dTmax_sigma) + kinetic_ll(admₚ, adm₀) + kinetic_ll(zdmₚ, zdm₀) + (simplified ? -log(npoints) : zero(T))
         
         # Variables to hold proposals
         npointsₚ = npoints
@@ -429,13 +419,10 @@
                 (pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto brestart
             end
                
-            # Calculate model ages for each grain
-            modelages!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdmₚ, admₚ, zftm, aftm)
-
-            # Calculate log likelihood of proposal
-            llₚ = diff_ll(path.Tsteps, dTmax, dTmax_sigma)
-            llₚ += model_ll(admₚ, adm₀) + model_ll(zdmₚ, zdm₀)
-            llₚ += norm_ll(observed, observed_sigma, μcalcₚ, σcalcₚ)
+            # Calculate model ages for each grain, log likelihood of proposal
+            llₚ = model!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdmₚ, admₚ, zftm, aftm)
+            llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
+            llₚ += kinetic_ll(admₚ, adm₀) + kinetic_ll(zdmₚ, zdm₀)
             simplified && (llₚ += -log(npointsₚ))
 
             # Accept or reject proposal based on likelihood
@@ -469,7 +456,7 @@
         # distributions to populate
         tpointdist = fill(T(NaN), totalpoints, nsteps)
         Tpointdist = fill(T(NaN), totalpoints, nsteps)
-        resultdist = fill(T(NaN), length(observed), nsteps)
+        resultdist = fill(T(NaN), length(data), nsteps)
         σⱼtdist = zeros(T, nsteps)
         σⱼTdist = zeros(T, nsteps)
         lldist = zeros(T, nsteps)
@@ -535,13 +522,10 @@
                 (pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto crestart
             end
 
-            # Calculate model ages for each grain
-            modelages!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdmₚ, admₚ, zftm, aftm)
-
-            # Calculate log likelihood of proposal
-            llₚ = diff_ll(path.Tsteps, dTmax, dTmax_sigma)
-            llₚ += model_ll(admₚ, adm₀) + model_ll(zdmₚ, zdm₀)
-            llₚ += norm_ll(observed, observed_sigma, μcalcₚ, σcalcₚ)
+            # Calculate model ages for each grain, log likelihood of proposal
+            llₚ = model!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdmₚ, admₚ, zftm, aftm)
+            llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
+            llₚ += kinetic_ll(admₚ, adm₀) + kinetic_ll(zdmₚ, zdm₀)
             simplified && (llₚ += -log(npointsₚ))
 
             # Accept or reject proposal based on likelihood
