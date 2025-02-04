@@ -249,19 +249,15 @@
     
     """
     ```julia
-    simannealsigma(n::Integer, σₑ::Number, σₐ::Number, λₐ::Number)
+    simannealT(n::Integer, Tₐ::Number, λₐ::Number)
     ```
-    To avoid getting stuck in local optima, combines empirically observed 
-    uncertainty `σₑ` in quadrature with an annealling uncertainty which 
-    slowly declines from `σₐ` to `0` with a decay constant of `λₐ`, or in  
-    other words:
-
-        σannealed = sqrt(σₑ^2 + (σₐ*exp(-λ*n))^2)
+    To avoid getting stuck in local optima, increase the probability 
+    of accepting new proposals at higher annealing "temperature"
 
     """
-    function simannealsigma(n::Integer, σₑ::Number, σₐ::Number, λₐ::Number)
+    function simannealT(n::Integer, Tₐ::Number, λₐ::Number)
         @assert λₐ >= 0
-        sqrt(σₑ^2 + (σₐ * exp(-λₐ*n))^2)
+        return max(Tₐ-1, 0) * exp(-λₐ*n) + 1
     end
 
 

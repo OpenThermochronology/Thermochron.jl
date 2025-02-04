@@ -27,10 +27,13 @@
 
     # # # # # # # # # # Choice of regional thermochron data # # # # # # # # # #
 
-    # Literature samples from Guenthner et al. 2013 (AJS), Minnesota
-    # (23 ZirconHe, 11 ApatiteHe)
-    name = "Minnesota"
-    ds = importdataset("minnesota.csv", ',', importas=:Tuple)
+    # # Literature samples from Guenthner et al. 2013 (AJS), Minnesota
+    # # (23 ZirconHe, 11 ApatiteHe)
+    # name = "Minnesota"
+    # ds = importdataset("minnesota.csv", ',', importas=:Tuple)
+    name = "Pikes"
+    ds = importdataset("pikes.csv", ',', importas=:Tuple)
+
 
     # # Literature samples from McDannell et al. 2022 (doi: 10.1130/G50315.1), Manitoba
     # # (12 ZirconHe, 5 ApatiteHe, 47 ApatiteFT, 269 ApatiteTrackLength)
@@ -40,8 +43,8 @@
 ## --- Prepare problem
 
     model = (
-        nsteps = 1000000,               # [n] How many steps of the Markov chain should we run?
-        burnin = 350000,                # [n] How long should we wait for MC to converge (become stationary)
+        nsteps = 1000,               # [n] How many steps of the Markov chain should we run?
+        burnin = 350,                # [n] How long should we wait for MC to converge (become stationary)
         dr = 1.0,                       # [μm] Radius step size
         dt = 8.0,                       # [Ma] Time step size
         dTmax = 10.0,                   # [Ma/dt] Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
@@ -57,14 +60,14 @@
         # Damage and annealing models for diffusivity (specify custom kinetics if desired)
         adm = RDAAM(),                  # Flowers et al. 2009 (doi: 10.1016/j.gca.2009.01.015) apatite diffusivity model
         zdm = ZRDAAM(),                 # Guenthner et al. 2013 (doi: 10.2475/03.2013.01) zircon diffusivity model
-        aftm = Ketcham2007FC(),         # Ketcham et al. 2007 (doi: 10.2138/am.2007.2281) apatite fission track model
+        aftm = Ketcham1999FC(),         # Ketcham et al. 2007 (doi: 10.2138/am.2007.2281) apatite fission track model
         zftm = Yamada2007PC(),          # Yamada et al. 2007 (doi: 10.1016/j.chemgeo.2006.09.002) zircon fission track model
         # Model uncertainty is not well known (depends on annealing parameters,
         # decay constants, diffusion parameters, etc.), but is certainly non-zero.
         # Here we add (in quadrature) a blanket model uncertainty of 5 Ma.
         σmodel = 5.0,                   # [Ma] model uncertainty
-        σannealing = 55.0,              # [Ma] initial annealing uncertainty 
-        λannealing = 1 ./ 100_000       # [1/n] annealing decay 
+        # Optional simulated annealing during burnin
+        T0annealing = 25,               # [unitless] initial annealing "temperature" (set to 0 for no simulated annealing)
     )
 
     # Crystallization ages and start time
@@ -78,13 +81,13 @@
     # Default: no detail interval
     detail = DetailInterval()
 
-    # # Uncomment this section to require greater t-T node density in some time interval
-    # # (typically the youngest end of the total time interval, where you may expect the data more resolving power)
-    # detail = DetailInterval(
-    #     agemin = 0.0, # Youngest end of detail interval
-    #     agemax = 541.0, # Oldest end of detail interval
-    #     minpoints = 7, # Minimum number of points in detail interval
-    # )
+    # Uncomment this section to require greater t-T node density in some time interval
+    # (typically the youngest end of the total time interval, where you may expect the data more resolving power)
+    detail = DetailInterval(
+        agemin = 0.0, # Youngest end of detail interval
+        agemax = 541.0, # Oldest end of detail interval
+        minpoints = 7, # Minimum number of points in detail interval
+    )
 
     # Boundary conditions (e.g. 10C at present and 650 C at the time of zircon formation).
     boundary = Boundary(
@@ -98,13 +101,13 @@
     # Default: No constraints are imposed
     constraint = Constraint()
 
-    # # Uncomment this section if you wish to impose an unconformity or other constraint
-    # # at any point in the record.
-    # constraint = Constraint(
-    #     agedist = [Uniform(500,580),],  # [Ma] Age distribution
-    #     Tdist =   [   Uniform(0,50),],  # [C] Temperature distribution
-    # )
-    # name *= "_unconf"
+    # Uncomment this section if you wish to impose an unconformity or other constraint
+    # at any point in the record.
+    constraint = Constraint(
+        agedist = [ Normal(974,122),  Uniform(497,509),   Uniform(305,310)],  # [Ma] Age distribution
+        Tdist =   [  Uniform(0,200),     Uniform(0,50),      Uniform(0,50)],  # [C] Temperature distribution
+    )
+    name *= "_unconf"
 
 ## --- Process data into Chronometer objects
 
@@ -130,8 +133,8 @@
 ## --- Invert for maximum likelihood t-T path
 
     # Run Markov Chain
-    # @time tT = MCMC(chrons, model, boundary, constraint, detail)
-    @time tT, kinetics = MCMC_varkinetics(chrons, model, boundary, constraint, detail)
+    @time tT = MCMC(chrons, model, boundary, constraint, detail)
+    # @time tT, kinetics = MCMC_varkinetics(chrons, model, boundary, constraint, detail)
     @info """tT.tpointdist & tT.Tpointdist collected, size: $(size(tT.Tpointdist))
     Mean log-likelihood: $(nanmean(view(tT.lldist, model.burnin:model.nsteps)))
     Mean acceptance rate: $(nanmean(view(tT.acceptancedist, model.burnin:model.nsteps)))

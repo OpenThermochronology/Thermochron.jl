@@ -38,8 +38,8 @@
         @assert issorted(tsteps)
         dt = T(model.dt)::T
         σmodel = T(haskey(model, :σmodel) ? model.σmodel : 0)::T
-        σannealing = T(haskey(model, :σannealing) ? model.σannealing : 125)::T
-        λannealing = T(haskey(model, :λannealing) ? model.λannealing : 2/burnin)::T
+        T0annealing = T(haskey(model, :σannealing) ? model.σannealing : 125)::T
+        λannealing = T(haskey(model, :λannealing) ? model.λannealing : 10/burnin)::T
 
         # Struct to hold t-T path proposals and related variables
         path = TtPath(agesteps, constraint, boundary, maxpoints)
@@ -66,14 +66,9 @@
         (any(x->isa(x, ApatiteTrackLength), data)) && @info "Inverting for track lengths of $(count(x->isa(x, ApatiteTrackLength), data)) apatite fission tracks"
         (any(x->isa(x, GenericAr), data)) && @info "Inverting for Ar ages of $(count(x->isa(x, GenericAr), data)) generic Ar chronometers"
 
-        # Simulated annealing of uncertainty
-        σₐ = simannealsigma.(1, observed_sigma, σannealing, λannealing)::Vector{T}
-        σ = observed_sigma
-
         # Log-likelihood for initial proposal
         modelages!(μcalc, σcalc, data, path.Tsteps, zdm, adm, zftm, aftm)
-        llna = llnaₚ = diff_ll(path.Tsteps, dTmax, dTmax_sigma) + (simplified ? -log(npoints) : zero(T))
-        ll = llₚ =  norm_ll(observed, σₐ, μcalc, σcalc) + llna
+        ll = llₚ = norm_ll(observed, observed_sigma, μcalc, σcalc) + diff_ll(path.Tsteps, dTmax, dTmax_sigma) + (simplified ? -log(npoints) : zero(T))
 
         # Variables to hold proposals
         npointsₚ = npoints
@@ -140,14 +135,12 @@
             modelages!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdm, adm, zftm, aftm)
 
             # Calculate log likelihood of proposal
-            llnaₚ = diff_ll(path.Tsteps, dTmax, dTmax_sigma)
-            simplified && (llnaₚ += -log(npointsₚ))
-            σₐ .= simannealsigma.(n, observed_sigma, σannealing, λannealing)
-            llₚ = norm_ll(observed, σₐ, μcalcₚ, σcalcₚ) + llnaₚ
-            llₗ = norm_ll(observed, σₐ, μcalc, σcalc) + llna # Recalulate last one too with new σₐ
+            llₚ = diff_ll(path.Tsteps, dTmax, dTmax_sigma)
+            llₚ += norm_ll(observed, observed_sigma, μcalcₚ, σcalcₚ)
+            simplified && (llₚ += -log(npointsₚ))
 
             # Accept or reject proposal based on likelihood
-            if log(rand()) < (llₚ - llₗ)
+            if log(rand()) < (llₚ - ll) / simannealT(n, T0annealing, λannealing)
 
                 # Update jumping distribution based on size of current accepted p_move
                 if dynamicjumping && r < p_move
@@ -162,7 +155,6 @@
                 # Update the currently accepted proposal
                 acceptproposal!(path)
                 ll = llₚ
-                llna = llnaₚ
                 npoints = npointsₚ
                 copyto!(μcalc, μcalcₚ)
                 copyto!(σcalc, σcalcₚ)
@@ -172,9 +164,6 @@
             (mod(n, progress_interval) == 0) && update!(bprogress, n)
         end
         finish!(bprogress)
-
-        # Final log likelihood
-        ll = norm_ll(observed, σ, μcalc, σcalc) + llna
 
         # distributions to populate
         tpointdist = fill(T(NaN), totalpoints, nsteps)
@@ -240,9 +229,9 @@
             modelages!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdm, adm, zftm, aftm)
 
             # Calculate log likelihood of proposal
-            llnaₚ = diff_ll(path.Tsteps, dTmax, dTmax_sigma)
-            simplified && (llnaₚ += -log(npointsₚ))
-            llₚ = norm_ll(observed, σ, μcalcₚ, σcalcₚ) + llnaₚ
+            llₚ = diff_ll(path.Tsteps, dTmax, dTmax_sigma)
+            llₚ += norm_ll(observed, observed_sigma, μcalcₚ, σcalcₚ)
+            simplified && (llₚ += -log(npointsₚ))
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - ll)
@@ -339,8 +328,8 @@
         @assert issorted(tsteps)
         dt = T(model.dt)::T
         σmodel = T(haskey(model, :σmodel) ? model.σmodel : 0)::T
-        σannealing = T(haskey(model, :σannealing) ? model.σannealing : 125)::T
-        λannealing = T(haskey(model, :λannealing) ? model.λannealing : 2/burnin)::T
+        T0annealing = T(haskey(model, :σannealing) ? model.σannealing : 25)::T
+        λannealing = T(haskey(model, :λannealing) ? model.λannealing : 10/burnin)::T
 
         # Struct to hold t-T path proposals and related variables
         path = TtPath(agesteps, constraint, boundary, maxpoints)
@@ -366,16 +355,11 @@
         (any(x->isa(x, ApatiteFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, ApatiteFT), data)) apatites"
         (any(x->isa(x, ApatiteTrackLength), data)) && @info "Inverting for track lengths of $(count(x->isa(x, ApatiteTrackLength), data)) apatite fission tracks"
         (any(x->isa(x, GenericAr), data)) && @info "Inverting for Ar ages of $(count(x->isa(x, GenericAr), data)) generic Ar chronometers"
-
-        # Simulated annealing of uncertainty
-        σₐ = simannealsigma.(1, observed_sigma, σannealing, λannealing)::Vector{T}
-        σ = observed_sigma
         
         # Log-likelihood for initial proposal
         modelages!(μcalc, σcalc, data, path.Tsteps, zdm, adm, zftm, aftm)
-        llna = llnaₚ = diff_ll(path.Tsteps, dTmax, dTmax_sigma) + model_ll(admₚ, adm₀) + model_ll(zdmₚ, zdm₀) + (simplified ? -log(npoints) : zero(T))
-        ll = llₚ =  norm_ll(observed, σₐ, μcalc, σcalc) + llna
-
+        ll = llₚ = norm_ll(observed, observed_sigma, μcalc, σcalc) + diff_ll(path.Tsteps, dTmax, dTmax_sigma) + model_ll(admₚ, adm₀) + model_ll(zdmₚ, zdm₀) + (simplified ? -log(npoints) : zero(T))
+        
         # Variables to hold proposals
         npointsₚ = npoints
         μcalcₚ = copy(μcalc)::Vector{T}
@@ -449,15 +433,13 @@
             modelages!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdmₚ, admₚ, zftm, aftm)
 
             # Calculate log likelihood of proposal
-            llnaₚ = diff_ll(path.Tsteps, dTmax, dTmax_sigma)
-            llnaₚ += model_ll(admₚ, adm₀) + model_ll(zdmₚ, zdm₀)
-            simplified && (llnaₚ += -log(npointsₚ))
-            σₐ .= simannealsigma.(n, observed_sigma, σannealing, λannealing)
-            llₚ = norm_ll(observed, σₐ, μcalcₚ, σcalcₚ) + llnaₚ
-            llₗ = norm_ll(observed, σₐ, μcalc, σcalc) + llna # Recalulate last one too with new σₐ
+            llₚ = diff_ll(path.Tsteps, dTmax, dTmax_sigma)
+            llₚ += model_ll(admₚ, adm₀) + model_ll(zdmₚ, zdm₀)
+            llₚ += norm_ll(observed, observed_sigma, μcalcₚ, σcalcₚ)
+            simplified && (llₚ += -log(npointsₚ))
 
             # Accept or reject proposal based on likelihood
-            if log(rand()) < (llₚ - llₗ)
+            if log(rand()) < (llₚ - ll) / simannealT(n, T0annealing, λannealing) 
 
                 # Update jumping distribution based on size of current accepted p_move
                 if dynamicjumping && r < p_move
@@ -474,7 +456,6 @@
                 adm = admₚ
                 zdm = zdmₚ
                 ll = llₚ
-                llna = llnaₚ
                 npoints = npointsₚ
                 copyto!(μcalc, μcalcₚ)
                 copyto!(σcalc, σcalcₚ)
@@ -484,9 +465,6 @@
             (mod(n, progress_interval) == 0) && update!(bprogress, n)
         end
         finish!(bprogress)
-
-        # Final log likelihood
-        ll = norm_ll(observed, σ, μcalc, σcalc) + llna
 
         # distributions to populate
         tpointdist = fill(T(NaN), totalpoints, nsteps)
@@ -561,10 +539,10 @@
             modelages!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdmₚ, admₚ, zftm, aftm)
 
             # Calculate log likelihood of proposal
-            llnaₚ = diff_ll(path.Tsteps, dTmax, dTmax_sigma)
-            llnaₚ += model_ll(admₚ, adm₀) + model_ll(zdmₚ, zdm₀)
-            simplified && (llnaₚ += -log(npointsₚ))
-            llₚ = norm_ll(observed, σ, μcalcₚ, σcalcₚ) + llnaₚ
+            llₚ = diff_ll(path.Tsteps, dTmax, dTmax_sigma)
+            llₚ += model_ll(admₚ, adm₀) + model_ll(zdmₚ, zdm₀)
+            llₚ += norm_ll(observed, observed_sigma, μcalcₚ, σcalcₚ)
+            simplified && (llₚ += -log(npointsₚ))
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - ll)

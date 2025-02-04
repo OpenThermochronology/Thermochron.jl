@@ -1,7 +1,7 @@
 
 # Test simulated annealing
-@test Thermochron.simannealsigma(1, 10., 100., 10 / 10^5) ≈ 100.48880634173474
-@test Thermochron.simannealsigma(10^5, 10., 100., 10 / 10^5) ≈ 10.000001030576758
+@test Thermochron.simannealT(1, 100., 10 / 10^5) ≈ 99.9901004949835
+@test Thermochron.simannealT(10^5, 100., 10 / 10^5) ≈ 1.004494593046486
 
 # Test collectto!
 buffer = rand(20)
