@@ -308,9 +308,9 @@ version = "0.6.3"
 
 [[deps.CoordinateTransformations]]
 deps = ["LinearAlgebra", "StaticArrays"]
-git-tree-sha1 = "f9d7112bfff8a19a3a4ea4e03a8e6a91fe8456bf"
+git-tree-sha1 = "a692f5e257d332de1e554e4566a4e5a8a72de2b2"
 uuid = "150eb455-5306-5404-9cee-2592286d6298"
-version = "0.6.3"
+version = "0.6.4"
 
 [[deps.CpuId]]
 deps = ["Markdown"]
@@ -1480,9 +1480,9 @@ version = "6.7.1+1"
 
 [[deps.QuadGK]]
 deps = ["DataStructures", "LinearAlgebra"]
-git-tree-sha1 = "cda3b045cf9ef07a08ad46731f5a3165e56cf3da"
+git-tree-sha1 = "9da16da70037ba9d701192e27befedefb91ec284"
 uuid = "1fd47b50-473d-5c70-9696-f719f8f3bcdc"
-version = "2.11.1"
+version = "2.11.2"
 
     [deps.QuadGK.extensions]
     QuadGKEnzymeExt = "Enzyme"
@@ -1802,7 +1802,7 @@ version = "1.11.0"
 
 [[deps.Thermochron]]
 deps = ["BangBang", "Distributions", "LinearAlgebra", "LogExpFunctions", "LoopVectorization", "LsqFit", "NaNStatistics", "ProgressMeter", "Reexport", "StatGeochemBase", "Statistics"]
-git-tree-sha1 = "9c6f8faa6f6e32ace81029e0b1a19e2027793938"
+git-tree-sha1 = "db9090436b6290ca6e5ab1c15413732a73c19a4c"
 repo-rev = "main"
 repo-url = "https://github.com/OpenThermochronology/Thermochron.jl.git"
 uuid = "b9a8379e-ee1a-4388-b7ca-7852af1cef08"

@@ -31,20 +31,17 @@
     # # (23 ZirconHe, 11 ApatiteHe)
     # name = "Minnesota"
     # ds = importdataset("minnesota.csv", ',', importas=:Tuple)
-    name = "Pikes"
-    ds = importdataset("pikes.csv", ',', importas=:Tuple)
 
-
-    # # Literature samples from McDannell et al. 2022 (doi: 10.1130/G50315.1), Manitoba
-    # # (12 ZirconHe, 5 ApatiteHe, 47 ApatiteFT, 269 ApatiteTrackLength)
-    # name = "Manitoba"
-    # ds = importdataset("manitoba.csv", ',', importas=:Tuple)
+    # Literature samples from McDannell et al. 2022 (doi: 10.1130/G50315.1), Manitoba
+    # (12 ZirconHe, 5 ApatiteHe, 47 ApatiteFT, 269 ApatiteTrackLength)
+    name = "Manitoba"
+    ds = importdataset("manitoba.csv", ',', importas=:Tuple)
 
 ## --- Prepare problem
 
     model = (
-        nsteps = 1000,               # [n] How many steps of the Markov chain should we run?
-        burnin = 350,                # [n] How long should we wait for MC to converge (become stationary)
+        nsteps = 500000,               # [n] How many steps of the Markov chain should we run?
+        burnin = 150000,                # [n] How long should we wait for MC to converge (become stationary)
         dr = 1.0,                       # [μm] Radius step size
         dt = 8.0,                       # [Ma] Time step size
         dTmax = 10.0,                   # [Ma/dt] Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
@@ -101,13 +98,13 @@
     # Default: No constraints are imposed
     constraint = Constraint()
 
-    # Uncomment this section if you wish to impose an unconformity or other constraint
-    # at any point in the record.
-    constraint = Constraint(
-        agedist = [ Normal(974,122),  Uniform(497,509),   Uniform(305,310)],  # [Ma] Age distribution
-        Tdist =   [  Uniform(0,200),     Uniform(0,50),      Uniform(0,50)],  # [C] Temperature distribution
-    )
-    name *= "_unconf"
+    # # Uncomment this section if you wish to impose an unconformity or other constraint
+    # # at any point in the record.
+    # constraint = Constraint(
+    #     agedist = [ Normal(974,122),  Uniform(497,509),   Uniform(305,310)],  # [Ma] Age distribution
+    #     Tdist =   [  Uniform(0,200),     Uniform(0,50),      Uniform(0,50)],  # [C] Temperature distribution
+    # )
+    # name *= "_unconf"
 
 ## --- Process data into Chronometer objects
 
