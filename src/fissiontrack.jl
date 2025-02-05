@@ -246,24 +246,29 @@ function modellength(track::ApatiteTrackLength{T}, Tsteps::AbstractVector, am::A
     r .*= am.l0 # Convert from reduced length to length
     μ, σ = nanmean(r, pr), nanstd(r, pr)
     h = (4*σ^5/(3 * sum(pr)))^(1/5) # Silverman's rule for kernel bandwidth
-    binlikelihoods!(track, Normal(0, h))
+    binlikelihoods!(track, h)
     return μ, σ
 end
 
-function binlikelihoods!(track::ApatiteTrackLength, kernel::Distribution)
-    @assert eachindex(track.ldist) == 1:length(track.ledges)-1
-    @assert eachindex(track.ledges) == 1:length(track.ledges)
-    @inbounds for i in eachindex(track.pr)
-        if (track.pr[i] > 0) && (track.r[i] > 0)
-            lastcdf = cdf(kernel, first(track.ledges) - track.r[i])
-            for li in eachindex(track.ldist)
-                nextcdf = cdf(kernel, track.ledges[li + 1] - track.r[i])
-                track.ldist[li] += (nextcdf - lastcdf) * track.pr[i]
-                lastcdf = nextcdf
+function binlikelihoods!(track::ApatiteTrackLength{T}, bandwidth::T) where {T<:AbstractFloat}
+    if bandwidth > 0
+        kernel = Normal(zero(T), bandwidth)
+        @assert eachindex(track.ldist) == 1:length(track.ledges)-1
+        @assert eachindex(track.ledges) == 1:length(track.ledges)
+        @inbounds for i in eachindex(track.pr)
+            if (track.pr[i] > 0) && (track.r[i] > 0)
+                lastcdf = cdf(kernel, first(track.ledges) - track.r[i])
+                for li in eachindex(track.ldist)
+                    nextcdf = cdf(kernel, track.ledges[li + 1] - track.r[i])
+                    track.ldist[li] += (nextcdf - lastcdf) * track.pr[i]
+                    lastcdf = nextcdf
+                end
             end
         end
+        track.ldist ./= nansum(track.ldist)*step(track.ledges)  # Normalize
+    else
+        fill!(track.ldist, zero(T))
     end
-    track.ldist ./= nansum(track.ldist)*step(track.ledges)  # Normalize
     return track
 end
 
@@ -276,12 +281,14 @@ function model_ll(track::ApatiteTrackLength{T}) where {T}
     lc = lcmod(track)
     σ = nanstd(track.r, track.pr)
     h = (4*σ^5/(3 * sum(track.pr)))^(1/5) # Silverman's rule
-    kernel = Normal(lc, h)
     ll = typemin(T)
-    @inbounds for i in eachindex(track.pr)
-        if (track.pr[i] > 0) && (track.r[i] > 0)
-            lpr = log(track.pr[i])
-            ll = logaddexp(ll, logpdf(kernel, track.r[i])+lpr)
+    if h > 0
+        kernel = Normal(lc, h)
+        @inbounds for i in eachindex(track.pr)
+            if (track.pr[i] > 0) && (track.r[i] > 0)
+                lpr = log(track.pr[i])
+                ll = logaddexp(ll, logpdf(kernel, track.r[i])+lpr)
+            end
         end
     end
     return ll - log(nansum(track.pr))
