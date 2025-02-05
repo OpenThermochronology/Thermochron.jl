@@ -519,6 +519,9 @@
         # Pre-anneal RDAAM samples, if any
         isa(adm, RDAAM) && anneal!(data, ApatiteHe{T}, tsteps, Tsteps, adm)
         
+        # Count apatite track lengths, if any
+        nFT = count(x->isa(x, ApatiteTrackLength), data)
+
         ll = zero(T)
         for i in eachindex(data, μcalc, σcalc)
             c = data[i]
@@ -540,7 +543,7 @@
                 ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))
             elseif isa(c, ApatiteTrackLength)
                 μcalc[i], _ = modellength(c, @views(Tsteps[first_index:end]), aftm)
-                ll += model_ll(c)
+                ll += model_ll(c) / sqrt(nFT) # Importance of fission track lengths should scale as sqrt(n)
             else
                 # NaN if not calculated
                 μcalc[i] = T(NaN)
