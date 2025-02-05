@@ -244,29 +244,26 @@ function modellength(track::ApatiteTrackLength{T}, Tsteps::AbstractVector, am::A
         pr[i] = reltrackdensityap(r[i]) * exp(λ238U * agesteps[i])
     end
     r .*= am.l0 # Convert from reduced length to length
-    kernel = Normal(0, am.l0_sigma)
-    binlikelihoods!(track, kernel)
-    return (nanmean(r, pr), nanstd(r, pr))
+    μ, σ = nanmean(r, pr), nanstd(r, pr)
+    h = (4*σ^5/(3 * sum(pr)))^(1/5) # Silverman's rule for kernel bandwidth
+    binlikelihoods!(track, Normal(0, h))
+    return μ, σ
 end
 
 function binlikelihoods!(track::ApatiteTrackLength, kernel::Distribution)
-    @assert eachindex(track.lll) == 1:length(track.ledges)-1
+    @assert eachindex(track.ldist) == 1:length(track.ledges)-1
     @assert eachindex(track.ledges) == 1:length(track.ledges)
     @inbounds for i in eachindex(track.pr)
-        if track.pr[i] > 0
-            lpr = log(track.pr[i])
-            ldist = kernel + track.r[i]
-            for li in eachindex(track.lll)
-                if track.ledges[li] < track.r[i]
-                    ll = logsubexp(logcdf(ldist, track.ledges[li]), logcdf(ldist, track.ledges[li+1]))
-                else
-                    ll = logsubexp(logccdf(ldist, track.ledges[li+1]), logccdf(ldist, track.ledges[li])) 
-                end
-                track.lll[li] = logaddexp(track.lll[li], ll + lpr)
+        if (track.pr[i] > 0) && (track.r[i] > 0)
+            lastcdf = cdf(kernel, first(track.ledges) - track.r[i])
+            for li in eachindex(track.ldist)
+                nextcdf = cdf(kernel, track.ledges[li + 1] - track.r[i])
+                track.ldist[li] += (nextcdf - lastcdf) * track.pr[i]
+                lastcdf = nextcdf
             end
         end
     end
-    track.lll .-= logsumexp(track.lll) + log(step(track.ledges)) # Normalize
+    track.ldist ./= nansum(track.ldist)*step(track.ledges)  # Normalize
     return track
 end
 
@@ -275,14 +272,19 @@ function model_ll(track::ApatiteTrackLength, Tsteps::AbstractVector, am::Apatite
     return model_ll(track)
 end
 
-function model_ll(track::ApatiteTrackLength)
+function model_ll(track::ApatiteTrackLength{T}) where {T}
     lc = lcmod(track)
-    i₋ = Int((lc - first(track.ledges)) ÷ step(track.ledges)) + 1
-    i₊ = i₋ + 1
-    f = (lc - track.ledges[i₋]) / step(track.ledges)
-    ll₋ = track.lll[max(i₋, firstindex(track.lll))]
-    ll₊ = track.lll[min(i₊, lastindex(track.lll))]
-    return logaddexp(ll₋+log(1-f), ll₊+log(f))
+    σ = nanstd(track.r, track.pr)
+    h = (4*σ^5/(3 * sum(track.pr)))^(1/5) # Silverman's rule
+    kernel = Normal(lc, h)
+    ll = typemin(T)
+    @inbounds for i in eachindex(track.pr)
+        if (track.pr[i] > 0) && (track.r[i] > 0)
+            lpr = log(track.pr[i])
+            ll = logaddexp(ll, logpdf(kernel, track.r[i])+lpr)
+        end
+    end
+    return ll - log(nansum(track.pr))
 end
 
 ## --- End of File

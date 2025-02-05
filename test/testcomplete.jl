@@ -88,7 +88,7 @@ Tsteps = range(650, 0, length=length(tsteps))
 
 calc = zeros(length(chrons))
 calcuncert = zeros(length(chrons))
-@test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Ketcham2007FC()) ≈ -386.50340171318004
+@test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Ketcham2007FC()) ≈ -386.8315517930914
 @test round.(calc, sigdigits=7) ≈ [138.4124, 232.8114, 144.2487, 233.9706, 902.567, 1010.98, 386.8558, 388.6112, 122.8127, 130.7147, 570.1749, 244.9894, 14.29893]
 @test calcuncert ≈ zeros(13)
 
