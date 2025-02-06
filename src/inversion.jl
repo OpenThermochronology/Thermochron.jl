@@ -36,7 +36,7 @@
         @assert issorted(tsteps)
         dt = T(model.dt)::T
         σmodel = T(haskey(model, :σmodel) ? model.σmodel : 0)::T
-        T0annealing = T(haskey(model, :σannealing) ? model.σannealing : 125)::T
+        T0annealing = T(haskey(model, :T0annealing) ? model.T0annealing : 10)::T
         λannealing = T(haskey(model, :λannealing) ? model.λannealing : 10/burnin)::T
 
         # Damage models for each mineral
@@ -318,7 +318,7 @@
         @assert issorted(tsteps)
         dt = T(model.dt)::T
         σmodel = T(haskey(model, :σmodel) ? model.σmodel : 0)::T
-        T0annealing = T(haskey(model, :σannealing) ? model.σannealing : 25)::T
+        T0annealing = T(haskey(model, :T0annealing) ? model.T0annealing : 10)::T
         λannealing = T(haskey(model, :λannealing) ? model.λannealing : 10/burnin)::T
         
         # Damage models for each mineral

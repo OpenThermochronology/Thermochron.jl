@@ -243,7 +243,8 @@
     """
     function simannealT(n::Integer, Tₐ::Number, λₐ::Number)
         @assert λₐ >= 0
-        return max(Tₐ-1, 0) * exp(-λₐ*n) + 1
+        @assert Tₐ >= 0
+        return Tₐ * exp(-λₐ*n) + 1
     end
 
 
