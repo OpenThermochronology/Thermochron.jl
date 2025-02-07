@@ -65,8 +65,8 @@
         σcalc = fill(T(σmodel), length(data))
 
         # Log-likelihood for initial proposal
-        ll = llₚ = model!(μcalc, σcalc, data, path.Tsteps, zdm, adm, zftm, aftm) + 
-            diff_ll(path.Tsteps, dTmax, dTmax_sigma) + (simplified ? -log(npoints) : zero(T))
+        ll = llₚ = model!(μcalc, σcalc, data, path.Tsteps, zdm, adm, zftm, aftm) + diff_ll(path.Tsteps, dTmax, dTmax_sigma) + 
+            (simplified ? -log(npoints) : zero(T))  + (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
 
         # Variables to hold proposals
         npointsₚ = npoints
@@ -133,6 +133,7 @@
             llₚ = model!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdm, adm, zftm, aftm)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             simplified && (llₚ += -log(npointsₚ))
+            dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - ll) / simannealT(n, T0annealing, λannealing)
@@ -224,6 +225,7 @@
             llₚ = model!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdm, adm, zftm, aftm)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             simplified && (llₚ += -log(npointsₚ))
+            dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - ll)
@@ -348,7 +350,8 @@
 
         # Log-likelihood for initial proposal
         ll = llₚ = model!(μcalc, σcalc, data, path.Tsteps, zdm, adm, zftm, aftm) + 
-            diff_ll(path.Tsteps, dTmax, dTmax_sigma) + kinetic_ll(admₚ, adm₀) + kinetic_ll(zdmₚ, zdm₀) + (simplified ? -log(npoints) : zero(T))
+            diff_ll(path.Tsteps, dTmax, dTmax_sigma) + kinetic_ll(admₚ, adm₀) + kinetic_ll(zdmₚ, zdm₀) + 
+            (simplified ? -log(npoints) : zero(T)) + (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
         
         # Variables to hold proposals
         npointsₚ = npoints
@@ -424,6 +427,7 @@
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             llₚ += kinetic_ll(admₚ, adm₀) + kinetic_ll(zdmₚ, zdm₀)
             simplified && (llₚ += -log(npointsₚ))
+            dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - ll) / simannealT(n, T0annealing, λannealing) 
@@ -527,6 +531,7 @@
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             llₚ += kinetic_ll(admₚ, adm₀) + kinetic_ll(zdmₚ, zdm₀)
             simplified && (llₚ += -log(npointsₚ))
+            dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - ll)
