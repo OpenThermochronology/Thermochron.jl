@@ -36,8 +36,8 @@
         @assert issorted(tsteps)
         dt = T(model.dt)::T
         σmodel = T(haskey(model, :σmodel) ? model.σmodel : 0)::T
-        T0annealing = T(haskey(model, :T0annealing) ? model.T0annealing : 10)::T
-        λannealing = T(haskey(model, :λannealing) ? model.λannealing : 10/burnin)::T
+        T0annealing = T(haskey(model, :T0annealing) ? model.T0annealing : 1)::T
+        λannealing = T(haskey(model, :λannealing) ? model.λannealing : 7/burnin)::T
 
         # Damage models for each mineral
         zdm = (haskey(model, :zdm) ? model.zdm : ZRDAAM())::ZirconHeliumModel{T}
@@ -320,8 +320,8 @@
         @assert issorted(tsteps)
         dt = T(model.dt)::T
         σmodel = T(haskey(model, :σmodel) ? model.σmodel : 0)::T
-        T0annealing = T(haskey(model, :T0annealing) ? model.T0annealing : 10)::T
-        λannealing = T(haskey(model, :λannealing) ? model.λannealing : 10/burnin)::T
+        T0annealing = T(haskey(model, :T0annealing) ? model.T0annealing : 1)::T
+        λannealing = T(haskey(model, :λannealing) ? model.λannealing : 7/burnin)::T
         
         # Damage models for each mineral
         zdm₀ = zdm = zdmₚ = (haskey(model, :zdm) ? model.zdm : ZRDAAM())::ZirconHeliumModel{T}

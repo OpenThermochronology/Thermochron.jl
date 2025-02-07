@@ -13,7 +13,7 @@ model = (
     nsteps = 350,               # [n] How many steps of the Markov chain should we run after burn-in?
     dr = 1.0,                   # [μ] Radius step size
     dt = 10.0,                  # [Ma] time step size
-    dTmax = 25.0,               # [C/step] Maximum reheating/burial per model timestep
+    dTmax = 10.0,               # [C/step] Maximum reheating/burial per model timestep
     Tinit = 400.0,              # [C] initial model temperature (i.e., crystallization temperature)
     ΔTinit = -50.0,             # [C] Tinit can vary from Tinit to Tinit+ΔTinit
     Tnow = 0.0,                 # [C] Current surface temperature
@@ -28,7 +28,7 @@ model = (
     # decay constants, diffusion parameters, etc.), but is certainly non-zero.
     # Here we add (in quadrature) a blanket model uncertainty of 25 Ma for all age-based chronometers.
     σmodel = 25.0,              # [Ma] assumed model uncertainty (resampled if dynamicsigma)
-    T0annealing = 5,           # [unitless] initial annealing "temperature"
+    T0annealing = 1,            # [unitless] initial annealing "temperature"
 )
 
 # Populate data NamedTuple from imported dataset

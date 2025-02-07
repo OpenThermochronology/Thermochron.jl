@@ -85,26 +85,26 @@
     display(zircon)
 
     # Isothermal residence
-    @test modelage(zircon, fill(0, 100), Yamada2007PC()) ≈ 99.02562877561654
-    @test modelage(zircon, fill(50, 100), Yamada2007PC()) ≈ 95.55472219928846
-    @test modelage(zircon, fill(75, 100), Yamada2007PC()) ≈ 91.38769507633847
-    @test modelage(zircon, fill(100, 100), Yamada2007PC()) ≈ 84.30153426498362
+    @test modelage(zircon, fill(0, 100), Yamada2007PC()) ≈ 99.03307472647863
+    @test modelage(zircon, fill(50, 100), Yamada2007PC()) ≈ 95.5875134964696
+    @test modelage(zircon, fill(75, 100), Yamada2007PC()) ≈ 91.44848076970709
+    @test modelage(zircon, fill(100, 100), Yamada2007PC()) ≈ 84.4038173798344
 
     # Linear cooling
-    @test modelage(zircon, reverse(1:100), Yamada2007PC()) ≈ 95.832086865048
+    @test modelage(zircon, reverse(1:100), Yamada2007PC()) ≈ 95.86292049620485
 
     # As above but longer history
     zircon = ZirconFT(agesteps=reverse(cntr(0:200)))
     @test zircon isa ZirconFT{Float64}
 
-    @test modelage(zircon, reverse(1:200), Yamada2007PC()) ≈ 158.38155775708327
-    @test modelage(zircon, reverse(1:200)./2, Yamada2007PC()) ≈ 190.4816237888683
-    @test modelage(zircon, reverse(1:200).*2, Yamada2007PC()) ≈ 83.5454771524736
+    @test modelage(zircon, reverse(1:200), Yamada2007PC()) ≈ 158.88973345523144
+    @test modelage(zircon, reverse(1:200)./2, Yamada2007PC()) ≈ 190.62094301177618 
+    @test modelage(zircon, reverse(1:200).*2, Yamada2007PC()) ≈ 84.30136045990102
 
     # Fish Canyon Tuff zircon example
     zircon = ZirconFT(age=27, age_sigma=3, agesteps=reverse(cntr(0:28)))
-    @test modelage(zircon, fill(20., 28), Yamada2007PC()) ≈ 27.600384133998293
-    @test Thermochron.model_ll(zircon, fill(20., 28), Yamada2007PC()) ≈ -2.03757643900372
+    @test modelage(zircon, fill(20., 28), Yamada2007PC()) ≈ 27.601238386594986
+    @test Thermochron.model_ll(zircon, fill(20., 28), Yamada2007PC()) ≈ -2.03763346617919
 
 ## --- Test apatite fission track model ages
 
@@ -115,40 +115,40 @@
     display(apatite)
 
     # Isothermal residence
-    @test modelage(apatite, fill(0, 100), Ketcham1999FC()) ≈ 89.47456186738904
-    @test modelage(apatite, fill(0, 100), Ketcham2007FC()) ≈ 91.18495634369145
+    @test modelage(apatite, fill(0, 100), Ketcham1999FC()) ≈ 89.54730962518295
+    @test modelage(apatite, fill(0, 100), Ketcham2007FC()) ≈ 91.24703624063753
 
-    @test modelage(apatite, fill(50, 100), Ketcham1999FC()) ≈ 71.74476199851286
-    @test modelage(apatite, fill(50, 100), Ketcham2007FC()) ≈ 74.19397986006801
+    @test modelage(apatite, fill(50, 100), Ketcham1999FC()) ≈ 71.90164016667141
+    @test modelage(apatite, fill(50, 100), Ketcham2007FC()) ≈ 74.34211338104792
 
-    @test modelage(apatite, fill(75, 100), Ketcham1999FC()) ≈ 22.002355120292748
-    @test modelage(apatite, fill(75, 100), Ketcham2007FC()) ≈ 21.510059559425077
+    @test modelage(apatite, fill(75, 100), Ketcham1999FC()) ≈ 22.135848309417995
+    @test modelage(apatite, fill(75, 100), Ketcham2007FC()) ≈ 21.641396305809224
 
-    @test modelage(apatite, fill(100, 100), Ketcham1999FC()) ≈ 0.46473625658620615
-    @test modelage(apatite, fill(100, 100), Ketcham2007FC()) ≈ 0.4201584090258944
+    @test modelage(apatite, fill(100, 100), Ketcham1999FC()) ≈ 0.46834257592280504
+    @test modelage(apatite, fill(100, 100), Ketcham2007FC()) ≈ 0.42342028286401207
 
     # Linear cooling
-    @test modelage(apatite, reverse(1:100), Ketcham1999FC()) ≈ 66.0428289027262
-    @test modelage(apatite, reverse(1:100), Ketcham2007FC()) ≈ 67.76102259191059
+    @test modelage(apatite, reverse(1:100), Ketcham1999FC()) ≈ 66.2164833900794
+    @test modelage(apatite, reverse(1:100), Ketcham2007FC()) ≈ 67.93014962856782
 
     # As above but longer history
     apatite = ApatiteFT(agesteps=reverse(cntr(0:200)), F=1.75, Cl=0.01, OH=0.24)
     @test apatite isa ApatiteFT{Float64}
     @test apatite.rmr0 ≈ 0.8573573076438294
 
-    @test modelage(apatite, reverse(1:200), Ketcham1999FC()) ≈ 65.53059289925721
-    @test modelage(apatite, reverse(1:200), Ketcham2007FC()) ≈ 67.23546007467537
+    @test modelage(apatite, reverse(1:200), Ketcham1999FC()) ≈ 66.2164833900794
+    @test modelage(apatite, reverse(1:200), Ketcham2007FC()) ≈ 67.93014962856782
 
-    @test modelage(apatite, reverse(1:200)./2, Ketcham1999FC()) ≈ 123.72915948976907 
-    @test modelage(apatite, reverse(1:200)./2, Ketcham2007FC()) ≈ 127.09522146022277
+    @test modelage(apatite, reverse(1:200)./2, Ketcham1999FC()) ≈ 124.45929282749134
+    @test modelage(apatite, reverse(1:200)./2, Ketcham2007FC()) ≈ 127.81186983354935
 
-    @test modelage(apatite, reverse(1:200).*2, Ketcham1999FC()) ≈ 34.49261317064415
-    @test modelage(apatite, reverse(1:200).*2, Ketcham2007FC()) ≈ 35.35606216412728
+    @test modelage(apatite, reverse(1:200).*2, Ketcham1999FC()) ≈ 34.938406635567084
+    @test modelage(apatite, reverse(1:200).*2, Ketcham2007FC()) ≈ 35.810590270883125
 
     # Fish Canyon Tuff apatite example
     apatite = ApatiteFT(age=25, age_sigma=3, agesteps=reverse(cntr(0:28)), dpar=2.16)
-    @test modelage(apatite, fill(20., 28), Ketcham2007FC()) ≈ 25.252156123219667
-    @test Thermochron.model_ll(apatite, fill(20., 28), Ketcham2007FC()) ≈ -2.0210831946770695
+    @test modelage(apatite, fill(20., 28), Ketcham2007FC()) ≈ 25.25753183867445
+    @test Thermochron.model_ll(apatite, fill(20., 28), Ketcham2007FC()) ≈ -2.021235413424507 
 
 ## --- Test track lengths
 

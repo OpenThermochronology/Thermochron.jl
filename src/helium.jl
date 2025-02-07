@@ -9,7 +9,7 @@ function calc_dHedt(t, U238, U235, Th232, Sm147=0.0)
     8*U238*λ238U*exp(λ238U*t) + 7*U235*λ235U*exp(λ235U*t) + 6*Th232*λ232Th*exp(λ232Th*t) + Sm147*λ147Sm*exp(λ147Sm*t)
 end
 # Use Newton's method to solve for He age
-function newton_he_age(He::T, U238, U235, Th232, Sm147=zero(T); iterations::Int=16) where {T<:AbstractFloat}
+function newton_he_age(He::T, U238, U235, Th232, Sm147=zero(T); iterations::Int=16) where {T<:Number}
     Tf = float(T)
     heliumage = one(Tf)
     for _ in 1:iterations

@@ -52,7 +52,6 @@
         tnow = 0.0,                     # [Ma] Today
         minpoints = 15,                 # [n] Minimum allowed number of t-T points
         maxpoints = 50,                 # [n] Maximum allowed number of t-T points
-        dynamicsigma = false,           # Update model uncertainties?
         dynamicjumping = true,          # Update the t and t jumping (proposal) distributions based on previously accepted jumps
         # Damage and annealing models for diffusivity (specify custom kinetics if desired)
         adm = RDAAM(),                  # Flowers et al. 2009 (doi: 10.1016/j.gca.2009.01.015) apatite diffusivity model
@@ -63,8 +62,10 @@
         # decay constants, diffusion parameters, etc.), but is certainly non-zero.
         # Here we add (in quadrature) a blanket model uncertainty of 5 Ma.
         σmodel = 5.0,                   # [Ma] model uncertainty
-        # Optional simulated annealing during burnin
-        T0annealing = 25,               # [unitless] initial annealing "temperature" (set to 0 for no simulated annealing)
+        dynamicsigma = true,            # Update model uncertainties throughout inversion?
+        # Optional simulated annealing during burnin, wherein p_accept = max(exp((llₚ-ll)/T), 1)
+        # T = T0annealing * exp(-λannealing * n) + 1 at step number n of burnin
+        T0annealing = 1,                # [unitless] initial annealing "temperature" (set to 0 for no simulated annealing).
     )
 
     # Crystallization ages and start time
@@ -112,19 +113,19 @@
 
 ## --- Age uncertainty resampling
 
-    # Empirical age uncertainty for apatite
-    tap = isa.(chrons, ApatiteHe)
-    h = ageeuplot(chrons[tap], label="Internal uncertainty", title="apatite")
-    empiricaluncertainty!(chrons, ApatiteHe)
-    ageeuplot!(h, chrons[tap], label="Empirical uncertainty")
-    display(h)
+    # # Empirical age uncertainty for apatite
+    # tap = isa.(chrons, ApatiteHe)
+    # h = ageeuplot(chrons[tap], label="Internal uncertainty", title="apatite")
+    # empiricaluncertainty!(chrons, ApatiteHe)
+    # ageeuplot!(h, chrons[tap], label="Empirical uncertainty")
+    # display(h)
 
-    # Empirical age uncertainty for zircon
-    tzr = isa.(chrons, ZirconHe)
-    h = ageeuplot(chrons[tzr], label="Internal uncertainty", title="zircon")
-    empiricaluncertainty!(chrons, ZirconHe)
-    ageeuplot!(h, chrons[tzr], label="Empirical uncertainty")
-    display(h)
+    # # Empirical age uncertainty for zircon
+    # tzr = isa.(chrons, ZirconHe)
+    # h = ageeuplot(chrons[tzr], label="Internal uncertainty", title="zircon")
+    # empiricaluncertainty!(chrons, ZirconHe)
+    # ageeuplot!(h, chrons[tzr], label="Empirical uncertainty")
+    # display(h)
 
 
 ## --- Invert for maximum likelihood t-T path

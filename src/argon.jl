@@ -5,7 +5,7 @@ calc_Ar(t, K40) = K40*BR40K*(exp(λ40K*t)-1)
 # First time derivative of the amount of ingrown argon since time t
 calc_dArdt(t, K40) = K40*BR40K*λ40K*exp(λ40K*t)
 # Use Newton's method to solve for Ar age
-function newton_ar_age(Ar::T, K40; iterations::Int=16) where {T<:AbstractFloat}
+function newton_ar_age(Ar::T, K40; iterations::Int=16) where {T<:Number}
     Tf = float(T)
     argonage = one(Tf)
     for _ in 1:iterations

@@ -150,7 +150,19 @@ function rlr(rmr::T, rmr0::T, kappa=1.04-rmr0) where {T<:AbstractFloat}
     (max(rmr-rmr0, zero(T))/(1-rmr0))^kappa
 end
 
-## ---
+## --- Calculate fission track ages (accounting for decay) from normalized counts (i.e. counts/(counts-per-Ma at t0))
+
+calc_ft(t) = (exp(λ238U*t)-1)/λ238U
+calc_dftdt(t) = exp(λ238U*t)
+function newton_ft_age(ftobs::T; iterations::Int=16) where {T<:Number}
+    Tf = float(T)
+    ftage = one(Tf)
+    for _ in 1:iterations
+        ∂ft∂t = calc_dftdt(ftage) # Calculate derivative
+        ftage += (ftobs - calc_ft(ftage))/∂ft∂t # Move towards zero
+    end
+    return max(ftage, zero(Tf))
+end
 
 """
 ```julia
@@ -174,16 +186,13 @@ function modelage(zircon::ZirconFT{T}, Tsteps::AbstractVector, am::ZirconAnneali
     @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps)
     teq = dt = step(tsteps)
     r = reltracklength(teq, Tsteps[end], am)
-    ΣUw = Uw = exp(λ238U * agesteps[end]) # To correct for U decay
-    ftage = dt * reltrackdensityzrn(r) * Uw
+    ftobs = dt * reltrackdensityzrn(r) * exp(λ238U * agesteps[end])
     @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
         teq = equivalenttime(teq, Tsteps[i+1], Tsteps[i], am) + dt
         r = reltracklength(teq, Tsteps[i], am)
-        ΣUw += Uw = exp(λ238U * agesteps[i])
-        ftage += dt * reltrackdensityzrn(r) * Uw
+        ftobs += dt * reltrackdensityzrn(r) * exp(λ238U * agesteps[i])
     end
-    μUw = ΣUw/length(tsteps)
-    return ftage/μUw
+    return newton_ft_age(ftobs)
 end
 function modelage(apatite::ApatiteFT{T}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}) where {T <: AbstractFloat}
     agesteps = apatite.agesteps
@@ -193,16 +202,13 @@ function modelage(apatite::ApatiteFT{T}, Tsteps::AbstractVector, am::ApatiteAnne
     @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps)
     teq = dt = step(tsteps)
     r = rlr(reltracklength(teq, Tsteps[end], am), rmr0)
-    ΣUw = Uw = exp(λ238U * agesteps[end]) # To correct for U decay
-    ftage = dt * reltrackdensityap(r) * Uw
+    ftobs = dt * reltrackdensityap(r) * exp(λ238U * agesteps[end]) 
     @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
         teq = equivalenttime(teq, Tsteps[i+1], Tsteps[i], am) + dt
         r = rlr(reltracklength(teq, Tsteps[i], am), rmr0)
-        ΣUw += Uw = exp(λ238U * agesteps[i])
-        ftage += dt * reltrackdensityap(r) * Uw
+        ftobs += dt * reltrackdensityap(r) * exp(λ238U * agesteps[i])
     end
-    μUw = ΣUw/length(tsteps)
-    return ftage/μUw
+    return newton_ft_age(ftobs)
 end
 
 function model_ll(mineral::FissionTrackSample, Tsteps::AbstractVector, am::AnnealingModel)

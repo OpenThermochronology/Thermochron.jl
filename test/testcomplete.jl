@@ -13,7 +13,7 @@ model = (
     nsteps = 350,               # [n] How many steps of the Markov chain should we run after burn-in?
     dr = 1.0,                   # [μ] Radius step size
     dt = 10.0,                  # [Ma] time step size
-    dTmax = 25.0,               # [C/step] Maximum reheating/burial per model timestep
+    dTmax = 10.0,               # [C/step] Maximum reheating/burial per model timestep
     Tinit = 400.0,              # [C] initial model temperature (i.e., crystallization temperature)
     ΔTinit = -50.0,             # [C] Tinit can vary from Tinit to Tinit+ΔTinit
     Tnow = 0.0,                 # [C] Current surface temperature
@@ -28,7 +28,7 @@ model = (
     # decay constants, diffusion parameters, etc.), but is certainly non-zero.
     # Here we add (in quadrature) a blanket model uncertainty of 25 Ma.
     σmodel = 25.0,              # [Ma] assumed model uncertainty (resampled if dynamicsigma)
-    T0annealing = 5,            # [unitless] initial annealing "temperature"
+    T0annealing = 1,            # [unitless] initial annealing "temperature"
 )
 
 # Populate data NamedTuple from imported dataset
@@ -86,8 +86,8 @@ Tsteps = range(650, 0, length=length(tsteps))
 
 calc = zeros(length(chrons))
 calcuncert = zeros(length(chrons))
-@test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Ketcham2007FC()) ≈ -406.761948315324
-@test round.(calc, sigdigits=7) ≈ [138.4124, 232.8114, 144.2487, 233.9706, 902.567, 1010.98, 386.8558, 388.6112, 122.8127, 130.7147, 570.1749, 244.9894, 14.29893, 14.29989, 14.29245]
+@test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Ketcham2007FC()) ≈  -106.72400931666236
+@test round.(calc, sigdigits=7) ≈ [138.4124, 232.8114, 144.2487, 233.9706, 902.567, 1010.98, 386.8558, 388.6112, 122.8127, 130.7147, 688.0081, 304.6573, 14.29893, 14.29989, 14.29245] 
 @test calcuncert ≈ zeros(15)
 
 # Modern input format, Minnesota dataset
@@ -151,7 +151,7 @@ abserr = abs(sum(nanmean(tT.resultdist, dims=2) - data.HeAge)/length(data.HeAge)
 
 @test isa(tT.lldist, AbstractVector)
 llmean = mean(tT.lldist)
-@test -400 < llmean < 0
+@test -450 < llmean < 0
 @info "Mean ll: $llmean"
 
 @test isa(tT.acceptancedist, AbstractVector{Bool})
@@ -191,7 +191,7 @@ abserr = abs(sum(nanmean(tT.resultdist, dims=2) - data.HeAge)/length(data.HeAge)
 
 @test isa(tT.lldist, AbstractVector)
 llmean = mean(tT.lldist)
-@test -400 < llmean < 0
+@test -450 < llmean < 0
 @info "Mean ll: $llmean"
 
 @test isa(tT.acceptancedist, AbstractVector{Bool})
@@ -262,7 +262,7 @@ abserr = abs(sum(nanmean(tT.resultdist, dims=2) - data.HeAge)/length(data.HeAge)
 
 @test isa(tT.lldist, AbstractVector)
 llmean = mean(tT.lldist)
-@test -400 < llmean < 0
+@test -450 < llmean < 0
 @info "Mean ll: $llmean"
 
 @test isa(tT.acceptancedist, AbstractVector{Bool})
@@ -299,7 +299,7 @@ abserr = abs(sum(nanmean(tT.resultdist, dims=2) - data.HeAge)/length(data.HeAge)
 
 @test isa(tT.lldist, AbstractVector)
 llmean = mean(tT.lldist)
-@test -400 < llmean < 0
+@test -450 < llmean < 0
 @info "Mean ll: $llmean"
 
 @test isa(tT.acceptancedist, AbstractVector{Bool})
@@ -373,7 +373,7 @@ abserr = abs(sum(nanmean(tT.resultdist, dims=2) - data.HeAge)/length(data.HeAge)
 
 @test isa(tT.lldist, AbstractVector)
 llmean = mean(tT.lldist)
-@test -420 < llmean < 0
+@test -450 < llmean < 0
 @info "Mean ll: $llmean"
 
 @test isa(tT.acceptancedist, AbstractVector{Bool})
@@ -410,7 +410,7 @@ abserr = abs(sum(nanmean(tT.resultdist, dims=2) - data.HeAge)/length(data.HeAge)
 
 @test isa(tT.lldist, AbstractVector)
 llmean = mean(tT.lldist)
-@test -400 < llmean < 0
+@test -450 < llmean < 0
 @info "Mean ll: $llmean"
 
 @test isa(tT.acceptancedist, AbstractVector{Bool})
