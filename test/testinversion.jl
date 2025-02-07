@@ -66,7 +66,7 @@ boundary = Boundary(
 @test boundary isa Boundary{Float64}
 
 agesteps = reverse(1:10:1000.)
-path = Thermochron.TtPath(agesteps, constraint, boundary, 50)
+path = Thermochron.TtPath(agesteps, constraint, boundary, DetailInterval(), 50)
 @test path isa Thermochron.TtPath{Float64}
 @test path.agepoints == path.agepointsₚ == zeros(50)
 @test path.Tpoints == path.Tpointsₚ == zeros(50)

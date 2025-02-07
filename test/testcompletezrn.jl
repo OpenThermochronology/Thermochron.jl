@@ -106,7 +106,7 @@ llmean = mean(tT.lldist)
 detail = DetailInterval(
     agemin = 0, # Youngest end of detail interval
     agemax = 541, # Oldest end of detail interval
-    minpoints = 5, # Minimum number of points in detail interval
+    minpoints = 3, # Minimum number of points in detail interval
 )
 @time "\nMCMC with Detail interval" tT = MCMC(data, model, boundary, constraint, detail)
 

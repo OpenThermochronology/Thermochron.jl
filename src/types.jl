@@ -153,7 +153,7 @@ end
 # For backwards compatibility with old scripts
 const Unconformity = Constraint
 
-## --- Define DetailInterval type to specify a minumum number of t-T path nodes within a given time interval
+# Define DetailInterval type to specify a minumum number of t-T path nodes within a given time interval
 struct DetailInterval{T<:AbstractFloat}
     agemin::T
     agemax::T
@@ -163,6 +163,7 @@ function DetailInterval(T::Type=Float64; agemin=0, agemax=0, minpoints=0)
     DetailInterval{T}(agemin, agemax, Int(minpoints))
 end
 
+# Define overall TtPath type to contain all parameters needed to construct a t-T path proposal
 struct TtPath{T<:AbstractFloat}
     agesteps::FloatRange
     Tsteps::Vector{T}
@@ -179,8 +180,9 @@ struct TtPath{T<:AbstractFloat}
     knot_index::Vector{Int}
     constraint::Constraint{T}
     boundary::Boundary{T}
+    detail::DetailInterval{T}
 end
-function TtPath(agesteps::AbstractArray, constraint::Constraint{T}, boundary::Boundary{T}, maxpoints::Int) where {T}
+function TtPath(agesteps::AbstractArray, constraint::Constraint{T}, boundary::Boundary{T}, detail::DetailInterval{T}, maxpoints::Int) where {T}
     # Discretized temperature
     agesteps = floatrange(agesteps)
     Tsteps = zeros(T, length(agesteps))
@@ -218,6 +220,7 @@ function TtPath(agesteps::AbstractArray, constraint::Constraint{T}, boundary::Bo
         knot_index,
         constraint,
         boundary,
+        detail,
     )
 end
 

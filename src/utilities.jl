@@ -405,17 +405,21 @@
         end
         return constraint
     end
-    function randomize!(agepoints::AbstractVector, Tpoints::AbstractVector, boundary::Boundary)
-        tmin, tmax = textrema(boundary)
+    function randomize!(agepoints::AbstractVector, Tpoints::AbstractVector, boundary::Boundary, detail::DetailInterval)
+        agemin, agemax = textrema(boundary)
         Tmin, Tmax = Textrema(boundary)
         for i in eachindex(agepoints, Tpoints)
-            agepoints[i] = rand(Uniform(tmin, tmax))
+            if (i-firstindex(agepoints)) < detail.minpoints
+                agepoints[i] = rand(Uniform(detail.agemin, detail.agemax))
+            else
+                agepoints[i] = rand(Uniform(agemin, agemax))
+            end
             Tpoints[i] = rand(Uniform(Tmin, Tmax))
         end
         return agepoints, Tpoints
     end
     function randomize!(path::TtPath)
-        randomize!(path.agepoints, path.Tpoints, path.boundary)
+        randomize!(path.agepoints, path.Tpoints, path.boundary, path.detail)
         randomize!(path.constraint, path.boundary)
         randomize!(path.boundary)
         return path

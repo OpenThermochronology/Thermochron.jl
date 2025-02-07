@@ -13,7 +13,7 @@
 
     ## Examples
     ```julia
-    tT = MCMC(data, model, npoints, path.agepoints, path.Tpoints, constraint, boundary)
+    tT = MCMC(data::NamedTuple, model::NamedTuple, constraint::Constraint, boundary::Boundary, [detail::DetailInterval])
     ```
     """
     MCMC(data::NamedTuple, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where {T <: AbstractFloat} = MCMC(chronometers(T, data, model), model, boundary, constraint, detail)
@@ -24,6 +24,7 @@
         minpoints = (haskey(model, :minpoints) ? model.minpoints : 1)::Int
         maxpoints = (haskey(model, :maxpoints) ? model.maxpoints : 50)::Int
         npoints = (haskey(model, :npoints) ? model.npoints : minpoints)::Int
+        npoints = max(npoints, detail.minpoints+1)
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
         simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
         dynamicsigma = (haskey(model, :dynamicsigma) ? model.dynamicsigma : false)::Bool
@@ -55,7 +56,7 @@
         (any(x->isa(x, GenericAr), data)) && @info "Inverting for Ar ages of $(count(x->isa(x, GenericAr), data)) generic Ar chronometers"
 
         # Struct to hold t-T path proposals and related variables
-        path = TtPath(agesteps, constraint, boundary, maxpoints)
+        path = TtPath(agesteps, constraint, boundary, detail, maxpoints)
 
         # Initial propopsal
         initialproposal!(path, npoints, dTmax) 
@@ -82,9 +83,6 @@
         bprogress = Progress(burnin, dt=1, desc="MCMC burn-in ($(burnin) steps)")
         progress_interval = ceil(Int,sqrt(burnin))
         for n = 1:burnin
-            if detail.minpoints > 0
-                enoughpoints = min(pointsininterval(path.agepoints, npoints, detail.agemin, detail.agemax, dt), detail.minpoints)::Int
-            end
             @label brestart
 
             # Copy proposal from last accepted solution
@@ -126,7 +124,7 @@
 
             # Ensure we have enough points in the "detail" interval, if any
             if detail.minpoints > 0
-                (pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto brestart
+                (pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < detail.minpoints) && @goto brestart
             end
 
             # Calculate model ages for each grain, log likelihood of proposal
@@ -174,9 +172,6 @@
         progress = Progress(nsteps, dt=1, desc="MCMC collection ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
         for n = 1:nsteps
-            if detail.minpoints > 0
-                enoughpoints = min(pointsininterval(path.agepoints, npoints, detail.agemin, detail.agemax, dt), detail.minpoints)::Int
-            end
             @label crestart
 
             # Copy proposal from last accepted solution
@@ -218,7 +213,7 @@
             
             # Ensure we have enough points in the "detail" interval, if any
             if detail.minpoints > 0
-                (pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto crestart
+                (pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < detail.minpoints) && @goto crestart
             end
 
             # Calculate model ages for each grain, log likelihood of proposal
@@ -297,7 +292,7 @@
 
     ## Examples
     ```julia
-    tT, kinetics = MCMC_varkinetics(data, model, npoints, path.agepoints, path.Tpoints, constraint, boundary)
+    tT, kinetics = MCMC_varkinetics(data::NamedTuple, model::NamedTuple, constraint::Constraint, boundary::Boundary, [detail::DetailInterval])
     ```
     """
     MCMC_varkinetics(data::NamedTuple, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where {T <: AbstractFloat} = MCMC_varkinetics(chronometers(T, data, model), model, boundary, constraint, detail)
@@ -308,6 +303,7 @@
         minpoints = (haskey(model, :minpoints) ? model.minpoints : 1)::Int
         maxpoints = (haskey(model, :maxpoints) ? model.maxpoints : 50)::Int
         npoints = (haskey(model, :npoints) ? model.npoints : minpoints)::Int
+        npoints = max(npoints, detail.minpoints+1)
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
         simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
         dynamicsigma = (haskey(model, :dynamicsigma) ? model.dynamicsigma : false)::Bool
@@ -339,7 +335,7 @@
         (any(x->isa(x, GenericAr), data)) && @info "Inverting for Ar ages of $(count(x->isa(x, GenericAr), data)) generic Ar chronometers"
         
         # Struct to hold t-T path proposals and related variables
-        path = TtPath(agesteps, constraint, boundary, maxpoints)
+        path = TtPath(agesteps, constraint, boundary, detail, maxpoints)
 
         # Initial propopsal
         initialproposal!(path, npoints, dTmax)
@@ -368,9 +364,6 @@
         bprogress = Progress(burnin, dt=1, desc="MCMC burn-in ($(burnin) steps)")
         progress_interval = ceil(Int,sqrt(burnin))
         for n = 1:burnin
-            if detail.minpoints > 0
-                enoughpoints = min(pointsininterval(path.agepoints, npoints, detail.agemin, detail.agemax, dt), detail.minpoints)::Int
-            end
             @label brestart
 
             # Copy proposal from last accepted solution
@@ -419,7 +412,7 @@
 
             # Ensure we have enough points in the "detail" interval, if any
             if detail.minpoints > 0
-                (pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto brestart
+                (pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < detail.minpoints) && @goto brestart
             end
                
             # Calculate model ages for each grain, log likelihood of proposal
@@ -472,9 +465,6 @@
         progress = Progress(nsteps, dt=1, desc="MCMC collection ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
         for n = 1:nsteps
-            if detail.minpoints > 0
-                enoughpoints = min(pointsininterval(path.agepoints, npoints, detail.agemin, detail.agemax, dt), detail.minpoints)::Int
-            end
             @label crestart
 
             # Copy proposal from last accepted solution
@@ -523,7 +513,7 @@
             
             # Ensure we have enough points in the "detail" interval, if any
             if detail.minpoints > 0
-                (pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto crestart
+                (pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < detail.minpoints) && @goto crestart
             end
 
             # Calculate model ages for each grain, log likelihood of proposal
