@@ -515,14 +515,15 @@
         @assert issorted(tsteps)
         @assert eachindex(tsteps) == eachindex(Tsteps)
 
+        # Count apatite track lengths, if any
+        nFT = count(x->isa(x, ApatiteTrackLength), data)
+
         # Pre-anneal ZRDAAM samples, if any
         isa(zdm, ZRDAAM) && anneal!(data, ZirconHe{T}, tsteps, Tsteps, zdm)
         # Pre-anneal RDAAM samples, if any
         isa(adm, RDAAM) && anneal!(data, ApatiteHe{T}, tsteps, Tsteps, adm)
         
-        # Count apatite track lengths, if any
-        nFT = count(x->isa(x, ApatiteTrackLength), data)
-
+        # Cycle through each Chronometer, model and calculate log likelihood
         ll = zero(T)
         for i in eachindex(data, μcalc, σcalc)
             c = data[i]
@@ -548,6 +549,51 @@
             else
                 # NaN if not calculated
                 μcalc[i] = T(NaN)
+            end
+        end
+
+        # Additional log likelihood term from comparing observed and expected fission track length histograms
+        ll += tracklength_histogram_ll!(data, ApatiteTrackLength)
+        
+        return ll
+    end
+
+    function tracklength_histogram_ll!(data::Vector{<:Chronometer{T}}, ::Type{C}) where {T<:AbstractFloat, C<:ApatiteTrackLength}
+        # Initial log likelihood
+        ll = zero(T)
+        # See how many tracks of type C we have
+        n_tracks = count(x->isa(x, C), data)
+        if n_tracks > 1
+            # Predicted track counts
+            i1 = findfirst(x->isa(x,C), data)
+            predicted = (data[i1]::C).ldist::Vector{T}
+            for i in eachindex(data)
+                if isa(data[i], C) && (i > i1)
+                    c = data[i]::C
+                    predicted .+= c.ldist
+                end
+            end
+            # Scale to match histogram of observed track counts
+            predicted .*= n_tracks/sum(predicted)
+
+            # Observed track counts
+            i2 = findnext(x->isa(x,C), data, i1+1)
+            binedges = (data[i2]::C).ledges::FloatRange
+            observed = (data[i2]::C).ldist::Vector{T}
+            fill!(observed, zero(T))
+            for i in eachindex(data)
+                if isa(data[i], C) 
+                    c = data[i]::C
+                    li = Int((val(c) - first(binedges)) ÷ step(binedges)) + firstindex(observed)
+                    if firstindex(observed) <= li <= lastindex(observed)
+                        observed[li] += 1
+                    end
+                end
+            end
+
+            # Calculate log likelihood given counting statistics for each bin
+            for i in eachindex(observed, predicted)
+                ll += norm_ll(observed[i], sqrt(max(observed[i],one(T))), predicted[i])
             end
         end
         return ll

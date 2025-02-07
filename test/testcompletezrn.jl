@@ -22,15 +22,13 @@ model = (
     minpoints = 1,              # [n] Minimum allowed number of t-T points
     maxpoints = 40,             # [n] Maximum allowed number of t-T points
     npoints = 5,                # [n] Initial number of t-T points
-    Tr = 250.,                  # [C] Residence temperature of initial proposal
     simplified = false,         # Prefer simpler tT paths?
     dynamicsigma = true,        # Update model uncertainties?
     # Model uncertainty is not well known (depends on annealing parameters,
     # decay constants, diffusion parameters, etc.), but is certainly non-zero.
-    # Here we add (in quadrature) a blanket model uncertainty of 25 Ma.
+    # Here we add (in quadrature) a blanket model uncertainty of 25 Ma for all age-based chronometers.
     σmodel = 25.0,              # [Ma] assumed model uncertainty (resampled if dynamicsigma)
-    σannealing = 35.0,          # [Ma] initial annealing uncertainty
-    λannealing = 10 ./ 200,     # [1/n] annealing decay
+    T0annealing = 5,           # [unitless] initial annealing "temperature"
 )
 
 # Populate data NamedTuple from imported dataset

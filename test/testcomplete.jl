@@ -22,15 +22,13 @@ model = (
     minpoints = 1,              # [n] Minimum allowed number of t-T points
     maxpoints = 40,             # [n] Maximum allowed number of t-T points
     npoints = 5,                # [n] Initial number of t-T points
-    Tr = 250.,                  # [C] Residence temperature of initial proposal
     simplified = false,         # Prefer simpler tT paths?
     dynamicsigma = true,        # Update model uncertainties?
     # Model uncertainty is not well known (depends on annealing parameters,
     # decay constants, diffusion parameters, etc.), but is certainly non-zero.
     # Here we add (in quadrature) a blanket model uncertainty of 25 Ma.
     σmodel = 25.0,              # [Ma] assumed model uncertainty (resampled if dynamicsigma)
-    σannealing = 35.0,          # [Ma] initial annealing uncertainty
-    λannealing = 10 ./ 200,     # [1/n] annealing decay
+    T0annealing = 5,            # [unitless] initial annealing "temperature"
 )
 
 # Populate data NamedTuple from imported dataset
@@ -71,14 +69,14 @@ unconf = Constraint()
 dsg = importdataset(joinpath(datapath, "generic.csv"), ',', importas=:Tuple);
 chrons = chronometers(dsg, model)
 @test chrons isa Vector{<:Chronometer}
-@test length(chrons) == 13
+@test length(chrons) == 15
 @test count(x->isa(x,GenericHe), chrons) == 4
 @test count(x->isa(x,GenericAr), chrons) == 2
 @test count(x->isa(x,ZirconHe), chrons) == 2
 @test count(x->isa(x,ApatiteHe), chrons) == 2
 @test count(x->isa(x,ZirconFT), chrons) == 1
 @test count(x->isa(x,ApatiteFT), chrons) == 1
-@test count(x->isa(x,ApatiteTrackLength), chrons) == 1
+@test count(x->isa(x,ApatiteTrackLength), chrons) == 3
 @test get_age(chrons) ≈ [150.37, 263.92, 150.37, 263.92, 917.84, 1023.73, 380., 380., 120., 120., 680., 300.] 
 @test get_age_sigma(chrons) ≈ [5,5,5,5,5,5,5,5,5,5,5,5]
 
@@ -88,9 +86,9 @@ Tsteps = range(650, 0, length=length(tsteps))
 
 calc = zeros(length(chrons))
 calcuncert = zeros(length(chrons))
-@test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Ketcham2007FC()) ≈ -386.8315517930914
-@test round.(calc, sigdigits=7) ≈ [138.4124, 232.8114, 144.2487, 233.9706, 902.567, 1010.98, 386.8558, 388.6112, 122.8127, 130.7147, 570.1749, 244.9894, 14.29893]
-@test calcuncert ≈ zeros(13)
+@test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Ketcham2007FC()) ≈ -406.761948315324
+@test round.(calc, sigdigits=7) ≈ [138.4124, 232.8114, 144.2487, 233.9706, 902.567, 1010.98, 386.8558, 388.6112, 122.8127, 130.7147, 570.1749, 244.9894, 14.29893, 14.29989, 14.29245]
+@test calcuncert ≈ zeros(15)
 
 # Modern input format, Minnesota dataset
 chrons = chronometers(ds, model)
