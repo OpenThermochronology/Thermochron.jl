@@ -577,8 +577,9 @@
                     predicted .+= c.ldist
                 end
             end
-            # Scale to match histogram of observed track counts
-            predicted .*= n_tracks/sum(predicted)
+            # Scale to match histogram of observed track counts, if any
+            Σpredicted = sum(predicted)
+            (Σpredicted > 0) && (predicted .*= n_tracks/Σpredicted)
 
             # Observed track counts
             i2 = findnext(x->isa(x,C), data, i1+1)
