@@ -460,7 +460,7 @@
         copyto!(path.boundary.Tpoints, path.boundary.Tpointsₚ)
     end
     
-    function initialproposal!(path::TtPath, npoints::Int, dTmax::Number; nattempts = 100_000) 
+    function initialproposal!(path::TtPath, npoints::Int, dTmax::Number; nattempts = 1_000_000) 
         for _ in 1:nattempts
             randomize!(path)
             collectaccepted!(path, npoints)
