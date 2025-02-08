@@ -595,9 +595,11 @@
                 end
             end
 
-            # Calculate log likelihood given counting statistics for each bin
+            # Compare observed and predicted length histograms via counting statistics of each bin
+            # Approximately equivalent to a Pearson's chi-squared test on the two distributions
             for i in eachindex(observed, predicted)
-                ll += norm_ll(observed[i], sqrt(max(observed[i],one(T))), predicted[i])
+                # Arrival distributions in each length bin should follow Possson distributions
+                ll += logcdf(Poisson(predicted[i]), observed[i])
             end
         end
         return ll
