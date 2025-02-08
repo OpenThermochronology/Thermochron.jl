@@ -83,6 +83,9 @@
         bprogress = Progress(burnin, dt=1, desc="MCMC burn-in ($(burnin) steps)")
         progress_interval = ceil(Int,sqrt(burnin))
         for n = 1:burnin
+            if detail.minpoints > 0
+                enoughpoints = min(pointsininterval(path.agepoints, npoints, detail.agemin, detail.agemax, dt), detail.minpoints)::Int
+            end
             @label brestart
 
             # Copy proposal from last accepted solution
@@ -124,7 +127,7 @@
 
             # Ensure we have enough points in the "detail" interval, if any
             if detail.minpoints > 0
-                (pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < detail.minpoints) && @goto brestart
+                (pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto brestart
             end
 
             # Calculate model ages for each grain, log likelihood of proposal
@@ -172,6 +175,9 @@
         progress = Progress(nsteps, dt=1, desc="MCMC collection ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
         for n = 1:nsteps
+            if detail.minpoints > 0
+                enoughpoints = min(pointsininterval(path.agepoints, npoints, detail.agemin, detail.agemax, dt), detail.minpoints)::Int
+            end
             @label crestart
 
             # Copy proposal from last accepted solution
@@ -213,7 +219,7 @@
             
             # Ensure we have enough points in the "detail" interval, if any
             if detail.minpoints > 0
-                (pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < detail.minpoints) && @goto crestart
+                (pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto crestart
             end
 
             # Calculate model ages for each grain, log likelihood of proposal
@@ -364,6 +370,9 @@
         bprogress = Progress(burnin, dt=1, desc="MCMC burn-in ($(burnin) steps)")
         progress_interval = ceil(Int,sqrt(burnin))
         for n = 1:burnin
+            if detail.minpoints > 0
+                enoughpoints = min(pointsininterval(path.agepoints, npoints, detail.agemin, detail.agemax, dt), detail.minpoints)::Int
+            end
             @label brestart
 
             # Copy proposal from last accepted solution
@@ -412,7 +421,7 @@
 
             # Ensure we have enough points in the "detail" interval, if any
             if detail.minpoints > 0
-                (pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < detail.minpoints) && @goto brestart
+                (pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto brestart
             end
                
             # Calculate model ages for each grain, log likelihood of proposal
@@ -465,6 +474,9 @@
         progress = Progress(nsteps, dt=1, desc="MCMC collection ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
         for n = 1:nsteps
+            if detail.minpoints > 0
+                enoughpoints = min(pointsininterval(path.agepoints, npoints, detail.agemin, detail.agemax, dt), detail.minpoints)::Int
+            end
             @label crestart
 
             # Copy proposal from last accepted solution
@@ -513,7 +525,7 @@
             
             # Ensure we have enough points in the "detail" interval, if any
             if detail.minpoints > 0
-                (pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < detail.minpoints) && @goto crestart
+                (pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, dt) < enoughpoints) && @goto crestart
             end
 
             # Calculate model ages for each grain, log likelihood of proposal
