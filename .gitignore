@@ -6,6 +6,6 @@
 /examples/*.mat
 /docs/build/
 .DS_Store
-/dev
+/old
 /Manifest.toml
 /test/Manifest.toml

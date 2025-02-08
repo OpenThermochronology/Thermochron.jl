@@ -1,6 +1,6 @@
 ## --- Fission track functions
 
-function equivalenttime(t::Number, T::Number, Teq::Number, fc::FanningCurvilinearApatite)
+function equivalenttime(t::Number, T::Number, Teq::Number, fc::FanningCurvilinear)
     exp(fc.C2 + (log(t*SEC_MYR)-fc.C2)*(log(1/(Teq+273.15))-fc.C3)/(log(1/(T+273.15))-fc.C3))/SEC_MYR
 end
 function equivalenttime(t::Number, T::Number, Teq::Number, am::Yamada2007PC)
@@ -26,7 +26,7 @@ function reltracklength(t::Number, T::Number, fc::Ketcham1999FC{Tf}) where {Tf}
     g = fc.C0 + fc.C1*(log(t*SEC_MYR)-fc.C2)/(log(1/(T+273.15))-fc.C3)
     (1-max(g*fc.alpha+1, zero(Tf))^(1/fc.alpha)*fc.beta)^(1/fc.beta)
 end
-function reltracklength(t::Number, T::Number, fc::Ketcham2007FC)
+function reltracklength(t::Number, T::Number, fc::Union{Ketcham2007FC, Guenthner2013FC})
     g = fc.C0 + fc.C1*(log(t*SEC_MYR)-fc.C2)/(log(1/(T+273.15))-fc.C3)
     r = 1/(g^(1/fc.alpha) + 1)
 end

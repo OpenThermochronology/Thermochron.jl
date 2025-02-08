@@ -13,7 +13,7 @@ model = (
     nsteps = 350,               # [n] How many steps of the Markov chain should we run after burn-in?
     dr = 1.0,                   # [μ] Radius step size
     dt = 10.0,                  # [Ma] time step size
-    dTmax = 10.0,               # [C/step] Maximum reheating/burial per model timestep
+    dTmax = 25.0,               # [C/step] Maximum reheating/burial per model timestep
     Tinit = 400.0,              # [C] initial model temperature (i.e., crystallization temperature)
     ΔTinit = -50.0,             # [C] Tinit can vary from Tinit to Tinit+ΔTinit
     Tnow = 0.0,                 # [C] Current surface temperature
@@ -90,6 +90,10 @@ calcuncert = zeros(length(chrons))
 @test round.(calc, sigdigits=7) ≈ [138.4124, 232.8114, 144.2487, 233.9706, 902.567, 1010.98, 386.8558, 388.6112, 122.8127, 130.7147, 688.0081, 304.6573, 14.29893, 14.29989, 14.29245] 
 @test calcuncert ≈ zeros(15)
 
+@test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Guenthner2013FC(), Ketcham2007FC()) ≈ -3792.6787329266745
+@test round.(calc, sigdigits=7) ≈ [138.4124, 232.8114, 144.2487, 233.9706, 902.567, 1010.98, 386.8558, 388.6112, 122.8127, 130.7147, 1110.379, 304.6573, 14.29893, 14.29989, 14.29245]
+@test calcuncert ≈ zeros(15)
+
 # Modern input format, Minnesota dataset
 chrons = chronometers(ds, model)
 @test chrons isa Vector{<:Chronometer}
@@ -105,7 +109,6 @@ calcuncert = zeros(length(chrons))
 @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Ketcham2007FC()) ≈  -26867.66124989401
 @test round.(calc, sigdigits=5) ≈ [1313.9, 1320.7, 1185.0, 1243.0, 1216.1, 1335.4, 1141.7, 1094.4, 1170.2, 923.8, 723.59, 201.76, 429.67, 95.576, 259.05, 419.15, 2.9065, 6.1464, 0.00063415, 27.545, 0.007082, 55.056, 2.0682, 174.81, 283.3, 287.74, 266.09, 240.19, 267.84, 244.36, 274.74, 328.26, 322.88, 352.43]
 @test calcuncert ≈ zeros(length(chrons))
-# println(round.(calc, sigdigits=5))
 
 # Test an individual zircon
 @test first(calc) ≈ modelage(first(chrons), Tsteps, ZRDAAM())

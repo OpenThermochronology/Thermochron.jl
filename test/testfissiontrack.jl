@@ -3,6 +3,7 @@
     @test Ketcham1999FC() isa Thermochron.ApatiteAnnealingModel{Float64}
     @test Ketcham2007FC() isa Thermochron.ApatiteAnnealingModel{Float64}
     @test Yamada2007PC() isa Thermochron.ZirconAnnealingModel{Float64}
+    @test Guenthner2013FC() isa Thermochron.ZirconAnnealingModel{Float64}
 
 ## --- Ketcham et al. 1999 Fanning Curvilinear apatite
     am = Ketcham1999FC()
@@ -45,7 +46,7 @@
     @test Thermochron.reltrackdensity(1, 200, am) ≈ 0.07551154545163152
     @test Thermochron.reltrackdensity(1, 500, am) ≈ 0.0
 
-## --- Ketcham et al. 2007 Simplified Curvilinear apatite
+## --- Yamada et al. 2007 Parallel Curvilinear zircon
 
     am = Yamada2007PC()
     @test am isa Thermochron.Yamada2007PC{Float64}
@@ -63,7 +64,30 @@
     @test Thermochron.reltrackdensity(1, 0, am) ≈ 0.9955645217281448
     @test Thermochron.reltrackdensity(1, 10, am) ≈ 0.9938483601157724
     @test Thermochron.reltrackdensity(1, 100, am) ≈ 0.92594172062218 
-    @test Thermochron.reltrackdensity(1, 200, am) ≈  0.48433424047464124
+    @test Thermochron.reltrackdensity(1, 200, am) ≈ 0.48433424047464124
+    @test Thermochron.reltrackdensity(1, 500, am) ≈ 0.0
+
+## --- Guenther 2013 Simplified Curvilinear zircon
+
+    am = Guenthner2013FC()
+    @test am isa Thermochron.Guenthner2013FC{Float64}
+
+    @test Thermochron.reltracklength(1, 0, am) ≈ 0.9987988651472297
+    @test Thermochron.reltracklength(1, 10, am) ≈ 0.998476438713864
+    @test Thermochron.reltracklength(1, 100, am) ≈ 0.9886125414156559
+    @test Thermochron.reltracklength(1, 200, am) ≈ 0.9156810748820664
+    @test Thermochron.reltracklength(1, 300, am) ≈ 0.5980310995551887
+    @test Thermochron.reltracklength(1, 500, am) ≈ 0.029152068246667134
+
+    @test Thermochron.equivalenttime.(1:10, 100, 100, am) ≈ 1:10
+    @test Thermochron.equivalenttime.(1:10, 50, 100, am) ≈ [0.0028785665193461073, 0.005690055255432659, 0.008476770230793686, 0.011247518024086979, 0.014006452961030012, 0.016756010561736853, 0.01949779438472927, 0.022232940810438962, 0.02496229740141236, 0.02768652061547207]
+    @test Thermochron.equivalenttime.(1:10, 150, 100, am) ≈ [196.56951935291298, 397.32010926193027, 599.6796926328979, 803.0912917913217, 1007.2887605410821, 1212.114684837377, 1417.464714169357, 1623.2644860315188, 1829.4582748135415, 2036.0027420018664]
+
+    @test Thermochron.reltrackdensity(1, 0, am) ≈ 0.9984985814340372
+    @test Thermochron.reltrackdensity(1, 10, am) ≈ 0.9980955483923302
+    @test Thermochron.reltrackdensity(1, 100, am) ≈ 0.9857656767695699
+    @test Thermochron.reltrackdensity(1, 200, am) ≈ 0.8946013436025829
+    @test Thermochron.reltrackdensity(1, 300, am) ≈ 0.4975388744439859
     @test Thermochron.reltrackdensity(1, 500, am) ≈ 0.0
 
 ## --- Test "multikinetic" rmr0 model

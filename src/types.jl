@@ -3,7 +3,9 @@
 abstract type AnnealingModel{T} end
 abstract type ZirconAnnealingModel{T} <: AnnealingModel{T} end
 abstract type ApatiteAnnealingModel{T} <: AnnealingModel{T} end
+abstract type FanningCurvilinearZircon{T} <: ZirconAnnealingModel{T} end
 abstract type FanningCurvilinearApatite{T} <: ApatiteAnnealingModel{T} end
+const FanningCurvilinear{T} = Union{FanningCurvilinearZircon{T}, FanningCurvilinearApatite{T}}
 
 # Implement methods to allow broadcasting
 Base.length(x::AnnealingModel) = 1
@@ -17,6 +19,17 @@ Base.@kwdef struct Yamada2007PC{T<:AbstractFloat} <: ZirconAnnealingModel{T}
     bp::T = 43.00       # Yamada et al. 2007 zircon
     l0::T = 11.17       # [um] effective inital mean track length (μmax)
     l0_sigma::T = 0.051 # [um] effective length uncertainty (σ)
+end
+
+# Simplified Fanning Curvilinear zircon model of Guenthner et al. 2013 (doi: 10.2475/03.2013.01)
+Base.@kwdef struct Guenthner2013FC{T<:AbstractFloat} <: FanningCurvilinearZircon{T} 
+    C0::T = 6.24534         # Guenthner et al. 2013 re-fit of Yamada et al. 2007 zircon
+    C1::T = -0.11977        # Guenthner et al. 2013 re-fit of Yamada et al. 2007 zircon
+    C2::T = -314.93688      # Guenthner et al. 2013 re-fit of Yamada et al. 2007 zircon
+    C3::T = -14.2868        # Guenthner et al. 2013 re-fit of Yamada et al. 2007 zircon
+    alpha::T = -0.057206897 # Guenthner et al. 2013 re-fit of Yamada et al. 2007 zircon
+    l0::T = 11.17           # [um] effective inital mean track length (μmax)
+    l0_sigma::T = 0.051     # [um] effective length uncertainty (σ)
 end
 
 # Fanning Curvilinear apatite model of Ketcham, 1999 (doi: 10.2138/am-1999-0903)
