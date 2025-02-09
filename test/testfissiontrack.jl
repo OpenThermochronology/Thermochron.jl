@@ -46,6 +46,27 @@
     @test Thermochron.reltrackdensity(1, 200, am) ≈ 0.07551154545163152
     @test Thermochron.reltrackdensity(1, 500, am) ≈ 0.0
 
+## --- Jones et al. 2021 Parallel Linear monzite
+
+    am = Jones2021FA()
+    @test am isa Thermochron.Jones2021FA{Float64}
+
+    @test Thermochron.reltracklength(1, 0, am) ≈ 0.7579417895276482
+    @test Thermochron.reltracklength(1, 10, am) ≈ 0.735387946933017
+    @test Thermochron.reltracklength(1, 100, am) ≈ 0.532403363581336
+    @test Thermochron.reltracklength(1, 200, am) ≈ 0.30686493763502365
+    @test Thermochron.reltracklength(1, 500, am) ≈ 0.0
+
+    @test Thermochron.equivalenttime.(1:10, 100, 100, am) ≈ 1:10
+    @test Thermochron.equivalenttime.(1:10, 50, 100, am) ≈ [0.0007407975532689652, 0.0013501847848567561, 0.0019181794368659146, 0.0024608598465454146, 0.0029854616491727447, 0.00349609239238555, 0.003995390180771109, 0.004485186955341078, 0.00496682573501881, 0.00544133127424477]
+    @test Thermochron.equivalenttime.(1:10, 150, 100, am) ≈ [1349.8964671079773, 2962.55745499635, 4691.948952755405, 6501.7924618751285, 8373.91430130319, 10297.210702556848, 12264.133860023401, 14269.193377499583, 16308.20252639552, 18377.855521005877]
+
+    @test Thermochron.reltrackdensity(1, 0, am) ≈ 0.5158835790552965
+    @test Thermochron.reltrackdensity(1, 10, am) ≈ 0.470775893866034
+    @test Thermochron.reltrackdensity(1, 100, am) ≈ 0.064806727162672
+    @test Thermochron.reltrackdensity(1, 200, am) ≈ 0.0
+    @test Thermochron.reltrackdensity(1, 500, am) ≈ 0.0
+
 ## --- Yamada et al. 2007 Parallel Curvilinear zircon
 
     am = Yamada2007PC()
@@ -55,6 +76,7 @@
     @test Thermochron.reltracklength(1, 10, am) ≈ 0.995078688092618
     @test Thermochron.reltracklength(1, 100, am) ≈ 0.940753376497744
     @test Thermochron.reltracklength(1, 200, am) ≈ 0.587467392379713
+    @test Thermochron.reltracklength(1, 300, am) ≈ 0.047145496695413736
     @test Thermochron.reltracklength(1, 500, am) ≈ 4.8685772129709805e-21
 
     @test Thermochron.equivalenttime.(1:10, 100, 100, am) ≈ 1:10
@@ -65,6 +87,7 @@
     @test Thermochron.reltrackdensity(1, 10, am) ≈ 0.9938483601157724
     @test Thermochron.reltrackdensity(1, 100, am) ≈ 0.92594172062218 
     @test Thermochron.reltrackdensity(1, 200, am) ≈ 0.48433424047464124
+    @test Thermochron.reltrackdensity(1, 300, am) ≈ 0.0
     @test Thermochron.reltrackdensity(1, 500, am) ≈ 0.0
 
 ## --- Guenther 2013 Simplified Curvilinear zircon
@@ -113,9 +136,14 @@
     @test modelage(zircon, fill(50, 100), Yamada2007PC()) ≈ 95.5875134964696
     @test modelage(zircon, fill(75, 100), Yamada2007PC()) ≈ 91.44848076970709
     @test modelage(zircon, fill(100, 100), Yamada2007PC()) ≈ 84.4038173798344
+    @test modelage(zircon, fill(0, 100), Guenthner2013FC()) ≈ 99.72322073315222
+    @test modelage(zircon, fill(50, 100), Guenthner2013FC()) ≈ 99.06905675284062
+    @test modelage(zircon, fill(75, 100), Guenthner2013FC()) ≈ 98.3387065429949
+    @test modelage(zircon, fill(100, 100), Guenthner2013FC()) ≈ 97.08526701487509
 
     # Linear cooling
     @test modelage(zircon, reverse(1:100), Yamada2007PC()) ≈ 95.86292049620485
+    @test modelage(zircon, reverse(1:100), Guenthner2013FC()) ≈ 99.1377750755283
 
     # As above but longer history
     zircon = ZirconFT(agesteps=reverse(cntr(0:200)))
@@ -124,11 +152,16 @@
     @test modelage(zircon, reverse(1:200), Yamada2007PC()) ≈ 158.88973345523144
     @test modelage(zircon, reverse(1:200)./2, Yamada2007PC()) ≈ 190.62094301177618 
     @test modelage(zircon, reverse(1:200).*2, Yamada2007PC()) ≈ 84.30136045990102
+    @test modelage(zircon, reverse(1:200), Guenthner2013FC()) ≈ 191.5897369291866
+    @test modelage(zircon, reverse(1:200)./2, Guenthner2013FC()) ≈ 198.06912276144533
+    @test modelage(zircon, reverse(1:200).*2, Guenthner2013FC()) ≈ 132.1966344789464 
 
     # Fish Canyon Tuff zircon example
     zircon = ZirconFT(age=27, age_sigma=3, agesteps=reverse(cntr(0:28)))
     @test modelage(zircon, fill(20., 28), Yamada2007PC()) ≈ 27.601238386594986
     @test Thermochron.model_ll(zircon, fill(20., 28), Yamada2007PC()) ≈ -2.03763346617919
+    @test modelage(zircon, fill(20., 28), Guenthner2013FC()) ≈ 27.89690820436307
+    @test Thermochron.model_ll(zircon, fill(20., 28), Guenthner2013FC()) ≈ -2.06224217337577
 
 ## --- Test apatite fission track model ages
 
@@ -140,15 +173,12 @@
 
     # Isothermal residence
     @test modelage(apatite, fill(0, 100), Ketcham1999FC()) ≈ 89.54730962518295
-    @test modelage(apatite, fill(0, 100), Ketcham2007FC()) ≈ 91.24703624063753
-
     @test modelage(apatite, fill(50, 100), Ketcham1999FC()) ≈ 71.90164016667141
-    @test modelage(apatite, fill(50, 100), Ketcham2007FC()) ≈ 74.34211338104792
-
     @test modelage(apatite, fill(75, 100), Ketcham1999FC()) ≈ 22.135848309417995
-    @test modelage(apatite, fill(75, 100), Ketcham2007FC()) ≈ 21.641396305809224
-
     @test modelage(apatite, fill(100, 100), Ketcham1999FC()) ≈ 0.46834257592280504
+    @test modelage(apatite, fill(0, 100), Ketcham2007FC()) ≈ 91.24703624063753
+    @test modelage(apatite, fill(50, 100), Ketcham2007FC()) ≈ 74.34211338104792
+    @test modelage(apatite, fill(75, 100), Ketcham2007FC()) ≈ 21.641396305809224
     @test modelage(apatite, fill(100, 100), Ketcham2007FC()) ≈ 0.42342028286401207
 
     # Linear cooling
@@ -161,12 +191,10 @@
     @test apatite.rmr0 ≈ 0.8573573076438294
 
     @test modelage(apatite, reverse(1:200), Ketcham1999FC()) ≈ 66.2164833900794
-    @test modelage(apatite, reverse(1:200), Ketcham2007FC()) ≈ 67.93014962856782
-
     @test modelage(apatite, reverse(1:200)./2, Ketcham1999FC()) ≈ 124.45929282749134
-    @test modelage(apatite, reverse(1:200)./2, Ketcham2007FC()) ≈ 127.81186983354935
-
     @test modelage(apatite, reverse(1:200).*2, Ketcham1999FC()) ≈ 34.938406635567084
+    @test modelage(apatite, reverse(1:200), Ketcham2007FC()) ≈ 67.93014962856782
+    @test modelage(apatite, reverse(1:200)./2, Ketcham2007FC()) ≈ 127.81186983354935
     @test modelage(apatite, reverse(1:200).*2, Ketcham2007FC()) ≈ 35.810590270883125
 
     # Fish Canyon Tuff apatite example

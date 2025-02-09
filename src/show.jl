@@ -23,7 +23,8 @@ end
 function Base.show(io::IO, x::T) where {T<:FissionTrackLength}
     t = Base.typename(T).wrapper
     l = round(x.length, sigdigits=3)
-    print(io, "$t($(l) μm)")
+    θ = round(x.angle, sigdigits=3)
+    print(io, "$t($(l) μm, $(θ)° from c-axis)")
 end
 
 # Verbose show methods
@@ -75,7 +76,7 @@ end
 function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:ApatiteTrackLength}
     print(io, """$T:
       length    : $(x.length) μm
-      angle     : $(x.angle) degrees
+      angle     : $(x.angle) degrees from c-axis
       dpar      : $(x.dpar) μm
       F         : $(x.F) APFU
       Cl        : $(x.Cl) APFU

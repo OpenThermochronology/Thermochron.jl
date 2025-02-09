@@ -118,6 +118,26 @@ function ZirconFT(T::Type{<:AbstractFloat}=Float64;
     )
 end
 
+struct MonaziteFT{T<:AbstractFloat} <: FissionTrackSample{T}
+    age::T                  # [Ma]
+    age_sigma::T            # [Ma]
+    agesteps::FloatRange    # [Ma]
+    tsteps::FloatRange      # [Ma]
+end
+function MonaziteFT(T::Type{<:AbstractFloat}=Float64; 
+        age=T(NaN), 
+        age_sigma=T(NaN), 
+        agesteps, 
+        tsteps=reverse(agesteps), 
+    )
+    MonaziteFT(
+        T(age),
+        T(age_sigma),
+        floatrange(agesteps),
+        floatrange(tsteps),
+    )
+end
+
 struct ApatiteFT{T<:AbstractFloat} <: FissionTrackSample{T}
     age::T                  # [Ma]
     age_sigma::T            # [Ma]
@@ -1236,6 +1256,17 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                 push!(result, c)
             end
 
+        elseif data.mineral[i] == "monazite"
+            # Monazite fission track
+            if haskey(data, :FT_age_Ma) && haskey(data, :FT_age_sigma_Ma) && !isnan(data.FT_age_Ma[i]/data.FT_age_sigma_Ma[i])
+                c = MonaziteFT(T;
+                    age = data.FT_age_Ma[i], 
+                    age_sigma = data.FT_age_sigma_Ma[i], 
+                    agesteps = agesteps[first_index:end],
+                )
+                push!(result, c)
+            end
+            
         elseif data.mineral[i] == "apatite"
             # Apatite helium
             if haskey(data, :raw_He_age_Ma) && haskey(data, :raw_He_age_sigma_Ma) && !isnan(data.raw_He_age_Ma[i]/data.raw_He_age_sigma_Ma[i])

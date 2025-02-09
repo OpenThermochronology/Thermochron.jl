@@ -2,6 +2,7 @@
 
 abstract type AnnealingModel{T} end
 abstract type ZirconAnnealingModel{T} <: AnnealingModel{T} end
+abstract type MonaziteAnnealingModel{T} <: AnnealingModel{T} end
 abstract type ApatiteAnnealingModel{T} <: AnnealingModel{T} end
 abstract type FanningCurvilinearZircon{T} <: ZirconAnnealingModel{T} end
 abstract type FanningCurvilinearApatite{T} <: ApatiteAnnealingModel{T} end
@@ -12,13 +13,13 @@ Base.length(x::AnnealingModel) = 1
 Base.iterate(x::AnnealingModel) = (x, nothing)
 Base.iterate(x::AnnealingModel, state) = nothing
 
-# Parallel Curvilinear apatite model of Yamada, 2007 (doi: 10.1016/j.chemgeo.2006.09.002)
+# Parallel Curvilinear zircon model of Yamada, 2007 (doi: 10.1016/j.chemgeo.2006.09.002)
 Base.@kwdef struct Yamada2007PC{T<:AbstractFloat} <: ZirconAnnealingModel{T} 
     c0p::T = -63.37     # Yamada et al. 2007 zircon
     c1p::T = 0.212      # Yamada et al. 2007 zircon
     bp::T = 43.00       # Yamada et al. 2007 zircon
-    l0::T = 11.17       # [um] effective inital mean track length (μmax)
-    l0_sigma::T = 0.051 # [um] effective length uncertainty (σ)
+    l0::T = 11.17       # [um] effective initial track length (μmax)
+    l0_sigma::T = 0.051 # [um] effective initial track length uncertainty (σ)
 end
 
 # Simplified Fanning Curvilinear zircon model of Guenthner et al. 2013 (doi: 10.2475/03.2013.01)
@@ -28,8 +29,8 @@ Base.@kwdef struct Guenthner2013FC{T<:AbstractFloat} <: FanningCurvilinearZircon
     C2::T = -314.93688      # Guenthner et al. 2013 re-fit of Yamada et al. 2007 zircon
     C3::T = -14.2868        # Guenthner et al. 2013 re-fit of Yamada et al. 2007 zircon
     alpha::T = -0.057206897 # Guenthner et al. 2013 re-fit of Yamada et al. 2007 zircon
-    l0::T = 11.17           # [um] effective inital mean track length (μmax)
-    l0_sigma::T = 0.051     # [um] effective length uncertainty (σ)
+    l0::T = 11.17           # [um] Initial track length
+    l0_sigma::T = 0.051     # [um] Initial track length uncertainty
 end
 
 # Fanning Curvilinear apatite model of Ketcham, 1999 (doi: 10.2138/am-1999-0903)
@@ -38,8 +39,8 @@ Base.@kwdef struct Ketcham1999FC{T<:AbstractFloat} <: FanningCurvilinearApatite{
     C1::T = 0.38951     # "Simultaneous fit" from Ketcham et al. 1999 apatite
     C2::T = -51.253     # "Simultaneous fit" from Ketcham et al. 1999 apatite
     C3::T = -7.6423     # "Simultaneous fit" from Ketcham et al. 1999 apatite
-    alpha::T = -0.12327 # "Simultaneous fit" from Ketcham et al. 1999 apatite
-    beta::T = -11.988   # "Simultaneous fit" from Ketcham et al. 1999 apatite
+    alpha::T = -0.12327 # Box-Cox transform parameter
+    beta::T = -11.988   # Box-Cox transform parameter
     l0::T = 16.38       # [um] Initial track length
     l0_sigma::T = 0.09  # [um] Initial track length unertainty
 end
@@ -53,6 +54,16 @@ Base.@kwdef struct Ketcham2007FC{T<:AbstractFloat} <: FanningCurvilinearApatite{
     alpha::T = 0.04672  # "Simultaneous fit" from Ketcham et al. 2007 apatite
     l0::T = 16.38       # [um] Initial track length
     l0_sigma::T = 0.09  # [um] Initial track length unertainty
+end
+
+# Parallel Linear monazite model of Jones et al., 2021 (doi: 10.5194/gchron-3-89-2021)
+Base.@kwdef struct Jones2021FA{T<:AbstractFloat} <: MonaziteAnnealingModel{T} 
+    C0::T = 1.374           # Annealing parameter
+    C1::T = -4.192812e-5    # Annealing parameter
+    C2::T = -22.70885029    # Annealing parameter
+    C3::T = 0.0             # Annealing parameter
+    l0::T = 10.60           # [um] Initial track length
+    l0_sigma::T = 0.19      # [um] Initial track length uncertainty
 end
 
 ## --- Define DiffusivityModel types

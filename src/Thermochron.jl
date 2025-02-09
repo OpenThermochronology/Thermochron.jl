@@ -35,7 +35,9 @@ module Thermochron
     
     include("types.jl")
     export ZRDAAM, RDAAM                                                    # Damage-and-annealing based helium diffusivity model types
-    export Ketcham1999FC, Ketcham2007FC, Yamada2007PC, Guenthner2013FC      # Fission track annealing model types
+    export Ketcham1999FC, Ketcham2007FC                                     # Apatite fission track annealing model types
+    export Yamada2007PC, Guenthner2013FC                                    # Zircon fission track annealing models
+    export Jones2021FA                                                      # Other mineral annealing models
     export Constraint, Unconformity, Boundary, DetailInterval               # Types used as inputs to MCMC functions
 
     include("chronometers.jl")

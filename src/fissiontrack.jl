@@ -1,8 +1,14 @@
 ## --- Fission track functions
 
-function equivalenttime(t::Number, T::Number, Teq::Number, fc::FanningCurvilinear)
-    exp(fc.C2 + (log(t*SEC_MYR)-fc.C2)*(log(1/(Teq+273.15))-fc.C3)/(log(1/(T+273.15))-fc.C3))/SEC_MYR
+# Fanning Curvilinear
+function equivalenttime(t::Number, T::Number, Teq::Number, am::FanningCurvilinear)
+    exp(am.C2 + (log(t*SEC_MYR)-am.C2)*(log(1/(Teq+273.15))-am.C3)/(log(1/(T+273.15))-am.C3))/SEC_MYR
 end
+# Fanning Linear (Fanning Arrhenius)
+function equivalenttime(t::Number, T::Number, Teq::Number, am::Jones2021FA)
+    exp(am.C2 + (log(t*SEC_MYR)-am.C2)*((1/(Teq+273.15))-am.C3)/((1/(T+273.15))-am.C3))/SEC_MYR
+end
+# Parallel Curvilinear
 function equivalenttime(t::Number, T::Number, Teq::Number, am::Yamada2007PC)
     exp(am.bp*log(1/(Teq+273.15)) + (log(t*SEC_MYR) - am.bp*log(1/(T+273.15))))/SEC_MYR
 end
@@ -22,14 +28,22 @@ which they respetively implement include
 
 See also: `reltrackdensity`.
 """
-function reltracklength(t::Number, T::Number, fc::Ketcham1999FC{Tf}) where {Tf}
-    g = fc.C0 + fc.C1*(log(t*SEC_MYR)-fc.C2)/(log(1/(T+273.15))-fc.C3)
-    (1-max(g*fc.alpha+1, zero(Tf))^(1/fc.alpha)*fc.beta)^(1/fc.beta)
+# Fanning Curvilinear, Box-Cox
+function reltracklength(t::Number, T::Number, am::Ketcham1999FC{F}) where {F<:AbstractFloat}
+    g = am.C0 + am.C1*(log(t*SEC_MYR)-am.C2)/(log(1/(T+273.15))-am.C3)
+    (1-am.beta * max(g*am.alpha+1, zero(F))^(1/am.alpha))^(1/am.beta)
 end
-function reltracklength(t::Number, T::Number, fc::Union{Ketcham2007FC, Guenthner2013FC})
-    g = fc.C0 + fc.C1*(log(t*SEC_MYR)-fc.C2)/(log(1/(T+273.15))-fc.C3)
-    r = 1/(g^(1/fc.alpha) + 1)
+# Fanning Curvilinear, simplified Box-Cox
+function reltracklength(t::Number, T::Number, am::Union{Ketcham2007FC, Guenthner2013FC})
+    g = am.C0 + am.C1*(log(t*SEC_MYR)-am.C2)/(log(1/(T+273.15))-am.C3)
+    r = 1/(g^(1/am.alpha) + 1)
 end
+# Fanning Linear (Fanning Arrhenius), no Box-Cox
+function reltracklength(t::Number, T::Number, am::Jones2021FA{F}) where {F<:AbstractFloat}
+    g = am.C0 + am.C1*(log(t*SEC_MYR)-am.C2)/((1/(T+273.15))-am.C3)
+    r = max(min(g, one(F)), zero(F))
+end
+# Parallel Curvilinear, no Box-Cox
 function reltracklength(t::Number, T::Number, am::Yamada2007PC)
     r = exp(-exp(am.c0p + am.c1p*(log(t*SEC_MYR) - am.bp*log(1/(T+273.15)))))
 end
@@ -47,9 +61,30 @@ for apatite and Tagami et al. (1999) for zircon
 
 See also: `reltracklength`.
 """
-reltrackdensity(t::Number, T::Number, am::ApatiteAnnealingModel) = reltrackdensityap(reltracklength(t, T, am))
 reltrackdensity(t::Number, T::Number, am::ZirconAnnealingModel) = reltrackdensityzrn(reltracklength(t, T, am))
-function reltrackdensityap(r::T) where T<:Number
+reltrackdensity(t::Number, T::Number, am::MonaziteAnnealingModel) = reltrackdensitymnz(reltracklength(t, T, am))
+reltrackdensity(t::Number, T::Number, am::ApatiteAnnealingModel) = reltrackdensityap(reltracklength(t, T, am))
+function reltrackdensityzrn(r::T) where {T<:Number}
+    Tf = float(T)
+    if r < 0.2
+        zero(Tf)
+    elseif r < 1
+        Tf(1.25)*(r-Tf(0.2))
+    else
+        one(Tf)
+    end
+end
+function reltrackdensitymnz(r::T) where {T<:Number}
+    Tf = float(T)
+    if r < 0.5
+        zero(Tf)
+    elseif r < 1
+        Tf(2)*(r-Tf(0.5))
+    else
+        one(Tf)
+    end
+end
+function reltrackdensityap(r::T) where {T<:Number}
     Tf = float(T)
     if r < 0.5274435106696789
         zero(Tf)
@@ -61,17 +96,6 @@ function reltrackdensityap(r::T) where T<:Number
         one(Tf)
     end
 end
-function reltrackdensityzrn(r::T) where T<:Number
-    Tf = float(T)
-    if r < 0.2
-        zero(Tf)
-    elseif r < 1
-        Tf(1.25)*(r-Tf(0.2))
-    else
-        one(Tf)
-    end
-end
-
 
 ellipse(x, lc) = @. sqrt(abs((1 - x^2/lc^2)*( 1.632*lc - 10.879)^2))
 alrline(x, θalr) = @. (0.1035*θalr - 2.250) + x * tan(deg2rad(θalr))
@@ -124,7 +148,7 @@ rmr0 = (-0.0495 -0.0348F +0.3528|Cl - 1| +0.0701|OH - 1|
 """
 function rmr0model(F, Cl, OH, Mn=0, Fe=0, others=0)
     F+Cl+OH ≈ 2 || error("F, Cl, and OH should sum to 2")
-    h = - 0.0348F + 0.3528abs(Cl - 1) + 0.0701abs(OH - 1) 
+    h = - 0.0348F + 0.3528abs(Cl - 1) + 0.0701abs(OH - 1)
         - 0.8592Mn - 1.2252Fe - 0.1721others -0.0495
     return h^0.1433
 end
@@ -180,11 +204,10 @@ which they respetively implement include
   `Yamada2007PC`        Parallel Curvilinear zircon model of Yamada et al. 2007 (doi: 10.1016/j.chemgeo.2006.09.002)
 """
 function modelage(zircon::ZirconFT{T}, Tsteps::AbstractVector, am::ZirconAnnealingModel{T}) where {T <: AbstractFloat}
-    agesteps = zircon.agesteps
-    tsteps = zircon.tsteps
-    @assert issorted(tsteps)
-    @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps)
-    teq = dt = step(tsteps)
+    agesteps = zircon.agesteps::FloatRange
+    @assert issorted(zircon.tsteps)
+    @assert eachindex(agesteps) == eachindex(zircon.tsteps) == eachindex(Tsteps)
+    teq = dt = step(zircon.tsteps)
     r = reltracklength(teq, Tsteps[end], am)
     ftobs = dt * reltrackdensityzrn(r) * exp(λ238U * agesteps[end])
     @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
@@ -194,13 +217,26 @@ function modelage(zircon::ZirconFT{T}, Tsteps::AbstractVector, am::ZirconAnneali
     end
     return newton_ft_age(ftobs)
 end
+function modelage(monazite::MonaziteFT{T}, Tsteps::AbstractVector, am::MonaziteAnnealingModel{T}) where {T <: AbstractFloat}
+    agesteps = monazite.agesteps::FloatRange
+    @assert issorted(monazite.tsteps)
+    @assert eachindex(agesteps) == eachindex(monazite.tsteps) == eachindex(Tsteps)
+    teq = dt = step(monazite.tsteps)
+    r = reltracklength(teq, Tsteps[end], am)
+    ftobs = dt * reltrackdensitymnz(r) * exp(λ238U * agesteps[end])
+    @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
+        teq = equivalenttime(teq, Tsteps[i+1], Tsteps[i], am) + dt
+        r = reltracklength(teq, Tsteps[i], am)
+        ftobs += dt * reltrackdensitymnz(r) * exp(λ238U * agesteps[i])
+    end
+    return newton_ft_age(ftobs)
+end
 function modelage(apatite::ApatiteFT{T}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}) where {T <: AbstractFloat}
-    agesteps = apatite.agesteps
-    tsteps = apatite.tsteps
-    rmr0 = apatite.rmr0
-    @assert issorted(tsteps)
-    @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps)
-    teq = dt = step(tsteps)
+    agesteps = apatite.agesteps::FloatRange
+    rmr0 = apatite.rmr0::T
+    @assert issorted(apatite.tsteps)
+    @assert eachindex(agesteps) == eachindex(apatite.tsteps) == eachindex(Tsteps)
+    teq = dt = step(apatite.tsteps)
     r = rlr(reltracklength(teq, Tsteps[end], am), rmr0)
     ftobs = dt * reltrackdensityap(r) * exp(λ238U * agesteps[end]) 
     @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
