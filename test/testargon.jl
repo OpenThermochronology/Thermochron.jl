@@ -15,6 +15,7 @@
     @time "Allocating a mineral" mineral = GenericAr(r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
     @test isa(mineral, GenericAr)
     show(mineral)
+    println()
     display(mineral)
 
     @test mineral.agesteps == reverse(tsteps)

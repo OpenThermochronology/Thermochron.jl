@@ -250,7 +250,7 @@ rmr0mean = mean(kinetics.zdmdist .|> x-> x.rmr0)
 ## ---
 detail = DetailInterval(
     agemin = 0, # Youngest end of detail interval
-    agemax = 541, # Oldest end of detail interval
+    agemax = 1000, # Oldest end of detail interval
     minpoints = 3, # Minimum number of points in detail interval
 )
 @time "\nMCMC with Detail interval" tT = MCMC(data, model, boundary, unconf, detail)

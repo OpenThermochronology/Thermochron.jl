@@ -17,6 +17,7 @@
     @time "Allocating a mineral" mineral = GenericHe(r=r,dr=dr,U238=U,Th232=Th,D0=D0,Ea=Ea,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
     @test isa(mineral, GenericHe)
     show(mineral)
+    println()
     display(mineral)
 
     @test mineral.agesteps == reverse(tsteps)

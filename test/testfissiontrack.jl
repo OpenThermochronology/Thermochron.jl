@@ -46,7 +46,7 @@
     @test Thermochron.reltrackdensity(1, 200, am) ≈ 0.07551154545163152
     @test Thermochron.reltrackdensity(1, 500, am) ≈ 0.0
 
-## --- Jones et al. 2021 Parallel Linear monzite
+## --- Jones et al. 2021 Parallel Linear monazite
 
     am = Jones2021FA()
     @test am isa Thermochron.Jones2021FA{Float64}
@@ -129,6 +129,7 @@
     zircon = ZirconFT(agesteps=reverse(cntr(0:100)))
     @test zircon isa ZirconFT{Float64}
     show(zircon)
+    println()
     display(zircon)
 
     # Isothermal residence
@@ -169,6 +170,7 @@
     @test apatite isa ApatiteFT{Float64}
     @test apatite.rmr0 ≈ 0.8573573076438294
     show(apatite)
+    println()
     display(apatite)
 
     # Isothermal residence
@@ -202,10 +204,32 @@
     @test modelage(apatite, fill(20., 28), Ketcham2007FC()) ≈ 25.25753183867445
     @test Thermochron.model_ll(apatite, fill(20., 28), Ketcham2007FC()) ≈ -2.021235413424507 
 
+## -- Test monazite fission track
+
+    monazite = MonaziteFT(agesteps=reverse(cntr(0:100)))
+    @test monazite isa MonaziteFT{Float64}
+    show(monazite)
+    println()
+    display(monazite)
+
+    # Isothermal residence
+    @test modelage(monazite, fill(0, 100), Jones2021FA()) ≈ 43.43881113607752
+    @test modelage(monazite, fill(50, 100), Jones2021FA()) ≈ 19.288380906685823
+    @test modelage(monazite, fill(75, 100), Jones2021FA()) ≈ 7.179152374521148
+    @test modelage(monazite, fill(100, 100), Jones2021FA()) ≈ 0.18694393293501763
+
+    # Linear cooling
+    @test modelage(monazite, reverse(1:100), Jones2021FA()) ≈ 24.054872653095966
+
+    monazite = MonaziteFT(age=10, age_sigma=3, agesteps=reverse(cntr(0:28)))
+    @test modelage(monazite, fill(20., 28), Jones2021FA()) ≈ 10.263270122494962
+    @test Thermochron.model_ll(monazite, fill(20., 28), Jones2021FA()) ≈ -2.0214014417282553
+
 ## --- Test track lengths
 
     track = ApatiteTrackLength(length=15, angle=35, agesteps=reverse(cntr(0:20)), F=1.75, Cl=0.01, OH=0.24)
     show(track)
+    println()
     display(track)
 
     l, σ = modellength(track, fill(75, 20), Ketcham1999FC())
