@@ -294,9 +294,9 @@ function modellength(track::ApatiteTrackLength{T}, Tsteps::AbstractVector, am::A
     end
     r .*= am.l0 # Convert from reduced length to length
     μ, σ = nanmean(r, pr), nanstd(r, pr)
+    σ = sqrt(σ^2 + am.l0_sigma^2)
     if trackhist
-        h = (4*σ^5/(3 * sum(pr)))^(1/5) # Silverman's rule for kernel bandwidth
-        binlikelihoods!(track, h)
+        binlikelihoods!(track, σ)
     end
     return μ, σ
 end
@@ -324,16 +324,13 @@ end
 
 function model_ll(track::ApatiteTrackLength, Tsteps::AbstractVector, am::ApatiteAnnealingModel)
     l,σ = modellength(track, Tsteps, am)
-    return model_ll(track)
+    return model_ll(track, σ)
 end
 
-function model_ll(track::ApatiteTrackLength{T}) where {T}
-    lc = lcmod(track)
-    σ = nanstd(track.r, track.pr)
-    h = (4*σ^5/(3 * sum(track.pr)))^(1/5) # Silverman's rule
+function model_ll(track::ApatiteTrackLength{T}, σ::T) where {T}
     ll = typemin(T)
-    if h > 0
-        kernel = Normal(lc, h)
+    if σ > 0
+        kernel = Normal(lcmod(track), σ)
         @inbounds for i in eachindex(track.pr)
             if (track.pr[i] > 0) && (track.r[i] > 0)
                 lpr = log(track.pr[i])
