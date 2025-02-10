@@ -191,6 +191,7 @@ end
 """
 ```julia
 modelage(mineral::ZirconFT, Tsteps, am::ZirconAnnealingModel)
+modelage(mineral::MonaziteFT, Tsteps, am::MonaziteAnnealingModel)
 modelage(mineral::ApatiteFT, Tsteps, am::ApatiteAnnealingModel)
 ```
 Calculate the precdicted fission track age of an apatite that has experienced a given 
@@ -207,12 +208,13 @@ function modelage(zircon::ZirconFT{T}, Tsteps::AbstractVector, am::ZirconAnneali
     agesteps = zircon.agesteps::FloatRange
     @assert issorted(zircon.tsteps)
     @assert eachindex(agesteps) == eachindex(zircon.tsteps) == eachindex(Tsteps)
+    ΔT = zircon.offset::T
     teq = dt = step(zircon.tsteps)
     r = reltracklength(teq, Tsteps[end], am)
     ftobs = dt * reltrackdensityzrn(r) * exp(λ238U * agesteps[end])
     @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
-        teq = equivalenttime(teq, Tsteps[i+1], Tsteps[i], am) + dt
-        r = reltracklength(teq, Tsteps[i], am)
+        teq = equivalenttime(teq, Tsteps[i+1]+ΔT, Tsteps[i]+ΔT, am) + dt
+        r = reltracklength(teq, Tsteps[i]+ΔT, am)
         ftobs += dt * reltrackdensityzrn(r) * exp(λ238U * agesteps[i])
     end
     return newton_ft_age(ftobs)
@@ -222,26 +224,28 @@ function modelage(monazite::MonaziteFT{T}, Tsteps::AbstractVector, am::MonaziteA
     @assert issorted(monazite.tsteps)
     @assert eachindex(agesteps) == eachindex(monazite.tsteps) == eachindex(Tsteps)
     teq = dt = step(monazite.tsteps)
+    ΔT = monazite.offset::T
     r = reltracklength(teq, Tsteps[end], am)
     ftobs = dt * reltrackdensitymnz(r) * exp(λ238U * agesteps[end])
     @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
-        teq = equivalenttime(teq, Tsteps[i+1], Tsteps[i], am) + dt
-        r = reltracklength(teq, Tsteps[i], am)
+        teq = equivalenttime(teq, Tsteps[i+1]+ΔT, Tsteps[i]+ΔT, am) + dt
+        r = reltracklength(teq, Tsteps[i]+ΔT, am)
         ftobs += dt * reltrackdensitymnz(r) * exp(λ238U * agesteps[i])
     end
     return newton_ft_age(ftobs)
 end
 function modelage(apatite::ApatiteFT{T}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}) where {T <: AbstractFloat}
     agesteps = apatite.agesteps::FloatRange
-    rmr0 = apatite.rmr0::T
     @assert issorted(apatite.tsteps)
     @assert eachindex(agesteps) == eachindex(apatite.tsteps) == eachindex(Tsteps)
+    rmr0 = apatite.rmr0::T
+    ΔT = apatite.offset::T
     teq = dt = step(apatite.tsteps)
     r = rlr(reltracklength(teq, Tsteps[end], am), rmr0)
     ftobs = dt * reltrackdensityap(r) * exp(λ238U * agesteps[end]) 
     @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
-        teq = equivalenttime(teq, Tsteps[i+1], Tsteps[i], am) + dt
-        r = rlr(reltracklength(teq, Tsteps[i], am), rmr0)
+        teq = equivalenttime(teq, Tsteps[i+1]+ΔT, Tsteps[i]+ΔT, am) + dt
+        r = rlr(reltracklength(teq, Tsteps[i]+ΔT, am), rmr0)
         ftobs += dt * reltrackdensityap(r) * exp(λ238U * agesteps[i])
     end
     return newton_ft_age(ftobs)

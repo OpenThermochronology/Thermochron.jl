@@ -37,12 +37,13 @@ function modelage(mineral::GenericAr{T}, Tsteps::AbstractVector{T}) where T <: A
     D0 = mineral.D0*10000^2*SEC_MYR::T      # cm^2/sec, converted to micron^2/Myr  
     Ea = mineral.Ea::T                      # kJ/mol
     R = 0.008314472                         # kJ/(K*mol)
+    ΔT = mineral.offset::T + 273.15         # Conversion from C to K, plus temperature offset from the
 
     # Diffusivities of crystalline and amorphous endmembers
     De = mineral.De::Vector{T}
     @assert eachindex(De) == eachindex(Tsteps)
     @turbo for i ∈ eachindex(De)
-        De[i] = D0 * exp(-Ea / R / (Tsteps[i] + 273.15)) # micron^2/Myr
+        De[i] = D0 * exp(-Ea / R / (Tsteps[i] + ΔT)) # micron^2/Myr
     end
 
     # Get time and radius discretization

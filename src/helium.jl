@@ -224,14 +224,15 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T})
     Bα = dm.Bα::T                               # [g/alpha] mass of amorphous material produced per alpha decay
     Phi = dm.Phi::T                             # unitless
     R = 0.008314472                             # kJ/(K*mol)
+    ΔT = zircon.offset::T + 273.15              # Conversion from C to K, plus temperature offset from the
 
     # Diffusivities of crystalline and amorphous endmembers
     Dz = zircon.Dz::Vector{T}
     DN17 = zircon.DN17::Vector{T}
     @assert eachindex(Dz) == eachindex(DN17) == eachindex(Tsteps)
     @turbo for i ∈ eachindex(Dz)
-        Dz[i] = DzD0 * exp(-DzEa / R / (Tsteps[i] + 273.15)) # micron^2/Myr
-        DN17[i] = DN17D0 * exp(-DN17Ea / R / (Tsteps[i] + 273.15)) # micron^2/Myr
+        Dz[i] = DzD0 * exp(-DzEa / R / (Tsteps[i] + ΔT)) # micron^2/Myr
+        DN17[i] = DN17D0 * exp(-DN17Ea / R / (Tsteps[i] + ΔT)) # micron^2/Myr
     end
 
     # Get time and radius discretization
@@ -354,6 +355,7 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
     lambdaf = dm.lambdaf::T                 # 1/time
     lambdaD = dm.lambdaD::T                 # 1/time
     R = 0.008314472                         # kJ/(K*mol)
+    ΔT = apatite.offset::T + 273.15         # Conversion from C to K, plus temperature offset from the
 
     # Conversion factor from alphas/g to track length cm/cm^3
     damage_conversion = rhoap*(lambdaf/lambdaD)*etaq*L
@@ -363,8 +365,8 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
     Dtrap = apatite.Dtrap::Vector{T}
     @assert eachindex(DL) == eachindex(Dtrap) == eachindex(Tsteps)
     @turbo for i ∈ eachindex(DL)
-        DL[i] = D0L * exp(-EaL / R / (Tsteps[i] + 273.15)) # micron^2/Myr
-        Dtrap[i] = exp(-EaTrap / R / (Tsteps[i] + 273.15)) # unitless
+        DL[i] = D0L * exp(-EaL / R / (Tsteps[i] + ΔT)) # micron^2/Myr
+        Dtrap[i] = exp(-EaTrap / R / (Tsteps[i] + ΔT)) # unitless
     end
 
     # Get time and radius discretization
@@ -479,12 +481,13 @@ function modelage(mineral::GenericHe{T}, Tsteps::AbstractVector{T}) where T <: A
     D0 = mineral.D0*10000^2*SEC_MYR::T      # cm^2/sec, converted to micron^2/Myr  
     Ea = mineral.Ea::T                      # kJ/mol
     R = 0.008314472                         # kJ/(K*mol)
+    ΔT = mineral.offset::T + 273.15         # Conversion from C to K, plus temperature offset from the
 
     # Diffusivities of crystalline and amorphous endmembers
     De = mineral.De::Vector{T}
     @assert eachindex(De) == eachindex(Tsteps)
     @turbo for i ∈ eachindex(De)
-        De[i] = D0 * exp(-Ea / R / (Tsteps[i] + 273.15)) # micron^2/Myr
+        De[i] = D0 * exp(-Ea / R / (Tsteps[i] + ΔT)) # micron^2/Myr
     end
 
     # Get time and radius discretization

@@ -37,25 +37,23 @@ err(x::FissionTrackLength{T}) where {T} = zero(T)
 ## --- Fission track length types
 
 struct ApatiteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
-    length::T               # [um]
-    angle::T                # [degrees]
-    lcmod::T                # [um]
-    agesteps::FloatRange    # [Ma]
-    tsteps::FloatRange      # [Ma]
+    length::T               # [um] track length
+    angle::T                # [degrees] track angle from the c-axis
+    lcmod::T                # [um] model length of an equivalent c-axis parallel rack
+    offset::T               # [C] temperature offset relative to the surface
+    agesteps::FloatRange    # [Ma] age in Ma relative to the present
+    tsteps::FloatRange      # [Ma] forward time since crystallization
     r::Vector{T}            # [unitless]
     pr::Vector{T}           # [unitless]
     ledges::FloatRange      # [um] Length distribution edges
     ldist::Vector{T}        # [um] Length log likelihood
-    dpar::T                 # [μm]
-    F::T                    # [APFU]
-    Cl::T                   # [APFU]
-    OH::T                   # [APFU]
-    rmr0::T                 # [unitless]
+    rmr0::T                 # [unitless] relative resistance to annealing (0=most, 1=least)
 end
 function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64; 
         length=T(NaN), 
         angle=T(NaN), 
         lcmod=lcmod(length, angle),
+        offset=zero(T),
         agesteps, 
         tsteps=reverse(agesteps), 
         ledges=(0:1.0:20),
@@ -82,16 +80,13 @@ function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
         T(length),
         T(angle),
         T(lcmod),
+        T(offset),
         floatrange(agesteps),
         floatrange(tsteps),
         r,
         pr,
         floatrange(ledges),
         ldist,
-        T(dpar),
-        T(F),
-        T(Cl),
-        T(OH),
         T(rmr0),
     )
 end
@@ -99,59 +94,63 @@ end
 ## --- Fission track age types
 
 struct ZirconFT{T<:AbstractFloat} <: FissionTrackSample{T}
-    age::T                  # [Ma]
-    age_sigma::T            # [Ma]
-    agesteps::FloatRange    # [Ma]
-    tsteps::FloatRange      # [Ma]
+    age::T                  # [Ma] fission track age
+    age_sigma::T            # [Ma] fission track age uncertainty (one-sigma)
+    offset::T               # [C] temperature offset relative to the surface
+    agesteps::FloatRange    # [Ma] age in Ma relative to the present
+    tsteps::FloatRange      # [Ma] forward time since crystallization
 end
 function ZirconFT(T::Type{<:AbstractFloat}=Float64; 
         age=T(NaN), 
         age_sigma=T(NaN), 
+        offset=zero(T),
         agesteps, 
         tsteps=reverse(agesteps), 
     )
     ZirconFT(
         T(age),
         T(age_sigma),
+        T(offset),
         floatrange(agesteps),
         floatrange(tsteps),
     )
 end
 
 struct MonaziteFT{T<:AbstractFloat} <: FissionTrackSample{T}
-    age::T                  # [Ma]
-    age_sigma::T            # [Ma]
-    agesteps::FloatRange    # [Ma]
-    tsteps::FloatRange      # [Ma]
+    age::T                  # [Ma] fission track age
+    age_sigma::T            # [Ma] fission track age uncertainty (one-sigma)
+    offset::T               # [C] temperature offset relative to the surface
+    agesteps::FloatRange    # [Ma] age in Ma relative to the present
+    tsteps::FloatRange      # [Ma] forward time since crystallization
 end
 function MonaziteFT(T::Type{<:AbstractFloat}=Float64; 
         age=T(NaN), 
         age_sigma=T(NaN), 
+        offset=zero(T),
         agesteps, 
         tsteps=reverse(agesteps), 
     )
     MonaziteFT(
         T(age),
         T(age_sigma),
+        T(offset),
         floatrange(agesteps),
         floatrange(tsteps),
     )
 end
 
 struct ApatiteFT{T<:AbstractFloat} <: FissionTrackSample{T}
-    age::T                  # [Ma]
-    age_sigma::T            # [Ma]
-    agesteps::FloatRange    # [Ma]
-    tsteps::FloatRange      # [Ma]
-    dpar::T                 # [μm]
-    F::T                    # [APFU]
-    Cl::T                   # [APFU]
-    OH::T                   # [APFU]
-    rmr0::T                 # [unitless]
+    age::T                  # [Ma] fission track age
+    age_sigma::T            # [Ma] fission track age uncertainty (one-sigma)
+    offset::T               # [C] temperature offset relative to the surface
+    agesteps::FloatRange    # [Ma] age in Ma relative to the present
+    tsteps::FloatRange      # [Ma] forward time since crystallization
+    rmr0::T                 # [unitless] relative resistance to annealing (0=most, 1=least)
 end
 function ApatiteFT(T::Type{<:AbstractFloat}=Float64; 
         age=T(NaN), 
-        age_sigma=T(NaN), 
+        age_sigma=T(NaN),
+        offset=zero(T),
         agesteps, 
         tsteps=reverse(agesteps), 
         dpar=T(NaN),
@@ -173,12 +172,9 @@ function ApatiteFT(T::Type{<:AbstractFloat}=Float64;
     ApatiteFT(
         T(age),
         T(age_sigma),
+        T(offset),
         floatrange(agesteps),
         floatrange(tsteps),
-        T(dpar),
-        T(F),
-        T(Cl),
-        T(OH),
         T(rmr0),
     )
 end
@@ -189,6 +185,7 @@ end
 ZirconHe(T=Float64;
     age::Number=T(NaN),
     age_sigma::Number=T(NaN),
+    T(offset),
     r::Number=one(T),
     dr::Number, 
     U238::Number,
@@ -211,21 +208,22 @@ in Ma.
 """
 # Concretely-typed immutable struct to hold information about a single zircon crystal and its helium age
 struct ZirconHe{T<:AbstractFloat} <: HeliumSample{T}
-    age::T
-    age_sigma::T
-    agesteps::FloatRange
-    tsteps::FloatRange
-    rsteps::FloatRange
-    redges::FloatRange
-    nrsteps::Int
-    r238U::Vector{T}
-    r235U::Vector{T}
-    r232Th::Vector{T}
-    r147Sm::Vector{T}
-    alphadeposition::Matrix{T}
-    alphadamage::Matrix{T}
-    pr::Matrix{T}
-    annealeddamage::Matrix{T}
+    age::T                      # [Ma] helium age
+    age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
+    offset::T                   # [C]
+    agesteps::FloatRange        # [Ma] age in Ma relative to the present
+    tsteps::FloatRange          # [Ma] forward time since crystallization
+    rsteps::FloatRange          # [um] radius bin centers
+    redges::FloatRange          # [um] radius bin centers
+    nrsteps::Int                # [n] number of radial steps
+    r238U::Vector{T}            # [atoms/g] radial U-238 concentrations
+    r235U::Vector{T}            # [atoms/g] radial U-235 concentrations
+    r232Th::Vector{T}           # [atoms/g] radial Th-232 concentrations
+    r147Sm::Vector{T}           # [atoms/g] radial Sm-147 concentrations
+    alphadeposition::Matrix{T}  # [atoms/g] alpha deposition matrix
+    alphadamage::Matrix{T}      # [decays/g] initial damage matrix
+    pr::Matrix{T}               # [unitless] reduced damage density matrix
+    annealeddamage::Matrix{T}   # [decays/g] annealed damage matrix
     u::Matrix{T}
     β::Vector{T}
     Dz::Vector{T}
@@ -238,6 +236,7 @@ end
 function ZirconHe(T::Type{<:AbstractFloat}=Float64;
         age::Number=T(NaN),
         age_sigma::Number=T(NaN),
+        offset=zero(T),
         r::Number=one(T),
         dr::Number, 
         U238::Number,
@@ -434,6 +433,7 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
     return ZirconHe(
         T(age),
         T(age_sigma),
+        T(offset),
         agesteps,
         tsteps,
         rsteps,
@@ -463,6 +463,7 @@ end
 ApatiteHe(T=Float64;
     age::Number=T(NaN),
     age_sigma::Number=T(NaN),
+    offset=zero(T),
     r::Number, 
     dr::Number=one(T), 
     U238::Number, 
@@ -485,21 +486,22 @@ in Ma.
 """
 # Concretely-typed immutable struct to hold information about a single apatite crystal and its helium age
 struct ApatiteHe{T<:AbstractFloat} <: HeliumSample{T}
-    age::T
-    age_sigma::T
-    agesteps::FloatRange
-    tsteps::FloatRange
-    rsteps::FloatRange
-    redges::FloatRange
-    nrsteps::Int
-    r238U::Vector{T}
-    r235U::Vector{T}
-    r232Th::Vector{T}
-    r147Sm::Vector{T}
-    alphadeposition::Matrix{T}
-    alphadamage::Matrix{T}
-    pr::Matrix{T}
-    annealeddamage::Matrix{T}
+    age::T                      # [Ma] helium age
+    age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
+    offset::T                   # [C] temperature offset relative to the surface
+    agesteps::FloatRange        # [Ma] age in Ma relative to the present
+    tsteps::FloatRange          # [Ma] forward time since crystallization
+    rsteps::FloatRange          # [um] radius bin centers
+    redges::FloatRange          # [um] radius bin centers
+    nrsteps::Int                # [n] number of radial steps
+    r238U::Vector{T}            # [atoms/g] radial U-238 concentrations
+    r235U::Vector{T}            # [atoms/g] radial U-235 concentrations
+    r232Th::Vector{T}           # [atoms/g] radial Th-232 concentrations
+    r147Sm::Vector{T}           # [atoms/g] radial Sm-147 concentrations
+    alphadeposition::Matrix{T}  # [atoms/g] alpha deposition matrix
+    alphadamage::Matrix{T}      # [decays/g] initial damage matrix
+    pr::Matrix{T}               # [unitless] reduced damage density matrix
+    annealeddamage::Matrix{T}   # [decays/g] annealed damage matrix
     u::Matrix{T}
     β::Vector{T}
     DL::Vector{T}
@@ -512,6 +514,7 @@ end
 function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
         age::Number=T(NaN),
         age_sigma::Number=T(NaN),
+        offset=zero(T),
         r::Number, 
         dr::Number=one(T), 
         U238::Number, 
@@ -708,6 +711,7 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
     return ApatiteHe(
         T(age),
         T(age_sigma),
+        T(offset),
         agesteps,
         tsteps,
         rsteps,
@@ -737,6 +741,7 @@ end
 GenericHe(T=Float64;
     age::Number=T(NaN),
     age_sigma::Number=T(NaN),
+    offset=zero(T),
     D0::Number,
     Ea::Number,
     stoppingpower::Number=T(1.189),
@@ -764,20 +769,21 @@ in Ma.
 """
 # Concretely-typed immutable struct to hold information about a single mineral crystal and its helium age
 struct GenericHe{T<:AbstractFloat} <: HeliumSample{T}
-    age::T
-    age_sigma::T
-    D0::T
-    Ea::T
-    agesteps::FloatRange
-    tsteps::FloatRange
-    rsteps::FloatRange
-    redges::FloatRange
-    nrsteps::Int
-    r238U::Vector{T}
-    r235U::Vector{T}
-    r232Th::Vector{T}
-    r147Sm::Vector{T}
-    alphadeposition::Matrix{T}
+    age::T                      # [Ma] helium age
+    age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
+    offset::T                   # [C] temperature offset relative to the surface
+    D0::T                       # [cm^2/s] diffusivity
+    Ea::T                       # [kJ/mol] activation energy
+    agesteps::FloatRange        # [Ma] age in Ma relative to the present
+    tsteps::FloatRange          # [Ma] forward time since crystallization
+    rsteps::FloatRange          # [um] radius bin centers
+    redges::FloatRange          # [um] radius bin centers
+    nrsteps::Int                # [n] number of radial steps
+    r238U::Vector{T}            # [atoms/g] radial U-238 concentrations
+    r235U::Vector{T}            # [atoms/g] radial U-235 concentrations
+    r232Th::Vector{T}           # [atoms/g] radial Th-232 concentrations
+    r147Sm::Vector{T}           # [atoms/g] radial Sm-147 concentrations
+    alphadeposition::Matrix{T}  # [atoms/g] alpha deposition matrix
     u::Matrix{T}
     β::Vector{T}
     De::Vector{T}
@@ -789,6 +795,7 @@ end
 function GenericHe(T::Type{<:AbstractFloat}=Float64;
         age::Number=T(NaN),
         age_sigma::Number=T(NaN),
+        offset=zero(T),
         D0::Number,
         Ea::Number,
         stoppingpower::Number=T(1.189),
@@ -974,6 +981,7 @@ function GenericHe(T::Type{<:AbstractFloat}=Float64;
     return GenericHe(
         T(age),
         T(age_sigma),
+        T(offset),
         T(D0),
         T(Ea),
         agesteps,
@@ -1001,6 +1009,7 @@ end
 GenericAr(T=Float64;
     age::Number=T(NaN),
     age_sigma::Number=T(NaN),
+    offset=zero(T),
     D0::Number,
     Ea::Number,
     r::Number, 
@@ -1020,17 +1029,18 @@ in Ma.
 """
 # Concretely-typed immutable struct to hold information about a single mineral crystal and its argon age
 struct GenericAr{T<:AbstractFloat} <: ArgonSample{T}
-    age::T
-    age_sigma::T
-    D0::T
-    Ea::T
-    agesteps::FloatRange
-    tsteps::FloatRange
-    rsteps::FloatRange
-    redges::FloatRange
-    nrsteps::Int
-    r40K::Vector{T}
-    argondeposition::Matrix{T}
+    age::T                      # [Ma] helium age
+    age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
+    offset::T                   # [C] temperature offset relative to the surface
+    D0::T                       # [cm^2/s] diffusivity
+    Ea::T                       # [kJ/mol] activation energy
+    agesteps::FloatRange        # [Ma] age in Ma relative to the present
+    tsteps::FloatRange          # [Ma] forward time since crystallization
+    rsteps::FloatRange          # [um] radius bin centers
+    redges::FloatRange          # [um] radius bin centers
+    nrsteps::Int                # [n] number of radial steps
+    r40K::Vector{T}             # [atoms/g] radial K-40 concentrations
+    argondeposition::Matrix{T}  # [atoms/g] Ar-40 deposition matrix
     u::Matrix{T}
     β::Vector{T}
     De::Vector{T}
@@ -1042,6 +1052,7 @@ end
 function GenericAr(T::Type{<:AbstractFloat}=Float64;
         age::Number=T(NaN),
         age_sigma::Number=T(NaN),
+        offset=zero(T),
         D0::Number,
         Ea::Number,
         r::Number, 
@@ -1103,6 +1114,7 @@ function GenericAr(T::Type{<:AbstractFloat}=Float64;
     return GenericAr(
         T(age),
         T(age_sigma),
+        T(offset),
         T(D0),
         T(Ea),
         agesteps,
@@ -1221,6 +1233,7 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                 c = ZirconHe(T;
                     age = data.raw_He_age_Ma[i], 
                     age_sigma = data.raw_He_age_sigma_Ma[i], 
+                    offset = (haskey(data, :offset_C) && !isnan(data.offset_C[i])) ? data.offset_C[i] : 0,
                     r = data.halfwidth_um[i], 
                     dr = dr, 
                     U238 = (haskey(data, :U238_ppm) && !isnan(data.U238_ppm[i])) ? data.U238_ppm[i] : 0,
@@ -1237,6 +1250,7 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                 c = ZirconHe(T;
                     age = data.HeAge[i], 
                     age_sigma = data.HeAge_sigma[i], 
+                    offset = (haskey(data, :offset_C) && !isnan(data.offset_C[i])) ? data.offset_C[i] : 0,
                     r = data.halfwidth[i], 
                     dr = dr, 
                     U238 = data.U[i], 
@@ -1251,6 +1265,7 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                 c = ZirconFT(T;
                     age = data.FT_age_Ma[i], 
                     age_sigma = data.FT_age_sigma_Ma[i], 
+                    offset = (haskey(data, :offset_C) && !isnan(data.offset_C[i])) ? data.offset_C[i] : 0,
                     agesteps = agesteps[first_index:end],
                 )
                 push!(result, c)
@@ -1262,6 +1277,7 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                 c = MonaziteFT(T;
                     age = data.FT_age_Ma[i], 
                     age_sigma = data.FT_age_sigma_Ma[i], 
+                    offset = (haskey(data, :offset_C) && !isnan(data.offset_C[i])) ? data.offset_C[i] : 0,
                     agesteps = agesteps[first_index:end],
                 )
                 push!(result, c)
@@ -1274,6 +1290,7 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                 c = ApatiteHe(T;
                     age = data.raw_He_age_Ma[i], 
                     age_sigma = data.raw_He_age_sigma_Ma[i], 
+                    offset = (haskey(data, :offset_C) && !isnan(data.offset_C[i])) ? data.offset_C[i] : 0,
                     r = data.halfwidth_um[i], 
                     dr = dr, 
                     U238 = (haskey(data, :U238_ppm) && !isnan(data.U238_ppm[i])) ? data.U238_ppm[i] : 0,
@@ -1290,6 +1307,7 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                 c = ApatiteHe(T;
                     age = data.HeAge[i], 
                     age_sigma = data.HeAge_sigma[i], 
+                    offset = (haskey(data, :offset_C) && !isnan(data.offset_C[i])) ? data.offset_C[i] : 0,
                     r = data.halfwidth[i], 
                     dr = dr, 
                     U238 = data.U[i], 
@@ -1304,6 +1322,7 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                 c = ApatiteFT(T;
                     age = data.FT_age_Ma[i], 
                     age_sigma = data.FT_age_sigma_Ma[i], 
+                    offset = (haskey(data, :offset_C) && !isnan(data.offset_C[i])) ? data.offset_C[i] : 0,
                     dpar = haskey(data, :dpar_um) ? data.dpar_um[i] : NaN,
                     F = haskey(data, :F_apfu) ? data.F_apfu[i] : NaN,
                     Cl = haskey(data, :Cl_apfu) ? data.Cl_apfu[i] : NaN,
@@ -1318,6 +1337,7 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                 c = ApatiteTrackLength(T;
                     length = data.track_length_um[i], 
                     angle = data.track_angle_degrees[i], 
+                    offset = (haskey(data, :offset_C) && !isnan(data.offset_C[i])) ? data.offset_C[i] : 0,
                     dpar = haskey(data, :dpar_um) ? data.dpar_um[i] : NaN,
                     F = haskey(data, :F_apfu) ? data.F_apfu[i] : NaN,
                     Cl = haskey(data, :Cl_apfu) ? data.Cl_apfu[i] : NaN,
@@ -1334,6 +1354,7 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                 c = GenericHe(T;
                     age = data.raw_He_age_Ma[i], 
                     age_sigma = data.raw_He_age_sigma_Ma[i], 
+                    offset = (haskey(data, :offset_C) && !isnan(data.offset_C[i])) ? data.offset_C[i] : 0,
                     D0 = data.D0_cm_2_s[i],
                     Ea = data.Ea_kJ_mol[i],
                     stoppingpower = alphastoppingpower(data.mineral[i]),
