@@ -26,6 +26,7 @@
         npoints = (haskey(model, :npoints) ? model.npoints : minpoints)::Int
         npoints = max(npoints, detail.minpoints+1)
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
+        trackhist = (haskey(model, :trackhist) ? model.trackhist : false)::Bool
         simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
         dynamicsigma = (haskey(model, :dynamicsigma) ? model.dynamicsigma : false)::Bool
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
@@ -44,6 +45,7 @@
         zdm = (haskey(model, :zdm) ? model.zdm : ZRDAAM())::ZirconHeliumModel{T}
         adm = (haskey(model, :adm) ? model.adm : RDAAM())::ApatiteHeliumModel{T}
         zftm = (haskey(model, :zftm) ? model.zftm : Yamada2007PC())::ZirconAnnealingModel{T}
+        mftm = (haskey(model, :mftm) ? model.mftm : Jones2021FA())::MonaziteAnnealingModel{T}
         aftm = (haskey(model, :aftm) ? model.aftm : Ketcham2007FC())::ApatiteAnnealingModel{T}
 
         # See what minerals we have
@@ -66,7 +68,7 @@
         σcalc = fill(T(σmodel), length(data))
 
         # Log-likelihood for initial proposal
-        ll = llₚ = model!(μcalc, σcalc, data, path.Tsteps, zdm, adm, zftm, aftm) + diff_ll(path.Tsteps, dTmax, dTmax_sigma) + 
+        ll = llₚ = model!(μcalc, σcalc, data, path.Tsteps, zdm, adm, zftm, mftm, aftm; trackhist) + diff_ll(path.Tsteps, dTmax, dTmax_sigma) + 
             (simplified ? -log(npoints) : zero(T))  + (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
 
         # Variables to hold proposals
@@ -131,7 +133,7 @@
             end
 
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdm, adm, zftm, aftm)
+            llₚ = model!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdm, adm, zftm, mftm, aftm; trackhist)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             simplified && (llₚ += -log(npointsₚ))
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
@@ -223,7 +225,7 @@
             end
 
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdm, adm, zftm, aftm)
+            llₚ = model!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdm, adm, zftm, mftm, aftm; trackhist)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             simplified && (llₚ += -log(npointsₚ))
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
@@ -311,6 +313,7 @@
         npoints = (haskey(model, :npoints) ? model.npoints : minpoints)::Int
         npoints = max(npoints, detail.minpoints+1)
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
+        trackhist = (haskey(model, :trackhist) ? model.trackhist : false)::Bool
         simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
         dynamicsigma = (haskey(model, :dynamicsigma) ? model.dynamicsigma : false)::Bool
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
@@ -329,6 +332,7 @@
         zdm₀ = zdm = zdmₚ = (haskey(model, :zdm) ? model.zdm : ZRDAAM())::ZirconHeliumModel{T}
         adm₀ = adm = admₚ =  (haskey(model, :adm) ? model.adm : RDAAM())::ApatiteHeliumModel{T}
         zftm = (haskey(model, :zftm) ? model.zftm : Yamada2007PC())::ZirconAnnealingModel{T}
+        mftm = (haskey(model, :mftm) ? model.mftm : Jones2021FA())::MonaziteAnnealingModel{T}
         aftm = (haskey(model, :aftm) ? model.aftm : Ketcham2007FC())::ApatiteAnnealingModel{T}
 
         # See what minerals we have
@@ -351,7 +355,7 @@
         σcalc = fill(T(σmodel), length(data))
 
         # Log-likelihood for initial proposal
-        ll = llₚ = model!(μcalc, σcalc, data, path.Tsteps, zdm, adm, zftm, aftm) + 
+        ll = llₚ = model!(μcalc, σcalc, data, path.Tsteps, zdm, adm, zftm, mftm, aftm; trackhist) + 
             diff_ll(path.Tsteps, dTmax, dTmax_sigma) + kinetic_ll(admₚ, adm₀) + kinetic_ll(zdmₚ, zdm₀) + 
             (simplified ? -log(npoints) : zero(T)) + (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
         
@@ -425,7 +429,7 @@
             end
                
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdmₚ, admₚ, zftm, aftm)
+            llₚ = model!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdmₚ, admₚ, zftm, mftm, aftm; trackhist)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             llₚ += kinetic_ll(admₚ, adm₀) + kinetic_ll(zdmₚ, zdm₀)
             simplified && (llₚ += -log(npointsₚ))
@@ -529,7 +533,7 @@
             end
 
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdmₚ, admₚ, zftm, aftm)
+            llₚ = model!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdmₚ, admₚ, zftm, mftm, aftm; trackhist)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             llₚ += kinetic_ll(admₚ, adm₀) + kinetic_ll(zdmₚ, zdm₀)
             simplified && (llₚ += -log(npointsₚ))

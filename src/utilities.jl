@@ -511,16 +511,13 @@
     end
 
     # Utility function to calculate model ages for all chronometers at once
-    function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, data::Vector{<:Chronometer{T}}, Tsteps::AbstractVector{T}, zdm::ZirconHeliumModel{T}, adm::ApatiteHeliumModel{T}, zftm::ZirconAnnealingModel, aftm::ApatiteAnnealingModel{T}) where {T<:AbstractFloat}
+    function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, data::Vector{<:Chronometer{T}}, Tsteps::AbstractVector{T}, zdm::ZirconHeliumModel{T}, adm::ApatiteHeliumModel{T}, zftm::ZirconAnnealingModel{T}, mftm::MonaziteAnnealingModel{T}, aftm::ApatiteAnnealingModel{T}; trackhist::Bool=false) where {T<:AbstractFloat}
         imax = argmax(i->length(data[i].agesteps), eachindex(data))
         tsteps = data[imax].tsteps
         tmax = last(tsteps)
         dt = step(tsteps)
         @assert issorted(tsteps)
         @assert eachindex(tsteps) == eachindex(Tsteps)
-
-        # Count apatite track lengths, if any
-        nFT = count(x->isa(x, ApatiteTrackLength), data)
 
         # Pre-anneal ZRDAAM samples, if any
         isa(zdm, ZRDAAM) && anneal!(data, ZirconHe{T}, tsteps, Tsteps, zdm)
@@ -544,21 +541,26 @@
             elseif isa(c, ZirconFT)
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), zftm)
                 ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))
+            elseif isa(c, MonaziteFT)
+                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), mftm)
+                ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))
             elseif isa(c, ApatiteFT)
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), aftm)
                 ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))
             elseif isa(c, ApatiteTrackLength)
                 μcalc[i], _ = modellength(c, @views(Tsteps[first_index:end]), aftm)
-                ll += model_ll(c) / sqrt(nFT) # Importance of fission track lengths should scale as sqrt(n)
+                ll += model_ll(c)
             else
                 # NaN if not calculated
                 μcalc[i] = T(NaN)
             end
         end
 
-        # Additional log likelihood term from comparing observed and expected fission track length histograms
-        ll += tracklength_histogram_ll!(data, ApatiteTrackLength)
-        
+        if trackhist
+            # Additional log likelihood term from comparing observed and expected fission track length histograms
+            ll += tracklength_histogram_ll!(data, ApatiteTrackLength)
+        end
+
         return ll
     end
 

@@ -69,16 +69,17 @@ unconf = Constraint()
 dsg = importdataset(joinpath(datapath, "generic.csv"), ',', importas=:Tuple);
 chrons = chronometers(dsg, model)
 @test chrons isa Vector{<:Chronometer}
-@test length(chrons) == 15
+@test length(chrons) == 16
 @test count(x->isa(x,GenericHe), chrons) == 4
 @test count(x->isa(x,GenericAr), chrons) == 2
 @test count(x->isa(x,ZirconHe), chrons) == 2
 @test count(x->isa(x,ApatiteHe), chrons) == 2
 @test count(x->isa(x,ZirconFT), chrons) == 1
+@test count(x->isa(x,MonaziteFT), chrons) == 1
 @test count(x->isa(x,ApatiteFT), chrons) == 1
 @test count(x->isa(x,ApatiteTrackLength), chrons) == 3
-@test get_age(chrons) ≈ [150.37, 263.92, 150.37, 263.92, 917.84, 1023.73, 380., 380., 120., 120., 680., 300.] 
-@test get_age_sigma(chrons) ≈ [5,5,5,5,5,5,5,5,5,5,5,5]
+@test get_age(chrons) ≈ [150.37, 263.92, 150.37, 263.92, 917.84, 1023.73, 380., 380., 120., 120., 680., 300.,100.] 
+@test get_age_sigma(chrons) ≈ [5,5,5,5,5,5,5,5,5,5,5,5,5]
 
 dt = 10.0
 tsteps = (0+dt/2 : dt : 3000-dt/2)
@@ -86,13 +87,15 @@ Tsteps = range(650, 0, length=length(tsteps))
 
 calc = zeros(length(chrons))
 calcuncert = zeros(length(chrons))
-@test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Ketcham2007FC()) ≈ -89.45000336955833
-@test round.(calc, sigdigits=7) ≈ [138.4124, 232.8114, 144.2487, 233.9706, 902.567, 1010.98, 386.8558, 388.6112, 122.8127, 130.7147, 688.0081, 304.6573, 14.29893, 14.29989, 14.29245] 
-@test calcuncert ≈ zeros(15)
+@test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=false) ≈ -92.79818712548453
+@test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=true) ≈ -94.08661515469008
+@test round.(calc, sigdigits=7) ≈ [138.4124, 232.8114, 144.2487, 233.9706, 902.567, 1010.98, 386.8558, 388.6112, 122.8127, 130.7147, 688.0081, 304.6573, 95.84216, 14.29893, 14.29989, 14.29245] 
+@test calcuncert ≈ zeros(length(chrons))
 
-@test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Guenthner2013FC(), Ketcham2007FC()) ≈ -3792.6787329266745
-@test round.(calc, sigdigits=7) ≈ [138.4124, 232.8114, 144.2487, 233.9706, 902.567, 1010.98, 386.8558, 388.6112, 122.8127, 130.7147, 1110.379, 304.6573, 14.29893, 14.29989, 14.29245]
-@test calcuncert ≈ zeros(15)
+@test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Guenthner2013FC(), Jones2021FA(), Ketcham2007FC(); trackhist=false) ≈ -3796.039587590901
+@test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Guenthner2013FC(), Jones2021FA(), Ketcham2007FC(); trackhist=true) ≈ -3797.3275741692105
+@test round.(calc, sigdigits=7) ≈ [138.4124, 232.8114, 144.2487, 233.9706, 902.567, 1010.98, 386.8558, 388.6112, 122.8127, 130.7147, 1110.379, 304.6573, 95.84216, 14.29893, 14.29989, 14.29245]
+@test calcuncert ≈ zeros(length(chrons))
 
 # Modern input format, Minnesota dataset
 chrons = chronometers(ds, model)
@@ -106,7 +109,9 @@ Tsteps = range(model.Tinit, model.Tnow, length=length(tsteps))
 
 calc = zeros(length(chrons))
 calcuncert = zeros(length(chrons))
-@test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Ketcham2007FC()) ≈  -26867.66124989401
+@test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=false) ≈ -26867.66124989401
+@test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=true) ≈ -26867.66124989401
+
 @test round.(calc, sigdigits=5) ≈ [1313.9, 1320.7, 1185.0, 1243.0, 1216.1, 1335.4, 1141.7, 1094.4, 1170.2, 923.8, 723.59, 201.76, 429.67, 95.576, 259.05, 419.15, 2.9065, 6.1464, 0.00063415, 27.545, 0.007082, 55.056, 2.0682, 174.81, 283.3, 287.74, 266.09, 240.19, 267.84, 244.36, 274.74, 328.26, 322.88, 352.43]
 @test calcuncert ≈ zeros(length(chrons))
 
@@ -128,7 +133,7 @@ set_age_sigma!(chrons, zeros(23), ZirconHe)
 # Legacy input format
 chrons2 = chronometers(data, model)
 @test typeof.(chrons) == typeof.(chrons2)
-Thermochron.model!(calc, calcuncert, chrons2, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Ketcham2007FC())
+Thermochron.model!(calc, calcuncert, chrons2, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC())
 @test round.(calc, sigdigits=5) ≈ [1313.9, 1320.7, 1185.0, 1243.0, 1216.1, 1335.4, 1141.7, 1094.4, 1170.2, 923.8, 723.59, 201.76, 429.67, 95.576, 259.05, 419.15, 2.9065, 6.1464, 0.00063415, 27.545, 0.007082, 55.056, 2.0682, 174.81, 283.3, 287.74, 266.09, 240.19, 267.84, 244.36, 274.74, 328.26, 322.88, 352.43]
 @test calcuncert ≈ zeros(length(chrons))
 # println(round.(calc, sigdigits=5))
