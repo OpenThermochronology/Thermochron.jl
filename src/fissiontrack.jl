@@ -203,6 +203,9 @@ which they respetively implement include
   `Ketcham1999FC`       Fanning Curvilinear apatite model of Ketcham et al. 1999 (doi: 10.2138/am-1999-0903)
   `Ketcham2007FC`       Fanning Curvilinear apatite model of Ketcham et al. 2007 (doi: 10.2138/am.2007.2281)
   `Yamada2007PC`        Parallel Curvilinear zircon model of Yamada et al. 2007 (doi: 10.1016/j.chemgeo.2006.09.002)
+  `Guenthner2013FC`     Fanning Curvilinear zircon model of Guenthner et al. 2013 (doi: 10.2475/03.2013.01)
+  `Jones2021FA`         Fanning Arrhenius (Fanning Linear) model adapted from Jones et al. 2021 (doi: 10.5194/gchron-3-89-2021)
+
 """
 function modelage(zircon::ZirconFT{T}, Tsteps::AbstractVector, am::ZirconAnnealingModel{T}) where {T <: AbstractFloat}
     agesteps = zircon.agesteps::FloatRange
@@ -273,7 +276,7 @@ which they respetively implement include
   `Ketcham1999FC`       Fanning Curvilinear apatite model of Ketcham et al. 1999 (doi: 10.2138/am-1999-0903)
   `Ketcham2007FC`       Fanning Curvilinear apatite model of Ketcham et al. 2007 (doi: 10.2138/am.2007.2281)
 """
-function modellength(track::ApatiteTrackLength{T}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}) where {T <: AbstractFloat}
+function modellength(track::ApatiteTrackLength{T}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}; trackhist::Bool=false) where {T <: AbstractFloat}
     agesteps = track.agesteps
     tsteps = track.tsteps
     rmr0 = track.rmr0
@@ -291,12 +294,15 @@ function modellength(track::ApatiteTrackLength{T}, Tsteps::AbstractVector, am::A
     end
     r .*= am.l0 # Convert from reduced length to length
     μ, σ = nanmean(r, pr), nanstd(r, pr)
-    h = (4*σ^5/(3 * sum(pr)))^(1/5) # Silverman's rule for kernel bandwidth
-    binlikelihoods!(track, h)
+    if trackhist
+        h = (4*σ^5/(3 * sum(pr)))^(1/5) # Silverman's rule for kernel bandwidth
+        binlikelihoods!(track, h)
+    end
     return μ, σ
 end
 
 function binlikelihoods!(track::ApatiteTrackLength{T}, bandwidth::T) where {T<:AbstractFloat}
+    fill!(track.ldist, zero(T))
     if bandwidth > 0
         kernel = Normal(zero(T), bandwidth)
         @assert eachindex(track.ldist) == 1:length(track.ledges)-1
@@ -312,8 +318,6 @@ function binlikelihoods!(track::ApatiteTrackLength{T}, bandwidth::T) where {T<:A
             end
         end
         track.ldist ./= nansum(track.ldist)*step(track.ledges)  # Normalize
-    else
-        fill!(track.ldist, zero(T))
     end
     return track
 end

@@ -548,7 +548,7 @@
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), aftm)
                 ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))
             elseif isa(c, ApatiteTrackLength)
-                μcalc[i], _ = modellength(c, @views(Tsteps[first_index:end]), aftm)
+                μcalc[i], _ = modellength(c, @views(Tsteps[first_index:end]), aftm; trackhist)
                 ll += model_ll(c)
             else
                 # NaN if not calculated
