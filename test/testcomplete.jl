@@ -87,13 +87,13 @@ Tsteps = range(650, 0, length=length(tsteps))
 
 calc = zeros(length(chrons))
 calcuncert = zeros(length(chrons))
-@test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=false) ≈ -92.79818712548453
-@test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=true) ≈ -94.08661515469008
+@test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=false) ≈ -91.0357050325125
+@test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=true) ≈ -89.91653774900315
 @test round.(calc, sigdigits=7) ≈ [138.4124, 232.8114, 144.2487, 233.9706, 902.567, 1010.98, 386.8558, 388.6112, 122.8127, 130.7147, 688.0081, 304.6573, 95.84216, 14.29893, 14.29989, 14.29245] 
 @test calcuncert ≈ zeros(length(chrons))
 
-@test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Guenthner2013FC(), Jones2021FA(), Ketcham2007FC(); trackhist=false) ≈ -3796.039587590901
-@test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Guenthner2013FC(), Jones2021FA(), Ketcham2007FC(); trackhist=true) ≈ -3797.3280156201067
+@test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Guenthner2013FC(), Jones2021FA(), Ketcham2007FC(); trackhist=false) ≈ -3794.277105497929
+@test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Guenthner2013FC(), Jones2021FA(), Ketcham2007FC(); trackhist=true) ≈ -3793.1579382144196
 @test round.(calc, sigdigits=7) ≈ [138.4124, 232.8114, 144.2487, 233.9706, 902.567, 1010.98, 386.8558, 388.6112, 122.8127, 130.7147, 1110.379, 304.6573, 95.84216, 14.29893, 14.29989, 14.29245]
 @test calcuncert ≈ zeros(length(chrons))
 

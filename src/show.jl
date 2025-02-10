@@ -24,7 +24,7 @@ function Base.show(io::IO, x::T) where {T<:FissionTrackLength}
     t = Base.typename(T).wrapper
     l = round(x.length, sigdigits=3)
     θ = round(x.angle, sigdigits=3)
-    print(io, "$t($(l) μm, $(θ)°")
+    print(io, "$t($(l) μm, $(θ)°)")
 end
 
 # Verbose show methods

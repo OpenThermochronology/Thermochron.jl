@@ -26,7 +26,7 @@
         npoints = (haskey(model, :npoints) ? model.npoints : minpoints)::Int
         npoints = max(npoints, detail.minpoints+1)
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
-        trackhist = (haskey(model, :trackhist) ? model.trackhist : false)::Bool
+        trackhist = (haskey(model, :trackhist) ? model.trackhist : true)::Bool
         simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
         dynamicsigma = (haskey(model, :dynamicsigma) ? model.dynamicsigma : false)::Bool
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
@@ -53,6 +53,7 @@
         (hasahe = any(x->isa(x, ApatiteHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, ApatiteHe), data)) apatites"
         (any(x->isa(x, GenericHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, GenericHe), data)) generic He chronometers"
         (any(x->isa(x, ZirconFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, ZirconFT), data)) zircons"
+        (any(x->isa(x, MonaziteFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, MonaziteFT), data)) monazites"
         (any(x->isa(x, ApatiteFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, ApatiteFT), data)) apatites"
         (any(x->isa(x, ApatiteTrackLength), data)) && @info "Inverting for track lengths of $(count(x->isa(x, ApatiteTrackLength), data)) apatite fission tracks"
         (any(x->isa(x, GenericAr), data)) && @info "Inverting for Ar ages of $(count(x->isa(x, GenericAr), data)) generic Ar chronometers"
@@ -313,7 +314,7 @@
         npoints = (haskey(model, :npoints) ? model.npoints : minpoints)::Int
         npoints = max(npoints, detail.minpoints+1)
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
-        trackhist = (haskey(model, :trackhist) ? model.trackhist : false)::Bool
+        trackhist = (haskey(model, :trackhist) ? model.trackhist : true)::Bool
         simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
         dynamicsigma = (haskey(model, :dynamicsigma) ? model.dynamicsigma : false)::Bool
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
@@ -340,6 +341,7 @@
         (hasahe = any(x->isa(x, ApatiteHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, ApatiteHe), data)) apatites"
         (any(x->isa(x, GenericHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, GenericHe), data)) generic He chronometers"
         (any(x->isa(x, ZirconFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, ZirconFT), data)) zircons"
+        (any(x->isa(x, MonaziteFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, MonaziteFT), data)) monazites"
         (any(x->isa(x, ApatiteFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, ApatiteFT), data)) apatites"
         (any(x->isa(x, ApatiteTrackLength), data)) && @info "Inverting for track lengths of $(count(x->isa(x, ApatiteTrackLength), data)) apatite fission tracks"
         (any(x->isa(x, GenericAr), data)) && @info "Inverting for Ar ages of $(count(x->isa(x, GenericAr), data)) generic Ar chronometers"

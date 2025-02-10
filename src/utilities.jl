@@ -511,7 +511,7 @@
     end
 
     # Utility function to calculate model ages for all chronometers at once
-    function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, data::Vector{<:Chronometer{T}}, Tsteps::AbstractVector{T}, zdm::ZirconHeliumModel{T}, adm::ApatiteHeliumModel{T}, zftm::ZirconAnnealingModel{T}, mftm::MonaziteAnnealingModel{T}, aftm::ApatiteAnnealingModel{T}; trackhist::Bool=false) where {T<:AbstractFloat}
+    function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, data::Vector{<:Chronometer{T}}, Tsteps::AbstractVector{T}, zdm::ZirconHeliumModel{T}, adm::ApatiteHeliumModel{T}, zftm::ZirconAnnealingModel{T}, mftm::MonaziteAnnealingModel{T}, aftm::ApatiteAnnealingModel{T}; trackhist::Bool=true) where {T<:AbstractFloat}
         imax = argmax(i->length(data[i].agesteps), eachindex(data))
         tsteps = data[imax].tsteps
         tmax = last(tsteps)
@@ -523,6 +523,8 @@
         isa(zdm, ZRDAAM) && anneal!(data, ZirconHe{T}, tsteps, Tsteps, zdm)
         # Pre-anneal RDAAM samples, if any
         isa(adm, RDAAM) && anneal!(data, ApatiteHe{T}, tsteps, Tsteps, adm)
+        # Count fission track lengths, if any
+        nFT = count(x->isa(x, ApatiteTrackLength), data)
         
         # Cycle through each Chronometer, model and calculate log likelihood
         ll = zero(T)
@@ -549,18 +551,16 @@
                 ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))
             elseif isa(c, ApatiteTrackLength)
                 μcalc[i], _ = modellength(c, @views(Tsteps[first_index:end]), aftm; trackhist)
-                ll += model_ll(c)
+                trackhist || (ll += model_ll(c)/sqrt(nFT))
             else
                 # NaN if not calculated
                 μcalc[i] = T(NaN)
             end
         end
 
-        if trackhist
-            # Additional log likelihood term from comparing observed and expected fission track length histograms
-            ll += tracklength_histogram_ll!(data, ApatiteTrackLength)
-        end
-
+        # Log likelihood term from comparing observed and expected fission track length histograms
+        trackhist && (ll += tracklength_histogram_ll!(data, ApatiteTrackLength))
+            
         return ll
     end
 
