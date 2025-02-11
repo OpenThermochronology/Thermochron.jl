@@ -59,9 +59,11 @@ boundary = Boundary(
     Tboundary = :reflecting, # Reflecting temperature boundary conditions
 )
 
-# Default: No constraint is imposed
-constraint = Constraint()
-
+# Example constraint box
+constraint = Constraint(
+    agedist = [  Uniform(500,541),],  # [Ma] Age distribution
+    Tdist =   [     Uniform(0,50),],  # [C] Temperature distribution
+)
 
 ## --- Invert for maximum likelihood t-T path
 
