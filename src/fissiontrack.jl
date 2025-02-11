@@ -329,7 +329,8 @@ end
 
 function model_ll(track::ApatiteTrackLength{T}, σ::T) where {T}
     ll = typemin(T)
-    if σ > 0
+    Σpr = nansum(track.pr)
+    if σ > 0 && Σpr > 0
         kernel = Normal(lcmod(track), σ)
         @inbounds for i in eachindex(track.pr)
             if (track.pr[i] > 0) && (track.r[i] > 0)
@@ -337,8 +338,9 @@ function model_ll(track::ApatiteTrackLength{T}, σ::T) where {T}
                 ll = logaddexp(ll, logpdf(kernel, track.r[i])+lpr)
             end
         end
+        ll -= log(Σpr)
     end
-    return ll - log(nansum(track.pr))
+    return ll
 end
 
 ## --- End of File

@@ -405,23 +405,21 @@
         end
         return constraint
     end
-    function randomize!(agepoints::AbstractVector, Tpoints::AbstractVector, boundary::Boundary, detail::DetailInterval)
-        agemin, agemax = textrema(boundary)
-        Tmin, Tmax = Textrema(boundary)
-        for i in eachindex(agepoints, Tpoints)
-            if (i-firstindex(agepoints)) < detail.minpoints
-                agepoints[i] = rand(Uniform(detail.agemin, detail.agemax))
-            else
-                agepoints[i] = rand(Uniform(agemin, agemax))
-            end
-            Tpoints[i] = rand(Uniform(Tmin, Tmax))
-        end
-        return agepoints, Tpoints
-    end
-    function randomize!(path::TtPath)
-        randomize!(path.agepoints, path.Tpoints, path.boundary, path.detail)
-        randomize!(path.constraint, path.boundary)
+
+    function initialproposal!(path::TtPath, npoints::Int)
         randomize!(path.boundary)
+        randomize!(path.constraint, path.boundary)
+        collectaccepted!(path, 0)
+        agemin, agemax = textrema(path.boundary) 
+        for i in eachindex(path.agepoints, path.Tpoints)
+            if (i-firstindex(path.agepoints)) < path.detail.minpoints
+                path.agepoints[i] = rand(Uniform(path.detail.agemin, path.detail.agemax))
+            else
+                path.agepoints[i] = rand(Uniform(agemin, agemax))
+            end
+            path.Tpoints[i] = linterp1(reverse(path.agesteps), path.Tsteps, first(path.agesteps)-path.agepoints[i])
+        end
+        collectaccepted!(path, npoints)
         return path
     end
 
@@ -458,20 +456,6 @@
         copyto!(path.constraint.agepoints, path.constraint.agepointsₚ)
         copyto!(path.constraint.Tpoints, path.constraint.Tpointsₚ)
         copyto!(path.boundary.Tpoints, path.boundary.Tpointsₚ)
-    end
-    
-    function initialproposal!(path::TtPath, npoints::Int, dTmax::Number; nattempts = 1_000_000) 
-        for _ in 1:nattempts
-            randomize!(path)
-            collectaccepted!(path, npoints)
-            if maxdiff(path.Tsteps) < dTmax
-                break
-            end
-        end
-        if maxdiff(path.Tsteps) > dTmax
-            @warn "Could not generate initial proposal to satisfy max reheating rate in $nattempts attempts"
-        end
-        return path
     end
 
     # Adjust kinetic models
@@ -511,7 +495,7 @@
     end
 
     # Utility function to calculate model ages for all chronometers at once
-    function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, data::Vector{<:Chronometer{T}}, Tsteps::AbstractVector{T}, zdm::ZirconHeliumModel{T}, adm::ApatiteHeliumModel{T}, zftm::ZirconAnnealingModel{T}, mftm::MonaziteAnnealingModel{T}, aftm::ApatiteAnnealingModel{T}; trackhist::Bool=false) where {T<:AbstractFloat}
+    function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, data::Vector{<:Chronometer{T}}, Tsteps::AbstractVector{T}, zdm::ZirconHeliumModel{T}, adm::ApatiteHeliumModel{T}, zftm::ZirconAnnealingModel{T}, mftm::MonaziteAnnealingModel{T}, aftm::ApatiteAnnealingModel{T}; trackhist::Bool=false, rescale::Bool=false) where {T<:AbstractFloat}
         imax = argmax(i->length(data[i].agesteps), eachindex(data))
         tsteps = data[imax].tsteps
         tmax = last(tsteps)
@@ -523,33 +507,46 @@
         isa(zdm, ZRDAAM) && anneal!(data, ZirconHe{T}, tsteps, Tsteps, zdm)
         # Pre-anneal RDAAM samples, if any
         isa(adm, RDAAM) && anneal!(data, ApatiteHe{T}, tsteps, Tsteps, adm)
-        
+
+        # Rescale log likelihoods to avoid one chronometer type from dominating the inversion
+        scalegar = rescale ? sqrt(count(x->isa(x, GenericAr), data)) : 1
+        scaleghe = rescale ? sqrt(count(x->isa(x, GenericHe), data)) : 1
+        scalezhe = rescale ? sqrt(count(x->isa(x, ZirconHe), data)) : 1
+        scaleahe = rescale ? sqrt(count(x->isa(x, ApatiteHe), data)) : 1
+        scalezft = rescale ? sqrt(count(x->isa(x, ZirconFT), data)) : 1
+        scalemft = rescale ? sqrt(count(x->isa(x, MonaziteFT), data)) : 1
+        scaleaft = rescale ? sqrt(count(x->isa(x, ApatiteFT), data)) : 1
+        scaleatl = rescale ? sqrt(count(x->isa(x, ApatiteTrackLength), data)) : 1
+
         # Cycle through each Chronometer, model and calculate log likelihood
         ll = zero(T)
         for i in eachindex(data, μcalc, σcalc)
             c = data[i]
             first_index = 1 + Int((tmax - last(c.tsteps))÷dt)
-            if isa(c, GenericAr) || isa(c, GenericHe)
+            if isa(c, GenericAr) 
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]))
-                ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))
+                ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scalegar
+            elseif isa(c, GenericHe)
+                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]))
+                ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scaleghe
             elseif isa(c, ZirconHe)
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), zdm)
-                ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))
+                ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scalezhe
             elseif isa(c, ApatiteHe)
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), adm)
-                ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))
+                ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scaleahe
             elseif isa(c, ZirconFT)
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), zftm)
-                ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))
+                ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scalezft
             elseif isa(c, MonaziteFT)
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), mftm)
-                ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))
+                ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scalemft
             elseif isa(c, ApatiteFT)
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), aftm)
-                ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))
+                ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scaleaft
             elseif isa(c, ApatiteTrackLength)
                 μcalc[i], σ = modellength(c, @views(Tsteps[first_index:end]), aftm; trackhist)
-                trackhist || (ll += model_ll(c, σ))
+                ll += model_ll(c, σ)/scaleatl
             else
                 # NaN if not calculated
                 μcalc[i] = T(NaN)
@@ -557,7 +554,7 @@
         end
 
         # Log likelihood term from comparing observed and expected fission track length histograms
-        trackhist && (ll += tracklength_histogram_ll!(data, ApatiteTrackLength))
+        trackhist && (ll += tracklength_histogram_ll!(data, ApatiteTrackLength)/scaleatl)
             
         return ll
     end

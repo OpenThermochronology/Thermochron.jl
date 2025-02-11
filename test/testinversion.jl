@@ -72,7 +72,7 @@ path = Thermochron.TtPath(agesteps, constraint, boundary, DetailInterval(), 50)
 @test path.Tpoints == path.Tpointsₚ == zeros(50)
 @test path.Tsteps == zeros(100)
 
-Thermochron.randomize!(path)
+Thermochron.initialproposal!(path, 10)
 @test path.agepoints != path.agepointsₚ
 @test path.Tpoints != path.Tpointsₚ
 a,T = copy(path.agepoints), copy(path.Tpoints)
@@ -81,7 +81,7 @@ Thermochron.resetproposal!(path)
 @test path.agepoints == path.agepointsₚ == a
 @test path.Tpoints == path.Tpointsₚ == T
 
-Thermochron.randomize!(path)
+Thermochron.initialproposal!(path, 10)
 @test path.agepoints != path.agepointsₚ
 @test path.Tpoints != path.Tpointsₚ
 a,T = copy(path.agepointsₚ), copy(path.Tpointsₚ)
@@ -90,11 +90,5 @@ Thermochron.acceptproposal!(path)
 @test path.agepoints == path.agepointsₚ == a
 @test path.Tpoints == path.Tpointsₚ == T
 
-Thermochron.randomize!(path)
-Thermochron.collectaccepted!(path, 10)
-Tsteps = copy(path.Tsteps)
-Thermochron.collectproposal!(path, 10)
-Tstepsₚ = copy(path.Tsteps)
-@test Tsteps != Tstepsₚ != zeros(100)
 
 ## ---Test generation of Chronometer objects
