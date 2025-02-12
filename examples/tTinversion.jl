@@ -40,12 +40,12 @@
 
 ## --- Prepare problem
 
-    dt = 8.0 # [Ma] Model timestep
+    dt = 4.0 # [Ma] Model timestep
     tinit = ceil(maximum(ds.crystallization_age_Ma)/dt) * dt # [Ma] Model start time
 
     model = (
-        nsteps = 40000,                 # [n] How many steps of the Markov chain should we run?
-        burnin = 10000,                 # [n] How long should we wait for MC to converge (become stationary)
+        nsteps = 400000,                # [n] How many steps of the Markov chain should we run?
+        burnin = 100000,                # [n] How long should we wait for MC to converge (become stationary)
         dr = 1.0,                       # [μm] Radius step size
         dTmax = 10.0,                   # [Ma/dt] Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
         Tinit = 400.0,                  # [C] Initial model temperature (i.e., crystallization temperature)
@@ -108,8 +108,6 @@
 
     chrons = chronometers(ds, model)
 
-## --- Age uncertainty resampling: estimate expected misfit (σcalc) from excess dispersion of the data itself
-
     # Model uncertainty is not well known (depending on annealing parameters,
     # decay constants, diffusion parameters, etc.), but is certainly non-zero.
     # In addition, observed thermochronometric ages often display excess dispersion beyond analytical
@@ -118,6 +116,8 @@
     model = (;model...,
         σcalc = fill(25., length(chrons)),     # [Ma] model uncertainty
     )
+
+## --- Age uncertainty resampling: estimate expected misfit (σcalc) from excess dispersion of the data itself
 
     # Empirical age uncertainty for apatite
     tap = isa.(chrons, ApatiteHe)
@@ -174,13 +174,20 @@
     savefig(h, name*"_tT.lldist.pdf")
     display(h)
 
+## --- Plot moving average of acceptance distribution
+
+    h = plot(movmean(tT.acceptancedist,100), label="", framestyle=:box)
+    plot!(xlabel="Step number", ylabel="acceptance probability (mean of 100)")
+    savefig(h, name*"_acceptance.pdf")
+    display(h)
+
 ## --- Plot calculated/observed ages as a function of eU (ZirconHe, ApatiteHe)
 
     C = (ApatiteHe, ZirconHe,)
     mincolor = ("apatite", "zircon",)
     for i in eachindex(C, mincolor)
         t = isa.(chrons, C[i])
-        if any(tap)
+        if any(t)
             σtotal = sqrt.(get_age_sigma(chrons[t]).^2 + model.σcalc[t].^2)
             h = ageeuplot(chrons[t], yerror=2σtotal,
                 label="Data (2σ total)", 
@@ -215,7 +222,7 @@
             label = "Data (2σ total)", 
             framestyle = :box,
             color = :black,
-            title = "ApatiteHe",
+            title = "ApatiteFT",
         )
         agedist = tT.resultdist[t,:]
         m = nanmean(agedist, dims=2)
@@ -227,7 +234,7 @@
             color = mineralcolors["apatite"], 
             msc = mineralcolors["apatite"], 
         )
-        savefig(h, "$(name)_ApatiteHe_predicted.pdf")
+        savefig(h, "$(name)_ApatiteFT_predicted.pdf")
         display(h)
     end
 
@@ -288,15 +295,9 @@
             fill = true,
             alpha = 0.75,
         )
+        savefig(h, "$(name)_ApatiteTrackLength_predicted.pdf")
         display(h)
     end
-
-## --- Plot moving average of acceptance distribution
-
-    h = plot(movmean(tT.acceptancedist,100), label="", framestyle=:box)
-    plot!(xlabel="Step number", ylabel="acceptance probability (mean of 100)")
-    savefig(h, name*"_acceptance.pdf")
-    display(h)
 
 ## --- Create image of paths
 
