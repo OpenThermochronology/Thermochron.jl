@@ -60,7 +60,7 @@
         minpoints = 15,                 # [n] Minimum allowed number of t-T points
         maxpoints = 50,                 # [n] Maximum allowed number of t-T points
         rescale = false,                # Attempt to hedge against systematic errors by limiting the log likeihood contribution of each chronometer to scale as sqrt(n) instead of n
-        trackhist = false,
+        trackhist = false,              # Additional track length histogram comparison (likely redundant)
         dynamicsigma = false,           # Update model uncertainties throughout inversion?
         dynamicjumping = true,          # Update the t and T jumping (proposal) distributions based on previously accepted jumps
         # Damage and annealing models for diffusivity (specify custom kinetics if desired)
@@ -110,7 +110,7 @@
 
 ## --- Age uncertainty resampling: estimate expected misfit (σcalc) from excess dispersion of the data itself
 
-    # Model uncertainty is not well known (depends on annealing parameters,
+    # Model uncertainty is not well known (depending on annealing parameters,
     # decay constants, diffusion parameters, etc.), but is certainly non-zero.
     # In addition, observed thermochronometric ages often display excess dispersion beyond analytical
     # uncertainty. Here we specify a default minimum uncertainty representing the average expected 
@@ -174,57 +174,67 @@
     savefig(h, name*"_tT.lldist.pdf")
     display(h)
 
-## --- Plot model ages vs observed ages in age-eU space (ApatiteHe)
-    tzr = isa.(chrons, ZirconHe)
-    if any(tzr)
-        σtotal = sqrt.(get_age_sigma(chrons[tzr]).^2 + model.σcalc[tzr].^2)
-        h = ageeuplot(chrons[tzr], yerror=2σtotal,
-            label="Data (2σ)", 
-            color=:black, 
-            title = "ZirconHe",
-        )
-        zircon_agedist = tT.resultdist[tzr, :]
-        m = nanmean(zircon_agedist, dims=2)
-        l = nanpctile(zircon_agedist, 2.5, dims=2)
-        u = nanpctile(zircon_agedist, 97.5, dims=2)
-        scatter!(h, eU.(chrons[tzr]), m, 
-            yerror=(m-l, u-m), 
-            label="Model + 95%CI", 
-            color=mineralcolors["zircon"], 
-            msc=mineralcolors["zircon"],
-        )
-        savefig(h, name*"_ZirconHe_Age-eU.pdf")
-        display(h)
+## --- Plot calculated/observed ages as a function of eU (ZirconHe, ApatiteHe)
+
+    C = (ApatiteHe, ZirconHe,)
+    mincolor = ("apatite", "zircon",)
+    for i in eachindex(C, mincolor)
+        t = isa.(chrons, C[i])
+        if any(tap)
+            σtotal = sqrt.(get_age_sigma(chrons[t]).^2 + model.σcalc[t].^2)
+            h = ageeuplot(chrons[t], yerror=2σtotal,
+                label="Data (2σ total)", 
+                color = :black, 
+                title = "$(C[i])",
+            )
+            agedist = tT.resultdist[t,:]
+            m = nanmean(agedist, dims=2)
+            l = nanpctile(agedist, 2.5, dims=2)
+            u = nanpctile(agedist, 97.5, dims=2)
+            scatter!(h, eU.(chrons[t]), m, 
+                yerror=(m-l, u-m), 
+                label="Model (95%CI)", 
+                color=mineralcolors[mincolor[i]], 
+                msc=mineralcolors[mincolor[i]], 
+            )
+            savefig(h, name*"_$(C[i])_Age-eU.pdf")
+            display(h)
+        end
     end
 
-## --- Plot model ages vs observed ages in age-eU space (ZirconHe)
+## -- Plot calculated/observed ages as a function of rmr0 (ApatiteFT)
 
-    tap = isa.(chrons, ApatiteHe)
-    if any(tap)
-        σtotal = sqrt.(get_age_sigma(chrons[tap]).^2 + model.σcalc[tap].^2)
-        h = ageeuplot(chrons[tap], yerror=2σtotal,
-            label="Data (2σ)", 
-            color = :black, 
+    t = isa.(chrons, ApatiteFT)
+    if any(t)
+        rmr0 = chrons[t] .|> x->x.rmr0
+        μobs = get_age(chrons[t])
+        σtotal = sqrt.(get_age_sigma(chrons[t]).^2 + model.σcalc[t].^2)
+        h = scatter(rmr0, μobs, yerror=2σtotal,
+            xlabel = "rmr0 [unitless]",
+            ylabel = "Age [Ma]",
+            label = "Data (2σ total)", 
+            framestyle = :box,
+            color = :black,
             title = "ApatiteHe",
         )
-        apatite_agedist = tT.resultdist[tap,:]
-        m = nanmean(apatite_agedist, dims=2)
-        l = nanpctile(apatite_agedist, 2.5, dims=2)
-        u = nanpctile(apatite_agedist, 97.5, dims=2)
-        scatter!(h, eU.(chrons[tap]), m, 
-            yerror=(m-l, u-m), 
-            label="Model + 95%CI", 
-            color=mineralcolors["apatite"], 
-            msc=mineralcolors["apatite"], 
+        agedist = tT.resultdist[t,:]
+        m = nanmean(agedist, dims=2)
+        l = nanpctile(agedist, 2.5, dims=2)
+        u = nanpctile(agedist, 97.5, dims=2)
+        scatter!(h, rmr0, m, 
+            yerror = (m-l, u-m), 
+            label = "Model (95%CI)", 
+            color = mineralcolors["apatite"], 
+            msc = mineralcolors["apatite"], 
         )
-        savefig(h, name*"_ApatiteHe_Age-eU.pdf")
+        savefig(h, "$(name)_ApatiteHe_predicted.pdf")
         display(h)
     end
 
-## -- Plot model and observed ages (most other chronometers)
+## -- Plot calculated and observed ages (most other chronometers)
 
-    C = (GenericAr, GenericHe, ZirconFT, ApatiteFT, MonaziteFT)
-    mincolor = ("feldspar", "hematite", "zircon", "apatite", "monzaite")
+    C = (GenericAr, GenericHe, ZirconFT, MonaziteFT)
+    mincolor = ("feldspar", "hematite", "zircon", "monzaite")
     for i in eachindex(C, mincolor)
         t = isa.(chrons, C[i])
         if any(t)
@@ -233,7 +243,7 @@
             h = plot(μobs, yerror=2σtotal,
                 xlabel = "Sample number",
                 ylabel = "Age [Ma]",
-                label = "Data (2σ)", 
+                label = "Data (2σ total)", 
                 framestyle = :box,
                 color = :black,
                 title = "$(C[i])",
@@ -244,16 +254,16 @@
             u = nanpctile(agedist, 97.5, dims=2)
             scatter!(h, m, 
                 yerror = (m-l, u-m), 
-                label = "Model + 95%CI", 
-                color=mineralcolors[mincolor[i]], 
-                msc=mineralcolors[mincolor[i]], 
+                label = "Model (95%CI)", 
+                color = mineralcolors[mincolor[i]], 
+                msc = mineralcolors[mincolor[i]], 
             )
             savefig(h, "$(name)_$(C[i])_predicted.pdf")
             display(h)
         end
     end
 
-## -- Fission track length histogram
+## -- Fission track length histogram (ApatiteTrackLength)
 
     t = isa.(chrons, ApatiteTrackLength)
     if any(t)
@@ -263,7 +273,7 @@
             xlims = (0,20),
             xlabel = "Track length [μm]",
             ylabel = "Probability density",
-            label = "Data", 
+            label = "Data (N=$(count(t)))", 
             legend = :topleft,
             framestyle=:box,
             color = :black,

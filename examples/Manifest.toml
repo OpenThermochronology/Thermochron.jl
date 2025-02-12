@@ -216,9 +216,9 @@ version = "0.15.8"
 
 [[deps.CodecZlib]]
 deps = ["TranscodingStreams", "Zlib_jll"]
-git-tree-sha1 = "545a177179195e442472a1c4dc86982aa7a1bef0"
+git-tree-sha1 = "962834c22b66e32aa10f7611c08c8ca4e20749a9"
 uuid = "944b1d66-785c-5afd-91f1-9de20f533193"
-version = "0.7.7"
+version = "0.7.8"
 
 [[deps.ColorSchemes]]
 deps = ["ColorTypes", "ColorVectorSpace", "Colors", "FixedPointNumbers", "PrecompileTools", "Random"]
@@ -286,9 +286,9 @@ version = "0.3.2"
 
 [[deps.ConcurrentUtilities]]
 deps = ["Serialization", "Sockets"]
-git-tree-sha1 = "f36e5e8fdffcb5646ea5da81495a5a7566005127"
+git-tree-sha1 = "d9d26935a0bcffc87d2613ce14c527c99fc543fd"
 uuid = "f0e56b4a-5159-44fe-b623-3e5288b988bb"
-version = "2.4.3"
+version = "2.5.0"
 
 [[deps.ConstructionBase]]
 git-tree-sha1 = "76219f1ed5771adbb096743bff43fb5fdd4c1157"
@@ -861,9 +861,9 @@ version = "0.13.5"
 
 [[deps.JLD2]]
 deps = ["FileIO", "MacroTools", "Mmap", "OrderedCollections", "PrecompileTools", "Requires", "TranscodingStreams"]
-git-tree-sha1 = "a0746c21bdc986d0dc293efa6b1faee112c37c28"
+git-tree-sha1 = "89e1e5c3d43078d42eed2306cab2a11b13e5c6ae"
 uuid = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
-version = "0.4.53"
+version = "0.4.54"
 
 [[deps.JLFzf]]
 deps = ["Pipe", "REPL", "Random", "fzf_jll"]
@@ -926,9 +926,9 @@ version = "1.4.0"
 
 [[deps.Latexify]]
 deps = ["Format", "InteractiveUtils", "LaTeXStrings", "MacroTools", "Markdown", "OrderedCollections", "Requires"]
-git-tree-sha1 = "ce5f5621cac23a86011836badfedf664a612cee4"
+git-tree-sha1 = "cd714447457c660382fe634710fb56eb255ee42e"
 uuid = "23fbe1c1-3f47-55db-b15f-69d7ec21a316"
-version = "0.16.5"
+version = "0.16.6"
 
     [deps.Latexify.extensions]
     DataFramesExt = "DataFrames"
@@ -1276,9 +1276,9 @@ version = "1.4.3"
 
 [[deps.OpenSSL_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "7493f61f55a6cce7325f197443aa80d32554ba10"
+git-tree-sha1 = "a9697f1d06cc3eb3fb3ad49cc67f2cfabaac31ea"
 uuid = "458c3c95-2e84-50aa-8efc-19380b2a3a95"
-version = "3.0.15+3"
+version = "3.0.16+0"
 
 [[deps.OpenSpecFun_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl"]
@@ -1404,9 +1404,9 @@ version = "0.2.2"
 
 [[deps.Polynomials]]
 deps = ["LinearAlgebra", "OrderedCollections", "RecipesBase", "Requires", "Setfield", "SparseArrays"]
-git-tree-sha1 = "56ff43adee1b1449fa151265b0088fe1c14dfd7d"
+git-tree-sha1 = "5f6847271627572213a6b419456ffccef4c6729b"
 uuid = "f27b6e38-b328-58d1-80ce-0feddd5e7a45"
-version = "4.0.14"
+version = "4.0.16"
 
     [deps.Polynomials.extensions]
     PolynomialsChainRulesCoreExt = "ChainRulesCore"
@@ -1694,11 +1694,11 @@ version = "0.1.1"
 
 [[deps.StatGeochemBase]]
 deps = ["Colors", "DelimitedFiles", "IndirectArrays", "NaNStatistics", "SpecialFunctions"]
-git-tree-sha1 = "e032f5aef4444aad6f41914a79d3258bd8673a91"
+git-tree-sha1 = "cbbb16e23fc0e3d32dcf03762fc9736c03b996ab"
 repo-rev = "main"
 repo-url = "https://github.com/brenhinkeller/StatGeochemBase.jl.git"
 uuid = "61e559cd-58b4-4257-8528-26bb26ff2b9a"
-version = "0.6.14"
+version = "0.6.15"
 
 [[deps.Static]]
 deps = ["CommonWorldInvalidations", "IfElse", "PrecompileTools"]
@@ -1719,9 +1719,9 @@ weakdeps = ["OffsetArrays", "StaticArrays"]
 
 [[deps.StaticArrays]]
 deps = ["LinearAlgebra", "PrecompileTools", "Random", "StaticArraysCore"]
-git-tree-sha1 = "02c8bd479d26dbeff8a7eb1d77edfc10dacabc01"
+git-tree-sha1 = "e3be13f448a43610f978d29b7adf78c76022467a"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "1.9.11"
+version = "1.9.12"
 weakdeps = ["ChainRulesCore", "Statistics"]
 
     [deps.StaticArrays.extensions]
@@ -1802,7 +1802,7 @@ version = "1.11.0"
 
 [[deps.Thermochron]]
 deps = ["BangBang", "Distributions", "LinearAlgebra", "LogExpFunctions", "LoopVectorization", "LsqFit", "NaNStatistics", "ProgressMeter", "Reexport", "StatGeochemBase", "Statistics"]
-git-tree-sha1 = "db9090436b6290ca6e5ab1c15413732a73c19a4c"
+git-tree-sha1 = "cf9d094a53363437ac442db3a20c1512097e20f9"
 repo-rev = "main"
 repo-url = "https://github.com/OpenThermochronology/Thermochron.jl.git"
 uuid = "b9a8379e-ee1a-4388-b7ca-7852af1cef08"
@@ -1914,9 +1914,9 @@ version = "1.0.0"
 
 [[deps.XML2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libiconv_jll", "Zlib_jll"]
-git-tree-sha1 = "a2fccc6559132927d4c5dc183e3e01048c6dcbd6"
+git-tree-sha1 = "ee6f41aac16f6c9a8cab34e2f7a200418b1cc1e3"
 uuid = "02c8fc9c-b97f-50b9-bbe4-9be30ff0a78a"
-version = "2.13.5+0"
+version = "2.13.6+0"
 
 [[deps.XSLT_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libgcrypt_jll", "Libgpg_error_jll", "Libiconv_jll", "XML2_jll", "Zlib_jll"]
