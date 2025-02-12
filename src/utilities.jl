@@ -200,17 +200,16 @@
         return δₘ
     end
 
-    function diff_ll(x::AbstractArray, μ::Number, σ::Number)
+    function diff_ll(x::AbstractArray{T}, μ::Number, σ::Number) where {T<:Number}
         i₀ = firstindex(x)
-        inv_s2 = 1/(2*σ*σ)
-        ll = zero(typeof(inv_s2))
+        d = Normal(μ, σ)
+        ll = zero(float(T))
         if length(x) > 1
             last = x[i₀]
-            @inbounds for i ∈ (i₀+1):(i₀+length(x)-1)
+            @inbounds for i ∈ (i₀+1):lastindex(x)
                 δᵢ = x[i] - last
-                if δᵢ > μ
-                    δμ = δᵢ - μ
-                    ll -= δμ * δμ * inv_s2
+                if δᵢ > 0
+                    ll += logccdf(d, δᵢ)
                 end
                 last = x[i]
             end
@@ -508,7 +507,7 @@
         # Pre-anneal RDAAM samples, if any
         isa(adm, RDAAM) && anneal!(data, ApatiteHe{T}, tsteps, Tsteps, adm)
 
-        # Rescale log likelihoods to avoid one chronometer type from dominating the inversion
+        # Optionally rescale log likelihoods to avoid one chronometer type from dominating the inversion
         scalegar = rescale ? sqrt(count(x->isa(x, GenericAr), data)) : 1
         scaleghe = rescale ? sqrt(count(x->isa(x, GenericHe), data)) : 1
         scalezhe = rescale ? sqrt(count(x->isa(x, ZirconHe), data)) : 1

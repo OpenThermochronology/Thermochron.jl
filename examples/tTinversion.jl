@@ -37,43 +37,40 @@
     name = "Manitoba"
     ds = importdataset("manitoba.csv", ',', importas=:Tuple)
 
+
 ## --- Prepare problem
 
+    dt = 8.0 # [Ma] Model timestep
+    tinit = ceil(maximum(ds.crystallization_age_Ma)/dt) * dt # [Ma] Model start time
+
     model = (
-        nsteps = 500000,               # [n] How many steps of the Markov chain should we run?
-        burnin = 150000,                # [n] How long should we wait for MC to converge (become stationary)
+        nsteps = 40000,                 # [n] How many steps of the Markov chain should we run?
+        burnin = 10000,                 # [n] How long should we wait for MC to converge (become stationary)
         dr = 1.0,                       # [μm] Radius step size
-        dt = 8.0,                       # [Ma] Time step size
         dTmax = 10.0,                   # [Ma/dt] Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
         Tinit = 400.0,                  # [C] Initial model temperature (i.e., crystallization temperature)
         ΔTinit = -100.0,                # [C] Tinit can vary from Tinit to Tinit+ΔTinit
         Tnow = 0.0,                     # [C] Current surface temperature
-        ΔTnow = 20.0,                   # [Ma] Tnow may vary from Tnow to Tnow+ΔTnow
-        tnow = 0.0,                     # [Ma] Today
+        ΔTnow = 20.0,                   # [C] Tnow may vary from Tnow to Tnow+ΔTnow
+        dt = dt,                        # [Ma] Model timestep
+        tinit = tinit,                  # [Ma] Model start time
+        tnow = 0.0,                     # [Ma] Model end time (today)
+        tsteps = cntr(0:dt:tinit),      # [Ma] Forward time discretiziation (from start of model)
+        agesteps = cntr(tinit:-dt:0),   # [Ma] Age discretization (relative to the present)
         minpoints = 15,                 # [n] Minimum allowed number of t-T points
         maxpoints = 50,                 # [n] Maximum allowed number of t-T points
+        rescale = false,                # Attempt to hedge against systematic errors by limiting the log likeihood contribution of each chronometer to scale as sqrt(n) instead of n
+        trackhist = false,
+        dynamicsigma = false,           # Update model uncertainties throughout inversion?
         dynamicjumping = true,          # Update the t and t jumping (proposal) distributions based on previously accepted jumps
         # Damage and annealing models for diffusivity (specify custom kinetics if desired)
         adm = RDAAM(),                  # Flowers et al. 2009 (doi: 10.1016/j.gca.2009.01.015) apatite diffusivity model
         zdm = ZRDAAM(),                 # Guenthner et al. 2013 (doi: 10.2475/03.2013.01) zircon diffusivity model
         aftm = Ketcham1999FC(),         # Ketcham et al. 2007 (doi: 10.2138/am.2007.2281) apatite fission track model
         zftm = Yamada2007PC(),          # Yamada et al. 2007 (doi: 10.1016/j.chemgeo.2006.09.002) zircon fission track model
-        # Model uncertainty is not well known (depends on annealing parameters,
-        # decay constants, diffusion parameters, etc.), but is certainly non-zero.
-        # Here we add (in quadrature) a blanket model uncertainty of 5 Ma.
-        σmodel = 5.0,                   # [Ma] model uncertainty
-        dynamicsigma = true,            # Update model uncertainties throughout inversion?
         # Optional simulated annealing during burnin, wherein p_accept = max(exp((llₚ-ll)/T), 1)
         # T = T0annealing * exp(-λannealing * n) + 1 at step number n of burnin
-        T0annealing = 1,                # [unitless] initial annealing "temperature" (set to 0 for no simulated annealing).
-    )
-
-    # Crystallization ages and start time
-    tinit = ceil(maximum(ds.crystallization_age_Ma)/model.dt) * model.dt
-    model = (model...,
-        tinit = tinit,
-        agesteps = Array{Float64}(tinit-model.dt/2 : -model.dt : 0+model.dt/2),
-        tsteps = Array{Float64}(0+model.dt/2 : model.dt : tinit-model.dt/2),
+        T0annealing = 5,                # [unitless] initial annealing "temperature" (set to 0 for no simulated annealing).
     )
 
     # Default: no detail interval
@@ -89,7 +86,7 @@
 
     # Boundary conditions (e.g. 10C at present and 650 C at the time of zircon formation).
     boundary = Boundary(
-        agepoints = [model.tnow, model.tinit],   # [Ma] Final and initial time
+        agepoints = [0.0, model.tinit],          # [Ma] Final and initial time
         T₀ = [model.Tnow, model.Tinit],          # [C] Final and initial temperature
         ΔT = [model.ΔTnow, model.ΔTinit],        # [C] Final and initial temperature range (positive or negative)
         tboundary = :reflecting, # Reflecting time boundary conditions
@@ -105,34 +102,44 @@
     #     agedist = [ Normal(974,122),  Uniform(497,509),   Uniform(305,310)],  # [Ma] Age distribution
     #     Tdist =   [  Uniform(0,200),     Uniform(0,50),      Uniform(0,50)],  # [C] Temperature distribution
     # )
-    # name *= "_unconf"
+    # name *= "_constrained"
 
 ## --- Process data into Chronometer objects
 
     chrons = chronometers(ds, model)
 
-## --- Age uncertainty resampling
+    # Model uncertainty is not well known (depends on annealing parameters,
+    # decay constants, diffusion parameters, etc.), but is certainly non-zero.
+    # In addition, observed thermochronometric ages often display excess dispersion beyond analytical
+    # uncertainty. Here we specify a default minimum uncertainty representing the average expected 
+    # misfit between model and data, which may optionally be resampled during inversion.
+    model = (;model...,
+        σcalc = fill(25., length(chrons)),     # [Ma] model uncertainty
+    )
+
+## --- Age uncertainty resampling: estimate expected misfit (σcalc) from excess dispersion of the data itself
 
     # # Empirical age uncertainty for apatite
     # tap = isa.(chrons, ApatiteHe)
     # h = ageeuplot(chrons[tap], label="Internal uncertainty", title="apatite")
-    # empiricaluncertainty!(chrons, ApatiteHe)
-    # ageeuplot!(h, chrons[tap], label="Empirical uncertainty")
+    # empiricaluncertainty!(model.σcalc, chrons, ApatiteHe)
+    # σtotal = sqrt.(get_age_sigma(chrons[tap]).^2 + model.σcalc[tap].^2)
+    # ageeuplot!(h, chrons[tap], yerror=2*σtotal, label="Empirical uncertainty")
     # display(h)
 
     # # Empirical age uncertainty for zircon
     # tzr = isa.(chrons, ZirconHe)
     # h = ageeuplot(chrons[tzr], label="Internal uncertainty", title="zircon")
-    # empiricaluncertainty!(chrons, ZirconHe)
-    # ageeuplot!(h, chrons[tzr], label="Empirical uncertainty")
+    # empiricaluncertainty!(model.σcalc, chrons, ZirconHe)
+    # σtotal = sqrt.(get_age_sigma(chrons[tzr]).^2 + model.σcalc[tzr].^2)
+    # ageeuplot!(h, chrons[tzr], yerror=2*σtotal, label="Empirical uncertainty")
     # display(h)
-
 
 ## --- Invert for maximum likelihood t-T path
 
     # Run Markov Chain
-    @time tT = MCMC(chrons, model, boundary, constraint, detail)
-    # @time tT, kinetics = MCMC_varkinetics(chrons, model, boundary, constraint, detail)
+    # @time tT = MCMC(chrons, model, boundary, constraint, detail)
+    @time tT, kinetics = MCMC_varkinetics(chrons, model, boundary, constraint, detail)
     @info """tT.tpointdist & tT.Tpointdist collected, size: $(size(tT.Tpointdist))
     Mean log-likelihood: $(nanmean(view(tT.lldist, model.burnin:model.nsteps)))
     Mean acceptance rate: $(nanmean(view(tT.acceptancedist, model.burnin:model.nsteps)))

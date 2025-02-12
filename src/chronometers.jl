@@ -1178,7 +1178,8 @@ function set_age_sigma!(x::AbstractArray{<:Chronometer{T}}, age_sigmas::Abstract
     return x
 end
 
-function empiricaluncertainty!(x::AbstractArray{<:Chronometer{T}}, ::Type{C}; fraction::Number=1/sqrt(2), sigma_eU::Number = ((C<:ZirconHe) ? 100. : 10.)) where {T<:AbstractFloat, C<:HeliumSample}
+function empiricaluncertainty!(σcalc::AbstractVector{T}, x::AbstractArray{<:Chronometer{T}}, ::Type{C}; fraction::Number=1/sqrt(2), sigma_eU::Number = ((C<:ZirconHe) ? 100. : 10.)) where {T<:AbstractFloat, C<:HeliumSample}
+    @assert eachindex(σcalc) == eachindex(x)
     @assert 0 <= fraction <= 1
     t = isa.(x, C)
     eU_C = eU.(x[t])
@@ -1188,9 +1189,7 @@ function empiricaluncertainty!(x::AbstractArray{<:Chronometer{T}}, ::Type{C}; fr
         W = normpdf.(eU(x[i]), max(sigma_eU, nearest_eU/2), eU_C)
         # Assume some fraction of weighted variance is from unknown external uncertainty
         σₑ = nanstd(ages_C, W) * fraction   # External uncertainty (est)
-        σᵢ = x[i].age_sigma                 # Internal uncertainty
-        σₓ = sqrt(σₑ^2 + σᵢ^2)
-        x[i] = setproperty!!(x[i], :age_sigma, σₓ)
+        σcalc[i] = max(σₑ, σcalc[i])
     end
     return x
 end

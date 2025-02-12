@@ -14,12 +14,12 @@ c = rand(2)
 @test Thermochron.pointsininterval(collect(1:10), 10, 0.5, 5.5) == 5
 
 # Test diff_ll
-@test Thermochron.diff_ll(1:10, 1, 1) == 0.0
-@test Thermochron.diff_ll(2*(1:10), 1, 1) ≈ -4.5
-@test Thermochron.diff_ll(2*(1:10), 1, 0.5) ≈ -18.0
+@test Thermochron.diff_ll(1:10, 1, 1) == -6.238324625039508
+@test Thermochron.diff_ll(2*(1:10), 1, 1) ≈ -16.569194805083374
+@test Thermochron.diff_ll(2*(1:10), 1, 0.5) ≈ -34.048659003138276
 x = rand(100)
 d = diff(x)
-@test Thermochron.diff_ll(x, 0, 1) ≈ normpdf_ll(0, 1, d[d .> 0])
+@test Thermochron.diff_ll(x, 0, 1) ≈ sum(logccdf.(Normal(0,1),d[d.>0]))
 
 # Test boundary condition functions
 @test Thermochron.reflecting(101, 0, 100) == 99

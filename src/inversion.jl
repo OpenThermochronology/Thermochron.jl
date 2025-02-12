@@ -32,13 +32,16 @@
         dynamicsigma = (haskey(model, :dynamicsigma) ? model.dynamicsigma : false)::Bool
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
         dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10)::T
-        dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : 5)::T
+        dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : dTmax/3)::T
         agesteps = floatrange(model.agesteps)
         tsteps = floatrange(model.tsteps)
         @assert tsteps == reverse(agesteps)
         @assert issorted(tsteps)
         dt = T(model.dt)::T
         σmodel = T(haskey(model, :σmodel) ? model.σmodel : 0)::T
+        σcalc = (haskey(model, :σcalc) ? model.σcalc : fill(σmodel, length(data)))::Vector{T}
+        μcalc = zeros(T, length(data))::Vector{T}
+        @assert eachindex(σcalc) == eachindex(μcalc) == eachindex(data)
         T0annealing = T(haskey(model, :T0annealing) ? model.T0annealing : 1)::T
         λannealing = T(haskey(model, :λannealing) ? model.λannealing : 7/burnin)::T
 
@@ -64,10 +67,6 @@
 
         # Initial propopsal
         initialproposal!(path, npoints) 
-
-        # Prepare to calculate model ages for initial proposal
-        μcalc = zeros(T, length(data))
-        σcalc = fill(T(σmodel), length(data))
 
         # Log-likelihood for initial proposal
         ll = llₚ = model!(μcalc, σcalc, data, path.Tsteps, zdm, adm, zftm, mftm, aftm; trackhist, rescale) + diff_ll(path.Tsteps, dTmax, dTmax_sigma) + 
@@ -321,13 +320,16 @@
         dynamicsigma = (haskey(model, :dynamicsigma) ? model.dynamicsigma : false)::Bool
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
         dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10)::T
-        dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : 5)::T
+        dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : dTmax/3)::T
         agesteps = floatrange(model.agesteps)
         tsteps = floatrange(model.tsteps)
         @assert tsteps == reverse(agesteps)
         @assert issorted(tsteps)
         dt = T(model.dt)::T
         σmodel = T(haskey(model, :σmodel) ? model.σmodel : 0)::T
+        σcalc = (haskey(model, :σcalc) ? model.σcalc : fill(σmodel, length(data)))::Vector{T}
+        μcalc = zeros(T, length(data))::Vector{T}
+        @assert eachindex(σcalc) == eachindex(μcalc) == eachindex(data)
         T0annealing = T(haskey(model, :T0annealing) ? model.T0annealing : 1)::T
         λannealing = T(haskey(model, :λannealing) ? model.λannealing : 7/burnin)::T
         
@@ -353,10 +355,6 @@
 
         # Initial propopsal
         initialproposal!(path, npoints)
-        
-        # Prepare to calculate model ages for initial proposal
-        μcalc = zeros(T, length(data))
-        σcalc = fill(T(σmodel), length(data))
 
         # Log-likelihood for initial proposal
         ll = llₚ = model!(μcalc, σcalc, data, path.Tsteps, zdm, adm, zftm, mftm, aftm; trackhist, rescale) + 
