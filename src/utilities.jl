@@ -139,6 +139,9 @@
         end
         return n
     end
+    proposeddetail(path::TtPath, npointsₚ::Int, detail::DetailInterval) = pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, -step(path.agesteps))
+    accepteddetail(path::TtPath, npoints::Int, detail::DetailInterval) = pointsininterval(path.agepoints, npoints, detail.agemin, detail.agemax, -step(path.agesteps))
+    mindetail(path::TtPath, npoints::Int, detail::DetailInterval) = min(accepteddetail(path, npoints, detail), detail.minpoints)
 
     # Check if point k is distinct from other points in list within ± δ
     function isdistinct(points::AbstractArray, k::Int, δ::Number, npoints::Int=length(points))
@@ -482,7 +485,7 @@
 
     # Adjust model uncertainties of chronometers
     function movesigma!(σcalc::AbstractVector{T}, chrons::AbstractVector{<:Chronometer}) where {T<:AbstractFloat}
-        for C in (ZirconFT, ApatiteFT, ZirconHe, ApatiteHe, GenericHe, GenericAr,)
+        for C in (ZirconFT, MonaziteFT, ApatiteFT, ZirconHe, ApatiteHe, GenericHe, GenericAr,)
             r = abs(randn(T))
             for i in eachindex(σcalc, chrons)
                 if chrons[i] isa C
@@ -544,9 +547,9 @@
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), aftm)
                 ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scaleaft
             elseif isa(c, ApatiteTrackLength)
-                μ, σ = modellength(c, @views(Tsteps[first_index:end]), aftm; trackhist)
-                μcalc[i] = draw_from_population(c, σ)
-                ll += model_ll(c, σ)/scaleatl
+                μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), aftm; trackhist)
+                μcalc[i] = draw_from_population(c, σcalc[i])
+                ll += model_ll(c, σcalc[i])/scaleatl
             else
                 # NaN if not calculated
                 μcalc[i] = T(NaN)
