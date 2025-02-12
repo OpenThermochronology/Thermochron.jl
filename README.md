@@ -44,5 +44,5 @@ When using model results derived from Thermochron.jl, you may cite this package 
 [ci-url]: https://github.com/OpenThermochronology/Thermochron.jl/actions/workflows/CI.yml
 [ci-nightly-img]: https://github.com/OpenThermochronology/Thermochron.jl/workflows/CI%20(Julia%20nightly)/badge.svg
 [ci-nightly-url]: https://github.com/OpenThermochronology/Thermochron.jl/actions/workflows/CI-julia-nightly.yml
-[codecov-img]: http://codecov.io/github/OpenThermochronology/Thermochron.jl/coverage.svg?branch=main
+[codecov-img]: https://codecov.io/gh/OpenThermochronology/Thermochron.jl/branch/main/graph/badge.svg
 [codecov-url]: http://codecov.io/github/OpenThermochronology/Thermochron.jl?branch=main
