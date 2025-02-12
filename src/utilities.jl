@@ -544,7 +544,8 @@
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), aftm)
                 ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scaleaft
             elseif isa(c, ApatiteTrackLength)
-                μcalc[i], σ = modellength(c, @views(Tsteps[first_index:end]), aftm; trackhist)
+                μ, σ = modellength(c, @views(Tsteps[first_index:end]), aftm; trackhist)
+                μcalc[i] = draw_from_population(c, σ)
                 ll += model_ll(c, σ)/scaleatl
             else
                 # NaN if not calculated

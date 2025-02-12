@@ -301,10 +301,10 @@ function modellength(track::ApatiteTrackLength{T}, Tsteps::AbstractVector, am::A
     return μ, σ
 end
 
-function binlikelihoods!(track::ApatiteTrackLength{T}, bandwidth::T) where {T<:AbstractFloat}
+function binlikelihoods!(track::FissionTrackLength{T}, bandwidth::T) where {T<:AbstractFloat}
     fill!(track.ldist, zero(T))
     if bandwidth > 0
-        kernel = Normal(zero(T), bandwidth)
+        kernel = Normal{T}(zero(T), bandwidth)
         @assert eachindex(track.ldist) == 1:length(track.ledges)-1
         @assert eachindex(track.ledges) == 1:length(track.ledges)
         @inbounds for i in eachindex(track.pr)
@@ -322,16 +322,33 @@ function binlikelihoods!(track::ApatiteTrackLength{T}, bandwidth::T) where {T<:A
     return track
 end
 
-function model_ll(track::ApatiteTrackLength, Tsteps::AbstractVector, am::ApatiteAnnealingModel)
+function draw_from_population(track::FissionTrackLength{T}, bandwidth::T) where {T<:AbstractFloat}
+    pr = track.pr::Vector{T}
+    rΣ = sum(pr)*rand()
+    rΣ > 0 || return T(NaN)
+    Σ = zero(T)
+    i = firstindex(pr)
+    while i < lastindex(pr)
+        Σ += pr[i]
+        if Σ < rΣ
+            i += 1
+        else
+            break
+        end
+    end
+    return rand(Normal{T}(track.r[i], bandwidth))
+end
+
+function model_ll(track::FissionTrackLength, Tsteps::AbstractVector, am::AnnealingModel)
     l,σ = modellength(track, Tsteps, am)
     return model_ll(track, σ)
 end
 
-function model_ll(track::ApatiteTrackLength{T}, σ::T) where {T}
+function model_ll(track::FissionTrackLength{T}, σ::T) where {T<:AbstractFloat}
     ll = typemin(T)
     Σpr = nansum(track.pr)
     if σ > 0 && Σpr > 0
-        kernel = Normal(lcmod(track), σ)
+        kernel = Normal{T}(lcmod(track), σ)
         @inbounds for i in eachindex(track.pr)
             if (track.pr[i] > 0) && (track.r[i] > 0)
                 lpr = log(track.pr[i])
