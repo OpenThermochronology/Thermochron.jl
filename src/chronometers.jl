@@ -1311,20 +1311,6 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                     agesteps = agesteps[first_index:end],
                 )
                 push!(result, c)
-            elseif haskey(data, :HeAge) && haskey(data, :HeAge_sigma) && (0 < data.HeAge_sigma[i]/data.HeAge[i])
-                # Legacy format
-                c = ZirconHe(T;
-                    age = data.HeAge[i], 
-                    age_sigma = data.HeAge_sigma[i], 
-                    offset = (haskey(data, :offset_C) && !isnan(data.offset_C[i])) ? data.offset_C[i] : 0,
-                    r = data.halfwidth[i], 
-                    dr = dr, 
-                    U238 = data.U[i], 
-                    Th232 = data.Th[i], 
-                    Sm147 = (haskey(data, :Sm) && !isnan(data.Sm[i])) ? data.Sm[i] : 0,
-                    agesteps = agesteps[first_index:end],
-                )
-                push!(result, c)
             end
             # Zircon fission track
             if haskey(data, :FT_age_Ma) && haskey(data, :FT_age_sigma_Ma) &&  (0 < data.FT_age_sigma_Ma[i]/data.FT_age_Ma[i])
@@ -1386,20 +1372,6 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                     agesteps = agesteps[first_index:end],
                 )
                 push!(result, c)
-            elseif haskey(data, :HeAge) && haskey(data, :HeAge_sigma) && (0 < data.HeAge_sigma[i]/data.HeAge[i])
-                # Legacy format
-                c = ApatiteHe(T;
-                    age = data.HeAge[i], 
-                    age_sigma = data.HeAge_sigma[i], 
-                    offset = (haskey(data, :offset_C) && !isnan(data.offset_C[i])) ? data.offset_C[i] : 0,
-                    r = data.halfwidth[i], 
-                    dr = dr, 
-                    U238 = data.U[i], 
-                    Th232 = data.Th[i], 
-                    Sm147 = (haskey(data, :Sm) && !isnan(data.Sm[i])) ? data.Sm[i] : 0,
-                    agesteps = agesteps[first_index:end],
-                )
-                push!(result, c)
             end
             # Apatite fission track
             if haskey(data, :FT_age_Ma) && haskey(data, :FT_age_sigma_Ma) && (0 < data.FT_age_sigma_Ma[i]/data.FT_age_Ma[i])
@@ -1417,10 +1389,10 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                 push!(result, c)
             end
             # Apatite fission track length
-            if haskey(data, :track_length_um) && haskey(data, :track_angle_degrees) && (0 < data.track_length_um[i])
+            if haskey(data, :track_length_um) && (0 < data.track_length_um[i])
                 c = ApatiteTrackLength(T;
                     length = data.track_length_um[i], 
-                    angle = data.track_angle_degrees[i], 
+                    angle = (haskey(data, :track_angle_degrees) && !isnan(data.track_angle_degrees[i])) ? data.track_angle_degrees[i] : 0,
                     offset = (haskey(data, :offset_C) && !isnan(data.offset_C[i])) ? data.offset_C[i] : 0,
                     dpar = haskey(data, :dpar_um) ? data.dpar_um[i] : NaN,
                     F = haskey(data, :F_apfu) ? data.F_apfu[i] : NaN,
@@ -1431,7 +1403,7 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                 )
                 push!(result, c)
             end
-        elseif haskey(data, :D0_cm_2_s) && haskey(data, :Ea_kJ_mol) && !isnan(data.D0_cm_2_s[i]/data.Ea_kJ_mol[i])
+        elseif haskey(data, :D0_cm_2_s) && haskey(data, :Ea_kJ_mol) && (0 < data.D0_cm_2_s[i]) && (0 < data.Ea_kJ_mol[i])
             # Generic helium
             if haskey(data, :raw_He_age_Ma) && haskey(data, :raw_He_age_sigma_Ma) && (0 < data.raw_He_age_sigma_Ma[i]/data.raw_He_age_Ma[i])
                 # Modern format

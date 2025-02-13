@@ -32,18 +32,11 @@ model = (
 )
 
 # Populate data NamedTuple from imported dataset
-data = (
-    halfwidth = ds.halfwidth_um,            # Crystal half-width, in microns
-    U = ds.U238_ppm,                        # U concentration, in PPM
-    Th = ds.Th232_ppm,                      # Th concentration, in PPM
-    HeAge = ds.raw_He_age_Ma,               # He age, in Ma
-    HeAge_sigma = ds.raw_He_age_Ma.*0.1,    # He age uncertainty (1-sigma), in Ma
-    crystAge = ds.crystallization_age_Ma,   # Crystallization age, in Ma
-    mineral = ds.mineral                    # zircon or apatite
-)
+data = deepcopy(ds)
+data.raw_He_age_sigma_Ma .= 0.1*data.raw_He_age_Ma
 
 # Crystallization ages and start time
-tinit = ceil(maximum(data.crystAge)/model.dt) * model.dt
+tinit = ceil(maximum(data.crystallization_age_Ma)/model.dt) * model.dt
 model = (model...,
     tinit = tinit,
     agesteps = Array{Float64}(tinit-model.dt/2 : -model.dt : 0+model.dt/2),
@@ -80,7 +73,7 @@ constraint = Constraint(
 @test nanminimum(tT.Tpointdist) >= 0
 
 @test isa(tT.resultdist, AbstractMatrix)
-abserr = abs(sum(nanmean(tT.resultdist, dims=2) - data.HeAge)/length(data.HeAge))
+abserr = abs(sum(nanmean(tT.resultdist, dims=2) - data.raw_He_age_Ma)/length(data.raw_He_age_Ma))
 @test 0 < abserr < 150
 @info "Mean absolute error: $abserr"
 
@@ -94,7 +87,7 @@ llmean = mean(tT.lldist)
 @info "Mean acceptance rate: $(mean(tT.acceptancedist))"
 
 @test isa(tT.ndist, AbstractVector{Int})
-@test minimum(tT.ndist) >= 0
+@test minimum(tT.ndist) >= model.minpoints
 @test maximum(tT.ndist) <= model.maxpoints
 @info "Mean npoints: $(mean(tT.ndist))"
 
@@ -121,7 +114,7 @@ detail = DetailInterval(
 @test nanminimum(tT.Tpointdist) >= 0
 
 @test isa(tT.resultdist, AbstractMatrix)
-abserr = abs(sum(nanmean(tT.resultdist, dims=2) - data.HeAge)/length(data.HeAge))
+abserr = abs(sum(nanmean(tT.resultdist, dims=2) - data.raw_He_age_Ma)/length(data.raw_He_age_Ma))
 @test 0 < abserr < 200
 @info "Mean absolute error: $abserr"
 
@@ -135,7 +128,7 @@ llmean = mean(tT.lldist)
 @info "Mean acceptance rate: $(mean(tT.acceptancedist))"
 
 @test isa(tT.ndist, AbstractVector{Int})
-@test minimum(tT.ndist) >= 0
+@test minimum(tT.ndist) >= model.minpoints
 @test maximum(tT.ndist) <= model.maxpoints
 @info "Mean npoints: $(mean(tT.ndist))"
 
@@ -160,7 +153,7 @@ model = (model...,
 @test nanminimum(tT.Tpointdist) >= 0
 
 @test isa(tT.resultdist, AbstractMatrix)
-abserr = abs(sum(nanmean(tT.resultdist, dims=2) - data.HeAge)/length(data.HeAge))
+abserr = abs(sum(nanmean(tT.resultdist, dims=2) - data.raw_He_age_Ma)/length(data.raw_He_age_Ma))
 @test 0 < abserr < 200
 @info "Mean absolute error: $abserr"
 
@@ -174,7 +167,7 @@ llmean = mean(tT.lldist)
 @info "Mean acceptance rate: $(mean(tT.acceptancedist))"
 
 @test isa(tT.ndist, AbstractVector{Int})
-@test minimum(tT.ndist) >= 0
+@test minimum(tT.ndist) >= model.minpoints
 @test maximum(tT.ndist) <= model.maxpoints
 @info "Mean npoints: $(mean(tT.ndist))"
 
