@@ -518,6 +518,8 @@
         scalezft = rescale ? sqrt(count(x->isa(x, ZirconFT), data)) : 1
         scalemft = rescale ? sqrt(count(x->isa(x, MonaziteFT), data)) : 1
         scaleaft = rescale ? sqrt(count(x->isa(x, ApatiteFT), data)) : 1
+        scaleztl = rescale ? sqrt(count(x->isa(x, ZirconTrackLength), data)) : 1
+        scalemtl = rescale ? sqrt(count(x->isa(x, MonaziteTrackLength), data)) : 1
         scaleatl = rescale ? sqrt(count(x->isa(x, ApatiteTrackLength), data)) : 1
 
         # Cycle through each Chronometer, model and calculate log likelihood
@@ -546,6 +548,14 @@
             elseif isa(c, ApatiteFT)
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), aftm)
                 ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scaleaft
+            elseif isa(c, ZirconTrackLength)
+                μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), zftm; trackhist)
+                μcalc[i] = draw_from_population(c, σcalc[i])
+                ll += model_ll(c, σcalc[i])/scaleztl
+            elseif isa(c, MonaziteTrackLength)
+                μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), mftm; trackhist)
+                μcalc[i] = draw_from_population(c, σcalc[i])
+                ll += model_ll(c, σcalc[i])/scalemtl
             elseif isa(c, ApatiteTrackLength)
                 μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), aftm; trackhist)
                 μcalc[i] = draw_from_population(c, σcalc[i])
@@ -557,12 +567,16 @@
         end
 
         # Log likelihood term from comparing observed and expected fission track length histograms
-        trackhist && (ll += tracklength_histogram_ll!(data, ApatiteTrackLength)/scaleatl)
+        if trackhist
+            ll += tracklength_histogram_ll!(data, ZirconTrackLength)/scaleztl
+            ll += tracklength_histogram_ll!(data, MonaziteTrackLength)/scalemtl
+            ll += tracklength_histogram_ll!(data, ApatiteTrackLength)/scaleatl
+        end
             
         return ll
     end
 
-    function tracklength_histogram_ll!(data::Vector{<:Chronometer{T}}, ::Type{C}) where {T<:AbstractFloat, C<:ApatiteTrackLength}
+    function tracklength_histogram_ll!(data::Vector{<:Chronometer{T}}, ::Type{C}) where {T<:AbstractFloat, C<:FissionTrackLength}
         # Initial log likelihood
         ll = zero(T)
         # See how many tracks of type C we have

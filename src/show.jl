@@ -23,6 +23,11 @@ end
 function Base.show(io::IO, x::T) where {T<:FissionTrackLength}
     t = Base.typename(T).wrapper
     l = round(x.length, sigdigits=3)
+    print(io, "$t($(l) μm)")
+end
+function Base.show(io::IO, x::T) where {T<:ApatiteTrackLength}
+    t = Base.typename(T).wrapper
+    l = round(x.length, sigdigits=3)
     θ = round(x.angle, sigdigits=3)
     print(io, "$t($(l) μm, $(θ)°)")
 end
@@ -69,6 +74,14 @@ function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:ApatiteFT}
       age_sigma : $(x.age_sigma) Ma
       offset    : $(x.offset) C from the surface
       rmr0      : $(x.rmr0)
+      agesteps  : $(x.agesteps) Ma
+    """
+    )
+end
+function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:FissionTrackLength}
+    print(io, """$T:
+      length    : $(x.length) μm
+      offset    : $(x.offset) C from the surface
       agesteps  : $(x.agesteps) Ma
     """
     )

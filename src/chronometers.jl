@@ -18,6 +18,7 @@ abstract type FissionTrackLength{T} <: Chronometer{T} end
 abstract type FissionTrackSample{T} <: AbsoluteChronometer{T} end
 abstract type HeliumSample{T} <: AbsoluteChronometer{T} end
 abstract type ArgonSample{T} <: AbsoluteChronometer{T} end
+
 eU(x::Chronometer{T}) where {T<:AbstractFloat} = T(NaN)
 function eU(x::HeliumSample{T}) where {T<:AbstractFloat}
     # Convert from atoms/g to ppm
@@ -26,13 +27,6 @@ function eU(x::HeliumSample{T}) where {T<:AbstractFloat}
     eu += 0.012*nanmean(x.r147Sm) / (6.022E23 / 1E6 / 147)
     return T(eu)
 end
-
-## --- Internal functions to get values and uncertainties from any chronometers
-val(x::AbsoluteChronometer{T}) where {T} = x.age::T
-err(x::AbsoluteChronometer{T}) where {T} = x.age_sigma::T
-val(x::FissionTrackLength{T}) where {T} = x.lcmod::T
-err(x::FissionTrackLength{T}) where {T} = zero(T)
-
 
 ## --- Fission track length types
 
@@ -88,6 +82,70 @@ function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
         floatrange(ledges),
         ldist,
         T(rmr0),
+    )
+end
+
+struct ZirconTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
+    length::T               # [um] track length
+    offset::T               # [C] temperature offset relative to the surface
+    agesteps::FloatRange    # [Ma] age in Ma relative to the present
+    tsteps::FloatRange      # [Ma] forward time since crystallization
+    r::Vector{T}            # [unitless]
+    pr::Vector{T}           # [unitless]
+    ledges::FloatRange      # [um] Length distribution edges
+    ldist::Vector{T}        # [um] Length log likelihood
+end
+function ZirconTrackLength(T::Type{<:AbstractFloat}=Float64; 
+        length=T(NaN), 
+        offset=zero(T),
+        agesteps, 
+        tsteps=reverse(agesteps), 
+        ledges=(0:1.0:20),
+    )
+    r=zeros(T, size(agesteps))
+    pr=zeros(T, size(agesteps))
+    ldist=zeros(T, Base.length(ledges)-1)
+    ZirconTrackLength(
+        T(length),
+        T(offset),
+        floatrange(agesteps),
+        floatrange(tsteps),
+        r,
+        pr,
+        floatrange(ledges),
+        ldist,
+    )
+end
+
+struct MonaziteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
+    length::T               # [um] track length
+    offset::T               # [C] temperature offset relative to the surface
+    agesteps::FloatRange    # [Ma] age in Ma relative to the present
+    tsteps::FloatRange      # [Ma] forward time since crystallization
+    r::Vector{T}            # [unitless]
+    pr::Vector{T}           # [unitless]
+    ledges::FloatRange      # [um] Length distribution edges
+    ldist::Vector{T}        # [um] Length log likelihood
+end
+function MonaziteTrackLength(T::Type{<:AbstractFloat}=Float64; 
+        length=T(NaN), 
+        offset=zero(T),
+        agesteps, 
+        tsteps=reverse(agesteps), 
+        ledges=(0:1.0:20),
+    )
+    r=zeros(T, size(agesteps))
+    pr=zeros(T, size(agesteps))
+    ldist=zeros(T, Base.length(ledges)-1)
+    MonaziteTrackLength(
+        T(length),
+        T(offset),
+        floatrange(agesteps),
+        floatrange(tsteps),
+        r,
+        pr,
+        floatrange(ledges),
+        ldist,
     )
 end
 
@@ -1133,6 +1191,14 @@ function GenericAr(T::Type{<:AbstractFloat}=Float64;
     )
 end
 
+## --- Internal functions to get values and uncertainties from any chronometers
+
+val(x::AbsoluteChronometer{T}) where {T} = x.age::T
+err(x::AbsoluteChronometer{T}) where {T} = x.age_sigma::T
+val(x::FissionTrackLength{T}) where {T} = x.length::T
+err(x::FissionTrackLength{T}) where {T} = zero(T)
+val(x::ApatiteTrackLength{T}) where {T} = x.lcmod::T
+
 ## -- Functions related to age and age uncertinty of absolute chronometers
 
 # Get age and age sigma from a vector of chronometers
@@ -1224,10 +1290,11 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
     result = Chronometer[]
     for i in eachindex(mineral)
         first_index = 1 + round(Int,(maximum(agesteps) - crystage[i])/step(tsteps))
+        mineral = lowercase(string(data.mineral[i]))
 
-        if data.mineral[i] == "zircon"
+        if mineral == "zircon"
             # Zircon helium
-            if haskey(data, :raw_He_age_Ma) && haskey(data, :raw_He_age_sigma_Ma) && !isnan(data.raw_He_age_Ma[i]/data.raw_He_age_sigma_Ma[i])
+            if haskey(data, :raw_He_age_Ma) && haskey(data, :raw_He_age_sigma_Ma) && (0 < data.raw_He_age_sigma_Ma[i]/data.raw_He_age_Ma[i])
                 # Modern format
                 c = ZirconHe(T;
                     age = data.raw_He_age_Ma[i], 
@@ -1244,7 +1311,7 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                     agesteps = agesteps[first_index:end],
                 )
                 push!(result, c)
-            elseif haskey(data, :HeAge) && haskey(data, :HeAge_sigma) && !isnan(data.HeAge[i]/data.HeAge_sigma[i])
+            elseif haskey(data, :HeAge) && haskey(data, :HeAge_sigma) && (0 < data.HeAge_sigma[i]/data.HeAge[i])
                 # Legacy format
                 c = ZirconHe(T;
                     age = data.HeAge[i], 
@@ -1260,7 +1327,7 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                 push!(result, c)
             end
             # Zircon fission track
-            if haskey(data, :FT_age_Ma) && haskey(data, :FT_age_sigma_Ma) && !isnan(data.FT_age_Ma[i]/data.FT_age_sigma_Ma[i])
+            if haskey(data, :FT_age_Ma) && haskey(data, :FT_age_sigma_Ma) &&  (0 < data.FT_age_sigma_Ma[i]/data.FT_age_Ma[i])
                 c = ZirconFT(T;
                     age = data.FT_age_Ma[i], 
                     age_sigma = data.FT_age_sigma_Ma[i], 
@@ -1269,10 +1336,19 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                 )
                 push!(result, c)
             end
+            # Zircon fission track length
+            if haskey(data, :track_length_um) && (0 < data.track_length_um[i])
+                c = ZirconTrackLength(T;
+                    length = data.track_length_um[i], 
+                    offset = (haskey(data, :offset_C) && !isnan(data.offset_C[i])) ? data.offset_C[i] : 0,
+                    agesteps = agesteps[first_index:end],
+                )
+                push!(result, c)
+            end
 
-        elseif data.mineral[i] == "monazite"
+        elseif mineral == "monazite"
             # Monazite fission track
-            if haskey(data, :FT_age_Ma) && haskey(data, :FT_age_sigma_Ma) && !isnan(data.FT_age_Ma[i]/data.FT_age_sigma_Ma[i])
+            if haskey(data, :FT_age_Ma) && haskey(data, :FT_age_sigma_Ma) && (0 < data.FT_age_sigma_Ma[i]/data.FT_age_Ma[i])
                 c = MonaziteFT(T;
                     age = data.FT_age_Ma[i], 
                     age_sigma = data.FT_age_sigma_Ma[i], 
@@ -1281,10 +1357,19 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                 )
                 push!(result, c)
             end
+            # Monazite fission track length
+            if haskey(data, :track_length_um) && (0 < data.track_length_um[i])
+                c = MonaziteTrackLength(T;
+                    length = data.track_length_um[i], 
+                    offset = (haskey(data, :offset_C) && !isnan(data.offset_C[i])) ? data.offset_C[i] : 0,
+                    agesteps = agesteps[first_index:end],
+                )
+                push!(result, c)
+            end
             
-        elseif data.mineral[i] == "apatite"
+        elseif mineral == "apatite"
             # Apatite helium
-            if haskey(data, :raw_He_age_Ma) && haskey(data, :raw_He_age_sigma_Ma) && !isnan(data.raw_He_age_Ma[i]/data.raw_He_age_sigma_Ma[i])
+            if haskey(data, :raw_He_age_Ma) && haskey(data, :raw_He_age_sigma_Ma) && (0 < data.raw_He_age_sigma_Ma[i]/data.raw_He_age_Ma[i])
                 # Modern format
                 c = ApatiteHe(T;
                     age = data.raw_He_age_Ma[i], 
@@ -1301,7 +1386,7 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                     agesteps = agesteps[first_index:end],
                 )
                 push!(result, c)
-            elseif haskey(data, :HeAge) && haskey(data, :HeAge_sigma) && !isnan(data.HeAge[i]/data.HeAge_sigma[i])
+            elseif haskey(data, :HeAge) && haskey(data, :HeAge_sigma) && (0 < data.HeAge_sigma[i]/data.HeAge[i])
                 # Legacy format
                 c = ApatiteHe(T;
                     age = data.HeAge[i], 
@@ -1317,7 +1402,7 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                 push!(result, c)
             end
             # Apatite fission track
-            if haskey(data, :FT_age_Ma) && haskey(data, :FT_age_sigma_Ma) && !isnan(data.FT_age_Ma[i]/data.FT_age_sigma_Ma[i])
+            if haskey(data, :FT_age_Ma) && haskey(data, :FT_age_sigma_Ma) && (0 < data.FT_age_sigma_Ma[i]/data.FT_age_Ma[i])
                 c = ApatiteFT(T;
                     age = data.FT_age_Ma[i], 
                     age_sigma = data.FT_age_sigma_Ma[i], 
@@ -1348,7 +1433,7 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
             end
         elseif haskey(data, :D0_cm_2_s) && haskey(data, :Ea_kJ_mol) && !isnan(data.D0_cm_2_s[i]/data.Ea_kJ_mol[i])
             # Generic helium
-            if haskey(data, :raw_He_age_Ma) && haskey(data, :raw_He_age_sigma_Ma) && !isnan(data.raw_He_age_Ma[i]/data.raw_He_age_sigma_Ma[i])
+            if haskey(data, :raw_He_age_Ma) && haskey(data, :raw_He_age_sigma_Ma) && (0 < data.raw_He_age_sigma_Ma[i]/data.raw_He_age_Ma[i])
                 # Modern format
                 c = GenericHe(T;
                     age = data.raw_He_age_Ma[i], 
@@ -1370,7 +1455,7 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                 push!(result, c)
             end
             # Generic argon
-            if haskey(data, :raw_Ar_age_Ma) && haskey(data, :raw_Ar_age_sigma_Ma) && !isnan(data.raw_Ar_age_Ma[i]/data.raw_Ar_age_sigma_Ma[i])
+            if haskey(data, :raw_Ar_age_Ma) && haskey(data, :raw_Ar_age_sigma_Ma) && (0 < data.raw_Ar_age_sigma_Ma[i]/data.raw_Ar_age_Ma[i])
                 # Modern format
                 c = GenericAr(T;
                     age = data.raw_Ar_age_Ma[i], 
@@ -1386,24 +1471,6 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
             end
         end
     end
-
-    # # Print info about samples found
-    # if any(x->isa(x, ZirconHe), result)
-    #     n = count(x->isa(x, ZirconHe), result)
-    #     @info "found $n zircon helium samples"
-    # end
-    # if any(x->isa(x, ApatiteHe), result)
-    #     n = count(x->isa(x, ApatiteHe), result)
-    #     @info "found $n apatite helium samples"
-    # end
-    # if any(x->isa(x, ApatiteFT), result)
-    #     n = count(x->isa(x, ApatiteFT), result)
-    #     @info "found $n apatite fission track samples"
-    # end
-    # if any(x->isa(x, ApatiteTrackLength), result)
-    #     n = count(x->isa(x, ApatiteTrackLength), result)
-    #     @info "found $n apatite fission track lengths"
-    # end
 
     isempty(result) && @error "No chronometers found"
     return unionize(result)

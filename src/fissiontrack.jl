@@ -109,7 +109,7 @@ Calculate the model c-axis equivalent length ("lc,mod") given a measured
 `θ` [degrees] following the approach of Donelick et al. 1999 
 (doi: 10.2138/am-1999-0902) 
 """
-lcmod(x::FissionTrackLength) = x.lcmod
+lcmod(x::ApatiteTrackLength) = x.lcmod
 function lcmod(l, θ)
     x = l*cos(deg2rad(θ))
     y = l*sin(deg2rad(θ))
@@ -168,10 +168,16 @@ rmr0 = 1 - exp(0.647(dpar-1.75) - 1.834)
 rmr0fromdpar(dpar) = 1 - exp(0.647(dpar-1.75) - 1.834)
 export rmr0fromdpar
 
-## --- 
+## --- Track length conversion for "multikinetic" fission track
 
 function rlr(rmr::T, rmr0::T, kappa=1.04-rmr0) where {T<:AbstractFloat}
-    (max(rmr-rmr0, zero(T))/(1-rmr0))^kappa
+    if rmr < rmr0
+        zero(T)
+    elseif rmr0 == 0
+        rmr
+    else
+        ((rmr-rmr0)/(1-rmr0))^min(kappa, one(T))
+    end
 end
 
 ## --- Calculate fission track ages (accounting for decay) from normalized counts (i.e. counts/(counts-per-Ma at t0))
@@ -300,6 +306,52 @@ function modellength(track::ApatiteTrackLength{T}, Tsteps::AbstractVector, am::A
     end
     return μ, σ
 end
+function modellength(track::MonaziteTrackLength{T}, Tsteps::AbstractVector, am::MonaziteAnnealingModel{T}; trackhist::Bool=false) where {T <: AbstractFloat}
+    agesteps = track.agesteps
+    tsteps = track.tsteps
+    r = track.r
+    pr = track.pr
+    @assert issorted(tsteps)
+    @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps) == eachindex(pr) == eachindex(r)
+    teq = dt = step(tsteps)
+    r[end] = reltracklength(teq, Tsteps[end], am)
+    pr[end] = reltrackdensitymnz(r[end]) * exp(λ238U * agesteps[end])
+    @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
+        teq = equivalenttime(teq, Tsteps[i+1], Tsteps[i], am) + dt
+        r[i] = reltracklength(teq, Tsteps[i], am)
+        pr[i] = reltrackdensitymnz(r[i]) * exp(λ238U * agesteps[i])
+    end
+    r .*= am.l0 # Convert from reduced length to length
+    μ, σ = nanmean(r, pr), nanstd(r, pr)
+    σ = sqrt(σ^2 + am.l0_sigma^2)
+    if trackhist
+        binlikelihoods!(track, σ)
+    end
+    return μ, σ
+end
+function modellength(track::ZirconTrackLength{T}, Tsteps::AbstractVector, am::ZirconAnnealingModel{T}; trackhist::Bool=false) where {T <: AbstractFloat}
+    agesteps = track.agesteps
+    tsteps = track.tsteps
+    r = track.r
+    pr = track.pr
+    @assert issorted(tsteps)
+    @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps) == eachindex(pr) == eachindex(r)
+    teq = dt = step(tsteps)
+    r[end] = reltracklength(teq, Tsteps[end], am)
+    pr[end] = reltrackdensityzrn(r[end]) * exp(λ238U * agesteps[end])
+    @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
+        teq = equivalenttime(teq, Tsteps[i+1], Tsteps[i], am) + dt
+        r[i] = reltracklength(teq, Tsteps[i], am)
+        pr[i] = reltrackdensityzrn(r[i]) * exp(λ238U * agesteps[i])
+    end
+    r .*= am.l0 # Convert from reduced length to length
+    μ, σ = nanmean(r, pr), nanstd(r, pr)
+    σ = sqrt(σ^2 + am.l0_sigma^2)
+    if trackhist
+        binlikelihoods!(track, σ)
+    end
+    return μ, σ
+end
 
 function binlikelihoods!(track::FissionTrackLength{T}, bandwidth::T) where {T<:AbstractFloat}
     fill!(track.ldist, zero(T))
@@ -348,7 +400,7 @@ function model_ll(track::FissionTrackLength{T}, σ::T) where {T<:AbstractFloat}
     ll = typemin(T)
     Σpr = nansum(track.pr)
     if σ > 0 && Σpr > 0
-        kernel = Normal{T}(lcmod(track), σ)
+        kernel = Normal{T}(val(track), σ)
         @inbounds for i in eachindex(track.pr)
             if (track.pr[i] > 0) && (track.r[i] > 0)
                 lpr = log(track.pr[i])
