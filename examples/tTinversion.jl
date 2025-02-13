@@ -8,7 +8,7 @@
 #       This file uses the MCMC, damage annealing, and Crank-Nicholson          #
 #   diffusion codes provided by the Thermochron.jl package.                     #
 #                                                                               #
-#   © 2024 C. Brenhin Keller and Kalin McDannell                                #                                                                            #
+#   © 2025 C. Brenhin Keller and Kalin McDannell                                #                                                                            #
 #                                                                               #
 #       If running for the first time, you might consider instantiating the     #
 #   manifest that came with this file                                           #
@@ -27,27 +27,28 @@
 
     # # # # # # # # # # Choice of regional thermochron data # # # # # # # # # #
 
-    # # Literature samples from Guenthner et al. 2013 (AJS), Minnesota
-    # # (23 ZirconHe, 11 ApatiteHe)
-    # name = "Minnesota"
-    # ds = importdataset("minnesota.csv", ',', importas=:Tuple)
+    # Literature samples from Guenthner et al. 2013 (AJS), Minnesota
+    # (23 ZirconHe, 11 ApatiteHe)
+    name = "Minnesota"
+    ds = importdataset("minnesota.csv", ',', importas=:Tuple)
 
-    # Literature samples from McDannell et al. 2022 (doi: 10.1130/G50315.1), Manitoba
-    # (12 ZirconHe, 5 ApatiteHe, 47 ApatiteFT, 269 ApatiteTrackLength)
-    name = "Manitoba"
-    ds = importdataset("manitoba.csv", ',', importas=:Tuple)
+    # # Literature samples from McDannell et al. 2022 (doi: 10.1130/G50315.1), Manitoba
+    # # (12 ZirconHe, 5 ApatiteHe, 47 ApatiteFT, 269 ApatiteTrackLength)
+    # name = "Manitoba"
+    # ds = importdataset("manitoba.csv", ',', importas=:Tuple)
 
 
 ## --- Prepare problem
 
-    dt = 4.0 # [Ma] Model timestep
+    dt = 8.0 # [Ma] Model timestep
     tinit = ceil(maximum(ds.crystallization_age_Ma)/dt) * dt # [Ma] Model start time
 
     model = (
         nsteps = 400000,                # [n] How many steps of the Markov chain should we run?
         burnin = 100000,                # [n] How long should we wait for MC to converge (become stationary)
         dr = 1.0,                       # [μm] Radius step size
-        dTmax = 10.0,                   # [Ma/dt] Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
+        dTmax = 15.0,                   # [Ma/dt] Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
+        dTmax_sigma = 15/4.5,           # [Ma/dt] Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
         Tinit = 400.0,                  # [C] Initial model temperature (i.e., crystallization temperature)
         ΔTinit = -100.0,                # [C] Tinit can vary from Tinit to Tinit+ΔTinit
         Tnow = 0.0,                     # [C] Current surface temperature
@@ -57,8 +58,8 @@
         tnow = 0.0,                     # [Ma] Model end time (today)
         tsteps = cntr(0:dt:tinit),      # [Ma] Forward time discretiziation (from start of model)
         agesteps = cntr(tinit:-dt:0),   # [Ma] Age discretization (relative to the present)
-        minpoints = 15,                 # [n] Minimum allowed number of t-T points
-        maxpoints = 50,                 # [n] Maximum allowed number of t-T points
+        minpoints = 15,                 # [n] Minimum allowed number of model t-T points (nodes)
+        maxpoints = 50,                 # [n] Maximum allowed number of model t-T points (nodes)
         rescale = false,                # Attempt to hedge against systematic errors by limiting the log likeihood contribution of each chronometer to scale as sqrt(n) instead of n
         trackhist = false,              # Additional track length histogram comparison (likely redundant)
         dynamicsigma = false,           # Update model uncertainties throughout inversion?
@@ -96,13 +97,13 @@
     # Default: No constraints are imposed
     constraint = Constraint()
 
-    # # Uncomment this section if you wish to impose an unconformity or other constraint
-    # # at any point in the record.
-    # constraint = Constraint(
-    #     agedist = [ Normal(974,122),  Uniform(497,509),   Uniform(305,310)],  # [Ma] Age distribution
-    #     Tdist =   [  Uniform(0,200),     Uniform(0,50),      Uniform(0,50)],  # [C] Temperature distribution
-    # )
-    # name *= "_constrained"
+    # Uncomment this section if you wish to impose an unconformity or other constraint
+    # at any point in the record.
+    constraint = Constraint(
+        agedist = [ Normal(520,20),],  # [Ma] Age distribution
+        Tdist =   [  Uniform(0,50),],  # [C] Temperature distribution
+    )
+    name *= "_constrained"
 
 ## --- Process data into Chronometer objects
 
@@ -171,7 +172,13 @@
 
     # Plot log likelihood distribution
     h = plot(tT.lldist, xlabel="Step number", ylabel="Log likelihood", label="", framestyle=:box)
-    savefig(h, name*"_tT.lldist.pdf")
+    savefig(h, name*"_lldist.pdf")
+    display(h)
+
+## --- Plot distribution of number of model t-T points (nodes)
+
+    h = plot(tT.ndist, xlabel="Step number", ylabel="Number of model t-T nodes", label="", framestyle=:box)
+    savefig(h, name*"_ndist.pdf")
     display(h)
 
 ## --- Plot moving average of acceptance distribution
