@@ -28,14 +28,14 @@
     # # # # # # # # # # Choice of regional thermochron data # # # # # # # # # #
 
     # Literature samples from Guenthner et al. 2013 (AJS), Minnesota
-    # (23 ZirconHe, 11 ApatiteHe)
-    name = "Minnesota"
-    ds = importdataset("minnesota.csv", ',', importas=:Tuple)
+    # # (23 ZirconHe, 11 ApatiteHe)
+    # name = "Minnesota"
+    # ds = importdataset("minnesota.csv", ',', importas=:Tuple)
 
-    # # Literature samples from McDannell et al. 2022 (doi: 10.1130/G50315.1), Manitoba
-    # # (12 ZirconHe, 5 ApatiteHe, 47 ApatiteFT, 269 ApatiteTrackLength)
-    # name = "Manitoba"
-    # ds = importdataset("manitoba.csv", ',', importas=:Tuple)
+    # Literature samples from McDannell et al. 2022 (doi: 10.1130/G50315.1), Manitoba
+    # (12 ZirconHe, 5 ApatiteHe, 47 ApatiteFT, 269 ApatiteTrackLength)
+    name = "Manitoba"
+    ds = importdataset("manitoba.csv", ',', importas=:Tuple)
 
 
 ## --- Prepare problem
@@ -48,7 +48,6 @@
         burnin = 100000,                # [n] How long should we wait for MC to converge (become stationary)
         dr = 1.0,                       # [μm] Radius step size
         dTmax = 15.0,                   # [Ma/dt] Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
-        dTmax_sigma = 15/4.5,           # [Ma/dt] Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
         Tinit = 400.0,                  # [C] Initial model temperature (i.e., crystallization temperature)
         ΔTinit = -100.0,                # [C] Tinit can vary from Tinit to Tinit+ΔTinit
         Tnow = 0.0,                     # [C] Current surface temperature
@@ -69,6 +68,7 @@
         zdm = ZRDAAM(),                 # Guenthner et al. 2013 (doi: 10.2475/03.2013.01) zircon diffusivity model
         aftm = Ketcham1999FC(),         # Ketcham et al. 2007 (doi: 10.2138/am.2007.2281) apatite fission track model
         zftm = Yamada2007PC(),          # Yamada et al. 2007 (doi: 10.1016/j.chemgeo.2006.09.002) zircon fission track model
+        mftm = Jones2021FA(),           # Re-fit from Jones et al. 2021 (doi: 10.5194/gchron-3-89-2021) monazite fission track 
         # Optional simulated annealing during burnin, wherein p_accept = max(exp((llₚ-ll)/T), 1)
         # T = T0annealing * exp(-λannealing * n) + 1 at step number n of burnin
         T0annealing = 5,                # [unitless] initial annealing "temperature" (set to 0 for no simulated annealing).
@@ -81,8 +81,8 @@
     # (typically the youngest end of the total time interval, where you may expect the data more resolving power)
     detail = DetailInterval(
         agemin = 0.0, # Youngest end of detail interval
-        agemax = 541.0, # Oldest end of detail interval
-        minpoints = 7, # Minimum number of points in detail interval
+        agemax = 1000, # Oldest end of detail interval
+        minpoints = 8, # Minimum number of points in detail interval
     )
 
     # Boundary conditions (e.g. 10C at present and 650 C at the time of zircon formation).
@@ -97,13 +97,13 @@
     # Default: No constraints are imposed
     constraint = Constraint()
 
-    # Uncomment this section if you wish to impose an unconformity or other constraint
-    # at any point in the record.
-    constraint = Constraint(
-        agedist = [ Normal(520,20),],  # [Ma] Age distribution
-        Tdist =   [  Uniform(0,50),],  # [C] Temperature distribution
-    )
-    name *= "_constrained"
+    # # Uncomment this section if you wish to impose an unconformity or other constraint
+    # # at any point in the record.
+    # constraint = Constraint(
+    #     agedist = [ Normal(520,20),],  # [Ma] Age distribution
+    #     Tdist =   [  Uniform(0,50),],  # [C] Temperature distribution
+    # )
+    # name *= "_constrained"
 
 ## --- Process data into Chronometer objects
 
@@ -177,14 +177,15 @@
 
 ## --- Plot distribution of number of model t-T points (nodes)
 
-    h = plot(tT.ndist, xlabel="Step number", ylabel="Number of model t-T nodes", label="", framestyle=:box)
+    h = plot(tT.ndist, label="", framestyle=:box)
+    plot!(xlabel="Step number", ylabel="Number of model t-T nodes", ylims=(0,last(ylims())))
     savefig(h, name*"_ndist.pdf")
     display(h)
 
 ## --- Plot moving average of acceptance distribution
 
     h = plot(movmean(tT.acceptancedist,100), label="", framestyle=:box)
-    plot!(xlabel="Step number", ylabel="acceptance probability (mean of 100)")
+    plot!(xlabel="Step number", ylabel="Acceptance probability (mean of 100)", ylims=(0,1))
     savefig(h, name*"_acceptance.pdf")
     display(h)
 
@@ -248,7 +249,7 @@
 ## -- Plot calculated and observed ages (most other chronometers)
 
     C = (GenericAr, GenericHe, ZirconFT, MonaziteFT)
-    mincolor = ("feldspar", "hematite", "zircon", "monzaite")
+    mincolor = ("feldspar", "hematite", "zircon", "monazite")
     for i in eachindex(C, mincolor)
         t = isa.(chrons, C[i])
         if any(t)
@@ -277,33 +278,36 @@
         end
     end
 
-## -- Fission track length histogram (ApatiteTrackLength)
+## -- Fission track length histograms (ZirconTrackLength, ApatiteTrackLength, MonaziteTrackLength)
 
-    t = isa.(chrons, ApatiteTrackLength)
-    if any(t)
-        bins = 0:0.25:20
-        h = histogram(Thermochron.val.(chrons[t]), bins=bins, 
-            normalized=true,
-            xlims = (0,20),
-            xlabel = "Track length [μm]",
-            ylabel = "Probability density",
-            label = "Data (N=$(count(t)))", 
-            legend = :topleft,
-            framestyle=:box,
-            color = :black,
-            alpha = 0.75,
-            title = "ApatiteTrackLength",
-        )
-        lengthdist = tT.resultdist[t,:]
-        histogram!(h, vec(lengthdist), bins=bins, 
-            normalized=true, 
-            label = "Model",
-            color = mineralcolors["apatite"],
-            fill = true,
-            alpha = 0.75,
-        )
-        savefig(h, "$(name)_ApatiteTrackLength_predicted.pdf")
-        display(h)
+    C = (ZirconTrackLength, ApatiteTrackLength, MonaziteTrackLength)
+    mincolor = ("zircon", "apatite", "monazite")
+    for i in eachindex(C, mincolor)
+        t = isa.(chrons, C[i])
+        if any(t)
+            h = histogram(Thermochron.val.(chrons[t]), bins=0:0.25:20, 
+                normalized=true,
+                xlims = (0,20),
+                xlabel = "Track length [μm]",
+                ylabel = "Probability density",
+                label = "Data (N=$(count(t)))", 
+                framestyle = :box,
+                legend = :topleft,
+                color = :black,
+                alpha = 0.75,
+                title = "$(C[i])",
+            )
+            lengthdist = tT.resultdist[t,:]
+            histogram!(h, vec(lengthdist), bins=0:0.25:20, 
+                normalized=true, 
+                label = "Model",
+                color = mineralcolors[mincolor[i]],
+                fill = true,
+                alpha = 0.75,
+            )
+            savefig(h, "$(name)_$(C[i])_predicted.pdf")
+            display(h)
+        end
     end
 
 ## --- Create image of paths
