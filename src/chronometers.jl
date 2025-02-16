@@ -464,9 +464,9 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
     mul!(alphadeposition, decay, r147SmHe', one(T), one(T))
     mul!(alphadamage, decay, r147Smdam', one(T), one(T))
 
-    # Allocate additional variables that will be needed for Crank-Nicholson
+    # Allocate additional variables that will be needed for Crank-Nicolson
     annealeddamage = similar(alphadamage)
-    β = zeros(T, nrsteps) # First row of annealeddamage
+    β = zeros(T, nrsteps)
 
     # Allocate arrays for diffusivities
     Dz = zeros(T, length(tsteps))
@@ -481,11 +481,11 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
     du = ones(T, nrsteps-1)    # Supra-diagonal row
     du2 = ones(T, nrsteps-2)   # sup-sup-diagonal row for pivoting
 
-    # Tridiagonal matrix for LHS of Crank-Nicholson equation with regular grid cells
+    # Tridiagonal matrix for LHS of Crank-Nicolson equation with regular grid cells
     A = Tridiagonal(dl, d, du, du2)
     F = lu(A, allowsingular=true)
 
-    # Vector for RHS of Crank-Nicholson equation with regular grid cells
+    # Vector for RHS of Crank-Nicolson equation with regular grid cells
     y = zeros(T, nrsteps)
 
     return ZirconHe(
@@ -742,9 +742,9 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
     mul!(alphadeposition, decay, r147SmHe', one(T), one(T))
     mul!(alphadamage, decay, r147Smdam', one(T), one(T))
 
-    # Allocate additional variables that will be needed for Crank-Nicholson
+    # Allocate additional variables that will be needed for Crank-Nicolson
     annealeddamage = similar(alphadamage)
-    β = zeros(T, nrsteps) # First row of annealeddamage
+    β = zeros(T, nrsteps)
 
     # Allocate arrays for diffusivities
     DL = zeros(T, length(tsteps))
@@ -759,11 +759,11 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
     du = ones(T, nrsteps-1)    # Supra-diagonal row
     du2 = ones(T, nrsteps-2)   # sup-sup-diagonal row for pivoting
 
-    # Tridiagonal matrix for LHS of Crank-Nicholson equation with regular grid cells
+    # Tridiagonal matrix for LHS of Crank-Nicolson equation with regular grid cells
     A = Tridiagonal(dl, d, du, du2)
     F = lu(A, allowsingular=true)
 
-    # Vector for RHS of Crank-Nicholson equation with regular grid cells
+    # Vector for RHS of Crank-Nicolson equation with regular grid cells
     y = zeros(T, nrsteps)
 
     return ApatiteHe(
@@ -1014,8 +1014,8 @@ function SphericalHe(T::Type{<:AbstractFloat}=Float64;
     @. decay = exp(λ147Sm*(agesteps + dt_2)) - exp(λ147Sm*(agesteps - dt_2))
     mul!(alphadeposition, decay, r147SmHe', one(T), one(T))
 
-    # Allocate additional variables that will be needed for Crank-Nicholson
-    β = zeros(T, nrsteps) # First row of annealeddamage
+    # Allocate additional variables that will be needed for Crank-Nicolson
+    β = zeros(T, nrsteps)
 
     # Allocate arrays for diffusivities
     De = zeros(T, length(tsteps))
@@ -1029,11 +1029,11 @@ function SphericalHe(T::Type{<:AbstractFloat}=Float64;
     du = ones(T, nrsteps-1)    # Supra-diagonal row
     du2 = ones(T, nrsteps-2)   # sup-sup-diagonal row for pivoting
 
-    # Tridiagonal matrix for LHS of Crank-Nicholson equation with regular grid cells
+    # Tridiagonal matrix for LHS of Crank-Nicolson equation with regular grid cells
     A = Tridiagonal(dl, d, du, du2)
     F = lu(A, allowsingular=true)
 
-    # Vector for RHS of Crank-Nicholson equation with regular grid cells
+    # Vector for RHS of Crank-Nicolson equation with regular grid cells
     y = zeros(T, nrsteps)
 
     return SphericalHe(
@@ -1279,8 +1279,8 @@ function PlanarHe(T::Type{<:AbstractFloat}=Float64;
     @. decay = exp(λ147Sm*(agesteps + dt_2)) - exp(λ147Sm*(agesteps - dt_2))
     mul!(alphadeposition, decay, r147SmHe', one(T), one(T))
 
-    # Allocate additional variables that will be needed for Crank-Nicholson
-    β = zeros(T, nrsteps) # First row of annealeddamage
+    # Allocate additional variables that will be needed for Crank-Nicolson
+    β = zeros(T, nrsteps)
 
     # Allocate arrays for diffusivities
     De = zeros(T, length(tsteps))
@@ -1294,11 +1294,11 @@ function PlanarHe(T::Type{<:AbstractFloat}=Float64;
     du = ones(T, nrsteps-1)    # Supra-diagonal row
     du2 = ones(T, nrsteps-2)   # sup-sup-diagonal row for pivoting
 
-    # Tridiagonal matrix for LHS of Crank-Nicholson equation with regular grid cells
+    # Tridiagonal matrix for LHS of Crank-Nicolson equation with regular grid cells
     A = Tridiagonal(dl, d, du, du2)
     F = lu(A, allowsingular=true)
 
-    # Vector for RHS of Crank-Nicholson equation with regular grid cells
+    # Vector for RHS of Crank-Nicolson equation with regular grid cells
     y = zeros(T, nrsteps)
 
     return PlanarHe(
@@ -1411,8 +1411,8 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
     @. decay = exp(λ40K*(agesteps + dt_2)) - exp(λ40K*(agesteps - dt_2))
     mul!(argondeposition, decay, r40KAr', one(T), one(T))
 
-    # Allocate additional variables that will be needed for Crank-Nicholson
-    β = zeros(T, nrsteps) # First row of annealeddamage
+    # Allocate additional variables that will be needed for Crank-Nicolson
+    β = zeros(T, nrsteps)
 
     # Allocate arrays for diffusivities
     De = zeros(T, length(tsteps))
@@ -1426,11 +1426,11 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
     du = ones(T, nrsteps-1)    # Supra-diagonal row
     du2 = ones(T, nrsteps-2)   # sup-sup-diagonal row for pivoting
 
-    # Tridiagonal matrix for LHS of Crank-Nicholson equation with regular grid cells
+    # Tridiagonal matrix for LHS of Crank-Nicolson equation with regular grid cells
     A = Tridiagonal(dl, d, du, du2)
     F = lu(A, allowsingular=true)
 
-    # Vector for RHS of Crank-Nicholson equation with regular grid cells
+    # Vector for RHS of Crank-Nicolson equation with regular grid cells
     y = zeros(T, nrsteps)
 
     return SphericalAr(

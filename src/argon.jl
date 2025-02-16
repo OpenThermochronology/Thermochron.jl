@@ -19,17 +19,16 @@ end
 """
 ```julia
 modelage(mineral::SphericalAr, Tsteps)
+modelage(mineral::PlanarAr, Tsteps)
 ```
 Calculate the precdicted bulk K/Ar age of a mineral that has experienced a given 
 t-T path (specified by `mineral.tsteps` for time and `Tsteps` for temperature, 
 at a time resolution of `step(mineral.tsteps)`) using a Crank-Nicholson diffusion 
-solution for a spherical grain of radius `mineral.r` at spatial resolution `mineral.dr`.
+solution for a spherical (or planar slab) grain of radius (or halfwidth ) `mineral.r` 
+at spatial resolution `mineral.dr`.
 
-Implemented based on the the Crank-Nicholson solution for diffusion out of a
-spherical mineral grain in:
-Ketcham, Richard A. (2005) "Forward and Inverse Modeling of Low-Temperature
-Thermochronometry Data" Reviews in Mineralogy and Geochemistry 58 (1), 275–314.
-https://doi.org/10.2138/rmg.2005.58.11
+Spherical implementation based on the the Crank-Nicolson solution for diffusion out of a
+spherical mineral crystal in Ketcham, 2005 (doi: 10.2138/rmg.2005.58.11).
 """
 function modelage(mineral::SphericalAr{T}, Tsteps::AbstractVector{T}) where T <: AbstractFloat
 
@@ -56,13 +55,9 @@ function modelage(mineral::SphericalAr{T}, Tsteps::AbstractVector{T}) where T <:
     @assert eachindex(tsteps) == eachindex(Tsteps) == Base.OneTo(ntsteps)
     argondeposition = mineral.argondeposition::Matrix{T}
 
-    # Calculate initial argon damage
+    # Common β factor is constant across all radii since diffusivity is constant
     β = mineral.β::Vector{T}
-    @turbo for k = 1:(nrsteps-2)
-        β[k+1] = 2 * dr^2 / (De[1]*dt) # Common β factor
-    end
-    β[1] = β[2]
-    β[end] = β[end-1]
+    fill!(β, 2 * dr^2 / (De[1]*dt))
 
     # Output matrix for all timesteps
     # u = v*r is the coordinate transform (u-substitution) for the Crank-
@@ -90,12 +85,8 @@ function modelage(mineral::SphericalAr{T}, Tsteps::AbstractVector{T}) where T <:
 
     @inbounds for i = 2:ntsteps
 
-        # Calculate betas
-        @turbo for k = 1:(nrsteps-2)
-            β[k+1] = 2 * dr^2 / (De[i]*dt) # Common β factor
-        end
-        β[1] = β[2]
-        β[end] = β[end-1]
+        # Update β for current temperature
+        fill!(β, 2 * dr^2 / (De[i]*dt))
 
         # Update tridiagonal matrix
         fill!(A.dl, 1)         # Sub-diagonal
@@ -127,14 +118,12 @@ function modelage(mineral::SphericalAr{T}, Tsteps::AbstractVector{T}) where T <:
     end
 
     # Convert from u (coordinate-transform'd conc.) to v (real Ar conc.)
-    vFinal = @views u[2:end-1,end]
-    vFinal ./= rsteps
-    μAr = nanmean(vFinal) # atoms/gram
+    vfinal = @views u[2:end-1,end]
+    vfinal ./= rsteps
+    μAr = nanmean(vfinal)                   # atoms/gram daughter
+    μ40K = nanmean(mineral.r40K::Vector{T}) # atoms/gram parent
 
-    # Raw age (i.e., as measured)
-    μ40K = nanmean(mineral.r40K::Vector{T}) # atoms/gram
-
-    # Numerically solve for raw Ar age of the grain
+    # Numerically solve for raw Ar age of the grain (i.e., as measured)
     return newton_ar_age(μAr, μ40K)
 end
 

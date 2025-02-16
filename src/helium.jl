@@ -196,14 +196,11 @@ modelage(mineral::PlanarHe, Tsteps)
 Calculate the predicted bulk U-Th/He age of a zircon, apatite, or other mineral
 that has experienced a given t-T path (specified by `mineral.tsteps` for time
 and `Tsteps` for temperature, at a time resolution of `step(mineral.tsteps)`) 
-using a Crank-Nicholson diffusion solution for a spherical grain of radius 
-`mineral.r` at spatial resolution `mineral.dr`.
+using a Crank-Nicolson diffusion solution for a spherical (or planar slab) grain
+of radius (or halfwidth) `mineral.r` at spatial resolution `mineral.dr`.
 
-Implemented based on the the Crank-Nicholson solution for diffusion out of a
-spherical mineral crystal in:
-Ketcham, Richard A. (2005) "Forward and Inverse Modeling of Low-Temperature
-Thermochronometry Data" Reviews in Mineralogy and Geochemistry 58 (1), 275–314.
-https://doi.org/10.2138/rmg.2005.58.11
+Spherical implementation based on the the Crank-Nicolson solution for diffusion out of a
+spherical mineral crystal in Ketcham, 2005 (doi: 10.2138/rmg.2005.58.11).
 """
 function modelage(mineral::ZirconHe, Tsteps::AbstractVector, ρᵣ::AbstractMatrix, dm::ZirconHeliumModel)
     mul!(mineral.annealeddamage, ρᵣ, mineral.alphadamage)
@@ -269,10 +266,10 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T})
     u = zircon.u::DenseMatrix{T}
     fill!(u, zero(T)) # initial u = v = 0 everywhere
 
-    # Vector for RHS of Crank-Nicholson equation with regular grid cells
+    # Vector for RHS of Crank-Nicolson equation with regular grid cells
     y = zircon.y
 
-    # Tridiagonal matrix for LHS of Crank-Nicholson equation with regular grid cells
+    # Tridiagonal matrix for LHS of Crank-Nicolson equation with regular grid cells
     A = zircon.A
     fill!(A.dl, 1)          # Sub-diagonal row
     @. A.d = -2 - β         # Diagonal
@@ -314,7 +311,7 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T})
         A.d[nrsteps] = 1
         y[nrsteps] = u[nrsteps,i-1]
 
-        # RHS of tridiagonal Crank-Nicholson equation for regular grid cells.
+        # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
         @turbo for k = 2:nrsteps-1
             𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i-1], u[k-1, i-1], u[k+1, i-1]
@@ -333,13 +330,13 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T})
     vfinal ./= rsteps
     μHe = nanmean(vfinal) # Atoms/gram
 
-    # Raw Age (i.e., as measured)
+    # Parent concentrations
     μ238U = nanmean(zircon.r238U::Vector{T}) # Atoms/gram
     μ235U = nanmean(zircon.r235U::Vector{T})
     μ232Th = nanmean(zircon.r232Th::Vector{T})
     μ147Sm = nanmean(zircon.r147Sm::Vector{T})
 
-    # Numerically solve for helium age of the grain
+    # Numerically solve for raw helium age of the grain (i.e, as measured)
     return newton_he_age(μHe, μ238U, μ235U, μ232Th, μ147Sm)
 end
 function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}) where T <: AbstractFloat
@@ -403,10 +400,10 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
     u = apatite.u::DenseMatrix{T}
     fill!(u, zero(T)) # initial u = v = 0 everywhere
 
-    # Vector for RHS of Crank-Nicholson equation with regular grid cells
+    # Vector for RHS of Crank-Nicolson equation with regular grid cells
     y = apatite.y
 
-    # Tridiagonal matrix for LHS of Crank-Nicholson equation with regular grid cells
+    # Tridiagonal matrix for LHS of Crank-Nicolson equation with regular grid cells
     A = apatite.A
     fill!(A.dl, 1)          # Sub-diagonal row
     @. A.d = -2 - β         # Diagonal
@@ -448,7 +445,7 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
         A.d[nrsteps] = 1
         y[nrsteps] = u[nrsteps,i-1]
 
-        # RHS of tridiagonal Crank-Nicholson equation for regular grid cells.
+        # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
         @turbo for k = 2:nrsteps-1
             𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i-1], u[k-1, i-1], u[k+1, i-1]
@@ -465,15 +462,15 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
     # Convert from u (coordinate-transform'd conc.) to v (real He conc.)
     vfinal = @views u[2:end-1,end]
     vfinal ./= rsteps
-    μHe = nanmean(vfinal) # Atoms/gram
+    μHe = nanmean(vfinal) # Atoms/gram daughter
 
-    # Raw Age (i.e., as measured)
-    μ238U = nanmean(apatite.r238U::Vector{T}) # Atoms/gram
+    # Parent concentrations in atoms/gram
+    μ238U = nanmean(apatite.r238U::Vector{T})
     μ235U = nanmean(apatite.r235U::Vector{T})
     μ232Th = nanmean(apatite.r232Th::Vector{T})
     μ147Sm = nanmean(apatite.r147Sm::Vector{T})
 
-    # Numerically solve for helium age of the grain
+    # Numerically solve for raw helium age of the grain (i.e, as measured)
     return newton_he_age(μHe, μ238U, μ235U, μ232Th, μ147Sm)
 end
 function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}) where T <: AbstractFloat
@@ -509,10 +506,10 @@ function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}) where T <:
     u = mineral.u::DenseMatrix{T}
     fill!(u, zero(T)) # initial u = v = 0 everywhere
 
-    # Vector for RHS of Crank-Nicholson equation with regular grid cells
+    # Vector for RHS of Crank-Nicolson equation with regular grid cells
     y = mineral.y
 
-    # Tridiagonal matrix for LHS of Crank-Nicholson equation with regular grid cells
+    # Tridiagonal matrix for LHS of Crank-Nicolson equation with regular grid cells
     A = mineral.A
     fill!(A.dl, 1)          # Sub-diagonal row
     @. A.d = -2 - β         # Diagonal
@@ -529,7 +526,7 @@ function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}) where T <:
 
     @inbounds for i = 2:ntsteps
 
-        # Update β here for current temperature
+        # Update β for current temperature
         fill!(β, 2 * dr^2 / (De[i]*dt))
 
         # Update tridiagonal matrix
@@ -547,7 +544,7 @@ function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}) where T <:
         A.d[nrsteps] = 1
         y[nrsteps] = u[nrsteps,i-1]
 
-        # RHS of tridiagonal Crank-Nicholson equation for regular grid cells.
+        # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
         @turbo for k = 2:nrsteps-1
             𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i-1], u[k-1, i-1], u[k+1, i-1]
@@ -566,13 +563,13 @@ function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}) where T <:
     vfinal ./= rsteps
     μHe = nanmean(vfinal) # Atoms/gram
 
-    # Raw Age (i.e., as measured)
+    # Parent concentrations
     μ238U = nanmean(mineral.r238U::Vector{T}) # Atoms/gram
     μ235U = nanmean(mineral.r235U::Vector{T})
     μ232Th = nanmean(mineral.r232Th::Vector{T})
     μ147Sm = nanmean(mineral.r147Sm::Vector{T})
 
-    # Numerically solve for helium age of the grain
+    # Numerically solve for raw helium age of the grain (i.e, as measured)
     return newton_he_age(μHe, μ238U, μ235U, μ232Th, μ147Sm)
 end
 function modelage(mineral::PlanarHe{T}, Tsteps::AbstractVector{T}) where T <: AbstractFloat
@@ -605,10 +602,10 @@ function modelage(mineral::PlanarHe{T}, Tsteps::AbstractVector{T}) where T <: Ab
     u = mineral.u::DenseMatrix{T}
     fill!(u, zero(T)) # initial u = 0 everywhere
 
-    # Vector for RHS of Crank-Nicholson equation with regular grid cells
+    # Vector for RHS of Crank-Nicolson equation with regular grid cells
     y = mineral.y
 
-    # Tridiagonal matrix for LHS of Crank-Nicholson equation with regular grid cells
+    # Tridiagonal matrix for LHS of Crank-Nicolson equation with regular grid cells
     A = mineral.A
     fill!(A.dl, 1)          # Sub-diagonal row
     @. A.d = -2 - β         # Diagonal
@@ -625,7 +622,7 @@ function modelage(mineral::PlanarHe{T}, Tsteps::AbstractVector{T}) where T <: Ab
 
     @inbounds for i = 2:ntsteps
 
-        # Update β here for current temperature
+        # Update β for current temperature
         fill!(β, 2 * dr^2 / (De[i]*dt))
 
         # Update tridiagonal matrix
@@ -643,7 +640,7 @@ function modelage(mineral::PlanarHe{T}, Tsteps::AbstractVector{T}) where T <: Ab
         A.d[nrsteps] = 1
         y[nrsteps] = u[nrsteps,i-1]
 
-        # RHS of tridiagonal Crank-Nicholson equation for regular grid cells.
+        # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
         @turbo for k = 2:nrsteps-1
             𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i-1], u[k-1, i-1], u[k+1, i-1]
@@ -661,13 +658,13 @@ function modelage(mineral::PlanarHe{T}, Tsteps::AbstractVector{T}) where T <: Ab
     vfinal = @views u[2:end-1,end]
     μHe = nanmean(vfinal) # Atoms/gram
 
-    # Raw Age (i.e., as measured)
+    # Parent concentrations
     μ238U = nanmean(mineral.r238U::Vector{T}) # Atoms/gram
     μ235U = nanmean(mineral.r235U::Vector{T})
     μ232Th = nanmean(mineral.r232Th::Vector{T})
     μ147Sm = nanmean(mineral.r147Sm::Vector{T})
 
-    # Numerically solve for helium age of the grain
+    # Numerically solve for raw helium age of the grain (i.e, as measured)
     return newton_he_age(μHe, μ238U, μ235U, μ232Th, μ147Sm)
 end
 
