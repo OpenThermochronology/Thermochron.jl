@@ -14,18 +14,19 @@
 
     """
     ```julia
-    intersectionfraction(r₁, r₂, d)
+    sphereintersectionfraction(r₁, r₂, d)
     ```
-    Calculate the fraction of the surface area of a sphere s2 with radius `r₂`
-    that intersects the interior of a sphere s1 of radius `r₁` if the two are
-    separated by distance `d`. Assumptions: `r₁`>0, `r₂`>0, `d`>=0
+    Calculate the fraction of the surface area of a sphere s₂ with radius `r₂`
+    that intersects the interior of a sphere s₁ of radius `r₁` if the two are
+    separated by distance `d`.
     """
-    function intersectionfraction(r₁::T, r₂::T, d::T) where T <: AbstractFloat
-        dmax = r₁+r₂
-        dmin = abs(r₁-r₂)
-        if d > dmax ## If separated by more than dmax, there is no intersection
+    function sphereintersectionfraction(r₁::T, r₂::T, d::T) where T <: AbstractFloat
+        # Let r₁ and r₂ be the radii of two spheres s₁ and s₂, separated by distance d
+        @assert (r₁ >= 0) &&  (r₂ >= 0)
+        d = abs(d)
+        if d > r₁+r₂ ## If separated by more than dmax, there is no intersection
             omega = zero(T)
-        elseif d > dmin
+        elseif d > abs(r₁-r₂)
             # X is the radial distance between the center of s2 and the interseciton plane
             # See e.g., http://mathworld.wolfram.com/Sphere-SphereIntersection.html
             # x = (d^2 - r₁^2 + r₂^2) / (2 * d)
@@ -49,24 +50,22 @@
 
     """
     ```julia
-    intersectiondensity(redges::Vector, rvolumes::Vector, ralpha, d)
+    sphereintersectiondensity(redges::Vector, rvolumes::Vector, ralpha, d)
     ```
     Calculate the volume-nomalized fractional intersection density of an alpha
     stopping sphere of radius `ralpha` with each concentric shell (with shell edges
     `redges` and relative volumes `rvolumes`) of a spherical crystal where the
     two are separated by distance `d`
     """
-    function intersectiondensity(redges::AbstractVector{T}, rvolumes::AbstractVector{T}, ralpha::T, d::T) where T <: AbstractFloat
-        dint = Array{T}(undef, length(redges) - 1)
-        intersectiondensity!(dint, redges, rvolumes, ralpha, d)
+    function sphereintersectiondensity(redges::AbstractVector{T}, rvolumes::AbstractVector{T}, ralpha::T, d::T) where T <: AbstractFloat
+        sphereintersectiondensity!(zeros(T, length(redges)-1), redges, rvolumes, ralpha, d)
     end
-    function intersectiondensity!(dint::DenseVector{T}, redges::AbstractVector{T}, rvolumes::AbstractVector{T}, ralpha::T, d::T) where T <: AbstractFloat
-        I = firstindex(redges):lastindex(redges)-1
-        @assert eachindex(dint) == eachindex(rvolumes) == I
-        fintlast = intersectionfraction(first(redges), ralpha, d)
-        @inbounds for i ∈ I
+    function sphereintersectiondensity!(dint::DenseVector{T}, redges::AbstractVector{T}, rvolumes::AbstractVector{T}, ralpha::T, d::T) where T <: AbstractFloat
+        @assert eachindex(dint) == eachindex(rvolumes) == firstindex(redges):lastindex(redges)-1
+        fintlast = sphereintersectionfraction(first(redges), ralpha, d)
+        @inbounds for i ∈ eachindex(dint,rvolumes)
             # Integrated intersection fraction for each concentric sphere (redges) of crystal
-            fint = intersectionfraction(redges[i+1], ralpha, d)
+            fint = sphereintersectionfraction(redges[i+1], ralpha, d)
 
             # Intersection fraction for each spherical shell of the crystal (subtracting
             # one concentric sphere from the next) normalized by shell volume

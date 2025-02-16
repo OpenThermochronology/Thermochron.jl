@@ -25,8 +25,8 @@
 ## --- Test geometry utility functions
 
     # Intersection of two spheres
-    @test size(Thermochron.intersectionfraction.(1.,1.,0:0.2:2)) == (11,)
-    @test Thermochron.intersectionfraction.(1.,1.,0:0.2:2) ≈ [1//1, 9//20, 2//5, 7//20, 3//10, 1//4, 1//5, 3//20, 1//10, 1//20, 0//1]
+    @test size(Thermochron.sphereintersectionfraction.(1.,1.,0:0.2:2)) == (11,)
+    @test Thermochron.sphereintersectionfraction.(1.,1.,0:0.2:2) ≈ [1//1, 9//20, 2//5, 7//20, 3//10, 1//4, 1//5, 3//20, 1//10, 1//20, 0//1]
 
     # Intersection of spherical shells
     crystalradius = 41.
@@ -36,16 +36,16 @@
     ralpha = 16.69
 
     # Zero when outside range
-    @test Thermochron.intersectiondensity(redges,relvolumes,ralpha,60.) == zeros(length(relvolumes))
+    @test Thermochron.sphereintersectiondensity(redges,relvolumes,ralpha,60.) == zeros(length(relvolumes))
     # Single shell when centered
-    dInt = Thermochron.intersectiondensity(redges,relvolumes,ralpha,0.)
+    dInt = Thermochron.sphereintersectiondensity(redges,relvolumes,ralpha,0.)
     @test dInt[round(Int,ralpha)] > 0
     @test all(dInt[(1:length(relvolumes)) .!= round(Int,ralpha)] .== 0)
         # Specific value tests
-    @test round.(Thermochron.intersectiondensity(redges,relvolumes,ralpha,0.), sigdigits=6) ≈ [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 84.3586, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0]
-    @test round.(Thermochron.intersectiondensity(redges,relvolumes,ralpha,5.), sigdigits=6) ≈ [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3.81946, 11.0061, 10.1916, 9.48929, 8.87752, 8.33983, 7.86353, 7.43869, 7.05739, 6.71327, 4.38494, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0]
-    @test round.(Thermochron.intersectiondensity(redges,relvolumes,ralpha,20.), sigdigits=6) ≈ [0, 0, 0, 7.03672, 7.61584, 6.2396, 5.28378, 4.58152, 4.04384, 3.61901, 3.27489, 2.99049, 2.75152, 2.5479, 2.37232, 2.21938, 2.08496, 1.96588, 1.85967, 1.76435, 1.67832, 1.60028, 1.52918, 1.46413, 1.40439, 1.34933, 1.29842, 1.25122, 1.20733, 1.16641, 1.12817, 1.09236, 1.05876, 1.02716, 0.997389, 0.969297, 0.647731, 0, 0, 0, 0.0]
-    @test round.(Thermochron.intersectiondensity(redges,relvolumes,ralpha,40.), sigdigits=6) ≈ [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.508458, 0.702195, 0.674665, 0.649212, 0.62561, 0.603663, 0.583204, 0.564086, 0.546181, 0.529379, 0.513579, 0.498694, 0.484649, 0.471372, 0.458804, 0.446888, 0.435576, 0.424822]
+    @test round.(Thermochron.sphereintersectiondensity(redges,relvolumes,ralpha,0.), sigdigits=6) ≈ [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 84.3586, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0]
+    @test round.(Thermochron.sphereintersectiondensity(redges,relvolumes,ralpha,5.), sigdigits=6) ≈ [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3.81946, 11.0061, 10.1916, 9.48929, 8.87752, 8.33983, 7.86353, 7.43869, 7.05739, 6.71327, 4.38494, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0]
+    @test round.(Thermochron.sphereintersectiondensity(redges,relvolumes,ralpha,20.), sigdigits=6) ≈ [0, 0, 0, 7.03672, 7.61584, 6.2396, 5.28378, 4.58152, 4.04384, 3.61901, 3.27489, 2.99049, 2.75152, 2.5479, 2.37232, 2.21938, 2.08496, 1.96588, 1.85967, 1.76435, 1.67832, 1.60028, 1.52918, 1.46413, 1.40439, 1.34933, 1.29842, 1.25122, 1.20733, 1.16641, 1.12817, 1.09236, 1.05876, 1.02716, 0.997389, 0.969297, 0.647731, 0, 0, 0, 0.0]
+    @test round.(Thermochron.sphereintersectiondensity(redges,relvolumes,ralpha,40.), sigdigits=6) ≈ [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.508458, 0.702195, 0.674665, 0.649212, 0.62561, 0.603663, 0.583204, 0.564086, 0.546181, 0.529379, 0.513579, 0.498694, 0.484649, 0.471372, 0.458804, 0.446888, 0.435576, 0.424822]
 
 ## --- Test basic linear algebra
     dl = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]

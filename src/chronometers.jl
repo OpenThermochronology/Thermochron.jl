@@ -358,7 +358,7 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
     # Correct for alpha ejection
     @inbounds for ri in eachindex(rsteps, relvolumes, r238U)
         for alpharadius in alpharadii238U
-            intersectiondensity!(dint,redges,relvolumes,alpharadius,rsteps[ri])
+            sphereintersectiondensity!(dint,redges,relvolumes,alpharadius,rsteps[ri])
             @. r238UHe += relvolumes[ri] * dint * r238U[ri]
         end
     end
@@ -367,7 +367,7 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
         @inbounds for ri in eachindex(outsidersteps, outsiderelvolumes)
             for alpharadius in alpharadii238U
                 (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
-                intersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
+                sphereintersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
                 @. r238UHe += outsiderelvolumes[ri] * dint * o238U
             end
         end
@@ -378,7 +378,7 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
     # Correct for alpha ejection
     @inbounds for ri in eachindex(rsteps, relvolumes, r235U)
         for alpharadius in alpharadii235U
-            intersectiondensity!(dint, redges,relvolumes,alpharadius,rsteps[ri])
+            sphereintersectiondensity!(dint, redges,relvolumes,alpharadius,rsteps[ri])
             @. r235UHe += relvolumes[ri] * dint * r235U[ri]
         end
     end
@@ -387,7 +387,7 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
         @inbounds for ri in eachindex(outsidersteps, outsiderelvolumes)
             for alpharadius in alpharadii235U
                 (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
-                intersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
+                sphereintersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
                 @. r235UHe += outsiderelvolumes[ri] * dint * o235U
             end
         end
@@ -398,7 +398,7 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
     # Correct for alpha ejection
     @inbounds for ri in eachindex(rsteps, relvolumes, r232Th)
         for alpharadius in alpharadii232Th
-            intersectiondensity!(dint, redges,relvolumes,alpharadius,rsteps[ri])
+            sphereintersectiondensity!(dint, redges,relvolumes,alpharadius,rsteps[ri])
             @. r232ThHe += relvolumes[ri] * dint * r232Th[ri]
         end
     end
@@ -407,7 +407,7 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
         @inbounds for ri in eachindex(outsidersteps, outsiderelvolumes)
             for alpharadius in alpharadii232Th
                 (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
-                intersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
+                sphereintersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
                 @. r232ThHe += outsiderelvolumes[ri] * dint * o232Th
             end
         end
@@ -418,7 +418,7 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
     # Correct for alpha ejection
     @inbounds for ri in eachindex(rsteps, relvolumes, r147Sm)
         for alpharadius in alpharadii147Sm
-            intersectiondensity!(dint, redges,relvolumes,alpharadius,rsteps[ri])
+            sphereintersectiondensity!(dint, redges,relvolumes,alpharadius,rsteps[ri])
             @. r147SmHe += relvolumes[ri] * dint * r147Sm[ri]
         end
     end
@@ -427,7 +427,7 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
         @inbounds for ri in eachindex(outsidersteps, outsiderelvolumes)
             for alpharadius in alpharadii147Sm
                 (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
-                intersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
+                sphereintersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
                 @. r147SmHe += outsiderelvolumes[ri] * dint * o147Sm
             end
         end
@@ -636,7 +636,7 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
     # Correct for alpha ejection
     @inbounds for ri in eachindex(rsteps, relvolumes, r238U)
         for alpharadius in alpharadii238U
-            intersectiondensity!(dint,redges,relvolumes,alpharadius,rsteps[ri])
+            sphereintersectiondensity!(dint,redges,relvolumes,alpharadius,rsteps[ri])
             @. r238UHe += relvolumes[ri] * dint * r238U[ri]
         end
     end
@@ -645,7 +645,7 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
         @inbounds for ri in eachindex(outsidersteps, outsiderelvolumes)
             for alpharadius in alpharadii238U
                 (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
-                intersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
+                sphereintersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
                 @. r238UHe += outsiderelvolumes[ri] * dint * o238U
             end
         end
@@ -656,7 +656,7 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
     # Correct for alpha ejection
     @inbounds for ri in eachindex(rsteps, relvolumes, r235U)
         for alpharadius in alpharadii235U
-            intersectiondensity!(dint, redges,relvolumes,alpharadius,rsteps[ri])
+            sphereintersectiondensity!(dint, redges,relvolumes,alpharadius,rsteps[ri])
             @. r235UHe += relvolumes[ri] * dint * r235U[ri]
         end
     end
@@ -665,7 +665,7 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
         @inbounds for ri in eachindex(outsidersteps, outsiderelvolumes)
             for alpharadius in alpharadii235U
                 (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
-                intersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
+                sphereintersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
                 @. r235UHe += outsiderelvolumes[ri] * dint * o235U
             end
         end
@@ -676,7 +676,7 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
     # Correct for alpha ejection
     @inbounds for ri in eachindex(rsteps, relvolumes, r232Th)
         for alpharadius in alpharadii232Th
-            intersectiondensity!(dint, redges,relvolumes,alpharadius,rsteps[ri])
+            sphereintersectiondensity!(dint, redges,relvolumes,alpharadius,rsteps[ri])
             @. r232ThHe += relvolumes[ri] * dint * r232Th[ri]
         end
     end
@@ -685,7 +685,7 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
         @inbounds for ri in eachindex(outsidersteps, outsiderelvolumes)
             for alpharadius in alpharadii232Th
                 (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
-                intersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
+                sphereintersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
                 @. r232ThHe += outsiderelvolumes[ri] * dint * o232Th
             end
         end
@@ -696,7 +696,7 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
     # Correct for alpha ejection
     @inbounds for ri in eachindex(rsteps, relvolumes, r147Sm)
         for alpharadius in alpharadii147Sm
-            intersectiondensity!(dint, redges,relvolumes,alpharadius,rsteps[ri])
+            sphereintersectiondensity!(dint, redges,relvolumes,alpharadius,rsteps[ri])
             @. r147SmHe += relvolumes[ri] * dint * r147Sm[ri]
         end
     end
@@ -705,7 +705,7 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
         @inbounds for ri in eachindex(outsidersteps, outsiderelvolumes)
             for alpharadius in alpharadii147Sm
                 (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
-                intersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
+                sphereintersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
                 @. r147SmHe += outsiderelvolumes[ri] * dint * o147Sm
             end
         end
@@ -920,7 +920,7 @@ function GenericHe(T::Type{<:AbstractFloat}=Float64;
     # Correct for alpha ejection
     @inbounds for ri in eachindex(rsteps, relvolumes, r238U)
         for alpharadius in alpharadii238U
-            intersectiondensity!(dint,redges,relvolumes,alpharadius,rsteps[ri])
+            sphereintersectiondensity!(dint,redges,relvolumes,alpharadius,rsteps[ri])
             @. r238UHe += relvolumes[ri] * dint * r238U[ri]
         end
     end
@@ -929,7 +929,7 @@ function GenericHe(T::Type{<:AbstractFloat}=Float64;
         @inbounds for ri in eachindex(outsidersteps, outsiderelvolumes)
             for alpharadius in alpharadii238U
                 (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
-                intersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
+                sphereintersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
                 @. r238UHe += outsiderelvolumes[ri] * dint * o238U
             end
         end
@@ -940,7 +940,7 @@ function GenericHe(T::Type{<:AbstractFloat}=Float64;
     # Correct for alpha ejection
     @inbounds for ri in eachindex(rsteps, relvolumes, r235U)
         for alpharadius in alpharadii235U
-            intersectiondensity!(dint, redges,relvolumes,alpharadius,rsteps[ri])
+            sphereintersectiondensity!(dint, redges,relvolumes,alpharadius,rsteps[ri])
             @. r235UHe += relvolumes[ri] * dint * r235U[ri]
         end
     end
@@ -949,7 +949,7 @@ function GenericHe(T::Type{<:AbstractFloat}=Float64;
         @inbounds for ri in eachindex(outsidersteps, outsiderelvolumes)
             for alpharadius in alpharadii235U
                 (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
-                intersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
+                sphereintersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
                 @. r235UHe += outsiderelvolumes[ri] * dint * o235U
             end
         end
@@ -960,7 +960,7 @@ function GenericHe(T::Type{<:AbstractFloat}=Float64;
     # Correct for alpha ejection
     @inbounds for ri in eachindex(rsteps, relvolumes, r232Th)
         for alpharadius in alpharadii232Th
-            intersectiondensity!(dint, redges,relvolumes,alpharadius,rsteps[ri])
+            sphereintersectiondensity!(dint, redges,relvolumes,alpharadius,rsteps[ri])
             @. r232ThHe += relvolumes[ri] * dint * r232Th[ri]
         end
     end
@@ -969,7 +969,7 @@ function GenericHe(T::Type{<:AbstractFloat}=Float64;
         @inbounds for ri in eachindex(outsidersteps, outsiderelvolumes)
             for alpharadius in alpharadii232Th
                 (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
-                intersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
+                sphereintersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
                 @. r232ThHe += outsiderelvolumes[ri] * dint * o232Th
             end
         end
@@ -980,7 +980,7 @@ function GenericHe(T::Type{<:AbstractFloat}=Float64;
     # Correct for alpha ejection
     @inbounds for ri in eachindex(rsteps, relvolumes, r147Sm)
         for alpharadius in alpharadii147Sm
-            intersectiondensity!(dint, redges,relvolumes,alpharadius,rsteps[ri])
+            sphereintersectiondensity!(dint, redges,relvolumes,alpharadius,rsteps[ri])
             @. r147SmHe += relvolumes[ri] * dint * r147Sm[ri]
         end
     end
@@ -989,7 +989,7 @@ function GenericHe(T::Type{<:AbstractFloat}=Float64;
         @inbounds for ri in eachindex(outsidersteps, outsiderelvolumes)
             for alpharadius in alpharadii147Sm
                 (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
-                intersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
+                sphereintersectiondensity!(dint,redges,relvolumes,alpharadius,outsidersteps[ri])
                 @. r147SmHe += outsiderelvolumes[ri] * dint * o147Sm
             end
         end
