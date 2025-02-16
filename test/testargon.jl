@@ -1,4 +1,4 @@
-## Test creating and allocating an GenericAr
+## Test creating and allocating an SphericalAr
 
     tCryst = 3000.0     # [Myr] Crystallization age
     dt = 100            # [Myr] time step size
@@ -11,9 +11,9 @@
     tsteps = (0+dt/2 : dt : tCryst-dt/2)
     Tsteps = collect(range(650, 0, length=length(tsteps)))
 
-    GenericAr(r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
-    @time "Allocating a mineral" mineral = GenericAr(r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
-    @test isa(mineral, GenericAr)
+    SphericalAr(r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
+    @time "Allocating a mineral" mineral = SphericalAr(r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
+    @test isa(mineral, SphericalAr)
     show(mineral)
     println()
     display(mineral)
@@ -28,7 +28,7 @@
     @test round.(mineral.argondeposition, sigdigits=5) ≈ argondeposition_known
     # println( round.(mineral.argondeposition, sigdigits=5))
 
-## --- Test integrated age program for GenericAr
+## --- Test integrated age program for SphericalAr
 
     modelage(mineral,Tsteps) # to not time compilation
     @time "Running modelage" age = modelage(mineral,Tsteps)
@@ -39,21 +39,21 @@
     end
 
     r = 35.
-    mineral = GenericAr(r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
+    mineral = SphericalAr(r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
     # Re-run to ensure internal state does not change
     for _ in 1:4
         @test modelage(mineral,Tsteps) ≈ 917.8400803564615
     end
 
     r = 135.
-    mineral = GenericAr(r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
+    mineral = SphericalAr(r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
     # Re-run to ensure internal state does not change
     for _ in 1:4
         @test modelage(mineral,Tsteps) ≈ 1023.7342920730781
     end
 
     r = 1350.
-    mineral = GenericAr(r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
+    mineral = SphericalAr(r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
     # Re-run to ensure internal state does not change
     for _ in 1:4
         @test modelage(mineral,Tsteps) ≈ 1235.131761596538
@@ -62,7 +62,7 @@
 ## --- As above but check calculated age as well
 
     r = 35.
-    mineral = GenericAr(age=915, age_sigma=15, r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
+    mineral = SphericalAr(age=915, age_sigma=15, r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
     @test modelage(mineral,Tsteps) ≈ 917.8400803564615
 
 ## --- Test log likelihood

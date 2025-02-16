@@ -190,7 +190,7 @@ end
 ```julia
 modelage(mineral::ZirconHe, Tsteps, [ρᵣ], dm::ZRDAAM)
 modelage(mineral::ApatiteHe, Tsteps, [ρᵣ], dm::RDAAM)
-modelage(mineral::GenericHe, Tsteps)
+modelage(mineral::SphericalHe, Tsteps)
 ```
 Calculate the predicted bulk U-Th/He age of a zircon, apatite, or other mineral
 that has experienced a given t-T path (specified by `mineral.tsteps` for time
@@ -328,9 +328,9 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T})
     end
 
     # Convert from u (coordinate-transform'd conc.) to v (real He conc.)
-    vFinal = @views u[2:end-1,end]
-    vFinal ./= rsteps
-    μHe = nanmean(vFinal) # Atoms/gram
+    vfinal = @views u[2:end-1,end]
+    vfinal ./= rsteps
+    μHe = nanmean(vfinal) # Atoms/gram
 
     # Raw Age (i.e., as measured)
     μ238U = nanmean(zircon.r238U::Vector{T}) # Atoms/gram
@@ -462,9 +462,9 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
     end
 
     # Convert from u (coordinate-transform'd conc.) to v (real He conc.)
-    vFinal = @views u[2:end-1,end]
-    vFinal ./= rsteps
-    μHe = nanmean(vFinal) # Atoms/gram
+    vfinal = @views u[2:end-1,end]
+    vfinal ./= rsteps
+    μHe = nanmean(vfinal) # Atoms/gram
 
     # Raw Age (i.e., as measured)
     μ238U = nanmean(apatite.r238U::Vector{T}) # Atoms/gram
@@ -475,7 +475,7 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
     # Numerically solve for helium age of the grain
     return newton_he_age(μHe, μ238U, μ235U, μ232Th, μ147Sm)
 end
-function modelage(mineral::GenericHe{T}, Tsteps::AbstractVector{T}) where T <: AbstractFloat
+function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}) where T <: AbstractFloat
 
     # Damage and annealing constants
     D0 = mineral.D0*10000^2*SEC_MYR::T      # cm^2/sec, converted to micron^2/Myr  
@@ -569,9 +569,9 @@ function modelage(mineral::GenericHe{T}, Tsteps::AbstractVector{T}) where T <: A
     end
 
     # Convert from u (coordinate-transform'd conc.) to v (real He conc.)
-    vFinal = @views u[2:end-1,end]
-    vFinal ./= rsteps
-    μHe = nanmean(vFinal) # Atoms/gram
+    vfinal = @views u[2:end-1,end]
+    vfinal ./= rsteps
+    μHe = nanmean(vfinal) # Atoms/gram
 
     # Raw Age (i.e., as measured)
     μ238U = nanmean(mineral.r238U::Vector{T}) # Atoms/gram
@@ -591,7 +591,7 @@ function model_ll(mineral::HeliumSample, Tsteps, dm::DiffusivityModel)
     σ² = mineral.age_sigma^2
     -0.5*(log(2*pi*σ²) + δ^2/σ²)
 end
-function model_ll(mineral::GenericHe, Tsteps)
+function model_ll(mineral::SphericalHe, Tsteps)
     age = modelage(mineral, Tsteps)
     δ = age - mineral.age
     σ² = mineral.age_sigma^2

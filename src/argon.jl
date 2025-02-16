@@ -18,7 +18,7 @@ end
 ## --- Calculate apparent age given a particular t-T path
 """
 ```julia
-modelage(mineral::GenericAr, Tsteps)
+modelage(mineral::SphericalAr, Tsteps)
 ```
 Calculate the precdicted bulk K/Ar age of a mineral that has experienced a given 
 t-T path (specified by `mineral.tsteps` for time and `Tsteps` for temperature, 
@@ -31,7 +31,7 @@ Ketcham, Richard A. (2005) "Forward and Inverse Modeling of Low-Temperature
 Thermochronometry Data" Reviews in Mineralogy and Geochemistry 58 (1), 275–314.
 https://doi.org/10.2138/rmg.2005.58.11
 """
-function modelage(mineral::GenericAr{T}, Tsteps::AbstractVector{T}) where T <: AbstractFloat
+function modelage(mineral::SphericalAr{T}, Tsteps::AbstractVector{T}) where T <: AbstractFloat
 
     # Damage and annealing constants
     D0 = mineral.D0*10000^2*SEC_MYR::T      # cm^2/sec, converted to micron^2/Myr  
@@ -138,7 +138,7 @@ function modelage(mineral::GenericAr{T}, Tsteps::AbstractVector{T}) where T <: A
     return newton_ar_age(μAr, μ40K)
 end
 
-function model_ll(mineral::GenericAr, Tsteps)
+function model_ll(mineral::SphericalAr, Tsteps)
     age = modelage(mineral, Tsteps)
     δ = age - mineral.age
     σ² = mineral.age_sigma^2

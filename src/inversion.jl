@@ -54,12 +54,12 @@
         # See what minerals we have
         (haszhe = any(x->isa(x, ZirconHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, ZirconHe), data)) zircons"
         (hasahe = any(x->isa(x, ApatiteHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, ApatiteHe), data)) apatites"
-        (any(x->isa(x, GenericHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, GenericHe), data)) generic He chronometers"
+        (any(x->isa(x, SphericalHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, SphericalHe), data)) spherical He chronometers"
         (any(x->isa(x, ZirconFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, ZirconFT), data)) zircons"
         (any(x->isa(x, MonaziteFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, MonaziteFT), data)) monazites"
         (any(x->isa(x, ApatiteFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, ApatiteFT), data)) apatites"
         (any(x->isa(x, ApatiteTrackLength), data)) && @info "Inverting for track lengths of $(count(x->isa(x, ApatiteTrackLength), data)) apatite fission tracks"
-        (any(x->isa(x, GenericAr), data)) && @info "Inverting for Ar ages of $(count(x->isa(x, GenericAr), data)) generic Ar chronometers"
+        (any(x->isa(x, SphericalAr), data)) && @info "Inverting for Ar ages of $(count(x->isa(x, SphericalAr), data)) spherical Ar chronometers"
 
         # Struct to hold t-T path proposals and related variables
         path = TtPath(agesteps, constraint, boundary, detail, maxpoints)
@@ -335,12 +335,12 @@
         # See what minerals we have
         (haszhe = any(x->isa(x, ZirconHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, ZirconHe), data)) zircons"
         (hasahe = any(x->isa(x, ApatiteHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, ApatiteHe), data)) apatites"
-        (any(x->isa(x, GenericHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, GenericHe), data)) generic He chronometers"
+        (any(x->isa(x, SphericalHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, SphericalHe), data)) spherical He chronometers"
         (any(x->isa(x, ZirconFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, ZirconFT), data)) zircons"
         (any(x->isa(x, MonaziteFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, MonaziteFT), data)) monazites"
         (any(x->isa(x, ApatiteFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, ApatiteFT), data)) apatites"
         (any(x->isa(x, ApatiteTrackLength), data)) && @info "Inverting for track lengths of $(count(x->isa(x, ApatiteTrackLength), data)) apatite fission tracks"
-        (any(x->isa(x, GenericAr), data)) && @info "Inverting for Ar ages of $(count(x->isa(x, GenericAr), data)) generic Ar chronometers"
+        (any(x->isa(x, SphericalAr), data)) && @info "Inverting for Ar ages of $(count(x->isa(x, SphericalAr), data)) spherical Ar chronometers"
         
         # Struct to hold t-T path proposals and related variables
         path = TtPath(agesteps, constraint, boundary, detail, maxpoints)

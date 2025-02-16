@@ -796,7 +796,7 @@ end
 
 """
 ```julia
-GenericHe(T=Float64;
+SphericalHe(T=Float64;
     age::Number=T(NaN),
     age_sigma::Number=T(NaN),
     offset=zero(T),
@@ -814,7 +814,7 @@ GenericHe(T=Float64;
     agesteps::AbstractRange,
 )
 ```
-Construct an `GenericHe` chronometer representing a mineral with a raw 
+Construct an `SphericalHe` chronometer representing a mineral with a raw 
 helium age of `age` ± `age_sigma` [Ma], a uniform diffusivity specified by
 a frequency factor `D0` [cm^2/sec] and an activation energy `Ea` [kJ/mol],
 a radius of `r` [μm], and uniform U, Th and Sm concentrations specified
@@ -826,7 +826,7 @@ discretization follows the age steps specified by the `agesteps` range,
 in Ma.
 """
 # Concretely-typed immutable struct to hold information about a single mineral crystal and its helium age
-struct GenericHe{T<:AbstractFloat} <: HeliumSample{T}
+struct SphericalHe{T<:AbstractFloat} <: HeliumSample{T}
     age::T                      # [Ma] helium age
     age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
     offset::T                   # [C] temperature offset relative to the surface
@@ -849,8 +849,8 @@ struct GenericHe{T<:AbstractFloat} <: HeliumSample{T}
     F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}}
     y::Vector{T}
 end
-# Constructor for the GenericHe type, given grain radius, U and Th concentrations and t-T discretization information
-function GenericHe(T::Type{<:AbstractFloat}=Float64;
+# Constructor for the SphericalHe type, given grain radius, U and Th concentrations and t-T discretization information
+function SphericalHe(T::Type{<:AbstractFloat}=Float64;
         age::Number=T(NaN),
         age_sigma::Number=T(NaN),
         offset=zero(T),
@@ -1036,7 +1036,7 @@ function GenericHe(T::Type{<:AbstractFloat}=Float64;
     # Vector for RHS of Crank-Nicholson equation with regular grid cells
     y = zeros(T, nrsteps)
 
-    return GenericHe(
+    return SphericalHe(
         T(age),
         T(age_sigma),
         T(offset),
@@ -1064,7 +1064,7 @@ end
 
 """
 ```julia
-GenericAr(T=Float64;
+SphericalAr(T=Float64;
     age::Number=T(NaN),
     age_sigma::Number=T(NaN),
     offset=zero(T),
@@ -1076,7 +1076,7 @@ GenericAr(T=Float64;
     agesteps::AbstractRange,
 )
 ```
-Construct an `GenericAr` chronometer representing a mineral with a raw 
+Construct an `SphericalAr` chronometer representing a mineral with a raw 
 argon age of `age` ± `age_sigma` [Ma], a uniform diffusivity specified by
 a frequency factor `D0` [cm^2/s] and an activation energy `Ea` [kJ/mol],
 a radius of `r` [μm], and uniform K-40 concentrations specified by `K40` [PPM].
@@ -1086,7 +1086,7 @@ discretization follows the age steps specified by the `agesteps` range,
 in Ma.
 """
 # Concretely-typed immutable struct to hold information about a single mineral crystal and its argon age
-struct GenericAr{T<:AbstractFloat} <: ArgonSample{T}
+struct SphericalAr{T<:AbstractFloat} <: ArgonSample{T}
     age::T                      # [Ma] helium age
     age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
     offset::T                   # [C] temperature offset relative to the surface
@@ -1106,8 +1106,8 @@ struct GenericAr{T<:AbstractFloat} <: ArgonSample{T}
     F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}}
     y::Vector{T}
 end
-# Constructor for the GenericAr type, given grain radius, K-40 concentrations and t-T discretization information
-function GenericAr(T::Type{<:AbstractFloat}=Float64;
+# Constructor for the SphericalAr type, given grain radius, K-40 concentrations and t-T discretization information
+function SphericalAr(T::Type{<:AbstractFloat}=Float64;
         age::Number=T(NaN),
         age_sigma::Number=T(NaN),
         offset=zero(T),
@@ -1169,7 +1169,7 @@ function GenericAr(T::Type{<:AbstractFloat}=Float64;
     # Vector for RHS of Crank-Nicholson equation with regular grid cells
     y = zeros(T, nrsteps)
 
-    return GenericAr(
+    return SphericalAr(
         T(age),
         T(age_sigma),
         T(offset),
@@ -1404,10 +1404,10 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                 push!(result, c)
             end
         elseif haskey(data, :D0_cm_2_s) && haskey(data, :Ea_kJ_mol) && (0 < data.D0_cm_2_s[i]) && (0 < data.Ea_kJ_mol[i])
-            # Generic helium
+            # Spherical helium
             if haskey(data, :raw_He_age_Ma) && haskey(data, :raw_He_age_sigma_Ma) && (0 < data.raw_He_age_sigma_Ma[i]/data.raw_He_age_Ma[i])
                 # Modern format
-                c = GenericHe(T;
+                c = SphericalHe(T;
                     age = data.raw_He_age_Ma[i], 
                     age_sigma = data.raw_He_age_sigma_Ma[i], 
                     offset = (haskey(data, :offset_C) && !isnan(data.offset_C[i])) ? data.offset_C[i] : 0,
@@ -1426,10 +1426,10 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                 )
                 push!(result, c)
             end
-            # Generic argon
+            # Spherical argon
             if haskey(data, :raw_Ar_age_Ma) && haskey(data, :raw_Ar_age_sigma_Ma) && (0 < data.raw_Ar_age_sigma_Ma[i]/data.raw_Ar_age_Ma[i])
                 # Modern format
-                c = GenericAr(T;
+                c = SphericalAr(T;
                     age = data.raw_Ar_age_Ma[i], 
                     age_sigma = data.raw_Ar_age_sigma_Ma[i], 
                     D0 = data.D0_cm_2_s[i],

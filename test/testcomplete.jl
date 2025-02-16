@@ -62,8 +62,8 @@ dsg = importdataset(joinpath(datapath, "generic.csv"), ',', importas=:Tuple);
 chrons = chronometers(dsg, model)
 @test chrons isa Vector{<:Chronometer}
 @test length(chrons) == 18
-@test count(x->isa(x,GenericHe), chrons) == 4
-@test count(x->isa(x,GenericAr), chrons) == 2
+@test count(x->isa(x,SphericalHe), chrons) == 4
+@test count(x->isa(x,SphericalAr), chrons) == 2
 @test count(x->isa(x,ZirconHe), chrons) == 2
 @test count(x->isa(x,ApatiteHe), chrons) == 2
 @test count(x->isa(x,ZirconFT), chrons) == 1

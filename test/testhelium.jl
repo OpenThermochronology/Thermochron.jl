@@ -1,4 +1,4 @@
-## --- Test creating and allocating an GenericHe
+## --- Test creating and allocating an SphericalHe
 
     tCryst = 3000.0 # Crystallization age [Myr]
     dt = 100        # time step size [Myr]
@@ -13,9 +13,9 @@
     tsteps = (0+dt/2 : dt : tCryst-dt/2)
     Tsteps = collect(range(650, 0, length=length(tsteps)))
 
-    GenericHe(r=r,dr=dr,U238=U,Th232=Th,D0=D0,Ea=Ea,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
-    @time "Allocating a mineral" mineral = GenericHe(r=r,dr=dr,U238=U,Th232=Th,D0=D0,Ea=Ea,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
-    @test isa(mineral, GenericHe)
+    SphericalHe(r=r,dr=dr,U238=U,Th232=Th,D0=D0,Ea=Ea,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
+    @time "Allocating a mineral" mineral = SphericalHe(r=r,dr=dr,U238=U,Th232=Th,D0=D0,Ea=Ea,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
+    @test isa(mineral, SphericalHe)
     show(mineral)
     println()
     display(mineral)
@@ -33,7 +33,7 @@
     @test round.(mineral.alphadeposition, sigdigits=5) ≈ alphadeposition_known
     # println( round.(mineral.alphadeposition, sigdigits=5))
 
-## --- Test integrated age program for GenericHe
+## --- Test integrated age program for SphericalHe
 
     modelage(mineral,Tsteps) # to not time compilation
     @time "Running modelage" age = modelage(mineral,Tsteps)
@@ -46,7 +46,7 @@
     r = 35.
     U = 110.7
     Th = 35.1
-    mineral = GenericHe(r=r,dr=dr,U238=U,Th232=Th,D0=D0,Ea=Ea,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
+    mineral = SphericalHe(r=r,dr=dr,U238=U,Th232=Th,D0=D0,Ea=Ea,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
     # Re-run to ensure internal state does not change
     for _ in 1:4
         @test modelage(mineral,Tsteps) ≈ 150.3747470390784
@@ -55,7 +55,7 @@
     r = 135.
     U = 173.8
     Th = 117.1
-    mineral = GenericHe(r=r,dr=dr,U238=U,Th232=Th,D0=D0,Ea=Ea,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
+    mineral = SphericalHe(r=r,dr=dr,U238=U,Th232=Th,D0=D0,Ea=Ea,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
     # Re-run to ensure internal state does not change
     for _ in 1:4
         @test modelage(mineral,Tsteps) ≈ 263.91617592983346
@@ -64,7 +64,7 @@
     r = 135.
     U = 50.0
     Th = 40.0
-    mineral = GenericHe(r=r,dr=dr,U238=U,Th232=Th,D0=D0,Ea=Ea,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
+    mineral = SphericalHe(r=r,dr=dr,U238=U,Th232=Th,D0=D0,Ea=Ea,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
     # Re-run to ensure internal state does not change
     for _ in 1:4
         @test modelage(mineral,Tsteps) ≈ 263.8748754169358 
@@ -76,7 +76,7 @@
     U = 110.7
     Th = 35.1
     Sm = 38.13
-    mineral = GenericHe(age=150, age_sigma=5, r=r,dr=dr,U238=U,Th232=Th,Sm147=Sm,D0=D0,Ea=Ea,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
+    mineral = SphericalHe(age=150, age_sigma=5, r=r,dr=dr,U238=U,Th232=Th,Sm147=Sm,D0=D0,Ea=Ea,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
     @test mineral.r147Sm ≈ fill(1.56203306122449e17, 35)
     @test modelage(mineral,Tsteps) ≈ 150.4696259997467
 

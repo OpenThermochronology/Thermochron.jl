@@ -557,7 +557,7 @@
 
     # Adjust model uncertainties of chronometers
     function movesigma!(σcalc::AbstractVector{T}, chrons::AbstractVector{<:Chronometer}) where {T<:AbstractFloat}
-        for C in (ZirconFT, MonaziteFT, ApatiteFT, ZirconHe, ApatiteHe, GenericHe, GenericAr,)
+        for C in (ZirconFT, MonaziteFT, ApatiteFT, ZirconHe, ApatiteHe, SphericalHe, SphericalAr,)
             r = abs(randn(T))
             for i in eachindex(σcalc, chrons)
                 if chrons[i] isa C
@@ -583,8 +583,8 @@
         isa(adm, RDAAM) && anneal!(data, ApatiteHe{T}, tsteps, Tsteps, adm)
 
         # Optionally rescale log likelihoods to avoid one chronometer type from dominating the inversion
-        scalegar = rescale ? sqrt(count(x->isa(x, GenericAr), data)) : 1
-        scaleghe = rescale ? sqrt(count(x->isa(x, GenericHe), data)) : 1
+        scalegar = rescale ? sqrt(count(x->isa(x, SphericalAr), data)) : 1
+        scaleghe = rescale ? sqrt(count(x->isa(x, SphericalHe), data)) : 1
         scalezhe = rescale ? sqrt(count(x->isa(x, ZirconHe), data)) : 1
         scaleahe = rescale ? sqrt(count(x->isa(x, ApatiteHe), data)) : 1
         scalezft = rescale ? sqrt(count(x->isa(x, ZirconFT), data)) : 1
@@ -599,10 +599,10 @@
         for i in eachindex(data, μcalc, σcalc)
             c = data[i]
             first_index = 1 + Int((tmax - last(c.tsteps))÷dt)
-            if isa(c, GenericAr) 
+            if isa(c, SphericalAr) 
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]))
                 ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scalegar
-            elseif isa(c, GenericHe)
+            elseif isa(c, SphericalHe)
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]))
                 ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scaleghe
             elseif isa(c, ZirconHe)
