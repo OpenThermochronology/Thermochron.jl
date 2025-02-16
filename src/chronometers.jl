@@ -1061,6 +1061,270 @@ function SphericalHe(T::Type{<:AbstractFloat}=Float64;
     )
 end
 
+"""
+```julia
+PlanarHe(T=Float64;
+    age::Number=T(NaN),
+    age_sigma::Number=T(NaN),
+    offset=zero(T),
+    D0::Number,
+    Ea::Number,
+    stoppingpower::Number=T(1.189),
+    r::Number, 
+    dr::Number=one(T), 
+    U238::Number, 
+    Th232::Number, 
+    Sm147::Number=zero(T), 
+    U238_matrix::Number=zero(T), 
+    Th232_matrix::Number=zero(T), 
+    Sm147_matrix::Number=zero(T), 
+    agesteps::AbstractRange,
+)
+```
+Construct an `PlanarHe` chronometer representing a mineral with a raw 
+helium age of `age` ± `age_sigma` [Ma], a uniform diffusivity specified by
+a frequency factor `D0` [cm^2/sec] and an activation energy `Ea` [kJ/mol],
+a halfwidth of `r` [μm], and uniform U, Th and Sm concentrations specified
+by `U238`, `Th232`, and `Sm147` [PPM]. (A present day U-235/U-238 
+ratio of 1/137.818 is assumed)
+
+Spatial discretization follows a halfwidth step of `dr` [μm], and temporal
+discretization follows the age steps specified by the `agesteps` range,
+in Ma.
+"""
+# Concretely-typed immutable struct to hold information about a single mineral crystal and its helium age
+struct PlanarHe{T<:AbstractFloat} <: HeliumSample{T}
+    age::T                      # [Ma] helium age
+    age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
+    offset::T                   # [C] temperature offset relative to the surface
+    D0::T                       # [cm^2/s] diffusivity
+    Ea::T                       # [kJ/mol] activation energy
+    agesteps::FloatRange        # [Ma] age in Ma relative to the present
+    tsteps::FloatRange          # [Ma] forward time since crystallization
+    rsteps::FloatRange          # [um] halfwidth bin centers
+    redges::FloatRange          # [um] halfwidth bin centers
+    nrsteps::Int                # [n] number of radial steps
+    r238U::Vector{T}            # [atoms/g] radial U-238 concentrations
+    r235U::Vector{T}            # [atoms/g] radial U-235 concentrations
+    r232Th::Vector{T}           # [atoms/g] radial Th-232 concentrations
+    r147Sm::Vector{T}           # [atoms/g] radial Sm-147 concentrations
+    alphadeposition::Matrix{T}  # [atoms/g] alpha deposition matrix
+    u::Matrix{T}
+    β::Vector{T}
+    De::Vector{T}
+    A::Tridiagonal{T, Vector{T}}
+    F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}}
+    y::Vector{T}
+end
+# Constructor for the PlanarHe type, given grain halfwidth, U and Th concentrations and t-T discretization information
+function PlanarHe(T::Type{<:AbstractFloat}=Float64;
+        age::Number=T(NaN),
+        age_sigma::Number=T(NaN),
+        offset=zero(T),
+        D0::Number,
+        Ea::Number,
+        stoppingpower::Number=T(1.189),
+        r::Number, 
+        dr::Number=one(T), 
+        U238::Number, 
+        Th232::Number, 
+        Sm147::Number=zero(T), 
+        U238_matrix::Number=zero(T), 
+        Th232_matrix::Number=zero(T), 
+        Sm147_matrix::Number=zero(T), 
+        agesteps::AbstractRange,
+    )
+
+    # Alpha stopping distances for each isotope in each decay chain, adjusted from those of apatite
+    # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
+    alpharadii238U = (13.54, 16.26, 15.84, 16.31, 20.09, 22.89, 33.39, 19.10,)./stoppingpower
+    alpharadii235U = (14.48, 17.39, 22.5, 20.97, 26.89, 31.40, 26.18,)./stoppingpower
+    alpharadii232Th = (12.60, 19.32, 21.08, 20.09, 27.53, 34.14,)./stoppingpower
+    # Ketcham et al. (2011), doi: 10.1016/j.gca.2011.10.011
+    alpharadii147Sm = (5.93,)./stoppingpower
+
+    # Temporal discretization
+    agesteps = floatrange(agesteps)
+    tsteps = reverse(agesteps)
+    @assert issorted(tsteps)
+
+    # Crystal size and spatial discretization
+    redges = floatrange(0 : dr : r)                 # Edges of each halfwidth element
+    rsteps = cntr(redges)                           # Centers of each halfwidth element
+    nrsteps = length(rsteps)+2                      # Number of radial grid points -- note 2 implict points: one at negative halfwidth, one outside grain
+    # Additional discretization outside of grain, for alpha injection
+    outsideredges = floatrange(r : dr : r+maximum(alpharadii238U))
+    outsidersteps = cntr(outsideredges)
+
+    # Observed radial HPE profiles at present day
+    r238U = fill(T(U238), size(rsteps))         # [PPMw]
+    r235U = fill(T(U238/137.818), size(rsteps)) # [PPMw]
+    r232Th = fill(T(Th232), size(rsteps))       # [PPMw]
+    r147Sm = fill(T(Sm147), size(rsteps))       # [PPMw]
+
+    # Convert to atoms per gram
+    r238U .*= 6.022E23 / 1E6 / 238
+    r235U .*= 6.022E23 / 1E6 / 235
+    r232Th .*= 6.022E23 / 1E6 / 232
+    r147Sm .*= 6.022E23 / 1E6 / 147
+
+    # Outside (bulk/matrix) HPE concentrations, in atoms per gram
+    o238U = U238_matrix * 6.022E23 / 1E6 / 238
+    o235U = U238_matrix/137.818 * 6.022E23 / 1E6 / 235
+    o232Th = Th232_matrix * 6.022E23 / 1E6 / 232
+    o147Sm = Sm147_matrix * 6.022E23 / 1E6 / 147
+
+    # Calculate effective He deposition for each decay chain, corrected for alpha
+    # stopping distance
+
+    # Allocate intersection density vector
+    dint = zeros(T, length(redges) - 1)
+
+    # Radial alpha deposition from U-238
+    r238UHe = zeros(T, size(r238U))
+    # Correct for alpha ejection
+    @inbounds for ri in eachindex(rsteps, r238U)
+        for alpharadius in alpharadii238U
+            slabsphereintersectiondensity!(dint, redges,alpharadius,rsteps[ri])
+            @. r238UHe += dint * r238U[ri]
+        end
+    end
+    # Correct for alpha injection
+    if o238U > 0
+        @inbounds for ri in eachindex(outsidersteps)
+            for alpharadius in alpharadii238U
+                (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
+                slabsphereintersectiondensity!(dint, redges,alpharadius,outsidersteps[ri])
+                @. r238UHe += dint * o238U
+            end
+        end
+    end
+
+    # Radial alpha deposition from U-235
+    r235UHe = zeros(T, size(r235U))
+    # Correct for alpha ejection
+    @inbounds for ri in eachindex(rsteps, r235U)
+        for alpharadius in alpharadii235U
+            slabsphereintersectiondensity!(dint, redges,alpharadius,rsteps[ri])
+            @. r235UHe += dint * r235U[ri]
+        end
+    end
+    # Correct for alpha injection
+    if o235U > 0
+        @inbounds for ri in eachindex(outsidersteps)
+            for alpharadius in alpharadii235U
+                (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
+                slabsphereintersectiondensity!(dint, redges,alpharadius,outsidersteps[ri])
+                @. r235UHe += dint * o235U
+            end
+        end
+    end
+
+    # Radial alpha deposition from Th-232
+    r232ThHe = zeros(T, size(r232Th))
+    # Correct for alpha ejection
+    @inbounds for ri in eachindex(rsteps, r232Th)
+        for alpharadius in alpharadii232Th
+            slabsphereintersectiondensity!(dint, redges,alpharadius,rsteps[ri])
+            @. r232ThHe += dint * r232Th[ri]
+        end
+    end
+    # Correct for alpha injection
+    if o232Th > 0
+        @inbounds for ri in eachindex(outsidersteps)
+            for alpharadius in alpharadii232Th
+                (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
+                slabsphereintersectiondensity!(dint, redges,alpharadius,outsidersteps[ri])
+                @. r232ThHe += dint * o232Th
+            end
+        end
+    end
+
+    # Radial alpha deposition from Sm-147
+    r147SmHe = zeros(T, size(r147Sm))
+    # Correct for alpha ejection
+    @inbounds for ri in eachindex(rsteps, r147Sm)
+        for alpharadius in alpharadii147Sm
+            slabsphereintersectiondensity!(dint, redges,alpharadius,rsteps[ri])
+            @. r147SmHe += dint * r147Sm[ri]
+        end
+    end
+    # Correct for alpha injection
+    if o147Sm > 0
+        @inbounds for ri in eachindex(outsidersteps)
+            for alpharadius in alpharadii147Sm
+                (outsidersteps[ri] - first(outsidersteps)) > alpharadius && continue
+                slabsphereintersectiondensity!(dint, redges,alpharadius,outsidersteps[ri])
+                @. r147SmHe += dint * o147Sm
+            end
+        end
+    end
+
+    # Calculate corrected alpha deposition and recoil damage each time step for each halfwidth
+    dt_2 = step(tsteps)/2
+    decay = zeros(T, length(tsteps))
+    # Allocate deposition arrays
+    alphadeposition = zeros(T, length(tsteps), nrsteps-2)
+
+    # U-238
+    @. decay = exp(λ238U*(agesteps + dt_2)) - exp(λ238U*(agesteps - dt_2))
+    mul!(alphadeposition, decay, r238UHe', one(T), one(T))
+    # U-235
+    @. decay = exp(λ235U*(agesteps + dt_2)) - exp(λ235U*(agesteps - dt_2))
+    mul!(alphadeposition, decay, r235UHe', one(T), one(T))
+    # Th-232
+    @. decay = exp(λ232Th*(agesteps + dt_2)) - exp(λ232Th*(agesteps - dt_2))
+    mul!(alphadeposition, decay, r232ThHe', one(T), one(T))
+    # Sm-147
+    @. decay = exp(λ147Sm*(agesteps + dt_2)) - exp(λ147Sm*(agesteps - dt_2))
+    mul!(alphadeposition, decay, r147SmHe', one(T), one(T))
+
+    # Allocate additional variables that will be needed for Crank-Nicholson
+    β = zeros(T, nrsteps) # First row of annealeddamage
+
+    # Allocate arrays for diffusivities
+    De = zeros(T, length(tsteps))
+
+    # Allocate output matrix for all timesteps
+    u = zeros(T, nrsteps, length(tsteps))
+
+    # Allocate variables for tridiagonal matrix and RHS
+    dl = ones(T, nrsteps-1)    # Sub-diagonal row
+    d = ones(T, nrsteps)       # Diagonal
+    du = ones(T, nrsteps-1)    # Supra-diagonal row
+    du2 = ones(T, nrsteps-2)   # sup-sup-diagonal row for pivoting
+
+    # Tridiagonal matrix for LHS of Crank-Nicholson equation with regular grid cells
+    A = Tridiagonal(dl, d, du, du2)
+    F = lu(A, allowsingular=true)
+
+    # Vector for RHS of Crank-Nicholson equation with regular grid cells
+    y = zeros(T, nrsteps)
+
+    return PlanarHe(
+        T(age),
+        T(age_sigma),
+        T(offset),
+        T(D0),
+        T(Ea),
+        agesteps,
+        tsteps,
+        rsteps,
+        redges,
+        nrsteps,
+        r238U,
+        r235U,
+        r232Th,
+        r147Sm,
+        alphadeposition,
+        u,
+        β,
+        De,
+        A,
+        F,
+        y,
+    )
+end
 
 """
 ```julia
