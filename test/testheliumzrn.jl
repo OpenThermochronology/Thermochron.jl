@@ -1,4 +1,5 @@
 ## --- Test damage annealing function for ZRDAAM
+
     tCryst = 3000.0 # Crystallization age [Myr]
     dt = 100 # time step size [Myr]
     dr = 1

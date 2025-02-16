@@ -1,4 +1,4 @@
-# Test fission track annealing
+## --- Test fission track annealing
 
     @test Ketcham1999FC() isa Thermochron.ApatiteAnnealingModel{Float64}
     @test Ketcham2007FC() isa Thermochron.ApatiteAnnealingModel{Float64}
