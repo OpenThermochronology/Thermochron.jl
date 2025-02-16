@@ -268,12 +268,13 @@ in Ma.
 struct ZirconHe{T<:AbstractFloat} <: HeliumSample{T}
     age::T                      # [Ma] helium age
     age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
-    offset::T                   # [C]
+    offset::T                   # [C] temperature offset relative to the surface
     agesteps::FloatRange        # [Ma] age in Ma relative to the present
     tsteps::FloatRange          # [Ma] forward time since crystallization
     rsteps::FloatRange          # [um] radius bin centers
-    redges::FloatRange          # [um] radius bin centers
-    nrsteps::Int                # [n] number of radial steps
+    redges::FloatRange          # [um] radius bin edges
+    relvolumes::Vector{T}       # [unitless] fraction of volume in each radial step
+    nrsteps::Int                # [n] number of radial steps, including both implicit points at each side
     r238U::Vector{T}            # [atoms/g] radial U-238 concentrations
     r235U::Vector{T}            # [atoms/g] radial U-235 concentrations
     r232Th::Vector{T}           # [atoms/g] radial Th-232 concentrations
@@ -496,6 +497,7 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
         tsteps,
         rsteps,
         redges,
+        relvolumes,
         nrsteps,
         r238U,
         r235U,
@@ -550,8 +552,9 @@ struct ApatiteHe{T<:AbstractFloat} <: HeliumSample{T}
     agesteps::FloatRange        # [Ma] age in Ma relative to the present
     tsteps::FloatRange          # [Ma] forward time since crystallization
     rsteps::FloatRange          # [um] radius bin centers
-    redges::FloatRange          # [um] radius bin centers
-    nrsteps::Int                # [n] number of radial steps
+    redges::FloatRange          # [um] radius bin edges
+    relvolumes::Vector{T}       # [unitless] fraction of volume in each radial step
+    nrsteps::Int                # [n] number of radial steps, including both implicit points at each side
     r238U::Vector{T}            # [atoms/g] radial U-238 concentrations
     r235U::Vector{T}            # [atoms/g] radial U-235 concentrations
     r232Th::Vector{T}           # [atoms/g] radial Th-232 concentrations
@@ -774,6 +777,7 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
         tsteps,
         rsteps,
         redges,
+        relvolumes,
         nrsteps,
         r238U,
         r235U,
@@ -835,8 +839,9 @@ struct SphericalHe{T<:AbstractFloat} <: HeliumSample{T}
     agesteps::FloatRange        # [Ma] age in Ma relative to the present
     tsteps::FloatRange          # [Ma] forward time since crystallization
     rsteps::FloatRange          # [um] radius bin centers
-    redges::FloatRange          # [um] radius bin centers
-    nrsteps::Int                # [n] number of radial steps
+    redges::FloatRange          # [um] radius bin edges
+    relvolumes::Vector{T}       # [unitless] fraction of volume in each radial step
+    nrsteps::Int                # [n] number of radial steps, including both implicit points at each side
     r238U::Vector{T}            # [atoms/g] radial U-238 concentrations
     r235U::Vector{T}            # [atoms/g] radial U-235 concentrations
     r232Th::Vector{T}           # [atoms/g] radial Th-232 concentrations
@@ -1046,6 +1051,7 @@ function SphericalHe(T::Type{<:AbstractFloat}=Float64;
         tsteps,
         rsteps,
         redges,
+        relvolumes,
         nrsteps,
         r238U,
         r235U,
@@ -1102,8 +1108,8 @@ struct PlanarHe{T<:AbstractFloat} <: HeliumSample{T}
     agesteps::FloatRange        # [Ma] age in Ma relative to the present
     tsteps::FloatRange          # [Ma] forward time since crystallization
     rsteps::FloatRange          # [um] halfwidth bin centers
-    redges::FloatRange          # [um] halfwidth bin centers
-    nrsteps::Int                # [n] number of radial steps
+    redges::FloatRange          # [um] halfwidth bin edges
+    nrsteps::Int                # [n] number of spatial steps, including both implicit points at each side
     r238U::Vector{T}            # [atoms/g] radial U-238 concentrations
     r235U::Vector{T}            # [atoms/g] radial U-235 concentrations
     r232Th::Vector{T}           # [atoms/g] radial Th-232 concentrations
@@ -1359,8 +1365,9 @@ struct SphericalAr{T<:AbstractFloat} <: ArgonSample{T}
     agesteps::FloatRange        # [Ma] age in Ma relative to the present
     tsteps::FloatRange          # [Ma] forward time since crystallization
     rsteps::FloatRange          # [um] radius bin centers
-    redges::FloatRange          # [um] radius bin centers
-    nrsteps::Int                # [n] number of radial steps
+    redges::FloatRange          # [um] radius bin edges
+    relvolumes::Vector{T}       # [unitless] fraction of volume in each radial step
+    nrsteps::Int                # [n] number of radial steps, including both implicit points at each side
     r40K::Vector{T}             # [atoms/g] radial K-40 concentrations
     argondeposition::Matrix{T}  # [atoms/g] Ar-40 deposition matrix
     u::Matrix{T}
@@ -1392,6 +1399,7 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
     rsteps = floatrange(0+dr/2 : dr : r-dr/2)
     redges = floatrange(     0 : dr : r     )   # Edges of each radius element
     nrsteps = length(rsteps)+2                  # number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
+    relvolumes = (redges[2:end].^3 - redges[1:end-1].^3)/r^3 # Relative volume fraction of spherical shell corresponding to each radius element
 
     # Observed radial HPE profiles at present day
     r40K = fill(T(K40), size(rsteps))         # [PPMw]
@@ -1443,6 +1451,7 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
         tsteps,
         rsteps,
         redges,
+        relvolumes,
         nrsteps,
         r40K,
         argondeposition,
@@ -1487,9 +1496,9 @@ struct PlanarAr{T<:AbstractFloat} <: ArgonSample{T}
     Ea::T                       # [kJ/mol] activation energy
     agesteps::FloatRange        # [Ma] age in Ma relative to the present
     tsteps::FloatRange          # [Ma] forward time since crystallization
-    rsteps::FloatRange          # [um] radius bin centers
-    redges::FloatRange          # [um] radius bin centers
-    nrsteps::Int                # [n] number of radial steps
+    rsteps::FloatRange          # [um] halfwidth bin centers
+    redges::FloatRange          # [um] halfwidth bin edges
+    nrsteps::Int                # [n] number of spatial steps, including both implicit points at each side
     r40K::Vector{T}             # [atoms/g] radial K-40 concentrations
     argondeposition::Matrix{T}  # [atoms/g] Ar-40 deposition matrix
     u::Matrix{T}
