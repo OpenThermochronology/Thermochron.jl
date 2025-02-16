@@ -47,6 +47,52 @@
         return omega
     end
 
+    """
+    ```julia
+    slabsphereintersectionfraction(rₚ, rₛ, d)
+    ```
+    Calculate the fraction of the surface area of a sphere s with radius `rₛ`
+    that intersects the interior of a planar slab p of halfwidth `rₚ` if the two are
+    separated by distance `d`.
+    """
+    function slabsphereintersectionfraction(rₚ::T, rₛ::T, d::T) where T <: AbstractFloat
+        # Let rₚ be the halfwidth of a planar slab and rₛ the radius of a sphere
+        # separated by distance d
+        @assert (rₚ >= 0) && (rₛ >= 0)
+        d = abs(d)
+        if d > (rₚ+rₛ) ## If separated by more than dmax, there is no intersection
+            omega = zero(T)
+        elseif d > abs(rₚ-rₛ)
+            # X is the radial distance between the center of the sphere s and the interseciton plane
+            x = d - rₚ
+
+            # Let omega be the solid angle of intersection normalized by 4pi,
+            # where the solid angle of a cone is 2pi*(1-cos(theta)) and cos(theta)
+            # is adjacent/hypotenuse = x/rₛ.
+            omega = (one(T) - x/rₛ)/2  # zero when x = rₛ, one when x = -rₛ
+
+        elseif rₚ < rₛ 
+            # If halfwidth of the planar slab is less than radius of the sphere
+            # then both sides of the slab are intersecting the sphere 
+            
+            # # Larger solid angle of intersection
+            # x₊ = d - rₚ
+            # omega₊ = (one(T) - x₊/rₛ)/2 
+            # # Smaller solid angle of intersection 
+            # x₋ = d + rₚ
+            # omega₋ = (one(T) - x₋/rₛ)/2  
+            # # Difference = intersection within slab
+            # omega = omega₊ - omega₋
+
+            # Rearranged and terms cancelled
+            omega = rₚ/rₛ
+        else
+            # If sphere is entirely within planar slab
+            omega = one(T) 
+        end
+        return omega
+    end
+
 
     """
     ```julia
@@ -70,6 +116,33 @@
             # Intersection fraction for each spherical shell of the crystal (subtracting
             # one concentric sphere from the next) normalized by shell volume
             dint[i] = (fint-fintlast) / rvolumes[i]
+            fintlast = fint
+        end
+        return dint
+    end
+
+    """
+    ```julia
+    slabsphereintersectiondensity(redges::Vector, ralpha, d)
+    ```
+    Calculate the fractional intersection density of an alpha
+    stopping sphere of radius `ralpha` with each concentric slab-shell (with edges
+    `redges` and relative volumes `rvolumes`) of a planar slab crystal where the
+    two are separated by distance `d`
+    """
+    function slabsphereintersectiondensity(redges::AbstractVector{T}, ralpha::T, d::T) where T <: AbstractFloat
+        slabsphereintersectiondensity!(zeros(T, length(redges)-1), redges, ralpha, d)
+    end
+    function slabsphereintersectiondensity!(dint::DenseVector{T}, redges::AbstractVector{T}, ralpha::T, d::T) where T <: AbstractFloat
+        @assert eachindex(dint) == firstindex(redges):lastindex(redges)-1
+        fintlast = slabsphereintersectionfraction(first(redges), ralpha, d)
+        @inbounds for i ∈ eachindex(dint)
+            # Integrated intersection fraction for each concentric sphere (redges) of crystal
+            fint = slabsphereintersectionfraction(redges[i+1], ralpha, d)
+
+            # Intersection fraction for each slab-shell of the crystal (subtracting
+            # one concentric slab from the next)
+            dint[i] = fint-fintlast
             fintlast = fint
         end
         return dint
