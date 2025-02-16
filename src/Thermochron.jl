@@ -46,7 +46,7 @@ module Thermochron
     export ZirconTrackLength, MonaziteTrackLength, ApatiteTrackLength   # Concrete fission track length types
     export ZirconFT, MonaziteFT, ApatiteFT                              # Concrete fission track types
     export SphericalHe, PlanarHe, ZirconHe, ApatiteHe                   # Concrete U-Th/He types
-    export SphericalAr                                                  # Concrete K/Ar types
+    export SphericalAr, PlanarAr                                        # Concrete K/Ar types
     export chronometers, empiricaluncertainty!, eU,                     # Functions
         get_age, get_age_sigma, set_age!, set_age_sigma!
 

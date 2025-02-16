@@ -1455,6 +1455,135 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
     )
 end
 
+"""
+```julia
+PlanarAr(T=Float64;
+    age::Number=T(NaN),
+    age_sigma::Number=T(NaN),
+    offset=zero(T),
+    D0::Number,
+    Ea::Number,
+    r::Number, 
+    dr::Number=one(T), 
+    K40::Number, 
+    agesteps::AbstractRange,
+)
+```
+Construct an `PlanarAr` chronometer representing a mineral with a raw 
+argon age of `age` ± `age_sigma` [Ma], a uniform diffusivity specified by
+a frequency factor `D0` [cm^2/s] and an activation energy `Ea` [kJ/mol],
+a radius of `r` [μm], and uniform K-40 concentrations specified by `K40` [PPM].
+
+Spatial discretization follows a halfwidth step of `dr` [μm], and temporal
+discretization follows the age steps specified by the `agesteps` range,
+in Ma.
+"""
+# Concretely-typed immutable struct to hold information about a single mineral crystal and its argon age
+struct PlanarAr{T<:AbstractFloat} <: ArgonSample{T}
+    age::T                      # [Ma] helium age
+    age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
+    offset::T                   # [C] temperature offset relative to the surface
+    D0::T                       # [cm^2/s] diffusivity
+    Ea::T                       # [kJ/mol] activation energy
+    agesteps::FloatRange        # [Ma] age in Ma relative to the present
+    tsteps::FloatRange          # [Ma] forward time since crystallization
+    rsteps::FloatRange          # [um] radius bin centers
+    redges::FloatRange          # [um] radius bin centers
+    nrsteps::Int                # [n] number of radial steps
+    r40K::Vector{T}             # [atoms/g] radial K-40 concentrations
+    argondeposition::Matrix{T}  # [atoms/g] Ar-40 deposition matrix
+    u::Matrix{T}
+    β::Vector{T}
+    De::Vector{T}
+    A::Tridiagonal{T, Vector{T}}
+    F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}}
+    y::Vector{T}
+end
+# Constructor for the PlanarAr type, given grain radius, K-40 concentrations and t-T discretization information
+function PlanarAr(T::Type{<:AbstractFloat}=Float64;
+        age::Number=T(NaN),
+        age_sigma::Number=T(NaN),
+        offset=zero(T),
+        D0::Number,
+        Ea::Number,
+        r::Number, 
+        dr::Number=one(T), 
+        K40::Number, 
+        agesteps::AbstractRange,
+    )
+
+    # Temporal discretization
+    agesteps = floatrange(agesteps)
+    tsteps = reverse(agesteps)
+    @assert issorted(tsteps)
+
+    # Crystal size and spatial discretization
+    rsteps = floatrange(0+dr/2 : dr : r-dr/2)
+    redges = floatrange(     0 : dr : r     )   # Edges of each radius element
+    nrsteps = length(rsteps)+2                  # number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
+
+    # Observed radial HPE profiles at present day
+    r40K = fill(T(K40), size(rsteps))         # [PPMw]
+
+    # Convert to atoms per gram
+    r40K .*= 6.022E23 / 1E6 / 39.96399848
+    # The proportion of that which will decay to Ar
+    r40KAr = r40K .* BR40K
+
+    # Calculate corrected argon deposition each time step for each radius
+    dt_2 = step(tsteps)/2
+    decay = zeros(T, length(tsteps))
+    # Allocate deposition arrays
+    argondeposition = zeros(T, length(tsteps), nrsteps-2)
+
+    # K-40
+    @. decay = exp(λ40K*(agesteps + dt_2)) - exp(λ40K*(agesteps - dt_2))
+    mul!(argondeposition, decay, r40KAr', one(T), one(T))
+
+    # Allocate additional variables that will be needed for Crank-Nicholson
+    β = zeros(T, nrsteps)
+
+    # Allocate arrays for diffusivities
+    De = zeros(T, length(tsteps))
+
+    # Allocate output matrix for all timesteps
+    u = zeros(T, nrsteps, length(tsteps))
+
+    # Allocate variables for tridiagonal matrix and RHS
+    dl = ones(T, nrsteps-1)    # Sub-diagonal row
+    d = ones(T, nrsteps)       # Diagonal
+    du = ones(T, nrsteps-1)    # Supra-diagonal row
+    du2 = ones(T, nrsteps-2)   # sup-sup-diagonal row for pivoting
+
+    # Tridiagonal matrix for LHS of Crank-Nicholson equation with regular grid cells
+    A = Tridiagonal(dl, d, du, du2)
+    F = lu(A, allowsingular=true)
+
+    # Vector for RHS of Crank-Nicholson equation with regular grid cells
+    y = zeros(T, nrsteps)
+
+    return PlanarAr(
+        T(age),
+        T(age_sigma),
+        T(offset),
+        T(D0),
+        T(Ea),
+        agesteps,
+        tsteps,
+        rsteps,
+        redges,
+        nrsteps,
+        r40K,
+        argondeposition,
+        u,
+        β,
+        De,
+        A,
+        F,
+        y,
+    )
+end
+
 ## --- Internal functions to get values and uncertainties from any chronometers
 
 val(x::AbsoluteChronometer{T}) where {T} = x.age::T

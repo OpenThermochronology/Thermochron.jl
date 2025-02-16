@@ -612,8 +612,8 @@ function modelage(mineral::PlanarHe{T}, Tsteps::AbstractVector{T}) where T <: Ab
     fill!(A.du, 1)          # Supra-diagonal row
     F = mineral.F               # For LU factorization
 
-    # Neumann inner boundary condition (u[i,1] + u[i,2] = 0)
-    A.d[1] = 1
+    # Neumann inner boundary condition (-u[i,1] + u[i,2] = 0)
+    A.d[1] = -1
     A.du[1] = 1
 
     # Dirichlet outer boundary condition (u[i,end] = u[i-1,end])
