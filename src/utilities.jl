@@ -298,7 +298,7 @@
         norm_ll(log(zdm.DzEa), zdm.DzEa_logsigma, log(zdmₚ.DzEa)) + 
         norm_ll(log(zdm.DN17D0), zdm.DN17D0_logsigma, log(zdmₚ.DN17D0)) + 
         norm_ll(log(zdm.DN17Ea), zdm.DN17Ea_logsigma, log(zdmₚ.DN17Ea)) +
-        norm_ll(zdm.rmr0, zdm.rmr0_sigma, zdmₚ.rmr0)
+        norm_ll(zdm.rmin, zdm.rmin_sigma, zdmₚ.rmin)
     end
     function kinetic_ll(admₚ::RDAAM, adm::RDAAM)
         norm_ll(log(adm.D0L), adm.D0L_logsigma, log(admₚ.D0L)) + 
@@ -540,7 +540,7 @@
             DzD0 = (rand()<p) ? exp(log(zdm.DzD0)+randn()*zdm.DzD0_logsigma) : zdm.DzD0,
             DN17Ea = (rand()<p) ? exp(log(zdm.DN17Ea)+randn()*zdm.DN17Ea_logsigma) : zdm.DN17Ea,
             DN17D0 = (rand()<p) ? exp(log(zdm.DN17D0)+randn()*zdm.DN17D0_logsigma) : zdm.DN17D0,
-            rmr0 = (rand()<p) ? reflecting(zdm.rmr0 + randn()*zdm.rmr0_sigma, 0, 1) : zdm.rmr0,
+            rmin = (rand()<p) ? reflecting(zdm.rmin + randn()*zdm.rmin_sigma, 0, 1) : zdm.rmin,
         )
     end
     function movekinetics(adm::RDAAM)

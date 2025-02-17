@@ -235,9 +235,9 @@
     DN17Eamean = mean(kinetics.zdmdist .|> x-> x.DN17Ea)
     @test 0 < DN17Eamean
     @info "Mean zircon DN17Ea: $DN17Eamean"
-    rmr0mean = mean(kinetics.zdmdist .|> x-> x.rmr0)
-    @test 0 < rmr0mean < 1
-    @info "Mean zircon rmr0: $rmr0mean"
+    rminmean = mean(kinetics.zdmdist .|> x-> x.rmin)
+    @test 0 < rminmean < 1
+    @info "Mean zircon rmin: $rminmean"
 
 ## --- MCMC with Detail interval
     detail = DetailInterval(
@@ -343,9 +343,9 @@
     DN17Eamean = mean(kinetics.zdmdist .|> x-> x.DN17Ea)
     @test 0 < DN17Eamean
     @info "Mean zircon DN17Ea: $DN17Eamean"
-    rmr0mean = mean(kinetics.zdmdist .|> x-> x.rmr0)
-    @test 0 < rmr0mean < 1
-    @info "Mean zircon rmr0: $rmr0mean"
+    rminmean = mean(kinetics.zdmdist .|> x-> x.rmin)
+    @test 0 < rminmean < 1
+    @info "Mean zircon rmin: $rminmean"
 
     ## --- Add dynamic jumping and a constraint box
     model = (model...,
@@ -453,9 +453,9 @@
     DN17Eamean = mean(kinetics.zdmdist .|> x-> x.DN17Ea)
     @test 0 < DN17Eamean
     @info "Mean zircon DN17Ea: $DN17Eamean"
-    rmr0mean = mean(kinetics.zdmdist .|> x-> x.rmr0)
-    @test 0 < rmr0mean < 1
-    @info "Mean zircon rmr0: $rmr0mean"
+    rminmean = mean(kinetics.zdmdist .|> x-> x.rmin)
+    @test 0 < rminmean < 1
+    @info "Mean zircon rmin: $rminmean"
 
 ## --- Test conversion of t-T images 
 

@@ -114,12 +114,12 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, dt::Number, t
     end
 
     # Guenthner et al volume-length conversion
-    rmr0 = dm.rmr0
-    scale = 1/(1-rmr0)
+    rmin = dm.rmin
+    scale = 1/(1-rmin)
     @fastmath @inbounds for j ∈ 1:ntsteps
         for i ∈ j:ntsteps
-            ρᵣ[i,j] = if ρᵣ[i,j] >= rmr0
-                (ρᵣ[i,j] - rmr0) * scale
+            ρᵣ[i,j] = if ρᵣ[i,j] >= rmin
+                (ρᵣ[i,j] - rmin) * scale
             else
                 zero(T)
             end
