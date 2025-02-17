@@ -14,20 +14,20 @@ Currently, this package supports the inversion of mineral helium and argon ages 
 
 Apatite fission track age and fission track length data are supported with the annealing models of [Ketcham et al. 1999](https://doi.org/10.2138/am-1999-0903) and [Ketcham et al. 2007](https://doi.org/10.2138/am.2007.2281), while zircon fission track data are supported with the annealing model of [Yamada et al. 2007](https://doi.org/10.1016/j.chemgeo.2006.09.002) and the simultaneous-fit fanning curvilinear ZFT annealing model from [Guenthner et al. 2013](https://doi.org/10.2475/03.2013.01), discussed further by [Ketcham 2019](https://doi.org/10.1007/978-3-319-89421-8_3) (sec. 3.8, pgs. 65-67). Monazite fission track is also included with the re-fit annealing model of [Jones et al. 2021](https://doi.org/10.5194/gchron-3-89-2021). 
 
-| Chronometer           | Mineral  | System         | Geometry   | Supported diffusion and/or annealing model(s) |
-| :---                  | :---     | :---           | :---       | :---                                          |
-| `ZirconHe`            | zircon   | helium         | spherical  | `ZRDAAM`                                      |
-| `ApatiteHe`           | apatite  | helium         | spherical  | `RDAAM`                                       |
-| `SphericalHe`         | any      | helium         | spherical  | Constant user-specified `D0` and `Ea`         |
-| `PlanarHe`            | any      | helium         | slab       | Constant user-specified `D0` and `Ea`         |
-| `SphericalAr`         | any      | argon          | spherical  | Constant user-specified `D0` and `Ea`         |
-| `PlanarAr`            | any      | argon          | slab       | Constant user-specified `D0` and `Ea`         |
-| `ZirconFT`            | zircon   | fission track  | n/a        | `Yamada2007PC`,`Guenthner2013FC`              |
-| `MonaziteFT`          | monazite | fission track  | n/a        | `Jones2021FA`                                 |
-| `ApatiteFT`           | apatite  | fission track  | n/a        | `Ketcham1999FC`, `Ketcham2007FC`              |
-| `ZirconTrackLength`   | zircon   | fission track  | n/a        | `Yamada2007PC`,`Guenthner2013FC`              |
-| `MonaziteTrackLength` | monazite | fission track  | n/a        | `Jones2021FA`                                 |
-| `ApatiteTrackLength`  | apatite  | fission track  | n/a        | `Ketcham1999FC`, `Ketcham2007FC`              |
+| Chronometer           | Mineral  | System         | Geometry   | Diffusion and/or annealing model(s)  |
+| :---                  | :---     | :---           | :---       | :---                                 |
+| `ZirconHe`            | zircon   | helium         | spherical  | `ZRDAAM`                             |
+| `ApatiteHe`           | apatite  | helium         | spherical  | `RDAAM`                              |
+| `SphericalHe`         | any      | helium         | spherical  | User-specified `D0` and `Ea`         |
+| `PlanarHe`            | any      | helium         | slab       | User-specified `D0` and `Ea`         |
+| `SphericalAr`         | any      | argon          | spherical  | User-specified `D0` and `Ea`         |
+| `PlanarAr`            | any      | argon          | slab       | User-specified `D0` and `Ea`         |
+| `ZirconFT`            | zircon   | fission track  | n/a        | `Yamada2007PC`,`Guenthner2013FC`     |
+| `MonaziteFT`          | monazite | fission track  | n/a        | `Jones2021FA`                        |
+| `ApatiteFT`           | apatite  | fission track  | n/a        | `Ketcham1999FC`, `Ketcham2007FC`     |
+| `ZirconTrackLength`   | zircon   | fission track  | n/a        | `Yamada2007PC`, `Guenthner2013FC`    |
+| `MonaziteTrackLength` | monazite | fission track  | n/a        | `Jones2021FA`                        |
+| `ApatiteTrackLength`  | apatite  | fission track  | n/a        | `Ketcham1999FC`, `Ketcham2007FC`     |
 
 Additional systems and models are expected to be added in future releases.
 
