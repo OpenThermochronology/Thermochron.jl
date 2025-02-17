@@ -264,7 +264,6 @@ Spatial discretization follows a radius step of `dr` μm, and temporal
 discretization follows the age steps specified by the `agesteps` range,
 in Ma.
 """
-# Concretely-typed immutable struct to hold information about a single zircon crystal and its helium age
 struct ZirconHe{T<:AbstractFloat} <: HeliumSample{T}
     age::T                      # [Ma] helium age
     age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
@@ -291,7 +290,6 @@ struct ZirconHe{T<:AbstractFloat} <: HeliumSample{T}
     F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}}
     y::Vector{T}
 end
-# Constructor for the ZirconHe type, given grain radius, U and Th concentrations and t-T discretization information
 function ZirconHe(T::Type{<:AbstractFloat}=Float64;
         age::Number=T(NaN),
         age_sigma::Number=T(NaN),
@@ -544,7 +542,6 @@ Spatial discretization follows a radius step of `dr` [μm], and temporal
 discretization follows the age steps specified by the `agesteps` range,
 in Ma.
 """
-# Concretely-typed immutable struct to hold information about a single apatite crystal and its helium age
 struct ApatiteHe{T<:AbstractFloat} <: HeliumSample{T}
     age::T                      # [Ma] helium age
     age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
@@ -571,7 +568,6 @@ struct ApatiteHe{T<:AbstractFloat} <: HeliumSample{T}
     F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}}
     y::Vector{T}
 end
-# Constructor for the ApatiteHe type, given grain radius, U and Th concentrations and t-T discretization information
 function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
         age::Number=T(NaN),
         age_sigma::Number=T(NaN),
@@ -829,7 +825,6 @@ Spatial discretization follows a radius step of `dr` [μm], and temporal
 discretization follows the age steps specified by the `agesteps` range,
 in Ma.
 """
-# Concretely-typed immutable struct to hold information about a single mineral crystal and its helium age
 struct SphericalHe{T<:AbstractFloat} <: HeliumSample{T}
     age::T                      # [Ma] helium age
     age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
@@ -854,7 +849,6 @@ struct SphericalHe{T<:AbstractFloat} <: HeliumSample{T}
     F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}}
     y::Vector{T}
 end
-# Constructor for the SphericalHe type, given grain radius, U and Th concentrations and t-T discretization information
 function SphericalHe(T::Type{<:AbstractFloat}=Float64;
         age::Number=T(NaN),
         age_sigma::Number=T(NaN),
@@ -1098,7 +1092,6 @@ Spatial discretization follows a halfwidth step of `dr` [μm], and temporal
 discretization follows the age steps specified by the `agesteps` range,
 in Ma.
 """
-# Concretely-typed immutable struct to hold information about a single mineral crystal and its helium age
 struct PlanarHe{T<:AbstractFloat} <: HeliumSample{T}
     age::T                      # [Ma] helium age
     age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
@@ -1122,7 +1115,6 @@ struct PlanarHe{T<:AbstractFloat} <: HeliumSample{T}
     F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}}
     y::Vector{T}
 end
-# Constructor for the PlanarHe type, given grain halfwidth, U and Th concentrations and t-T discretization information
 function PlanarHe(T::Type{<:AbstractFloat}=Float64;
         age::Number=T(NaN),
         age_sigma::Number=T(NaN),
@@ -1355,7 +1347,6 @@ Spatial discretization follows a radius step of `dr` [μm], and temporal
 discretization follows the age steps specified by the `agesteps` range,
 in Ma.
 """
-# Concretely-typed immutable struct to hold information about a single mineral crystal and its argon age
 struct SphericalAr{T<:AbstractFloat} <: ArgonSample{T}
     age::T                      # [Ma] helium age
     age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
@@ -1377,7 +1368,6 @@ struct SphericalAr{T<:AbstractFloat} <: ArgonSample{T}
     F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}}
     y::Vector{T}
 end
-# Constructor for the SphericalAr type, given grain radius, K-40 concentrations and t-T discretization information
 function SphericalAr(T::Type{<:AbstractFloat}=Float64;
         age::Number=T(NaN),
         age_sigma::Number=T(NaN),
@@ -1487,7 +1477,6 @@ Spatial discretization follows a halfwidth step of `dr` [μm], and temporal
 discretization follows the age steps specified by the `agesteps` range,
 in Ma.
 """
-# Concretely-typed immutable struct to hold information about a single mineral crystal and its argon age
 struct PlanarAr{T<:AbstractFloat} <: ArgonSample{T}
     age::T                      # [Ma] helium age
     age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
@@ -1508,7 +1497,6 @@ struct PlanarAr{T<:AbstractFloat} <: ArgonSample{T}
     F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}}
     y::Vector{T}
 end
-# Constructor for the PlanarAr type, given grain radius, K-40 concentrations and t-T discretization information
 function PlanarAr(T::Type{<:AbstractFloat}=Float64;
         age::Number=T(NaN),
         age_sigma::Number=T(NaN),
@@ -1806,42 +1794,82 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                 push!(result, c)
             end
         elseif haskey(data, :D0_cm_2_s) && haskey(data, :Ea_kJ_mol) && (0 < data.D0_cm_2_s[i]) && (0 < data.Ea_kJ_mol[i])
-            # Spherical helium
-            if haskey(data, :raw_He_age_Ma) && haskey(data, :raw_He_age_sigma_Ma) && (0 < data.raw_He_age_sigma_Ma[i]/data.raw_He_age_Ma[i])
-                # Modern format
-                c = SphericalHe(T;
-                    age = data.raw_He_age_Ma[i], 
-                    age_sigma = data.raw_He_age_sigma_Ma[i], 
-                    offset = (haskey(data, :offset_C) && !isnan(data.offset_C[i])) ? data.offset_C[i] : 0,
-                    D0 = data.D0_cm_2_s[i],
-                    Ea = data.Ea_kJ_mol[i],
-                    stoppingpower = alphastoppingpower(data.mineral[i]),
-                    r = data.halfwidth_um[i], 
-                    dr = dr, 
-                    U238 = (haskey(data, :U238_ppm) && !isnan(data.U238_ppm[i])) ? data.U238_ppm[i] : 0,
-                    Th232 = (haskey(data, :Th232_ppm) && !isnan(data.Th232_ppm[i])) ? data.Th232_ppm[i] : 0,
-                    Sm147 = (haskey(data, :Sm147_ppm) && !isnan(data.Sm147_ppm[i])) ? data.Sm147_ppm[i] : 0,
-                    U238_matrix = (haskey(data, :U238_matrix_ppm) && !isnan(data.U238_matrix_ppm[i])) ? data.U238_matrix_ppm[i] : 0,
-                    Th232_matrix = (haskey(data, :Th232_matrix_ppm) && !isnan(data.Th232_matrix_ppm[i])) ? data.Th232_matrix_ppm[i] : 0,
-                    Sm147_matrix = (haskey(data, :Sm147_matrix_ppm) && !isnan(data.Sm147_matrix_ppm[i])) ? data.Sm147_matrix_ppm[i] : 0,
-                    agesteps = agesteps[first_index:end],
-                )
-                push!(result, c)
-            end
-            # Spherical argon
-            if haskey(data, :raw_Ar_age_Ma) && haskey(data, :raw_Ar_age_sigma_Ma) && (0 < data.raw_Ar_age_sigma_Ma[i]/data.raw_Ar_age_Ma[i])
-                # Modern format
-                c = SphericalAr(T;
-                    age = data.raw_Ar_age_Ma[i], 
-                    age_sigma = data.raw_Ar_age_sigma_Ma[i], 
-                    D0 = data.D0_cm_2_s[i],
-                    Ea = data.Ea_kJ_mol[i],
-                    r = data.halfwidth_um[i], 
-                    dr = dr, 
-                    K40 = (haskey(data, :K40_ppm) && !isnan(data.K40_ppm[i])) ? data.K40_ppm[i] : 0,
-                    agesteps = agesteps[first_index:end],
-                )
-                push!(result, c)
+            geometry = haskey(data, :geometry) ? lowercase(string(data.geometry[i])) : "spherical"
+            if (geometry == "slab") || (geometry == "planar")
+                # Planar slab helium
+                if haskey(data, :raw_He_age_Ma) && haskey(data, :raw_He_age_sigma_Ma) && (0 < data.raw_He_age_sigma_Ma[i]/data.raw_He_age_Ma[i])
+                    c = PlanarHe(T;
+                        age = data.raw_He_age_Ma[i], 
+                        age_sigma = data.raw_He_age_sigma_Ma[i], 
+                        offset = (haskey(data, :offset_C) && !isnan(data.offset_C[i])) ? data.offset_C[i] : 0,
+                        D0 = data.D0_cm_2_s[i],
+                        Ea = data.Ea_kJ_mol[i],
+                        stoppingpower = alphastoppingpower(data.mineral[i]),
+                        r = data.halfwidth_um[i], 
+                        dr = dr, 
+                        U238 = (haskey(data, :U238_ppm) && !isnan(data.U238_ppm[i])) ? data.U238_ppm[i] : 0,
+                        Th232 = (haskey(data, :Th232_ppm) && !isnan(data.Th232_ppm[i])) ? data.Th232_ppm[i] : 0,
+                        Sm147 = (haskey(data, :Sm147_ppm) && !isnan(data.Sm147_ppm[i])) ? data.Sm147_ppm[i] : 0,
+                        U238_matrix = (haskey(data, :U238_matrix_ppm) && !isnan(data.U238_matrix_ppm[i])) ? data.U238_matrix_ppm[i] : 0,
+                        Th232_matrix = (haskey(data, :Th232_matrix_ppm) && !isnan(data.Th232_matrix_ppm[i])) ? data.Th232_matrix_ppm[i] : 0,
+                        Sm147_matrix = (haskey(data, :Sm147_matrix_ppm) && !isnan(data.Sm147_matrix_ppm[i])) ? data.Sm147_matrix_ppm[i] : 0,
+                        agesteps = agesteps[first_index:end],
+                    )
+                    push!(result, c)
+                end
+                # Planar slab argon
+                if haskey(data, :raw_Ar_age_Ma) && haskey(data, :raw_Ar_age_sigma_Ma) && (0 < data.raw_Ar_age_sigma_Ma[i]/data.raw_Ar_age_Ma[i])
+                    c = PlanarAr(T;
+                        age = data.raw_Ar_age_Ma[i], 
+                        age_sigma = data.raw_Ar_age_sigma_Ma[i], 
+                        D0 = data.D0_cm_2_s[i],
+                        Ea = data.Ea_kJ_mol[i],
+                        r = data.halfwidth_um[i], 
+                        dr = dr, 
+                        K40 = (haskey(data, :K40_ppm) && !isnan(data.K40_ppm[i])) ? data.K40_ppm[i] : 0,
+                        agesteps = agesteps[first_index:end],
+                    )
+                    push!(result, c)
+                end
+            else
+                (geometry === "spherical") || @warn "Geometry \"$geometry\" not recognized in row $i, defaulting to spherical"
+                # Spherical helium
+                if haskey(data, :raw_He_age_Ma) && haskey(data, :raw_He_age_sigma_Ma) && (0 < data.raw_He_age_sigma_Ma[i]/data.raw_He_age_Ma[i])
+                    # Modern format
+                    c = SphericalHe(T;
+                        age = data.raw_He_age_Ma[i], 
+                        age_sigma = data.raw_He_age_sigma_Ma[i], 
+                        offset = (haskey(data, :offset_C) && !isnan(data.offset_C[i])) ? data.offset_C[i] : 0,
+                        D0 = data.D0_cm_2_s[i],
+                        Ea = data.Ea_kJ_mol[i],
+                        stoppingpower = alphastoppingpower(data.mineral[i]),
+                        r = data.halfwidth_um[i], 
+                        dr = dr, 
+                        U238 = (haskey(data, :U238_ppm) && !isnan(data.U238_ppm[i])) ? data.U238_ppm[i] : 0,
+                        Th232 = (haskey(data, :Th232_ppm) && !isnan(data.Th232_ppm[i])) ? data.Th232_ppm[i] : 0,
+                        Sm147 = (haskey(data, :Sm147_ppm) && !isnan(data.Sm147_ppm[i])) ? data.Sm147_ppm[i] : 0,
+                        U238_matrix = (haskey(data, :U238_matrix_ppm) && !isnan(data.U238_matrix_ppm[i])) ? data.U238_matrix_ppm[i] : 0,
+                        Th232_matrix = (haskey(data, :Th232_matrix_ppm) && !isnan(data.Th232_matrix_ppm[i])) ? data.Th232_matrix_ppm[i] : 0,
+                        Sm147_matrix = (haskey(data, :Sm147_matrix_ppm) && !isnan(data.Sm147_matrix_ppm[i])) ? data.Sm147_matrix_ppm[i] : 0,
+                        agesteps = agesteps[first_index:end],
+                    )
+                    push!(result, c)
+                end
+                # Spherical argon
+                if haskey(data, :raw_Ar_age_Ma) && haskey(data, :raw_Ar_age_sigma_Ma) && (0 < data.raw_Ar_age_sigma_Ma[i]/data.raw_Ar_age_Ma[i])
+                    # Modern format
+                    c = SphericalAr(T;
+                        age = data.raw_Ar_age_Ma[i], 
+                        age_sigma = data.raw_Ar_age_sigma_Ma[i], 
+                        D0 = data.D0_cm_2_s[i],
+                        Ea = data.Ea_kJ_mol[i],
+                        r = data.halfwidth_um[i], 
+                        dr = dr, 
+                        K40 = (haskey(data, :K40_ppm) && !isnan(data.K40_ppm[i])) ? data.K40_ppm[i] : 0,
+                        agesteps = agesteps[first_index:end],
+                    )
+                    push!(result, c)
+                end
             end
         end
     end
