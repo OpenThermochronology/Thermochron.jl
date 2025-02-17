@@ -6,11 +6,11 @@ DocMeta.setdocmeta!(Thermochron, :DocTestSetup, :(using Thermochron); recursive=
 makedocs(;
     modules=[Thermochron],
     authors="C. Brenhin Keller",
-    repo="https://github.com/brenhinkeller/Thermochron.jl/blob/{commit}{path}#{line}",
+    repo="https://github.com/OpenThermochronology/Thermochron.jl/blob/{commit}{path}#{line}",
     sitename="Thermochron.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
-        canonical="https://brenhinkeller.github.io/Thermochron.jl",
+        canonical="https://openthermochronology.github.io/Thermochron.jl/",
         assets=String[],
     ),
     pages=[
@@ -19,6 +19,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/brenhinkeller/Thermochron.jl",
+    repo="github.com/OpenThermochronology/Thermochron.jl",
     devbranch = "main",
 )
