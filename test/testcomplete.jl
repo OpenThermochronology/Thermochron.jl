@@ -60,9 +60,11 @@
     dsg = importdataset(joinpath(datapath, "generic.csv"), ',', importas=:Tuple);
     chrons = chronometers(dsg, model)
     @test chrons isa Vector{<:Chronometer}
-    @test length(chrons) == 18
+    @test length(chrons) == 20
     @test count(x->isa(x,SphericalHe), chrons) == 4
+    @test count(x->isa(x,PlanarHe), chrons) == 1
     @test count(x->isa(x,SphericalAr), chrons) == 2
+    @test count(x->isa(x,PlanarAr), chrons) == 1
     @test count(x->isa(x,ZirconHe), chrons) == 2
     @test count(x->isa(x,ApatiteHe), chrons) == 2
     @test count(x->isa(x,ZirconFT), chrons) == 1
@@ -71,8 +73,8 @@
     @test count(x->isa(x,ZirconTrackLength), chrons) == 1
     @test count(x->isa(x,MonaziteTrackLength), chrons) == 1
     @test count(x->isa(x,ApatiteTrackLength), chrons) == 3
-    @test get_age(chrons) ≈ [150.37, 263.92, 150.37, 263.92, 917.84, 1023.73, 380., 380., 120., 120., 680., 300.,100.] 
-    @test get_age_sigma(chrons) ≈ [5,5,5,5,5,5,5,5,5,5,5,5,5]
+    @test get_age(chrons) ≈ [150.37, 263.92, 150.37, 263.92, 263.92, 917.84, 1023.73, 1023.73, 380., 380., 120., 120., 680., 300.,100.] 
+    @test get_age_sigma(chrons) ≈ [5,5,5,5,5,5,5,5,5,5,5,5,5,5,5]
 
     dt = 10.0
     tsteps = (0+dt/2 : dt : 3000-dt/2)
@@ -80,19 +82,19 @@
 
     calc = zeros(length(chrons))
     calcuncert = zeros(length(chrons))
-    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=false) ≈ -778.9285312920852
-    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=true) ≈ -780.4274513400776
-    @test round.(calc[1:end-5], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 868.0376, 969.4693, 286.9455, 289.894, 84.9324, 95.48752, 688.0081, 304.6573, 95.84216]
+    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=false) ≈ -952.4310653612279
+    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=true) ≈ -953.9299854092203
+    @test round.(calc[1:end-5], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 688.0081, 304.6573, 95.84216]
     @test round.(calc[end-4:end], sigdigits=3) ≈ [8, 14.3, 14.3, 14.3, 6] atol = 9
     @test calcuncert[1:end-5] ≈ zeros(length(chrons)-5)
     @test calcuncert[end-4:end] ≈ [1.8364436281549124, 1.1785910438098226, 1.1389520917140208, 1.2018361658877996, 0.6070538659171328]
 
-    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Guenthner2013FC(), Jones2021FA(), Ketcham2007FC(); trackhist=false) ≈ -4482.230906214778
-    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Guenthner2013FC(), Jones2021FA(), Ketcham2007FC(); trackhist=true) ≈ -4483.72982626277 
-    @test round.(calc[1:end-5], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 868.0376, 969.4693, 286.9455, 289.894, 84.9324, 95.48752, 1110.379, 304.6573, 95.84216]
+    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Guenthner2013FC(), Jones2021FA(), Ketcham1999FC(); trackhist=false) ≈ -4655.626135394763
+    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Guenthner2013FC(), Jones2021FA(), Ketcham1999FC(); trackhist=true) ≈ -4657.142442117235
+    @test round.(calc[1:end-5], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1110.379, 304.2772, 95.84216]
     @test round.(calc[end-4:end], sigdigits=3) ≈ [8, 14.3, 14.3, 14.3, 6] atol = 9
     @test calcuncert[1:end-5] ≈ zeros(length(chrons)-5)
-    @test calcuncert[end-4:end] ≈ [1.8368172844202661, 1.1785910438098226, 1.1389520917140208, 1.2018361658877996, 0.6070538659171328]
+    @test calcuncert[end-4:end] ≈ [1.8368172844202661, 1.1896389981502726, 1.1448424397109467, 1.2154485905638788, 0.6070538659171328]
 
     # Modern input format, Minnesota dataset
     chrons = chronometers(ds, model)

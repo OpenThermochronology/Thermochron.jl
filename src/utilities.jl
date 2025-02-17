@@ -583,8 +583,8 @@
         isa(adm, RDAAM) && anneal!(data, ApatiteHe{T}, tsteps, Tsteps, adm)
 
         # Optionally rescale log likelihoods to avoid one chronometer type from dominating the inversion
-        scalegar = rescale ? sqrt(count(x->isa(x, SphericalAr), data)) : 1
-        scaleghe = rescale ? sqrt(count(x->isa(x, SphericalHe), data)) : 1
+        scalegar = rescale ? sqrt(count(x->(isa(x, SphericalAr)||isa(x, PlanarAr)), data)) : 1
+        scaleghe = rescale ? sqrt(count(x->(isa(x, SphericalHe)||isa(x, PlanarHe)), data)) : 1
         scalezhe = rescale ? sqrt(count(x->isa(x, ZirconHe), data)) : 1
         scaleahe = rescale ? sqrt(count(x->isa(x, ApatiteHe), data)) : 1
         scalezft = rescale ? sqrt(count(x->isa(x, ZirconFT), data)) : 1
@@ -599,10 +599,10 @@
         for i in eachindex(data, μcalc, σcalc)
             c = data[i]
             first_index = 1 + Int((tmax - last(c.tsteps))÷dt)
-            if isa(c, SphericalAr) 
+            if isa(c, SphericalAr) || isa(c, PlanarAr)
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]))
                 ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scalegar
-            elseif isa(c, SphericalHe)
+            elseif isa(c, SphericalHe) || isa(c, PlanarHe)
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]))
                 ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scaleghe
             elseif isa(c, ZirconHe)

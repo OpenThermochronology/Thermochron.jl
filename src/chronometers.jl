@@ -1822,6 +1822,7 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                     c = PlanarAr(T;
                         age = data.raw_Ar_age_Ma[i], 
                         age_sigma = data.raw_Ar_age_sigma_Ma[i], 
+                        offset = (haskey(data, :offset_C) && !isnan(data.offset_C[i])) ? data.offset_C[i] : 0,
                         D0 = data.D0_cm_2_s[i],
                         Ea = data.Ea_kJ_mol[i],
                         r = data.halfwidth_um[i], 
@@ -1835,7 +1836,6 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                 (geometry === "spherical") || @warn "Geometry \"$geometry\" not recognized in row $i, defaulting to spherical"
                 # Spherical helium
                 if haskey(data, :raw_He_age_Ma) && haskey(data, :raw_He_age_sigma_Ma) && (0 < data.raw_He_age_sigma_Ma[i]/data.raw_He_age_Ma[i])
-                    # Modern format
                     c = SphericalHe(T;
                         age = data.raw_He_age_Ma[i], 
                         age_sigma = data.raw_He_age_sigma_Ma[i], 
@@ -1857,10 +1857,10 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                 end
                 # Spherical argon
                 if haskey(data, :raw_Ar_age_Ma) && haskey(data, :raw_Ar_age_sigma_Ma) && (0 < data.raw_Ar_age_sigma_Ma[i]/data.raw_Ar_age_Ma[i])
-                    # Modern format
                     c = SphericalAr(T;
                         age = data.raw_Ar_age_Ma[i], 
                         age_sigma = data.raw_Ar_age_sigma_Ma[i], 
+                        offset = (haskey(data, :offset_C) && !isnan(data.offset_C[i])) ? data.offset_C[i] : 0,
                         D0 = data.D0_cm_2_s[i],
                         Ea = data.Ea_kJ_mol[i],
                         r = data.halfwidth_um[i], 
