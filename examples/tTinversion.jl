@@ -27,7 +27,7 @@
 
     # # # # # # # # # # Choice of regional thermochron data # # # # # # # # # #
 
-    # Literature samples from Guenthner et al. 2013 (AJS), Minnesota
+    # # Literature samples from Guenthner et al. 2013 (AJS), Minnesota
     # # (23 ZirconHe, 11 ApatiteHe)
     # name = "Minnesota"
     # ds = importdataset("minnesota.csv", ',', importas=:Tuple)
@@ -248,8 +248,8 @@
 
 ## -- Plot calculated and observed ages (most other chronometers)
 
-    C = (GenericAr, GenericHe, ZirconFT, MonaziteFT)
-    mincolor = ("feldspar", "hematite", "zircon", "monazite")
+    C = (PlanarAr, PlanarHe, SphericalAr, SphericalHe, ZirconFT, MonaziteFT)
+    mincolor = ("feldspar", "hematite", "feldspar", "hematite", "zircon", "monazite")
     for i in eachindex(C, mincolor)
         t = isa.(chrons, C[i])
         if any(t)
