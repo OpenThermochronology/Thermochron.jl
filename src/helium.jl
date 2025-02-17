@@ -328,13 +328,13 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T})
     # Convert from u (coordinate-transform'd conc.) to v (real He conc.)
     vfinal = @views u[2:end-1,end]
     vfinal ./= rsteps
-    μHe = nanmean(vfinal) # Atoms/gram
+    μHe = nanmean(vfinal, zircon.relvolumes) # Atoms/gram
 
     # Parent concentrations
-    μ238U = nanmean(zircon.r238U::Vector{T}) # Atoms/gram
-    μ235U = nanmean(zircon.r235U::Vector{T})
-    μ232Th = nanmean(zircon.r232Th::Vector{T})
-    μ147Sm = nanmean(zircon.r147Sm::Vector{T})
+    μ238U = nanmean(zircon.r238U, zircon.relvolumes) # Atoms/gram
+    μ235U = nanmean(zircon.r235U, zircon.relvolumes)
+    μ232Th = nanmean(zircon.r232Th, zircon.relvolumes)
+    μ147Sm = nanmean(zircon.r147Sm, zircon.relvolumes)
 
     # Numerically solve for raw helium age of the grain (i.e, as measured)
     return newton_he_age(μHe, μ238U, μ235U, μ232Th, μ147Sm)
@@ -462,13 +462,13 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
     # Convert from u (coordinate-transform'd conc.) to v (real He conc.)
     vfinal = @views u[2:end-1,end]
     vfinal ./= rsteps
-    μHe = nanmean(vfinal) # Atoms/gram daughter
+    μHe = nanmean(vfinal, apatite.relvolumes) # Atoms/gram daughter
 
     # Parent concentrations in atoms/gram
-    μ238U = nanmean(apatite.r238U::Vector{T})
-    μ235U = nanmean(apatite.r235U::Vector{T})
-    μ232Th = nanmean(apatite.r232Th::Vector{T})
-    μ147Sm = nanmean(apatite.r147Sm::Vector{T})
+    μ238U = nanmean(apatite.r238U, apatite.relvolumes)
+    μ235U = nanmean(apatite.r235U, apatite.relvolumes)
+    μ232Th = nanmean(apatite.r232Th, apatite.relvolumes)
+    μ147Sm = nanmean(apatite.r147Sm, apatite.relvolumes)
 
     # Numerically solve for raw helium age of the grain (i.e, as measured)
     return newton_he_age(μHe, μ238U, μ235U, μ232Th, μ147Sm)
@@ -561,13 +561,13 @@ function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}) where T <:
     # Convert from u (coordinate-transform'd conc.) to v (real He conc.)
     vfinal = @views u[2:end-1,end]
     vfinal ./= rsteps
-    μHe = nanmean(vfinal) # Atoms/gram
+    μHe = nanmean(vfinal, mineral.relvolumes) # Atoms/gram
 
     # Parent concentrations
-    μ238U = nanmean(mineral.r238U::Vector{T}) # Atoms/gram
-    μ235U = nanmean(mineral.r235U::Vector{T})
-    μ232Th = nanmean(mineral.r232Th::Vector{T})
-    μ147Sm = nanmean(mineral.r147Sm::Vector{T})
+    μ238U = nanmean(mineral.r238U, mineral.relvolumes) # Atoms/gram
+    μ235U = nanmean(mineral.r235U, mineral.relvolumes)
+    μ232Th = nanmean(mineral.r232Th, mineral.relvolumes)
+    μ147Sm = nanmean(mineral.r147Sm, mineral.relvolumes)
 
     # Numerically solve for raw helium age of the grain (i.e, as measured)
     return newton_he_age(μHe, μ238U, μ235U, μ232Th, μ147Sm)

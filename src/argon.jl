@@ -120,8 +120,8 @@ function modelage(mineral::SphericalAr{T}, Tsteps::AbstractVector{T}) where T <:
     # Convert from u (coordinate-transform'd conc.) to v (real Ar conc.)
     vfinal = @views u[2:end-1,end]
     vfinal ./= rsteps
-    μAr = nanmean(vfinal)                   # atoms/gram daughter
-    μ40K = nanmean(mineral.r40K::Vector{T}) # atoms/gram parent
+    μAr = nanmean(vfinal, mineral.relvolumes)           # atoms/gram daughter
+    μ40K = nanmean(mineral.r40K, mineral.relvolumes)    # atoms/gram parent
 
     # Numerically solve for raw Ar age of the grain (i.e., as measured)
     return newton_ar_age(μAr, μ40K)

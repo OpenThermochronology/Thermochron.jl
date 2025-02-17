@@ -76,12 +76,13 @@
         DN17D0 = 3.4E-3,    # 6.367e-3 cm^2/sec
         rmr0=0.0,           # unitless
     )
+    pr, Teq = Thermochron.anneal(dt, tsteps, Tsteps, dm)
     modelage(zircon,Tsteps,pr,dm)
     @time "Running modelage" age = modelage(zircon,Tsteps,pr,dm)
-    @test age ≈ 520.0297717798045
+    @test age ≈ 387.19242740182005
     # Re-run to ensure internal state does not change
     for _ in 1:4
-        @test modelage(zircon,Tsteps,pr,dm) ≈ 520.0297717798045
+        @test modelage(zircon,Tsteps,pr,dm) ≈ 387.19242740182005
     end
 
     crystalradius = 35.
@@ -90,7 +91,7 @@
     zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
     # Re-run to ensure internal state does not change
     for _ in 1:4
-        @test modelage(zircon,Tsteps,pr,dm) ≈ 309.7600561440283
+        @test modelage(zircon,Tsteps,pr,dm) ≈ 229.2186148665553
     end
 
     crystalradius = 135.
@@ -99,7 +100,7 @@
     zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
     # Re-run to ensure internal state does not change
     for _ in 1:4
-        @test modelage(zircon,Tsteps,pr,dm) ≈ 16.02209841621174
+        @test modelage(zircon,Tsteps,pr,dm) ≈ 9.782712202364312
     end
 
     crystalradius = 135.
@@ -108,7 +109,7 @@
     zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
     # Re-run to ensure internal state does not change
     for _ in 1:4
-        @test modelage(zircon,Tsteps,pr,dm) ≈ 777.5627957477788
+        @test modelage(zircon,Tsteps,pr,dm) ≈ 692.0250480712558
     end
 
 ## --- Test integrated age program 10 Ma timestep
@@ -142,7 +143,7 @@
     U = 462.98
     Th = 177.76
     zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
-    @test modelage(zircon,Tsteps,pr,dm) ≈ 175.87865725442353
+    @test modelage(zircon,Tsteps,pr,dm) ≈ 137.8640379913473
 
 ## --- As above but with Sm as well
 
@@ -150,12 +151,12 @@
     U = 462.98
     Th = 177.76
     Sm = 38.13
-    zircon = ZirconHe(age=175, age_sigma=5, r=crystalradius,dr=dr,U238=U,Th232=Th,Sm147=Sm,agesteps=reverse(tsteps))
+    zircon = ZirconHe(age=140, age_sigma=5, r=crystalradius,dr=dr,U238=U,Th232=Th,Sm147=Sm,agesteps=reverse(tsteps))
     @test zircon.r147Sm ≈ fill(1.56203306122449e17, 59)
-    @test modelage(zircon,Tsteps,pr,dm) ≈ 175.67484621432263
+    @test modelage(zircon,Tsteps,pr,dm) ≈ 137.69909831083055 
 
 ## --- Test log likelihood
 
-    @test Thermochron.model_ll(zircon,Tsteps,dm) ≈ -2.537484793898485
+    @test Thermochron.model_ll(zircon,Tsteps,dm) ≈ -2.63425941730323
 
 ## --- End of file

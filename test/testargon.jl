@@ -32,45 +32,38 @@
 
     modelage(mineral,Tsteps) # to not time compilation
     @time "Running modelage" age = modelage(mineral,Tsteps)
-    @test age ≈ 904.2471019329474 
-    # Re-run to ensure internal state does not change
-    for _ in 1:4
-        @test modelage(mineral,Tsteps) ≈  904.2471019329474 
+    @test age ≈ 871.8786612827483
+    for _ in 1:4 # Re-run to ensure internal state does not change
+        @test modelage(mineral,Tsteps) ≈ 871.8786612827483
     end
 
     r = 35.
     mineral = SphericalAr(r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
-    # Re-run to ensure internal state does not change
-    for _ in 1:4
-        @test modelage(mineral,Tsteps) ≈ 917.8400803564615
+    for _ in 1:4 # Re-run to ensure internal state does not change
+        @test modelage(mineral,Tsteps) ≈ 884.3860118880771
     end
 
     r = 135.
     mineral = SphericalAr(r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
-    # Re-run to ensure internal state does not change
-    for _ in 1:4
-        @test modelage(mineral,Tsteps) ≈ 1023.7342920730781
+    for _ in 1:4 # Re-run to ensure internal state does not change
+        @test modelage(mineral,Tsteps) ≈ 983.3459153313712
     end
 
     r = 1350.
     mineral = SphericalAr(r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
-    # Re-run to ensure internal state does not change
-    for _ in 1:4
-        @test modelage(mineral,Tsteps) ≈ 1235.131761596538
+    for _ in 1:4 # Re-run to ensure internal state does not change
+        @test modelage(mineral,Tsteps) ≈ 1185.1560217485087
     end
 
 ## --- As above but check calculated age as well
 
     r = 35.
-    mineral = SphericalAr(age=915, age_sigma=15, r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
-    @test modelage(mineral,Tsteps) ≈ 917.8400803564615
+    mineral = SphericalAr(age=900, age_sigma=15, r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
+    @test modelage(mineral,Tsteps) ≈ 884.3860118880771
 
 ## --- Test log likelihood
 
-    @test Thermochron.model_ll(mineral,Tsteps) ≈ -3.6449133041539015
-
-
-
+    @test Thermochron.model_ll(mineral,Tsteps) ≈ -4.168759011549707
 
 
 ## --- Test creating and allocating a PlanarAr
@@ -108,24 +101,20 @@
     modelage(mineral,Tsteps) # to not time compilation
     @time "Running modelage" age = modelage(mineral,Tsteps)
     @test age ≈ 935.724912311897
-    # Re-run to ensure internal state does not change
     @test modelage(mineral,Tsteps) ≈  935.724912311897
 
     r = 35.
     mineral = PlanarAr(r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
-    # Re-run to ensure internal state does not change
     @test modelage(mineral,Tsteps) ≈ 949.7088668631848 
     @test modelage(mineral,Tsteps) ≈ 949.7088668631848 
 
     r = 135.
     mineral = PlanarAr(r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
-    # Re-run to ensure internal state does not change
     @test modelage(mineral,Tsteps) ≈ 1058.3223124594606
     @test modelage(mineral,Tsteps) ≈ 1058.3223124594606
 
     r = 1350.
     mineral = PlanarAr(r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
-    # Re-run to ensure internal state does not change
     @test modelage(mineral,Tsteps) ≈ 1276.566455014108
     @test modelage(mineral,Tsteps) ≈ 1276.566455014108
 

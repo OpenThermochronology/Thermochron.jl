@@ -80,16 +80,16 @@
 
     calc = zeros(length(chrons))
     calcuncert = zeros(length(chrons))
-    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=false) ≈ -95.97338155773869
-    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=true) ≈ -97.47230160573113 
-    @test round.(calc[1:end-5], sigdigits=7) ≈ [138.4124, 232.8114, 144.2487, 233.9706, 902.567, 1010.98, 386.8558, 388.6112, 122.8127, 130.7147, 688.0081, 304.6573, 95.84216] 
+    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=false) ≈ -778.9285312920852
+    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=true) ≈ -780.4274513400776
+    @test round.(calc[1:end-5], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 868.0376, 969.4693, 286.9455, 289.894, 84.9324, 95.48752, 688.0081, 304.6573, 95.84216]
     @test round.(calc[end-4:end], sigdigits=3) ≈ [8, 14.3, 14.3, 14.3, 6] atol = 9
     @test calcuncert[1:end-5] ≈ zeros(length(chrons)-5)
     @test calcuncert[end-4:end] ≈ [1.8364436281549124, 1.1785910438098226, 1.1389520917140208, 1.2018361658877996, 0.6070538659171328]
 
-    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Guenthner2013FC(), Jones2021FA(), Ketcham2007FC(); trackhist=false) ≈ -3799.27575648043
-    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Guenthner2013FC(), Jones2021FA(), Ketcham2007FC(); trackhist=true) ≈ -3800.7746765284223
-    @test round.(calc[1:end-5], sigdigits=7) ≈ [138.4124, 232.8114, 144.2487, 233.9706, 902.567, 1010.98, 386.8558, 388.6112, 122.8127, 130.7147, 1110.379, 304.6573, 95.84216]
+    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Guenthner2013FC(), Jones2021FA(), Ketcham2007FC(); trackhist=false) ≈ -4482.230906214778
+    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Guenthner2013FC(), Jones2021FA(), Ketcham2007FC(); trackhist=true) ≈ -4483.72982626277 
+    @test round.(calc[1:end-5], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 868.0376, 969.4693, 286.9455, 289.894, 84.9324, 95.48752, 1110.379, 304.6573, 95.84216]
     @test round.(calc[end-4:end], sigdigits=3) ≈ [8, 14.3, 14.3, 14.3, 6] atol = 9
     @test calcuncert[1:end-5] ≈ zeros(length(chrons)-5)
     @test calcuncert[end-4:end] ≈ [1.8368172844202661, 1.1785910438098226, 1.1389520917140208, 1.2018361658877996, 0.6070538659171328]
@@ -106,10 +106,9 @@
 
     calc = zeros(length(chrons))
     calcuncert = zeros(length(chrons))
-    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=false) ≈ -26867.66124989401
-    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=true) ≈ -26867.66124989401
-
-    @test round.(calc, sigdigits=5) ≈ [1313.9, 1320.7, 1185.0, 1243.0, 1216.1, 1335.4, 1141.7, 1094.4, 1170.2, 923.8, 723.59, 201.76, 429.67, 95.576, 259.05, 419.15, 2.9065, 6.1464, 0.00063415, 27.545, 0.007082, 55.056, 2.0682, 174.81, 283.3, 287.74, 266.09, 240.19, 267.84, 244.36, 274.74, 328.26, 322.88, 352.43]
+    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=false) ≈ -15599.170456852436
+    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=true) ≈ -15599.170456852436
+    @test round.(calc, sigdigits=5) ≈ [1116.4, 1121.6, 952.28, 1043.2, 1006.9, 1142.3, 954.96, 869.99, 982.51, 705.05, 573.31, 139.28, 319.02, 62.802, 183.68, 329.5, 1.7106, 3.6449, 0.00037425, 16.531, 0.0041134, 33.767, 1.2208, 120.64, 210.71, 214.92, 193.71, 170.56, 195.05, 174.14, 203.74, 256.41, 250.6, 281.27]
     @test calcuncert ≈ zeros(length(chrons))
 
     # Test an individual zircon

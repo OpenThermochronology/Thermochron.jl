@@ -76,41 +76,37 @@
 
 ## --- Test integrated age program for ApatiteHe
 
-    modelage(apatite,Tsteps,pr,dm) # to not time compilation
-    @time "Running modelage" age = modelage(apatite,Tsteps,pr,dm)
-    @test age ≈ 125.2338094789079
     dm = RDAAM() # Standard RDAAM
     pr, Teq = Thermochron.anneal(dt, tsteps, Tsteps, dm)
-    # Re-run to ensure internal state does not change
-    for _ in 1:4
-        @test modelage(apatite,Tsteps,pr,dm) ≈ 125.23310524841845  # with rmr0 = 0.83
+    modelage(apatite,Tsteps,pr,dm) # to not time compilation
+    @time "Running modelage" age = modelage(apatite,Tsteps,pr,dm)
+    @test age ≈ 86.56961680431533 
+    for _ in 1:4 # Re-run to ensure internal state does not change
+        @test modelage(apatite,Tsteps,pr,dm) ≈ 86.56961680431533 
     end
 
     crystalradius = 35.
     U = 110.7
     Th = 35.1
     apatite = ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
-    # Re-run to ensure internal state does not change
-    for _ in 1:4
-        @test modelage(apatite,Tsteps,pr,dm) ≈ 150.3772574904381  # with rmr0 = 0.83
+    for _ in 1:4 # Re-run to ensure internal state does not change
+        @test modelage(apatite,Tsteps,pr,dm) ≈ 106.07135444971297
     end
 
     crystalradius = 135.
     U = 173.8
     Th = 117.1
     apatite = ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
-    # Re-run to ensure internal state does not change
-    for _ in 1:4
-        @test modelage(apatite,Tsteps,pr,dm) ≈ 263.9286493800293  # with rmr0 = 0.83
+    for _ in 1:4 # Re-run to ensure internal state does not change
+        @test modelage(apatite,Tsteps,pr,dm) ≈ 222.0762023094609
     end
 
     crystalradius = 135.
     U = 50.0
     Th = 40.0
     apatite = ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
-    # Re-run to ensure internal state does not change
-    for _ in 1:4
-        @test modelage(apatite,Tsteps,pr,dm) ≈ 263.875195074857  # with rmr0 = 0.83
+    for _ in 1:4 # Re-run to ensure internal state does not change
+        @test modelage(apatite,Tsteps,pr,dm) ≈ 221.98170127381994
     end
 
 ## --- As above but with Sm as well
@@ -119,12 +115,12 @@
     U = 110.7
     Th = 35.1
     Sm = 38.13
-    apatite = ApatiteHe(age=150, age_sigma=5, r=crystalradius,dr=dr,U238=U,Th232=Th,Sm147=Sm, agesteps=reverse(tsteps))
+    apatite = ApatiteHe(age=100, age_sigma=5, r=crystalradius,dr=dr,U238=U,Th232=Th,Sm147=Sm, agesteps=reverse(tsteps))
     @test apatite.r147Sm ≈ fill(1.56203306122449e17, 35)
-    @test modelage(apatite,Tsteps,pr,dm) ≈ 150.47215655190072
+    @test modelage(apatite,Tsteps,pr,dm) ≈ 106.19413225855304
 
 ## --- Test log likelihood
 
-    @test Thermochron.model_ll(apatite,Tsteps,dm) ≈ -2.532835081828829
+    @test Thermochron.model_ll(apatite,Tsteps,dm) ≈ -3.295721934367721
 
 ## --- End of file

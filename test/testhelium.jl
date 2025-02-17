@@ -37,34 +37,31 @@
 
     modelage(mineral,Tsteps) # to not time compilation
     @time "Running modelage" age = modelage(mineral,Tsteps)
-    @test age ≈ 125.23302453989828
+    @test age ≈ 86.5695536176058
     # Re-run to ensure internal state does not change
-    @test modelage(mineral,Tsteps) ≈ 125.23302453989828
-    @test modelage(mineral,Tsteps) ≈ 125.23302453989828
+    @test modelage(mineral,Tsteps) ≈ 86.5695536176058
+    @test modelage(mineral,Tsteps) ≈ 86.5695536176058
 
     r = 35.
     U = 110.7
     Th = 35.1
     mineral = SphericalHe(r=r,dr=dr,U238=U,Th232=Th,D0=D0,Ea=Ea,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
-    # Re-run to ensure internal state does not change
-    @test modelage(mineral,Tsteps) ≈ 150.3747470390784
-    @test modelage(mineral,Tsteps) ≈ 150.3747470390784
+    @test modelage(mineral,Tsteps) ≈ 106.0692912497008
+    @test modelage(mineral,Tsteps) ≈ 106.0692912497008
 
     r = 135.
     U = 173.8
     Th = 117.1
     mineral = SphericalHe(r=r,dr=dr,U238=U,Th232=Th,D0=D0,Ea=Ea,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
-    # Re-run to ensure internal state does not change
-    @test modelage(mineral,Tsteps) ≈ 263.91617592983346
-    @test modelage(mineral,Tsteps) ≈ 263.91617592983346
+    @test modelage(mineral,Tsteps) ≈ 222.06332256599651
+    @test modelage(mineral,Tsteps) ≈ 222.06332256599651
 
     r = 135.
     U = 50.0
     Th = 40.0
     mineral = SphericalHe(r=r,dr=dr,U238=U,Th232=Th,D0=D0,Ea=Ea,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
-    # Re-run to ensure internal state does not change
-    @test modelage(mineral,Tsteps) ≈ 263.8748754169358
-    @test modelage(mineral,Tsteps) ≈ 263.8748754169358
+    @test modelage(mineral,Tsteps) ≈ 221.98137127779538
+    @test modelage(mineral,Tsteps) ≈ 221.98137127779538
 
 ## --- As above but with Sm as well
 
@@ -72,13 +69,13 @@
     U = 110.7
     Th = 35.1
     Sm = 38.13
-    mineral = SphericalHe(age=150, age_sigma=5, r=r,dr=dr,U238=U,Th232=Th,Sm147=Sm,D0=D0,Ea=Ea,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
+    mineral = SphericalHe(age=100, age_sigma=5, r=r,dr=dr,U238=U,Th232=Th,Sm147=Sm,D0=D0,Ea=Ea,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
     @test mineral.r147Sm ≈ fill(1.56203306122449e17, 35)
-    @test modelage(mineral,Tsteps) ≈ 150.4696259997467
+    @test modelage(mineral,Tsteps) ≈ 106.19205097501569
 
 ## --- Test log likelihood
 
-    @test Thermochron.model_ll(mineral,Tsteps) ≈ -2.532787417231535
+    @test Thermochron.model_ll(mineral,Tsteps) ≈ -3.295206351182628
 
 ## --- Test creating and allocating a PlanarHe
 
