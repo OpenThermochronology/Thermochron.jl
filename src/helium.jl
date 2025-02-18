@@ -270,19 +270,8 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T})
     y = zircon.y
 
     # Tridiagonal matrix for LHS of Crank-Nicolson equation with regular grid cells
-    A = zircon.A
-    fill!(A.dl, 1)          # Sub-diagonal row
-    @. A.d = -2 - β         # Diagonal
-    fill!(A.du, 1)          # Supra-diagonal row
-    F = zircon.F                # For LU factorization
-
-    # Neumann inner boundary condition (u[i,1] + u[i,2] = 0)
-    A.d[1] = 1
-    A.du[1] = 1
-
-    # Dirichlet outer boundary condition (u[i,end] = u[i-1,end])
-    A.dl[nrsteps-1] = 0
-    A.d[nrsteps] = 1
+    A = zircon.A        # Tridiagonal matrix
+    F = zircon.F        # LU object for in-place lu factorization
 
     @inbounds for i=2:ntsteps
 
@@ -404,19 +393,8 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
     y = apatite.y
 
     # Tridiagonal matrix for LHS of Crank-Nicolson equation with regular grid cells
-    A = apatite.A
-    fill!(A.dl, 1)          # Sub-diagonal row
-    @. A.d = -2 - β         # Diagonal
-    fill!(A.du, 1)          # Supra-diagonal row
-    F = apatite.F               # For LU factorization
-
-    # Neumann inner boundary condition (u[i,1] + u[i,2] = 0)
-    A.d[1] = 1
-    A.du[1] = 1
-
-    # Dirichlet outer boundary condition (u[i,end] = u[i-1,end])
-    A.dl[nrsteps-1] = 0
-    A.d[nrsteps] = 1
+    A = apatite.A       # Tridiagonal matrix
+    F = apatite.F       # LU object for in-place lu factorization
 
     @inbounds for i = 2:ntsteps
 
@@ -510,19 +488,8 @@ function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}) where T <:
     y = mineral.y
 
     # Tridiagonal matrix for LHS of Crank-Nicolson equation with regular grid cells
-    A = mineral.A
-    fill!(A.dl, 1)          # Sub-diagonal row
-    @. A.d = -2 - β         # Diagonal
-    fill!(A.du, 1)          # Supra-diagonal row
-    F = mineral.F               # For LU factorization
-
-    # Neumann inner boundary condition (u[i,1] + u[i,2] = 0)
-    A.d[1] = 1
-    A.du[1] = 1
-
-    # Dirichlet outer boundary condition (u[i,end] = u[i-1,end])
-    A.dl[nrsteps-1] = 0
-    A.d[nrsteps] = 1
+    A = mineral.A       # Tridiagonal matrix
+    F = mineral.F       # LU object for in-place lu factorization
 
     @inbounds for i = 2:ntsteps
 
@@ -606,19 +573,8 @@ function modelage(mineral::PlanarHe{T}, Tsteps::AbstractVector{T}) where T <: Ab
     y = mineral.y
 
     # Tridiagonal matrix for LHS of Crank-Nicolson equation with regular grid cells
-    A = mineral.A
-    fill!(A.dl, 1)          # Sub-diagonal row
-    @. A.d = -2 - β         # Diagonal
-    fill!(A.du, 1)          # Supra-diagonal row
-    F = mineral.F               # For LU factorization
-
-    # Neumann inner boundary condition (-u[i,1] + u[i,2] = 0)
-    A.d[1] = -1
-    A.du[1] = 1
-
-    # Dirichlet outer boundary condition (u[i,end] = u[i-1,end])
-    A.dl[nrsteps-1] = 0
-    A.d[nrsteps] = 1
+    A = mineral.A       # Tridiagonal matrix
+    F = mineral.F       # LU object for in-place lu factorization
 
     @inbounds for i = 2:ntsteps
 

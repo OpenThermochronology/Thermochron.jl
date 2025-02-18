@@ -68,20 +68,9 @@ function modelage(mineral::SphericalAr{T}, Tsteps::AbstractVector{T}) where T <:
     # Vector for RHS of Crank-Nicholson equation with regular grid cells
     y = mineral.y
 
-    # Tridiagonal matrix for LHS of Crank-Nicholson equation with regular grid cells
-    A = mineral.A
-    fill!(A.dl, 1)          # Sub-diagonal row
-    @. A.d = -2 - β         # Diagonal
-    fill!(A.du, 1)          # Supra-diagonal row
-    F = mineral.F               # For LU factorization
-
-    # Neumann inner boundary condition (u[i,1] + u[i,2] = 0)
-    A.d[1] = 1
-    A.du[1] = 1
-
-    # Dirichlet outer boundary condition (u[i,end] = u[i-1,end])
-    A.dl[nrsteps-1] = 0
-    A.d[nrsteps] = 1
+    # Tridiagonal matrix for LHS of Crank-Nicolson equation with regular grid cells
+    A = mineral.A       # Tridiagonal matrix
+    F = mineral.F       # LU object for in-place lu factorization
 
     @inbounds for i = 2:ntsteps
 
@@ -155,28 +144,15 @@ function modelage(mineral::PlanarAr{T}, Tsteps::AbstractVector{T}) where T <: Ab
     fill!(β, 2 * dr^2 / (De[1]*dt))
 
     # Output matrix for all timesteps
-    # u = v*r is the coordinate transform (u-substitution) for the Crank-
-    # Nicholson equations where v is the Ar profile and r is radius
     u = mineral.u::DenseMatrix{T}
     fill!(u, zero(T)) # initial u = v = 0 everywhere
 
     # Vector for RHS of Crank-Nicholson equation with regular grid cells
     y = mineral.y
 
-    # Tridiagonal matrix for LHS of Crank-Nicholson equation with regular grid cells
-    A = mineral.A
-    fill!(A.dl, 1)          # Sub-diagonal row
-    @. A.d = -2 - β         # Diagonal
-    fill!(A.du, 1)          # Supra-diagonal row
-    F = mineral.F               # For LU factorization
-
-    # Neumann inner boundary condition (-u[i,1] + u[i,2] = 0)
-    A.d[1] = -1
-    A.du[1] = 1
-
-    # Dirichlet outer boundary condition (u[i,end] = u[i-1,end])
-    A.dl[nrsteps-1] = 0
-    A.d[nrsteps] = 1
+    # Tridiagonal matrix for LHS of Crank-Nicolson equation with regular grid cells
+    A = mineral.A       # Tridiagonal matrix
+    F = mineral.F       # LU object for in-place lu factorization
 
     @inbounds for i = 2:ntsteps
 
