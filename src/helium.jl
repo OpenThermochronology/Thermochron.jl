@@ -264,6 +264,8 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T})
     # u = v*r is the coordinate transform (u-substitution) for the Crank-
     # Nicholson equations where v is the He profile and r is radius
     u = zircon.u::DenseMatrix{T}
+    @assert axes(u,2) == 1:ntsteps+1
+    @assert axes(u,1) == 1:nrsteps
     fill!(u, zero(T)) # initial u = v = 0 everywhere
 
     # Vector for RHS of Crank-Nicolson equation with regular grid cells
@@ -298,12 +300,12 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T})
         # Dirichlet outer boundary condition (u(i,end) = u(i-1,end))
         A.dl[nrsteps-1] = 0
         A.d[nrsteps] = 1
-        y[nrsteps] = u[nrsteps,i-1]
+        y[nrsteps] = u[nrsteps,i]
 
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
         @turbo for k = 2:nrsteps-1
-            𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i-1], u[k-1, i-1], u[k+1, i-1]
+            𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
             y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - alphadeposition[i, k-1]*rsteps[k-1]*β[k]
         end
 
@@ -311,7 +313,7 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T})
         # equivalent to u[:,i] = A\y
         lu!(F, A, allowsingular=true)
         ldiv!(F, y)
-        u[:,i] = y
+        u[:,i+1] = y
     end
 
     # Convert from u (coordinate-transform'd conc.) to v (real He conc.)
@@ -387,6 +389,8 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
     # u = v*r is the coordinate transform (u-substitution) for the Crank-
     # Nicholson equations where v is the He profile and r is radius
     u = apatite.u::DenseMatrix{T}
+    @assert axes(u,2) == 1:ntsteps+1
+    @assert axes(u,1) == 1:nrsteps
     fill!(u, zero(T)) # initial u = v = 0 everywhere
 
     # Vector for RHS of Crank-Nicolson equation with regular grid cells
@@ -396,7 +400,7 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
     A = apatite.A       # Tridiagonal matrix
     F = apatite.F       # LU object for in-place lu factorization
 
-    @inbounds for i = 2:ntsteps
+    @inbounds for i in Base.OneTo(ntsteps)
 
         # Calculate alpha damage
         @turbo for k = 1:(nrsteps-2)
@@ -421,12 +425,12 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
         # Dirichlet outer boundary condition (u(i,end) = u(i-1,end))
         A.dl[nrsteps-1] = 0
         A.d[nrsteps] = 1
-        y[nrsteps] = u[nrsteps,i-1]
+        y[nrsteps] = u[nrsteps,i]
 
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
         @turbo for k = 2:nrsteps-1
-            𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i-1], u[k-1, i-1], u[k+1, i-1]
+            𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
             y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - alphadeposition[i, k-1]*rsteps[k-1]*β[k]
         end
 
@@ -434,7 +438,7 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
         # equivalent to u[:,i] = A\y
         lu!(F, A, allowsingular=true)
         ldiv!(F, y)
-        u[:,i] = y
+        u[:,i+1] = y
     end
 
     # Convert from u (coordinate-transform'd conc.) to v (real He conc.)
@@ -482,6 +486,8 @@ function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}) where T <:
     # u = v*r is the coordinate transform (u-substitution) for the Crank-
     # Nicholson equations where v is the He profile and r is radius
     u = mineral.u::DenseMatrix{T}
+    @assert axes(u,2) == 1:ntsteps+1
+    @assert axes(u,1) == 1:nrsteps
     fill!(u, zero(T)) # initial u = v = 0 everywhere
 
     # Vector for RHS of Crank-Nicolson equation with regular grid cells
@@ -491,7 +497,7 @@ function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}) where T <:
     A = mineral.A       # Tridiagonal matrix
     F = mineral.F       # LU object for in-place lu factorization
 
-    @inbounds for i = 2:ntsteps
+    @inbounds for i in Base.OneTo(ntsteps)
 
         # Update β for current temperature
         fill!(β, 2 * dr^2 / (De[i]*dt))
@@ -509,12 +515,12 @@ function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}) where T <:
         # Dirichlet outer boundary condition (u(i,end) = u(i-1,end))
         A.dl[nrsteps-1] = 0
         A.d[nrsteps] = 1
-        y[nrsteps] = u[nrsteps,i-1]
+        y[nrsteps] = u[nrsteps,i]
 
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
         @turbo for k = 2:nrsteps-1
-            𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i-1], u[k-1, i-1], u[k+1, i-1]
+            𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
             y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - alphadeposition[i, k-1]*rsteps[k-1]*β[k]
         end
 
@@ -522,7 +528,7 @@ function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}) where T <:
         # equivalent to u[:,i] = A\y
         lu!(F, A, allowsingular=true)
         ldiv!(F, y)
-        u[:,i] = y
+        u[:,i+1] = y
     end
 
     # Convert from u (coordinate-transform'd conc.) to v (real He conc.)
@@ -567,6 +573,8 @@ function modelage(mineral::PlanarHe{T}, Tsteps::AbstractVector{T}) where T <: Ab
 
     # Output matrix for all timesteps
     u = mineral.u::DenseMatrix{T}
+    @assert axes(u,2) == 1:ntsteps+1
+    @assert axes(u,1) == 1:nrsteps
     fill!(u, zero(T)) # initial u = 0 everywhere
 
     # Vector for RHS of Crank-Nicolson equation with regular grid cells
@@ -576,7 +584,7 @@ function modelage(mineral::PlanarHe{T}, Tsteps::AbstractVector{T}) where T <: Ab
     A = mineral.A       # Tridiagonal matrix
     F = mineral.F       # LU object for in-place lu factorization
 
-    @inbounds for i = 2:ntsteps
+    @inbounds for i in Base.OneTo(ntsteps)
 
         # Update β for current temperature
         fill!(β, 2 * dr^2 / (De[i]*dt))
@@ -594,12 +602,12 @@ function modelage(mineral::PlanarHe{T}, Tsteps::AbstractVector{T}) where T <: Ab
         # Dirichlet outer boundary condition (u(i,end) = u(i-1,end))
         A.dl[nrsteps-1] = 0
         A.d[nrsteps] = 1
-        y[nrsteps] = u[nrsteps,i-1]
+        y[nrsteps] = u[nrsteps,i]
 
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
         @turbo for k = 2:nrsteps-1
-            𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i-1], u[k-1, i-1], u[k+1, i-1]
+            𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
             y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - alphadeposition[i, k-1]*β[k]
         end
 
@@ -607,7 +615,7 @@ function modelage(mineral::PlanarHe{T}, Tsteps::AbstractVector{T}) where T <: Ab
         # equivalent to u[:,i] = A\y
         lu!(F, A, allowsingular=true)
         ldiv!(F, y)
-        u[:,i] = y
+        u[:,i+1] = y
     end
 
     # Resulting He concentration

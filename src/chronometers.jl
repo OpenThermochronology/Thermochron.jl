@@ -472,7 +472,7 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
     DN17 = zeros(T, length(tsteps))
 
     # Allocate output matrix for all timesteps
-    u = zeros(T, nrsteps, length(tsteps))
+    u = zeros(T, nrsteps, length(tsteps)+1)
 
     # Allocate variables for tridiagonal matrix and RHS
     dl = ones(T, nrsteps-1)    # Sub-diagonal row
@@ -750,7 +750,7 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
     Dtrap = zeros(T, length(tsteps))
 
     # Allocate output matrix for all timesteps
-    u = zeros(T, nrsteps, length(tsteps))
+    u = zeros(T, nrsteps, length(tsteps)+1)
 
     # Allocate variables for tridiagonal matrix and RHS
     dl = ones(T, nrsteps-1)    # Sub-diagonal row
@@ -1020,7 +1020,7 @@ function SphericalHe(T::Type{<:AbstractFloat}=Float64;
     De = zeros(T, length(tsteps))
 
     # Allocate output matrix for all timesteps
-    u = zeros(T, nrsteps, length(tsteps))
+    u = zeros(T, nrsteps, length(tsteps)+1)
 
     # Allocate variables for tridiagonal matrix and RHS
     dl = ones(T, nrsteps-1)    # Sub-diagonal row
@@ -1284,7 +1284,7 @@ function PlanarHe(T::Type{<:AbstractFloat}=Float64;
     De = zeros(T, length(tsteps))
 
     # Allocate output matrix for all timesteps
-    u = zeros(T, nrsteps, length(tsteps))
+    u = zeros(T, nrsteps, length(tsteps)+1)
 
     # Allocate variables for tridiagonal matrix and RHS
     dl = ones(T, nrsteps-1)    # Sub-diagonal row
@@ -1416,7 +1416,7 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
     De = zeros(T, length(tsteps))
 
     # Allocate output matrix for all timesteps
-    u = zeros(T, nrsteps, length(tsteps))
+    u = zeros(T, nrsteps, length(tsteps)+1)
 
     # Allocate variables for tridiagonal matrix and RHS
     dl = ones(T, nrsteps-1)    # Sub-diagonal row
@@ -1544,7 +1544,7 @@ function PlanarAr(T::Type{<:AbstractFloat}=Float64;
     De = zeros(T, length(tsteps))
 
     # Allocate output matrix for all timesteps
-    u = zeros(T, nrsteps, length(tsteps))
+    u = zeros(T, nrsteps, length(tsteps)+1)
 
     # Allocate variables for tridiagonal matrix and RHS
     dl = ones(T, nrsteps-1)    # Sub-diagonal row
