@@ -1505,7 +1505,7 @@ function PlanarAr(T::Type{<:AbstractFloat}=Float64;
         Ea::Number,
         r::Number, 
         dr::Number=one(T), 
-        K40::Number, 
+        K40::Number=one(T), 
         agesteps::AbstractRange,
     )
 
