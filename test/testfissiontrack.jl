@@ -72,22 +72,22 @@
     am = Yamada2007PC()
     @test am isa Thermochron.Yamada2007PC{Float64}
 
-    @test Thermochron.reltracklength(1, 0, am) ≈ 0.9964516173825159
-    @test Thermochron.reltracklength(1, 10, am) ≈ 0.995078688092618
-    @test Thermochron.reltracklength(1, 100, am) ≈ 0.940753376497744
-    @test Thermochron.reltracklength(1, 200, am) ≈ 0.587467392379713
-    @test Thermochron.reltracklength(1, 300, am) ≈ 0.047145496695413736
-    @test Thermochron.reltracklength(1, 500, am) ≈ 4.8685772129709805e-21
+    @test Thermochron.reltracklength(1, 0, am) ≈ 0.9993737756398484
+    @test Thermochron.reltracklength(1, 10, am) ≈ 0.9991309858749375
+    @test Thermochron.reltracklength(1, 100, am) ≈ 0.9892949897633997
+    @test Thermochron.reltracklength(1, 200, am) ≈ 0.9105200346451393
+    @test Thermochron.reltracklength(1, 300, am) ≈ 0.583752786143477
+    @test Thermochron.reltracklength(1, 500, am) ≈ 0.0002632949368671119
 
     @test Thermochron.equivalenttime.(1:10, 100, 100, am) ≈ 1:10
     @test Thermochron.equivalenttime.(1:10, 50, 100, am) ≈ [0.0020577410195178228, 0.0041154820390356525, 0.006173223058553454, 0.00823096407807132, 0.010288705097588996, 0.01234644611710693, 0.014404187136625298, 0.016461928156142672, 0.018519669175660315, 0.02057741019517803]
     @test Thermochron.equivalenttime.(1:10, 150, 100, am) ≈ [222.98141544261495, 445.9628308852307, 668.9442463278432, 891.9256617704631, 1114.907077213062, 1337.8884926556889, 1560.8699080982742, 1783.8513235409293, 2006.8327389835247, 2229.814154426128] 
 
-    @test Thermochron.reltrackdensity(1, 0, am) ≈ 0.9955645217281448
-    @test Thermochron.reltrackdensity(1, 10, am) ≈ 0.9938483601157724
-    @test Thermochron.reltrackdensity(1, 100, am) ≈ 0.92594172062218 
-    @test Thermochron.reltrackdensity(1, 200, am) ≈ 0.48433424047464124
-    @test Thermochron.reltrackdensity(1, 300, am) ≈ 0.0
+    @test Thermochron.reltrackdensity(1, 0, am) ≈ 0.9992172195498106
+    @test Thermochron.reltrackdensity(1, 10, am) ≈ 0.998913732343672
+    @test Thermochron.reltrackdensity(1, 100, am) ≈ 0.9866187372042495
+    @test Thermochron.reltrackdensity(1, 200, am) ≈ 0.888150043306424
+    @test Thermochron.reltrackdensity(1, 300, am) ≈ 0.4796909826793435
     @test Thermochron.reltrackdensity(1, 500, am) ≈ 0.0
 
 ## --- Guenther 2013 Simplified Curvilinear zircon
@@ -133,34 +133,34 @@
     display(zircon)
 
     # Isothermal residence
-    @test modelage(zircon, fill(0, 100), Yamada2007PC()) ≈ 99.03307472647863
-    @test modelage(zircon, fill(50, 100), Yamada2007PC()) ≈ 95.5875134964696
-    @test modelage(zircon, fill(75, 100), Yamada2007PC()) ≈ 91.44848076970709
-    @test modelage(zircon, fill(100, 100), Yamada2007PC()) ≈ 84.4038173798344
+    @test modelage(zircon, fill(0, 100), Yamada2007PC()) ≈ 99.82904982063874
+    @test modelage(zircon, fill(50, 100), Yamada2007PC()) ≈ 99.21065377666213
+    @test modelage(zircon, fill(75, 100), Yamada2007PC()) ≈ 98.44789002547084
+    @test modelage(zircon, fill(100, 100), Yamada2007PC()) ≈ 97.09569374251416
     @test modelage(zircon, fill(0, 100), Guenthner2013FC()) ≈ 99.72322073315222
     @test modelage(zircon, fill(50, 100), Guenthner2013FC()) ≈ 99.06905675284062
     @test modelage(zircon, fill(75, 100), Guenthner2013FC()) ≈ 98.3387065429949
     @test modelage(zircon, fill(100, 100), Guenthner2013FC()) ≈ 97.08526701487509
 
     # Linear cooling
-    @test modelage(zircon, reverse(1:100), Yamada2007PC()) ≈ 95.86292049620485
+    @test modelage(zircon, reverse(1:100), Yamada2007PC()) ≈ 99.2549094025142
     @test modelage(zircon, reverse(1:100), Guenthner2013FC()) ≈ 99.1377750755283
 
     # As above but longer history
     zircon = ZirconFT(agesteps=reverse(cntr(0:200)))
     @test zircon isa ZirconFT{Float64}
 
-    @test modelage(zircon, reverse(1:200), Yamada2007PC()) ≈ 158.88973345523144
-    @test modelage(zircon, reverse(1:200)./2, Yamada2007PC()) ≈ 190.62094301177618 
-    @test modelage(zircon, reverse(1:200).*2, Yamada2007PC()) ≈ 84.30136045990102
+    @test modelage(zircon, reverse(1:200), Yamada2007PC()) ≈ 191.37187382082433
+    @test modelage(zircon, reverse(1:200)./2, Yamada2007PC()) ≈ 198.30601135789252 
+    @test modelage(zircon, reverse(1:200).*2, Yamada2007PC()) ≈ 129.60803167938812
     @test modelage(zircon, reverse(1:200), Guenthner2013FC()) ≈ 191.5897369291866
     @test modelage(zircon, reverse(1:200)./2, Guenthner2013FC()) ≈ 198.06912276144533
     @test modelage(zircon, reverse(1:200).*2, Guenthner2013FC()) ≈ 132.1966344789464 
 
     # Fish Canyon Tuff zircon example
     zircon = ZirconFT(age=27, age_sigma=3, agesteps=reverse(cntr(0:28)))
-    @test modelage(zircon, fill(20., 28), Yamada2007PC()) ≈ 27.601238386594986
-    @test Thermochron.model_ll(zircon, fill(20., 28), Yamada2007PC()) ≈ -2.03763346617919
+    @test modelage(zircon, fill(20., 28), Yamada2007PC()) ≈ 27.929389417698786
+    @test Thermochron.model_ll(zircon, fill(20., 28), Yamada2007PC()) ≈ -2.0655377490800317
     @test modelage(zircon, fill(20., 28), Guenthner2013FC()) ≈ 27.89690820436307
     @test Thermochron.model_ll(zircon, fill(20., 28), Guenthner2013FC()) ≈ -2.06224217337577
 
@@ -295,24 +295,24 @@
     display(track)
 
     l, σ = modellength(track, fill(100, 20), Yamada2007PC())
-    @test l ≈ 10.141915546833664
-    @test σ ≈  0.16484581107901525
-    @test round.(track.r ./ 11.17, sigdigits=4) ≈ [0.8911, 0.8922, 0.8934, 0.8946, 0.8959, 0.8972, 0.8986, 0.9001, 0.9017, 0.9034, 0.9053, 0.9073, 0.9095, 0.9119, 0.9146, 0.9177, 0.9213, 0.9258, 0.9317, 0.9408]
+    @test l ≈ 10.980910953033764
+    @test σ ≈  0.058955810267830415
+    @test round.(track.r ./ 11.17, sigdigits=4) ≈ [0.9799, 0.9801, 0.9803, 0.9806, 0.9808, 0.9811, 0.9813, 0.9816, 0.9819, 0.9823, 0.9826, 0.983, 0.9834, 0.9839, 0.9844, 0.985, 0.9857, 0.9865, 0.9876, 0.9893]
 
-    l, σ = modellength(track, fill(200, 20), Yamada2007PC())
-    @test l ≈ 5.010195913983649 
-    @test σ ≈ 0.7443781651450185
-    @test round.(track.r ./ 11.17, sigdigits=4) ≈ [0.3665, 0.3705, 0.3747, 0.3791, 0.3839, 0.3889, 0.3943, 0.4, 0.4062, 0.413, 0.4203, 0.4285, 0.4375, 0.4477, 0.4594, 0.4732, 0.4898, 0.511, 0.54, 0.5875]
+    l, σ = modellength(track, fill(200, 20), Guenthner2013FC())
+    @test l ≈ 9.709946712417318
+    @test σ ≈ 0.22875671117749416
+    @test round.(track.r ./ 11.17, sigdigits=4) ≈ [0.8453, 0.8469, 0.8485, 0.8502, 0.852, 0.8539, 0.8559, 0.858, 0.8603, 0.8627, 0.8653, 0.8681, 0.8712, 0.8746, 0.8784, 0.8828, 0.888, 0.8944, 0.9028, 0.9157]
 
     l, σ = modellength(track, reverse(1:20).*5, Yamada2007PC())
-    @test l ≈ 10.880422422488458 
-    @test σ ≈  0.2276645657431576
-    @test round.(track.r ./ 11.17, sigdigits=4) ≈ [0.9301, 0.938, 0.9452, 0.9517, 0.9574, 0.9626, 0.9672, 0.9713, 0.975, 0.9782, 0.9811, 0.9836, 0.9858, 0.9878, 0.9895, 0.991, 0.9924, 0.9936, 0.9947, 0.9958] 
+    @test l ≈ 11.117268735475536
+    @test σ ≈  0.06517562311758557
+    @test round.(track.r ./ 11.17, sigdigits=4) ≈ [0.9873, 0.9888, 0.9901, 0.9913, 0.9924, 0.9933, 0.9941, 0.9949, 0.9955, 0.9961, 0.9966, 0.9971, 0.9975, 0.9978, 0.9981, 0.9984, 0.9986, 0.9989, 0.9991, 0.9993]
 
-    l, σ =  modellength(track, reverse(1:20).*10, Yamada2007PC()) 
-    @test l ≈ 10.025549123250658
-    @test σ ≈  1.3280030479191876
-    @test round.(track.r ./ 11.17, sigdigits=4) ≈ [0.5535, 0.6154, 0.6725, 0.7241, 0.7699, 0.81, 0.8445, 0.8739, 0.8986, 0.9192, 0.9361, 0.9499, 0.9611, 0.97, 0.9771, 0.9826, 0.987, 0.9903, 0.993, 0.9951]
+    l, σ =  modellength(track, reverse(1:20).*10, Guenthner2013FC()) 
+    @test l ≈ 10.89736293433925
+    @test σ ≈  0.3034059166402553
+    @test round.(track.r ./ 11.17, sigdigits=4) ≈  [0.9064, 0.9225, 0.9361, 0.9475, 0.957, 0.9649, 0.9714, 0.9768, 0.9812, 0.9848, 0.9877, 0.9901, 0.9921, 0.9936, 0.9949, 0.996, 0.9968, 0.9975, 0.998, 0.9985]
 
 ## --- Test monazite fission track lengths
 

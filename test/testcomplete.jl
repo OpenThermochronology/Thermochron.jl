@@ -73,7 +73,7 @@
     @test count(x->isa(x,ZirconTrackLength), chrons) == 1
     @test count(x->isa(x,MonaziteTrackLength), chrons) == 1
     @test count(x->isa(x,ApatiteTrackLength), chrons) == 3
-    @test get_age(chrons) ≈ [150.37, 263.92, 150.37, 263.92, 263.92, 917.84, 1023.73, 1023.73, 380., 380., 120., 120., 680., 300., 100., 150., 180.,] 
+    @test get_age(chrons) ≈ [150.37, 263.92, 150.37, 263.92, 263.92, 917.84, 1023.73, 1023.73, 380., 380., 120., 120., 1080., 300., 100., 150., 180.,] 
     @test get_age_sigma(chrons) ≈ [5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5]
 
     dt = 10.0
@@ -82,15 +82,15 @@
 
     calc = zeros(length(chrons))
     calcuncert = zeros(length(chrons))
-    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=false) ≈ -957.4901950720056
-    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=true) ≈ -958.989115119998
-    @test round.(calc[1:end-5], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 688.0081, 304.6573, 95.84216, 149.8249, 179.703]
+    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=false) ≈ -956.8697120067353
+    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=true) ≈ -958.3686320547278
+    @test round.(calc[1:end-5], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1085.555, 304.6573, 95.84216, 149.8249, 179.703]
     @test round.(calc[end-4:end], sigdigits=3) ≈ [8, 14.3, 14.3, 14.3, 6] atol = 9
     @test calcuncert[1:end-5] ≈ zeros(length(chrons)-5)
-    @test calcuncert[end-4:end] ≈ [1.8364436281549124, 1.1785910438098226, 1.1389520917140208, 1.2018361658877996, 0.6070538659171328]
+    @test calcuncert[end-4:end] ≈ [1.7578982633970572, 1.1785910438098226, 1.1389520917140208, 1.2018361658877996, 0.6070538659171328] 
 
-    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Guenthner2013FC(), Jones2021FA(), Ketcham1999FC(); trackhist=false) ≈ -4660.685265105541
-    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Guenthner2013FC(), Jones2021FA(), Ketcham1999FC(); trackhist=true) ≈ -4662.201571828013
+    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Guenthner2013FC(), Jones2021FA(), Ketcham1999FC(); trackhist=false) ≈ -974.6190971064663
+    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Guenthner2013FC(), Jones2021FA(), Ketcham1999FC(); trackhist=true) ≈ -976.1354038289386
     @test round.(calc[1:end-5], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1110.379, 304.2772, 95.84216, 149.8249, 179.703]
     @test round.(calc[end-4:end], sigdigits=3) ≈ [8, 14.3, 14.3, 14.3, 6] atol = 9
     @test calcuncert[1:end-5] ≈ zeros(length(chrons)-5)

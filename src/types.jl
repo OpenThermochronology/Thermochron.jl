@@ -27,7 +27,7 @@ Parallel Curvilinear zircon annealing model of Yamada, 2007
 (doi: 10.1016/j.chemgeo.2006.09.002)
 """
 Base.@kwdef struct Yamada2007PC{T<:AbstractFloat} <: ZirconAnnealingModel{T} 
-    c0p::T = -63.37     # Yamada et al. 2007 zircon
+    c0p::T = -63.37 - 0.212log(3600) # Yamada et al. 2007 zircon, converted from log(h) to log(s)
     c1p::T = 0.212      # Yamada et al. 2007 zircon
     bp::T = 43.00       # Yamada et al. 2007 zircon
     l0::T = 11.17       # [um] effective initial track length (μmax)
