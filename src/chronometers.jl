@@ -1367,6 +1367,8 @@ struct SphericalAr{T<:AbstractFloat} <: ArgonSample{T}
     nrsteps::Int                # [n] number of radial steps, including both implicit points at each side
     r40K::Vector{T}             # [atoms/g] radial K-40 concentrations
     argondeposition::Matrix{T}  # [atoms/g] Ar-40 deposition matrix
+    step_parent::Vector{T}
+    step_daughter::Vector{T}
     u::Matrix{T}
     β::Vector{T}
     De::Vector{T}
@@ -1421,6 +1423,10 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
     # Allocate arrays for diffusivities
     De = zeros(T, length(tsteps))
 
+    # Allocate arrays to optionaly track parent and daughter concentrations
+    step_parent = zeros(T, length(tsteps))
+    step_daughter = zeros(T, length(tsteps))
+
     # Allocate output matrix for all timesteps
     u = zeros(T, nrsteps, length(tsteps)+1)
 
@@ -1451,6 +1457,8 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
         nrsteps,
         r40K,
         argondeposition,
+        step_parent,
+        step_daughter,
         u,
         β,
         De,
@@ -1496,6 +1504,8 @@ struct PlanarAr{T<:AbstractFloat} <: ArgonSample{T}
     nrsteps::Int                # [n] number of spatial steps, including both implicit points at each side
     r40K::Vector{T}             # [atoms/g] radial K-40 concentrations
     argondeposition::Matrix{T}  # [atoms/g] Ar-40 deposition matrix
+    step_parent::Vector{T}
+    step_daughter::Vector{T}
     u::Matrix{T}
     β::Vector{T}
     De::Vector{T}
@@ -1549,6 +1559,10 @@ function PlanarAr(T::Type{<:AbstractFloat}=Float64;
     # Allocate arrays for diffusivities
     De = zeros(T, length(tsteps))
 
+    # Allocate arrays to optionaly track parent and daughter concentrations
+    step_parent = zeros(T, length(tsteps))
+    step_daughter = zeros(T, length(tsteps))
+
     # Allocate output matrix for all timesteps
     u = zeros(T, nrsteps, length(tsteps)+1)
 
@@ -1578,6 +1592,8 @@ function PlanarAr(T::Type{<:AbstractFloat}=Float64;
         nrsteps,
         r40K,
         argondeposition,
+        step_parent,
+        step_daughter,
         u,
         β,
         De,
