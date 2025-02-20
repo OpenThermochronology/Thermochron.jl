@@ -48,14 +48,16 @@ module Thermochron
 
     include("argon.jl")
     include("helium.jl")
-    export ZRDAAM, RDAAM                                                # Damage-and-annealing based helium diffusivity model types
+    export ZRDAAM, RDAAM                                               # Damage-and-annealing based helium diffusivity model types
+
+    include("mdd.jl")
+    export MultipleDomain
 
     include("fissiontrack.jl")
     export Ketcham1999FC, Ketcham2007FC                                 # Apatite fission track annealing model types
     export Yamada2007PC, Guenthner2013FC                                # Zircon fission track annealing models
     export Jones2021FA                                                  # Other mineral annealing models
-    export modellength                                                  # Functions
-    export modelage                                                     # Functions
+    export modelage, modellength                                        # Functions
 
     include("utilities.jl")
     include("inversion.jl")
