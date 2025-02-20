@@ -1,4 +1,4 @@
-## -- Helium age functions
+## --- Helium age functions
 
 # The amount of ingrown helium since time t
 function calc_He(t, U238, U235, Th232, Sm147=0.0)
@@ -17,6 +17,112 @@ function newton_he_age(He::T, U238, U235, Th232, Sm147=zero(T); iterations::Int=
         heliumage += (He - calc_He(heliumage, U238, U235, Th232, Sm147))/∂He∂t # Move towards zero (He(heliumage) == μHe)
     end
     return max(heliumage, zero(Tf))
+end
+
+## --- Concrete types for helium damage and diffusivity models
+
+"""
+```julia
+ZRDAAM(
+    DzD0::T = 193188.0          # Diffusivity [cm^2/sec], crystalline endmember
+    DzD0_logsigma::T=1/2        # log units (default = 1/2 = a factor of ℯ two-sigma)
+    DzEa::T=165.0               # Activation energy [kJ/mol], crystalline endmember
+    DzEa_logsigma::T=1/2        # log units (default = 1/2 = a factor of ℯ two-sigma)
+    DN17D0::T = 6.367E-3        # Diffusivity [cm^2/sec], amorphous endmember
+    DN17D0_logsigma::T=1/2      # log units (default = 1/2 = a factor of ℯ two-sigma)
+    DN17Ea::T=71.0              # Activation energy [kJ/mol], amorphous endmember
+    DN17Ea_logsigma::T=1/2      # log units (default = 1/2 = a factor of ℯ two-sigma)
+    lint0::T=45920.0            # [nm]
+    SV::T=1.669                 # [1/nm]
+    Bα::T=5.48E-19              # Amorphous material produced per alpha decay [g/alpha]
+    Phi::T=3.0                  # unitless
+    beta::T=-0.05721            # Zircon anealing parameter
+    C0::T=6.24534               # Zircon anealing parameter
+    C1::T=-0.11977              # Zircon anealing parameter
+    C2::T=-314.937 - LOG_SEC_MYR # Zircon anealing parameter. Includes conversion factor from seconds to Myr for dt (for performance), in addition to traditional C2 value
+    C3::T=-14.2868              # Zircon anealing parameter
+    rmin::T=0.2                 # Damage conversion parameter
+    rmin_sigma::T=0.15          # Damage conversion parameter uncertainty
+)
+```
+Zircon Radiation Damage Accumulation and Annealing Model (ZRDAAM) of
+Guenthner et al. 2013 (doi: 10.2475/03.2013.01)
+"""
+Base.@kwdef struct ZRDAAM{T<:AbstractFloat} <: ZirconHeliumModel{T} 
+    DzD0::T = 193188.0          # Diffusivity [cm^2/sec], crystalline endmember
+    DzD0_logsigma::T=1/2        # log units (default = 1/2 = a factor of ℯ two-sigma)
+    DzEa::T=165.0               # Activation energy [kJ/mol], crystalline endmember
+    DzEa_logsigma::T=1/2        # log units (default = 1/2 = a factor of ℯ two-sigma)
+    DN17D0::T = 6.367E-3        # Diffusivity [cm^2/sec], amorphous endmember
+    DN17D0_logsigma::T=1/2      # log units (default = 1/2 = a factor of ℯ two-sigma)
+    DN17Ea::T=71.0              # Activation energy [kJ/mol], amorphous endmember
+    DN17Ea_logsigma::T=1/2      # log units (default = 1/2 = a factor of ℯ two-sigma)
+    lint0::T=45920.0            # [nm]
+    SV::T=1.669                 # [1/nm]
+    Bα::T=5.48E-19              # Amorphous material produced per alpha decay [g/alpha]
+    Phi::T=3.0                  # unitless
+    beta::T=-0.05721            # Zircon anealing parameter
+    C0::T=6.24534               # Zircon anealing parameter
+    C1::T=-0.11977              # Zircon anealing parameter
+    C2::T=-314.937 - LOG_SEC_MYR # Zircon anealing parameter. Includes conversion factor from seconds to Myr for dt (for performance), in addition to traditional C2 value
+    C3::T=-14.2868              # Zircon anealing parameter
+    rmin::T=0.2                 # Damage conversion parameter
+    rmin_sigma::T=0.15          # Damage conversion parameter uncertainty
+end
+
+"""
+```julia
+RDAAM(
+    D0L::T=0.6071               # Diffusivity [cm^2/s]
+    D0L_logsigma::T=1/2         # log units (default = 1/2 = a factor of ℯ two-sigma)
+    EaL::T=122.3                # Activation energy [kJ/mol]
+    EaL_logsigma::T=1/2         # log units (default = 1/2 = a factor of ℯ two-sigma)
+    EaTrap::T=34.0              # Activation energy [kJ/mol]
+    EaTrap_logsigma::T=1/2      # log units (default = 1/2 = a factor of ℯ two-sigma)
+    psi::T=1e-13                # empirical polynomial coefficient
+    omega::T=1e-22              # empirical polynomial coefficient
+    etaq::T=0.91                # Durango ηq
+    rhoap::T=3.19               # Density of apatite [g/cm3]
+    L::T=0.000815               # Etchable fission track half-length, cm
+    lambdaf::T=8.46e-17         # 
+    lambdaD::T=1.55125e-10      # 
+    beta::T=0.04672             # Apatite annealing parameter. Also caled alpha, but equivalent to beta in ZRDAAM
+    C0::T=0.39528               # Apatite annealing parameter
+    C1::T=0.01073               # Apatite annealing parameter
+    C2::T=-65.12969 - LOG_SEC_MYR # Apatite annealing parameter. Includes conversion factor from seconds to Myr for dt, in addition to traditional C2 value
+    C3::T=-7.91715              # Apatite annealing parameter
+    rmr0::T=0.83                # Damage conversion parameter
+    rmr0_sigma::T=0.15          # Damage conversion parameter uncertainty
+    kappa::T=1.04-0.83          # Damage conversion parameter
+    kappa_rmr0::T=1.04          # Damage conversion parameter (the sum of kappa and rmr0)
+)
+```
+Apatite Radiation Damage Accumulation and Annealing Model (RDAAM) of
+Flowers et al. 2009 (doi: 10.1016/j.gca.2009.01.015)
+"""
+Base.@kwdef struct RDAAM{T<:AbstractFloat} <: ApatiteHeliumModel{T} 
+    D0L::T=0.6071               # Diffusivity [cm^2/s]
+    D0L_logsigma::T=1/2         # log units (default = 1/2 = a factor of ℯ two-sigma)
+    EaL::T=122.3                # Activation energy [kJ/mol]
+    EaL_logsigma::T=1/2         # log units (default = 1/2 = a factor of ℯ two-sigma)
+    EaTrap::T=34.0              # Activation energy [kJ/mol]
+    EaTrap_logsigma::T=1/2      # log units (default = 1/2 = a factor of ℯ two-sigma)
+    psi::T=1e-13                # empirical polynomial coefficient
+    omega::T=1e-22              # empirical polynomial coefficient
+    etaq::T=0.91                # Durango ηq
+    rhoap::T=3.19               # Density of apatite [g/cm3]
+    L::T=0.000815               # Etchable fission track half-length, cm
+    lambdaf::T=8.46e-17         # 
+    lambdaD::T=1.55125e-10      # 
+    beta::T=0.04672             # Apatite annealing parameter. Also caled alpha, but equivalent to beta in ZRDAAM
+    C0::T=0.39528               # Apatite annealing parameter
+    C1::T=0.01073               # Apatite annealing parameter
+    C2::T=-65.12969 - LOG_SEC_MYR # Apatite annealing parameter. Includes conversion factor from seconds to Myr for dt (for performance), in addition to traditional C2 value
+    C3::T=-7.91715              # Apatite annealing parameter
+    rmr0::T=0.83                # Damage conversion parameter
+    rmr0_sigma::T=0.15          # Damage conversion parameter uncertainty
+    kappa::T=1.04-0.83          # Damage conversion parameter
+    kappa_rmr0::T=1.04          # Damage conversion parameter (the sum of kappa and rmr0)
 end
 
 ## --- Damage and annealing functions

@@ -1,6 +1,12 @@
 # Abstract type to include any number of mineral chronometers (zircon, apatite, etc.)
 abstract type Chronometer{T} end
 
+# Implement methods to allow broadcasting
+Base.length(x::Chronometer) = 1
+Base.iterate(x::Chronometer) = (x, nothing)
+Base.iterate(x::Chronometer, state) = nothing
+
+# Implement methods to allow copying and comparison
 Base.copy(x::Chronometer) = deepcopy(x)
 Base.:(==)(x::Chronometer, y::Chronometer) = false
 function Base.:(==)(x::T, y::T) where {T<:Chronometer}
