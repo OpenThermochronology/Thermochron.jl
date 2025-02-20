@@ -3,8 +3,8 @@ struct MultipleDomain{T<:AbstractFloat, C<:Union{SphericalAr{T}, PlanarAr{T}}} <
     age::Vector{T}
     age_sigma::Vector{T}
     fraction_released::Vector{T}
-    tsteps_degassing::FloatRange
-    Tsteps_degassing::Vector{T}
+    tsteps_experimental::Vector{T}
+    Tsteps_experimental::Vector{T}
     fit::BitVector
     offset::T
     domains::Vector{C}
@@ -12,14 +12,16 @@ struct MultipleDomain{T<:AbstractFloat, C<:Union{SphericalAr{T}, PlanarAr{T}}} <
     model_age::Vector{T}
     model_parent::Vector{T}
     model_daughter::Vector{T}
+    tsteps_degassing::FloatRange
+    Tsteps_degassing::Vector{T}
     agesteps::FloatRange
 end
 function MultipleDomain(T=Float64, C=PlanarAr;
         age::AbstractVector,
         age_sigma::AbstractVector,
         fraction_released::AbstractVector,
-        tsteps_degassing::AbstractVector,
-        Tsteps_degassing::AbstractVector,
+        tsteps_experimental::AbstractVector,
+        Tsteps_experimental::AbstractVector,
         fit::AbstractVector,
         offset::Number = zero(T),
         Ea::AbstractVector,
@@ -30,19 +32,30 @@ function MultipleDomain(T=Float64, C=PlanarAr;
         K40::Number = 16.34, 
         agesteps::AbstractRange,
     )
-    @assert eachindex(age) == eachindex(age_sigma) == eachindex(fraction_released) == eachindex(tsteps_degassing) == eachindex(Tsteps_degassing)
-    volume_fraction ./= nansum(volume_fraction)
+    # Check input arrays are the right size and ordered properly
+    @assert eachindex(Ea) == eachindex(lnD0_a_2) == eachindex(volume_fraction)
+    @assert eachindex(age) == eachindex(age_sigma) == eachindex(fraction_released) == eachindex(tsteps_experimental) == eachindex(Tsteps_experimental)
+    @assert issorted(tsteps_experimental, lt=<=) "Degassing time steps must be in strictly increasing order"
+
+    # Interpolate degassing t-T steps to the same resolution as the 
+    tsteps_degassing = range(Float64(first(tsteps_experimental)), Float64(last(tsteps_experimental)), length=length(agesteps))
+    Tsteps_degassing = linterp1(tsteps_experimental, T.(Tsteps_experimental), tsteps_degassing) 
     model_age = zeros(T, length(tsteps_degassing))
     model_parent = zeros(T, length(tsteps_degassing))
     model_daughter = zeros(T, length(tsteps_degassing))
+
+    # Ensure volume fraction sums to one
+    volume_fraction ./= nansum(volume_fraction) 
+    
+    # Allocate domains
     D0 = @. exp(lnD0_a_2)*(r/10000)^2
     domains = [C(T; age=nanmean(age), age_sigma=nanstd(age), offset, r, dr, D0=D0[i], Ea=Ea[i], K40, agesteps) for i in eachindex(D0, Ea)]
     return MultipleDomain{T,C{T}}(
         T.(age),
         T.(age_sigma),
         T.(fraction_released),
-        floatrange(tsteps_degassing),
-        T.(Tsteps_degassing),
+        T.(tsteps_experimental),
+        T.(Tsteps_experimental),
         Bool.(fit),
         T(offset),
         domains,
@@ -50,6 +63,8 @@ function MultipleDomain(T=Float64, C=PlanarAr;
         model_age,
         model_parent,
         model_daughter,
+        tsteps_degassing,
+        Tsteps_degassing,
         floatrange(agesteps),
     )
 end
@@ -91,7 +106,7 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degas
 
     # Get time and radius discretization
     dr = step(mineral.rsteps)
-    nrsteps = mineral.nrsteps
+    nrsteps = mineral.nrsteps::Int
     dt = step(tsteps_degassing)
     ntsteps = length(tsteps_degassing)
     step_parent = @views(mineral.step_parent[1:ntsteps])
