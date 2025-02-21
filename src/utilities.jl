@@ -585,7 +585,7 @@
 
     # Adjust model uncertainties of chronometers
     function movesigma!(σcalc::AbstractVector{T}, chrons::AbstractVector{<:Chronometer}) where {T<:AbstractFloat}
-        for C in (ZirconFT, MonaziteFT, ApatiteFT, ZirconHe, ApatiteHe, SphericalHe, SphericalAr,)
+        for C in (ZirconFT, MonaziteFT, ApatiteFT, ZirconHe, ApatiteHe, SphericalHe, PlanarHe, SphericalAr, PlanarAr, MultipleDomain)
             r = abs(randn(T))
             for i in eachindex(σcalc, chrons)
                 if chrons[i] isa C

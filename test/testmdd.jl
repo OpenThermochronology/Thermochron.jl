@@ -21,6 +21,9 @@
         agesteps,
     )
     @test mdd isa MultipleDomain{Float64, PlanarAr{Float64}}
+    show(mdd)
+    println()
+    display(mdd)
 
     age, fraction = modelage(mdd, Tsteps)
     # println(round.(age, sigdigits=5))
