@@ -1,6 +1,6 @@
 ## --- Import an MDD dataset
 
-    datapath = joinpath("..", "examples", "ol13.csv")
+    datapath = joinpath("..", "examples", "ol13-mdd.csv")
     mdds = importdataset(datapath, importas=:Tuple)
 
     agesteps = 995:-10.:5

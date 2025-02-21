@@ -19,6 +19,27 @@ module PlotsExt
     Thermochron.ageeuplot!(hdl::Plots.Plot, x::Vector{<:Chronometer}; seriestype=:scatter, mscolor=:auto, kwargs...) = plot!(hdl, Thermochron.eU.(x), Thermochron.val.(x); yerror=2*Thermochron.err.(x), seriestype, mscolor, kwargs...)
     Thermochron.ageeuplot!(hdl::Plots.Subplot, x::Vector{<:Chronometer}; seriestype=:scatter, mscolor=:auto, kwargs...) = plot!(hdl, Thermochron.eU.(x), Thermochron.val.(x); yerror=2*Thermochron.err.(x), seriestype, mscolor, kwargs...)
 
+    # Error boxes for Ar-Ar age spectra
+    Thermochron.errorbox(xc::AbstractVector, y::AbstractVector, t::BitVector=trues(length(y)); kwargs...) = errorbox!(plot(), xc, y, t; kwargs...)
+    function Thermochron.errorbox!(h::Plots.Plot, xc::AbstractVector, y::AbstractVector, t::BitVector=trues(length(y)); yerror::AbstractVector=zeros(size(x)), startvalue=0, framestyle=:box, label="", kwargs...)
+        @assert eachindex(y) == eachindex(yerror) == eachindex(t)
+        @assert (eachindex(xc) == eachindex(y)) || eachindex(xc)==firstindex(y):lastindex(y)+1
+        length(xc) == length(y) && (xc = [startvalue; xc])
+        xl, yl = zeros(5), zeros(5)
+        labelled = false
+        for i in eachindex(y)
+            if t[i]
+                xl .= (xc[i], xc[i], xc[i+1], xc[i+1], xc[i])
+                yl .= (y[i]-yerror[i], y[i]+yerror[i], y[i]+yerror[i], y[i]-yerror[i], y[i]-yerror[i])
+                s = Shape(xl, yl)
+                plot!(h, s; framestyle, label=(labelled ? "" : label), kwargs...)
+                labelled = true
+            end
+        end
+        return h
+    end
+
+    # Constraint boxes
     lowerbound(x::Uniform) = x.a
     lowerbound(x::Distribution) = quantile(x, 0.025)
     upperbound(x::Uniform) = x.b

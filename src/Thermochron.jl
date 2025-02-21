@@ -68,6 +68,8 @@ module Thermochron
     # Methodless functions for plotting extensions
     function ageeuplot end
     function ageeuplot! end
-    export ageeuplot, ageeuplot!
+    function errorbox end
+    function errorbox! end
+    export ageeuplot, ageeuplot!, errorbox, errorbox!
 
 end

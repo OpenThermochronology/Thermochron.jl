@@ -27,16 +27,19 @@
 
     # # # # # # # # # # Choice of regional thermochron data # # # # # # # # # #
 
-    # # Literature samples from Guenthner et al. 2013 (AJS), Minnesota
-    # # (23 ZirconHe, 11 ApatiteHe)
-    # name = "Minnesota"
-    # ds = importdataset("minnesota.csv", ',', importas=:Tuple)
-
     # Literature samples from McDannell et al. 2022 (doi: 10.1130/G50315.1), Manitoba
     # (12 ZirconHe, 5 ApatiteHe, 47 ApatiteFT, 269 ApatiteTrackLength)
     name = "Manitoba"
     ds = importdataset("manitoba.csv", ',', importas=:Tuple)
 
+    # # Literature samples from Guenthner et al. 2013 (AJS), Minnesota
+    # # (23 ZirconHe, 11 ApatiteHe)
+    # name = "Minnesota"
+    # ds = importdataset("minnesota.csv", ',', importas=:Tuple)
+
+    # # OL13 multiple domain diffusion example
+    # name = "OL13"
+    # ds = importdataset("ol13.csv", ',', importas=:Tuple)
 
 ## --- Prepare problem
 
@@ -47,7 +50,7 @@
         nsteps = 400000,                # [n] How many steps of the Markov chain should we run?
         burnin = 100000,                # [n] How long should we wait for MC to converge (become stationary)
         dr = 1.0,                       # [μm] Radius step size
-        dTmax = 15.0,                   # [Ma/dt] Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
+        dTmax = 25.0,                   # [Ma/dt] Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
         Tinit = 400.0,                  # [C] Initial model temperature (i.e., crystallization temperature)
         ΔTinit = -100.0,                # [C] Tinit can vary from Tinit to Tinit+ΔTinit
         Tnow = 0.0,                     # [C] Current surface temperature
@@ -59,8 +62,6 @@
         agesteps = cntr(tinit:-dt:0),   # [Ma] Age discretization (relative to the present)
         minpoints = 15,                 # [n] Minimum allowed number of model t-T points (nodes)
         maxpoints = 50,                 # [n] Maximum allowed number of model t-T points (nodes)
-        rescale = false,                # Attempt to hedge against systematic errors by limiting the log likeihood contribution of each chronometer to scale as sqrt(n) instead of n
-        trackhist = false,              # Additional track length histogram comparison (likely redundant)
         dynamicsigma = false,           # Update model uncertainties throughout inversion?
         dynamicjumping = true,          # Update the t and T jumping (proposal) distributions based on previously accepted jumps
         # Damage and annealing models for diffusivity (specify custom kinetics if desired)
@@ -77,13 +78,13 @@
     # Default: no detail interval
     detail = DetailInterval()
 
-    # Uncomment this section to require greater t-T node density in some time interval
-    # (typically the youngest end of the total time interval, where you may expect the data more resolving power)
-    detail = DetailInterval(
-        agemin = 0.0, # Youngest end of detail interval
-        agemax = 1000, # Oldest end of detail interval
-        minpoints = 8, # Minimum number of points in detail interval
-    )
+    # # Uncomment this section to require greater t-T node density in some time interval
+    # # (typically the youngest end of the total time interval, where you may expect the data more resolving power)
+    # detail = DetailInterval(
+    #     agemin = 0.0, # Youngest end of detail interval
+    #     agemax = 1000, # Oldest end of detail interval
+    #     minpoints = 8, # Minimum number of points in detail interval
+    # )
 
     # Boundary conditions (e.g. 10C at present and 650 C at the time of zircon formation).
     boundary = Boundary(
@@ -100,7 +101,7 @@
     # # Uncomment this section if you wish to impose an unconformity or other constraint
     # # at any point in the record.
     # constraint = Constraint(
-    #     agedist = [ Normal(520,20),],  # [Ma] Age distribution
+    #     agedist = [ Normal(510,20),],  # [Ma] Age distribution
     #     Tdist =   [  Uniform(0,50),],  # [C] Temperature distribution
     # )
     # name *= "_constrained"
@@ -122,19 +123,23 @@
 
     # Empirical age uncertainty for apatite
     tap = isa.(chrons, ApatiteHe)
-    h = ageeuplot(chrons[tap], label="Internal uncertainty", title="apatite")
-    empiricaluncertainty!(model.σcalc, chrons, ApatiteHe)
-    σtotal = sqrt.(get_age_sigma(chrons[tap]).^2 + model.σcalc[tap].^2)
-    ageeuplot!(h, chrons[tap], yerror=2*σtotal, label="Empirical uncertainty")
-    display(h)
+    if any(tap)
+        h = ageeuplot(chrons[tap], label="Internal uncertainty", title="apatite")
+        empiricaluncertainty!(model.σcalc, chrons, ApatiteHe)
+        σtotal = sqrt.(get_age_sigma(chrons[tap]).^2 + model.σcalc[tap].^2)
+        ageeuplot!(h, chrons[tap], yerror=2*σtotal, label="Empirical uncertainty")
+        display(h)
+    end
 
     # Empirical age uncertainty for zircon
     tzr = isa.(chrons, ZirconHe)
-    h = ageeuplot(chrons[tzr], label="Internal uncertainty", title="zircon")
-    empiricaluncertainty!(model.σcalc, chrons, ZirconHe)
-    σtotal = sqrt.(get_age_sigma(chrons[tzr]).^2 + model.σcalc[tzr].^2)
-    ageeuplot!(h, chrons[tzr], yerror=2*σtotal, label="Empirical uncertainty")
-    display(h)
+    if any(tzr)
+        h = ageeuplot(chrons[tzr], label="Internal uncertainty", title="zircon")
+        empiricaluncertainty!(model.σcalc, chrons, ZirconHe)
+        σtotal = sqrt.(get_age_sigma(chrons[tzr]).^2 + model.σcalc[tzr].^2)
+        ageeuplot!(h, chrons[tzr], yerror=2*σtotal, label="Empirical uncertainty")
+        display(h)
+    end
 
 ## --- Invert for maximum likelihood t-T path
 
@@ -310,12 +315,53 @@
         end
     end
 
+## --- Plot calculated and observed MDD age spectra
+
+    for i in eachindex(chrons)
+        c = chrons[i]
+        if c isa MultipleDomain  
+            agedist = tT.resultdist[i,:]
+            modelage = sort(agedist)
+            modelfraction = range(0, 1, length(modelage))
+            h = plot(modelfraction, modelage,
+                seriestype = :line,
+                color = :powderblue,
+                framestyle = :box,
+                legend = :topleft,
+                label = "",
+            )
+            errorbox!(h, c.fraction_released, c.age, c.fit,
+                yerror = 2*c.age_sigma,
+                color = :black,
+                fillalpha = 0.5,
+                xlabel = "Fraction released",
+                ylabel = "Age [Ma]",
+                label = "Data (2σ analytical)",
+            )
+            errorbox!(h, c.fraction_released, c.age,
+                yerror = 2*c.age_sigma,
+                color = :black,
+                alpha = 0.15,
+                label = "Data (excluded)",
+            )
+            t = minimum(c.fraction_released[c.fit]) .<= modelfraction .<= maximum(c.fraction_released[c.fit])
+            plot!(h, modelfraction[t], modelage[t],
+                seriestype=:line,
+                color = :mediumblue,
+                lw = 2,
+                label = "Model (average)",
+            )
+            savefig(h, "$(name)_$(ds.grain_name[i])_predicted.pdf")
+            display(h)
+        end
+    end
+
 ## --- Create image of paths
 
     @time (tTimage, xc, yc) = image_from_paths!(tT; xresolution=1800, yresolution=1200, xrange=boundary.agepoints, yrange=boundary.T₀)
 
 ## --- Plot image with 'ylcn' custom colorscale
-
+ 
     # Prepare axes
     k = plot(layout = grid(1,2, widths=[0.94, 0.06]), framestyle=:box)
 
