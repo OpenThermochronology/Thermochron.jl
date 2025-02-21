@@ -15,7 +15,8 @@ module Thermochron
     using LogExpFunctions: logaddexp, logsubexp, logsumexp
 
     const FloatRange = typeof(1.0:1.0:10.0)
-    floatrange(x) = range(Float64(first(x)), Float64(last(x)), length=length(x))
+    floatrange(start, stop; length) = range(Float64(start), Float64(stop); length)
+    floatrange(x::AbstractArray) = floatrange(first(x), last(x), length=length(x))
 
     # Physical constants
     const SEC_MYR = 1E6*365.25*24*3600

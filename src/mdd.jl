@@ -7,6 +7,7 @@ struct MultipleDomain{T<:AbstractFloat, C<:Union{SphericalAr{T}, PlanarAr{T}}} <
     Tsteps_experimental::Vector{T}
     fit::BitVector
     offset::T
+    fuse::Bool
     domains::Vector{C}
     volume_fraction::Vector{T}
     model_age::Vector{T}
@@ -24,6 +25,7 @@ function MultipleDomain(T=Float64, C=PlanarAr;
         Tsteps_experimental::AbstractVector,
         fit::AbstractVector,
         offset::Number = zero(T),
+        fuse::Bool = true,
         Ea::AbstractVector,
         lnD0_a_2::AbstractVector,
         volume_fraction::AbstractVector,
@@ -38,7 +40,7 @@ function MultipleDomain(T=Float64, C=PlanarAr;
     @assert issorted(tsteps_experimental, lt=<=) "Degassing time steps must be in strictly increasing order"
 
     # Interpolate degassing t-T steps to the same resolution as the 
-    tsteps_degassing = range(Float64(first(tsteps_experimental)), Float64(last(tsteps_experimental)), length=length(agesteps))
+    tsteps_degassing = floatrange(first(tsteps_experimental), last(tsteps_experimental), length=length(agesteps))
     Tsteps_degassing = linterp1(tsteps_experimental, T.(Tsteps_experimental), tsteps_degassing) 
     model_age = zeros(T, length(tsteps_degassing))
     model_parent = zeros(T, length(tsteps_degassing))
@@ -54,10 +56,11 @@ function MultipleDomain(T=Float64, C=PlanarAr;
         T.(age),
         T.(age_sigma),
         T.(fraction_released),
-        T.(tsteps_experimental),
-        T.(Tsteps_experimental),
+        tsteps_experimental,
+        Tsteps_experimental,
         Bool.(fit),
         T(offset),
+        fuse,
         domains,
         T.(volume_fraction),
         model_age,
@@ -73,10 +76,11 @@ function modelage(mdd::MultipleDomain{T}, Tsteps::AbstractVector; redegasparent:
     age = fill!(mdd.model_age, zero(T))
     parent = fill!(mdd.model_parent, zero(T))
     daughter = fill!(mdd.model_daughter, zero(T))
+    fuse = mdd.fuse::Bool
     for i in eachindex(mdd.domains, mdd.volume_fraction)
         domain = mdd.domains[i]
         modelage(domain, Tsteps)
-        p, d = degas!(domain, mdd.tsteps_degassing, mdd.Tsteps_degassing; redegasparent)
+        p, d = degas!(domain, mdd.tsteps_degassing, mdd.Tsteps_degassing; redegasparent, fuse)
         @. parent += p * mdd.volume_fraction[i]
         @. daughter += d * mdd.volume_fraction[i]
     end
@@ -88,7 +92,7 @@ function modelage(mdd::MultipleDomain{T}, Tsteps::AbstractVector; redegasparent:
     return age, parent
 end
 
-function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degassing::AbstractVector{T}; redegasparent::Bool=false) where T <: AbstractFloat
+function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degassing::AbstractVector{T}; fuse::Bool=true, redegasparent::Bool=false) where T <: AbstractFloat
 
     # Damage and annealing constants
     D0 = (mineral.D0*10000^2)::T              # cm^2/sec, converted to micron^2/sec  
@@ -131,7 +135,7 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degas
     F = mineral.F       # LU object for in-place lu factorization
     
     daughterᵢ₋ = nanmean(@views(u[2:end-1, 1]))
-    @inbounds for i in Base.OneTo(ntsteps)
+    @inbounds for i in Base.OneTo(ntsteps-fuse)
 
         # Update β for current temperature
         fill!(β, 2 * dr^2 / (De[i]*dt))
@@ -165,9 +169,11 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degas
         u[:,i+1] = y
 
         daughterᵢ = nanmean(@views(u[2:end-1, i+1]))
-        step_daughter[i] = daughterᵢ₋ - daughterᵢ
+        step_daughter[i] = max(daughterᵢ₋ - daughterᵢ, zero(T))
         daughterᵢ₋ = daughterᵢ
     end
+    # Degas all remaining daughter in last step if fuse==true
+    fuse && (step_daughter[ntsteps] = daughterᵢ₋)
 
     # Now diffuse parent isotope tracer, (as Ar-39), if neccesary
     if redegasparent || !(0 < sum(step_parent))
@@ -184,7 +190,7 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degas
         u[end,1] = 0
 
         parentᵢ₋ = nanmean(@views(u[2:end-1, 1]))
-        @inbounds for i = 1:ntsteps
+        @inbounds for i in Base.OneTo(ntsteps-fuse)
 
             # Update β for current temperature
             fill!(β, 2 * dr^2 / (De[i]*dt))
@@ -218,15 +224,17 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degas
             u[:,i+1] = y
 
             parentᵢ = nanmean(@views(u[2:end-1, i+1]))
-            step_parent[i] = parentᵢ₋ - parentᵢ
+            step_parent[i] = max(parentᵢ₋ - parentᵢ, zero(T))
             parentᵢ₋ = parentᵢ
         end
+        # Degas all remaining parent in last step if fuse==true
+        fuse && (step_parent[ntsteps] = parentᵢ₋)
     end
 
     # Return views of the resulting step ages and degassing fractions
     return step_parent, step_daughter
 end
-function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_degassing::AbstractVector{T}; redegasparent::Bool=false) where T <: AbstractFloat
+function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_degassing::AbstractVector{T}; fuse::Bool=true, redegasparent::Bool=false) where T <: AbstractFloat
 
     # Damage and annealing constants
     D0 = (mineral.D0*10000^2)::T              # cm^2/sec, converted to micron^2/sec  
@@ -270,7 +278,7 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_de
     A = mineral.A       # Tridiagonal matrix
     F = mineral.F       # LU object for in-place lu factorization
     
-    @inbounds for i in Base.OneTo(ntsteps)
+    @inbounds for i in Base.OneTo(ntsteps-fuse)
 
         # Update β for current temperature
         fill!(β, 2 * dr^2 / (De[i]*dt))
@@ -306,11 +314,13 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_de
 
     # Calculate daughter lost to diffusion at each step
     daughterᵢ₋ = nanmean(@views(u[2:end-1, 1])./=rsteps, relvolumes)
-    @inbounds for i in Base.OneTo(ntsteps)
+    @inbounds for i in Base.OneTo(ntsteps-fuse)
         daughterᵢ = nanmean(@views(u[2:end-1, i+1])./=rsteps, relvolumes)
-        step_daughter[i] = daughterᵢ₋ - daughterᵢ
+        step_daughter[i] = max(daughterᵢ₋ - daughterᵢ, zero(T))
         daughterᵢ₋ = daughterᵢ
     end
+    # Degas all remaining daughter in last step if fuse==true
+    fuse && (step_daughter[ntsteps] = daughterᵢ₋)
 
     # Now diffuse parent isotope tracer, (as Ar-39), if neccesary
     if redegasparent || !(0 < sum(step_parent))
@@ -327,7 +337,7 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_de
         u[1,1] = -u[2,1]
         u[end,1] = 0
 
-        @inbounds for i = 1:ntsteps
+        @inbounds for i in Base.OneTo(ntsteps-fuse)
 
             # Update β for current temperature
             fill!(β, 2 * dr^2 / (De[i]*dt))
@@ -363,11 +373,13 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_de
 
         # Calculate parent lost to diffusion at each step
         parentᵢ₋ = nanmean(@views(u[2:end-1, 1])./=rsteps, relvolumes)
-        @inbounds for i in Base.OneTo(ntsteps)
+        @inbounds for i in Base.OneTo(ntsteps-fuse)
             parentᵢ = nanmean(@views(u[2:end-1, i+1])./=rsteps, relvolumes)
-            step_parent[i] = parentᵢ₋ - parentᵢ
+            step_parent[i] = max(parentᵢ₋ - parentᵢ, zero(T))
             parentᵢ₋ = parentᵢ
         end
+        # Degas all remaining parent in last step if fuse==true
+        fuse && (step_parent[ntsteps] = parentᵢ₋)
     end
 
     # Return views of the resulting step ages and degassing fractions
