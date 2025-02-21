@@ -306,6 +306,34 @@
         norm_ll(log(adm.EaTrap), adm.EaTrap_logsigma, log(admₚ.EaTrap))+
         norm_ll(adm.rmr0, adm.rmr0_sigma, admₚ.rmr0)
     end
+
+
+    function draw_from_population(track::FissionTrackLength{T}, bandwidth::T) where {T<:AbstractFloat}
+        pr = track.pr::Vector{T}
+        rΣ = sum(pr)*rand()
+        rΣ > 0 || return T(NaN)
+        Σ = zero(T)
+        i = firstindex(pr)
+        while i < lastindex(pr)
+            Σ += pr[i]
+            if Σ < rΣ
+                i += 1
+            else
+                break
+            end
+        end
+        return rand(Normal{T}(track.r[i], bandwidth))
+    end
+    function draw_from_population(x::AbstractVector, cumulative_fraction::AbstractVector)
+        @assert eachindex(x) == eachindex(cumulative_fraction)
+        i = 1
+        r = sum(cumulative_fraction) * rand()
+        for f in cumulative_fraction
+            f > r && break
+            i += 1
+        end
+        return x[i]
+    end
     
     """
     ```julia
@@ -570,7 +598,7 @@
 
     # Utility function to calculate model ages for all chronometers at once
     function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, data::Vector{<:Chronometer{T}}, Tsteps::AbstractVector{T}, zdm::ZirconHeliumModel{T}, adm::ApatiteHeliumModel{T}, zftm::ZirconAnnealingModel{T}, mftm::MonaziteAnnealingModel{T}, aftm::ApatiteAnnealingModel{T}; trackhist::Bool=false, rescale::Bool=false) where {T<:AbstractFloat}
-        imax = argmax(i->length(data[i].agesteps), eachindex(data))
+        imax = argmax(i->length(data[i].tsteps), eachindex(data))
         tsteps = data[imax].tsteps
         tmax = last(tsteps)
         dt = step(tsteps)
@@ -593,6 +621,7 @@
         scaleztl = rescale ? sqrt(count(x->isa(x, ZirconTrackLength), data)) : 1
         scalemtl = rescale ? sqrt(count(x->isa(x, MonaziteTrackLength), data)) : 1
         scaleatl = rescale ? sqrt(count(x->isa(x, ApatiteTrackLength), data)) : 1
+        scalemdd = rescale ? sqrt(sum(x->(isa(x, MultipleDomain) ? count(x.fit) : 0), data)) : 1
 
         # Cycle through each Chronometer, model and calculate log likelihood
         ll = zero(T)
@@ -632,6 +661,10 @@
                 μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), aftm; trackhist)
                 μcalc[i] = draw_from_population(c, σcalc[i])
                 ll += model_ll(c, σcalc[i])/scaleatl
+            elseif isa(c, MultipleDomain)
+                age, fraction = modelage(mdd, @views(Tsteps[first_index:end]))
+                μcalc[i] = draw_from_population(age, fraction)
+                ll += model_ll(c, σcalc[i])/scalemdd
             else
                 # NaN if not calculated
                 μcalc[i] = T(NaN)

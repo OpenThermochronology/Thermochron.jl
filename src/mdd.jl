@@ -1,21 +1,23 @@
 
 struct MultipleDomain{T<:AbstractFloat, C<:Union{SphericalAr{T}, PlanarAr{T}}} <: AbsoluteChronometer{T}
-    age::Vector{T}
-    age_sigma::Vector{T}
-    fraction_released::Vector{T}
-    tsteps_experimental::Vector{T}
-    Tsteps_experimental::Vector{T}
-    fit::BitVector
-    offset::T
-    fuse::Bool
-    domains::Vector{C}
-    volume_fraction::Vector{T}
-    model_age::Vector{T}
-    model_parent::Vector{T}
-    model_daughter::Vector{T}
-    tsteps_degassing::FloatRange
-    Tsteps_degassing::Vector{T}
-    agesteps::FloatRange
+    age::Vector{T}                  # [Ma] measured ages at each degassing step
+    age_sigma::Vector{T}            # [Ma] measured age uncertainties at each degassing step
+    fraction_released::Vector{T}    # [unitless] fraction of total Ar-39 released each degassing step
+    tsteps_experimental::Vector{T}  # [s] time steps of experimental heating schedule
+    Tsteps_experimental::Vector{T}  # [C] temperature steps of experimental heating schedule
+    fit::BitVector                  # [Bool] Whether or not each step should be used in inversion
+    offset::T                       # [C] temperature offset relative to the surface
+    fuse::Bool                      # [Bool] Treat the grain as having fused (released all remaining Ar)
+    domains::Vector{C}              # Vector of chronometer obects for each domain
+    volume_fraction::Vector{T}      # [unitless] fraction of total volume represented by each domain
+    model_age::Vector{T}            # [Ma] calculated age at each model degassing step
+    model_parent::Vector{T}         # [atoms/g equivalent] parent tracer degassed
+    model_daughter::Vector{T}       # [atoms/g] daughter degassed
+    model_fraction::Vector{T}       # [unitless] cumulative fraction of parent degasssed
+    tsteps_degassing::FloatRange    # [s] time steps of model heating schedule
+    Tsteps_degassing::Vector{T}     # [C] temperature steps of model heating schedule
+    agesteps::FloatRange            # [Ma] age in Ma relative to the present
+    tsteps::FloatRange              # [Ma] forward time since crystallization
 end
 function MultipleDomain(T=Float64, C=PlanarAr;
         age::AbstractVector,
@@ -33,6 +35,7 @@ function MultipleDomain(T=Float64, C=PlanarAr;
         dr::Number = one(T),
         K40::Number = 16.34, 
         agesteps::AbstractRange,
+        tsteps::AbstractRange=reverse(agesteps),
     )
     # Check input arrays are the right size and ordered properly
     @assert eachindex(Ea) == eachindex(lnD0_a_2) == eachindex(volume_fraction)
@@ -45,6 +48,7 @@ function MultipleDomain(T=Float64, C=PlanarAr;
     model_age = zeros(T, length(tsteps_degassing))
     model_parent = zeros(T, length(tsteps_degassing))
     model_daughter = zeros(T, length(tsteps_degassing))
+    model_fraction = zeros(T, length(tsteps_degassing))
 
     # Ensure volume fraction sums to one
     volume_fraction ./= nansum(volume_fraction) 
@@ -66,12 +70,16 @@ function MultipleDomain(T=Float64, C=PlanarAr;
         model_age,
         model_parent,
         model_daughter,
+        model_fraction,
         tsteps_degassing,
         Tsteps_degassing,
         floatrange(agesteps),
+        floatrange(tsteps),
     )
 end
 
+val(x::MultipleDomain{T}) where {T} = nanmean(x.age, @.(x.fit/x.age_sigma^2))::T
+err(x::MultipleDomain{T}) where {T} = nanstd(x.age, @.(x.fit/x.age_sigma^2))::T
 
 function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degassing::AbstractVector{T}; fuse::Bool=true, redegasparent::Bool=false) where T <: AbstractFloat
 
@@ -372,28 +380,33 @@ function modelage(mdd::MultipleDomain{T}, Tsteps::AbstractVector; redegasparent:
     age = fill!(mdd.model_age, zero(T))
     parent = fill!(mdd.model_parent, zero(T))
     daughter = fill!(mdd.model_daughter, zero(T))
+    fraction = fill!(mdd.model_fraction, zero(T))
     fuse = mdd.fuse::Bool
+    # Degas
     for i in eachindex(mdd.domains, mdd.volume_fraction)
         domain = mdd.domains[i]
         modelage(domain, Tsteps)
-        p, d = degas!(domain, mdd.tsteps_degassing, mdd.Tsteps_degassing; redegasparent, fuse)
+        p, d = degas!(domain, mdd.tsteps_degassing, mdd.Tsteps_degassing; fuse, redegasparent)
         @. parent += p * mdd.volume_fraction[i]
         @. daughter += d * mdd.volume_fraction[i]
     end
+    # Calculate ages for each degassing step
     for i in eachindex(parent, daughter)
         age[i] = newton_ar_age(daughter[i], parent[i])
     end
-    parent ./= nansum(parent)
-    nancumsum!(parent)
-    return age, parent
+    # Cumulative fraction of parent degassed
+    cumsum!(fraction, parent)
+    fraction ./= last(fraction)
+
+    return age, fraction
 end
 
-function model_ll(mdd::MultipleDomain{T}) where {T<:AbstractFloat}
+function model_ll(mdd::MultipleDomain{T}, σ::T=zero(T)) where {T<:AbstractFloat}
     ll = zero(T)
     for i in eachindex(mdd.age, mdd.age_sigma, mdd.fraction_released, mdd.fit)
         if mdd.fit[i]
-            model_ageᵢ = linterp1(mdd.model_parent, mdd.model_age, mdd.fraction_released[i])
-            ll += norm_ll(mdd.age[i], mdd.age_sigma[i], model_ageᵢ)
+            model_ageᵢ = linterp1(mdd.model_fraction, mdd.model_age, mdd.fraction_released[i])
+            ll += norm_ll(mdd.age[i], mdd.age_sigma[i], model_ageᵢ, σ)
         end
     end
     return ll

@@ -496,23 +496,6 @@ function binlikelihoods!(track::FissionTrackLength{T}, bandwidth::T) where {T<:A
     return track
 end
 
-function draw_from_population(track::FissionTrackLength{T}, bandwidth::T) where {T<:AbstractFloat}
-    pr = track.pr::Vector{T}
-    rΣ = sum(pr)*rand()
-    rΣ > 0 || return T(NaN)
-    Σ = zero(T)
-    i = firstindex(pr)
-    while i < lastindex(pr)
-        Σ += pr[i]
-        if Σ < rΣ
-            i += 1
-        else
-            break
-        end
-    end
-    return rand(Normal{T}(track.r[i], bandwidth))
-end
-
 function model_ll(track::FissionTrackLength, Tsteps::AbstractVector, am::AnnealingModel)
     l,σ = modellength(track, Tsteps, am)
     return model_ll(track, σ)
