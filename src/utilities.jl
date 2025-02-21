@@ -326,11 +326,11 @@
     end
     function draw_from_population(x::AbstractVector, cumulative_fraction::AbstractVector)
         @assert eachindex(x) == eachindex(cumulative_fraction)
-        i = 1
-        r = sum(cumulative_fraction) * rand()
+        i = 0
+        r = last(cumulative_fraction) * rand()
         for f in cumulative_fraction
-            f > r && break
             i += 1
+            f > r && break
         end
         return x[i]
     end
@@ -662,7 +662,7 @@
                 μcalc[i] = draw_from_population(c, σcalc[i])
                 ll += model_ll(c, σcalc[i])/scaleatl
             elseif isa(c, MultipleDomain)
-                age, fraction = modelage(mdd, @views(Tsteps[first_index:end]))
+                age, fraction = modelage(c, @views(Tsteps[first_index:end]))
                 μcalc[i] = draw_from_population(age, fraction)
                 ll += model_ll(c, σcalc[i])/scalemdd
             else

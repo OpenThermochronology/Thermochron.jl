@@ -1340,7 +1340,7 @@ SphericalAr(T=Float64;
     Ea::Number,
     r::Number, 
     dr::Number=one(T), 
-    K40::Number, 
+    K40::Number=16.34, 
     agesteps::AbstractRange,
 )
 ```
@@ -1384,7 +1384,7 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
         Ea::Number,
         r::Number, 
         dr::Number=one(T), 
-        K40::Number, 
+        K40::Number=16.34, 
         agesteps::AbstractRange,
     )
 
@@ -1478,7 +1478,7 @@ PlanarAr(T=Float64;
     Ea::Number,
     r::Number, 
     dr::Number=one(T), 
-    K40::Number, 
+    K40::Number=16.34, 
     agesteps::AbstractRange,
 )
 ```
@@ -1521,7 +1521,7 @@ function PlanarAr(T::Type{<:AbstractFloat}=Float64;
         Ea::Number,
         r::Number, 
         dr::Number=one(T), 
-        K40::Number=one(T), 
+        K40::Number=16.34, 
         agesteps::AbstractRange,
     )
 
@@ -1603,13 +1603,129 @@ function PlanarAr(T::Type{<:AbstractFloat}=Float64;
     )
 end
 
+## --- Multiple domain diffusion chronometers!
+
+    """
+    ```julia
+    MultipleDomain(T=Float64, C=PlanarAr;
+        age::AbstractVector,
+        age_sigma::AbstractVector,
+        fraction_released::AbstractVector,
+        tsteps_experimental::AbstractVector,
+        Tsteps_experimental::AbstractVector,
+        fit::AbstractVector,
+        offset::Number = zero(T),
+        fuse::Bool = true,
+        Ea::AbstractVector,
+        lnD0a2::AbstractVector,
+        volume_sfraction::AbstractVector,
+        r::Number = 100,
+        dr::Number = one(T),
+        K40::Number = 16.34, 
+        agesteps::AbstractRange,
+        tsteps::AbstractRange=reverse(agesteps),
+    )
+    ```
+    Construct a `MultipleDomain` diffusion chronometer given an observed argon
+    release spectrum, degassing schedule, where domain is represented by a 
+    `PlanarAr` or `SphericalAr` chronometer.
+
+    Domain diffusivity and volume parameters must be supplied as vectors
+    `Ea` [kJ/mol], `lnD0a2` [log(1/s)], and `volume_fraction` [unitless]
+    obtained by separately fitting the release spectrum.
+
+    See also: `PlanarAr`, `SphericalAr`, `degas!`
+    """
+    struct MultipleDomain{T<:AbstractFloat, C<:Union{SphericalAr{T}, PlanarAr{T}}} <: AbsoluteChronometer{T}
+        age::Vector{T}                  # [Ma] measured ages at each degassing step
+        age_sigma::Vector{T}            # [Ma] measured age uncertainties at each degassing step
+        fraction_released::Vector{T}    # [unitless] fraction of total Ar-39 released each degassing step
+        tsteps_experimental::Vector{T}  # [s] time steps of experimental heating schedule
+        Tsteps_experimental::Vector{T}  # [C] temperature steps of experimental heating schedule
+        fit::BitVector                  # [Bool] Whether or not each step should be used in inversion
+        offset::T                       # [C] temperature offset relative to the surface
+        fuse::Bool                      # [Bool] Treat the grain as having fused (released all remaining Ar)
+        domains::Vector{C}              # Vector of chronometer obects for each domain
+        volume_fraction::Vector{T}      # [unitless] fraction of total volume represented by each domain
+        model_age::Vector{T}            # [Ma] calculated age at each model degassing step
+        model_parent::Vector{T}         # [atoms/g equivalent] parent tracer degassed
+        model_daughter::Vector{T}       # [atoms/g] daughter degassed
+        model_fraction::Vector{T}       # [unitless] cumulative fraction of parent degasssed
+        tsteps_degassing::FloatRange    # [s] time steps of model heating schedule
+        Tsteps_degassing::Vector{T}     # [C] temperature steps of model heating schedule
+        agesteps::FloatRange            # [Ma] age in Ma relative to the present
+        tsteps::FloatRange              # [Ma] forward time since crystallization
+    end
+    function MultipleDomain(T=Float64, C=PlanarAr;
+            age::AbstractVector,
+            age_sigma::AbstractVector,
+            fraction_released::AbstractVector,
+            tsteps_experimental::AbstractVector,
+            Tsteps_experimental::AbstractVector,
+            fit::AbstractVector,
+            offset::Number = zero(T),
+            fuse::Bool = true,
+            Ea::AbstractVector,
+            lnD0a2::AbstractVector,
+            volume_fraction::AbstractVector,
+            r::Number = 100,
+            dr::Number = one(T),
+            K40::Number = 16.34, 
+            agesteps::AbstractRange,
+            tsteps::AbstractRange=reverse(agesteps),
+        )
+        # Check input arrays are the right size and ordered properly
+        @assert eachindex(Ea) == eachindex(lnD0a2) == eachindex(volume_fraction)
+        @assert eachindex(age) == eachindex(age_sigma) == eachindex(fraction_released) == eachindex(tsteps_experimental) == eachindex(Tsteps_experimental)
+        @assert issorted(tsteps_experimental, lt=<=) "Degassing time steps must be in strictly increasing order"
+
+        # Interpolate degassing t-T steps to the same resolution as the 
+        tsteps_degassing = floatrange(first(tsteps_experimental), last(tsteps_experimental), length=length(agesteps))
+        Tsteps_degassing = linterp1(tsteps_experimental, T.(Tsteps_experimental), tsteps_degassing) 
+        model_age = zeros(T, length(tsteps_degassing))
+        model_parent = zeros(T, length(tsteps_degassing))
+        model_daughter = zeros(T, length(tsteps_degassing))
+        model_fraction = zeros(T, length(tsteps_degassing))
+
+        # Ensure volume fraction sums to one
+        volume_fraction ./= nansum(volume_fraction) 
+        
+        # Allocate domains
+        D0 = @. exp(lnD0a2)*(r/10000)^2
+        domains = [C(T; age=nanmean(age), age_sigma=nanstd(age), offset, r, dr, D0=D0[i], Ea=Ea[i], K40, agesteps) for i in eachindex(D0, Ea)]
+        return MultipleDomain{T,C{T}}(
+            T.(age),
+            T.(age_sigma),
+            T.(fraction_released),
+            tsteps_experimental,
+            Tsteps_experimental,
+            Bool.(fit),
+            T(offset),
+            fuse,
+            domains,
+            T.(volume_fraction),
+            model_age,
+            model_parent,
+            model_daughter,
+            model_fraction,
+            tsteps_degassing,
+            Tsteps_degassing,
+            floatrange(agesteps),
+            floatrange(tsteps),
+        )
+    end
+
+
 ## --- Internal functions to get values and uncertainties from any chronometers
 
 val(x::AbsoluteChronometer{T}) where {T} = x.age::T
 err(x::AbsoluteChronometer{T}) where {T} = x.age_sigma::T
+val(x::MultipleDomain{T}) where {T} = nanmean(x.age, @.(x.fit/x.age_sigma^2))::T
+err(x::MultipleDomain{T}) where {T} = nanstd(x.age, @.(x.fit/x.age_sigma^2))::T
 val(x::FissionTrackLength{T}) where {T} = x.length::T
 err(x::FissionTrackLength{T}) where {T} = zero(T)
 val(x::ApatiteTrackLength{T}) where {T} = x.lcmod::T
+
 
 ## -- Functions related to age and age uncertinty of absolute chronometers
 
@@ -1618,7 +1734,7 @@ function get_age(x::AbstractArray{<:Chronometer{T}}, ::Type{C}=AbsoluteChronomet
     result = sizehint!(T[], length(x))
     for xᵢ in x
         if isa(xᵢ, C)
-            push!(result, xᵢ.age)
+            push!(result, val(xᵢ))
         end
     end
     return result
@@ -1627,33 +1743,10 @@ function get_age_sigma(x::AbstractArray{<:Chronometer{T}}, ::Type{C}=AbsoluteChr
     result = sizehint!(T[], length(x))
     for xᵢ in x
         if isa(xᵢ, C)
-            push!(result, xᵢ.age_sigma)
+            push!(result, err(xᵢ))
         end
     end
     return result
-end
-# Set age and age sigma from a vector of chronometers
-function set_age!(x::AbstractArray{<:Chronometer{T}}, ages::AbstractArray{T}, ::Type{C}=AbsoluteChronometer{T}) where {T<:AbstractFloat, C<:AbsoluteChronometer}
-    @assert count(xᵢ->isa(xᵢ, C), x) == length(ages)
-    iₐ = firstindex(ages)
-    for iₓ in eachindex(x)
-        if isa(x[iₓ], C)
-            x[iₓ] = setproperty!!(x[iₓ], :age, ages[iₐ])
-            iₐ += 1
-        end
-    end
-    return x
-end
-function set_age_sigma!(x::AbstractArray{<:Chronometer{T}}, age_sigmas::AbstractArray{T}, ::Type{C}=AbsoluteChronometer{T}) where {T<:AbstractFloat, C<:AbsoluteChronometer}
-    @assert count(xᵢ->isa(xᵢ, C), x) == length(age_sigmas)
-    iₐ = firstindex(age_sigmas)
-    for iₓ in eachindex(x)
-        if isa(x[iₓ], C)
-            x[iₓ] = setproperty!!(x[iₓ], :age_sigma, age_sigmas[iₐ])
-            iₐ += 1
-        end
-    end
-    return x
 end
 
 function empiricaluncertainty!(σcalc::AbstractVector{T}, x::AbstractArray{<:Chronometer{T}}, ::Type{C}; fraction::Number=1/sqrt(2), sigma_eU::Number = ((C<:ZirconHe) ? 100. : 10.)) where {T<:AbstractFloat, C<:HeliumSample}
@@ -1849,7 +1942,7 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                         Ea = data.Ea_kJ_mol[i],
                         r = data.halfwidth_um[i], 
                         dr = dr, 
-                        K40 = (haskey(data, :K40_ppm) && !isnan(data.K40_ppm[i])) ? data.K40_ppm[i] : 0,
+                        K40 = (haskey(data, :K40_ppm) && !isnan(data.K40_ppm[i])) ? data.K40_ppm[i] : 16.34,
                         agesteps = agesteps[first_index:end],
                     )
                     push!(result, c)
@@ -1887,11 +1980,52 @@ function chronometers(T::Type{<:AbstractFloat}, data, model)
                         Ea = data.Ea_kJ_mol[i],
                         r = data.halfwidth_um[i], 
                         dr = dr, 
-                        K40 = (haskey(data, :K40_ppm) && !isnan(data.K40_ppm[i])) ? data.K40_ppm[i] : 0,
+                        K40 = (haskey(data, :K40_ppm) && !isnan(data.K40_ppm[i])) ? data.K40_ppm[i] : 16.34,
                         agesteps = agesteps[first_index:end],
                     )
                     push!(result, c)
                 end
+            end
+        elseif haskey(data, :mdd_file) && !isempty(data.mdd_file[i])
+            mddata = importdataset(data.mdd_file[i], importas=:Tuple)
+            geometry = haskey(data, :geometry) ? lowercase(string(data.geometry[i])) : "spherical"
+            if (geometry == "slab") || (geometry == "planar")
+                c = MultipleDomain(T, PlanarAr;
+                    age = mddata.age_Ma,
+                    age_sigma = mddata.age_sigma_Ma,
+                    fraction_released = mddata.fraction_degassed,
+                    tsteps_experimental = issorted(mddata.time_s, lt=<=) ? mddata.time_s : cumsum(mddata.time_s),
+                    Tsteps_experimental = mddata.temperature_C,
+                    fit = mddata.fit,
+                    offset = (haskey(data, :offset_C) && !isnan(data.offset_C[i])) ? data.offset_C[i] : 0,
+                    r = (haskey(data, :halfwidth_um) && !isnan(data.halfwidth_um[i])) ? data.halfwidth_um[i] : 100,
+                    dr = dr, 
+                    volume_fraction = mddata.volume_fraction[.!isnan.(mddata.volume_fraction)],
+                    lnD0a2 = mddata.lnD0_a_2[.!isnan.(mddata.lnD0_a_2)],
+                    Ea = mddata.Ea_kJ_mol[.!isnan.(mddata.Ea_kJ_mol)],
+                    K40 = (haskey(data, :K40_ppm) && !isnan(data.K40_ppm[i])) ? data.K40_ppm[i] : 16.34,
+                    agesteps = agesteps[first_index:end],
+                )
+                push!(result, c)
+            else
+                (geometry === "spherical") || @warn "Geometry \"$geometry\" not recognized in row $i, defaulting to spherical"
+                c = MultipleDomain(T, SphericalAr;
+                    age = mddata.age_Ma,
+                    age_sigma = mddata.age_sigma_Ma,
+                    fraction_released = mddata.fraction_degassed,
+                    tsteps_experimental = issorted(mddata.time_s, lt=<=) ? mddata.time_s : cumsum(mddata.time_s),
+                    Tsteps_experimental = mddata.temperature_C,
+                    fit = mddata.fit,
+                    offset = (haskey(data, :offset_C) && !isnan(data.offset_C[i])) ? data.offset_C[i] : 0,
+                    r = (haskey(data, :halfwidth_um) && !isnan(data.halfwidth_um[i])) ? data.halfwidth_um[i] : 100,
+                    dr = dr, 
+                    volume_fraction = mddata.volume_fraction[.!isnan.(mddata.volume_fraction)],
+                    lnD0a2 = mddata.lnD0_a_2[.!isnan.(mddata.lnD0_a_2)],
+                    Ea = mddata.Ea_kJ_mol[.!isnan.(mddata.Ea_kJ_mol)],
+                    K40 = (haskey(data, :K40_ppm) && !isnan(data.K40_ppm[i])) ? data.K40_ppm[i] : 16.34,
+                    agesteps = agesteps[first_index:end],
+                )
+                push!(result, c)
             end
         end
     end

@@ -38,7 +38,7 @@ module Thermochron
     export Constraint, Unconformity, Boundary, DetailInterval           # Types used as inputs to MCMC functions
 
     include("chronometers.jl")
-    const ChronometerUnion{T} = Union{ZirconFT{T}, MonaziteFT{T}, ApatiteFT{T}, ZirconTrackLength{T}, MonaziteTrackLength{T}, ApatiteTrackLength{T}, ZirconHe{T}, ApatiteHe{T}, SphericalHe{T}, PlanarHe{T}, SphericalAr{T}, PlanarAr{T}}
+    const ChronometerUnion{T} = Union{ZirconFT{T}, MonaziteFT{T}, ApatiteFT{T}, ZirconTrackLength{T}, MonaziteTrackLength{T}, ApatiteTrackLength{T}, ZirconHe{T}, ApatiteHe{T}, SphericalHe{T}, PlanarHe{T}, SphericalAr{T}, PlanarAr{T}, MultipleDomain{T, SphericalAr{T}}, MultipleDomain{T, PlanarAr{T}}}
     export Chronometer, AbsoluteChronometer                             # Abstract types
     export ZirconTrackLength, MonaziteTrackLength, ApatiteTrackLength   # Concrete fission track length types
     export ZirconFT, MonaziteFT, ApatiteFT                              # Concrete fission track types

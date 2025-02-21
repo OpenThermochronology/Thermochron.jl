@@ -16,7 +16,7 @@
         Tsteps_experimental = mdds.temperature_C,
         fit = mdds.fit,
         volume_fraction = mdds.volume_fraction[.!isnan.(mdds.volume_fraction)],
-        lnD0_a_2 = mdds.lnD0_a_2[.!isnan.(mdds.lnD0_a_2)],
+        lnD0a2 = mdds.lnD0_a_2[.!isnan.(mdds.lnD0_a_2)],
         Ea = mdds.Ea_kJ_mol[.!isnan.(mdds.Ea_kJ_mol)],
         agesteps,
     )
@@ -39,7 +39,7 @@
         Tsteps_experimental = mdds.temperature_C,
         fit = mdds.fit,
         volume_fraction = mdds.volume_fraction[.!isnan.(mdds.volume_fraction)],
-        lnD0_a_2 = mdds.lnD0_a_2[.!isnan.(mdds.lnD0_a_2)],
+        lnD0a2 = mdds.lnD0_a_2[.!isnan.(mdds.lnD0_a_2)],
         Ea = mdds.Ea_kJ_mol[.!isnan.(mdds.Ea_kJ_mol)],
         agesteps,
     )

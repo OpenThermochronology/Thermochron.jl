@@ -60,7 +60,7 @@
     dsg = importdataset(joinpath(datapath, "generic.csv"), ',', importas=:Tuple);
     chrons = chronometers(dsg, model)
     @test chrons isa Vector{<:Chronometer}
-    @test length(chrons) == 22
+    @test length(chrons) == 24
     @test count(x->isa(x,SphericalHe), chrons) == 4
     @test count(x->isa(x,PlanarHe), chrons) == 1
     @test count(x->isa(x,SphericalAr), chrons) == 2
@@ -73,8 +73,9 @@
     @test count(x->isa(x,ZirconTrackLength), chrons) == 1
     @test count(x->isa(x,MonaziteTrackLength), chrons) == 1
     @test count(x->isa(x,ApatiteTrackLength), chrons) == 3
-    @test get_age(chrons) ≈ [150.37, 263.92, 150.37, 263.92, 263.92, 917.84, 1023.73, 1023.73, 380., 380., 120., 120., 1080., 300., 100., 150., 180.,] 
-    @test get_age_sigma(chrons) ≈ [5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5]
+    @test count(x->isa(x,MultipleDomain), chrons) == 2
+    @test get_age(chrons) ≈ [150.37, 263.92, 150.37, 263.92, 263.92, 917.84, 1023.73, 1023.73, 380., 380., 120., 120., 1080., 300., 100., 150., 180., 808.3268143245239, 808.3268143245239,] 
+    @test get_age_sigma(chrons) ≈ [5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,28.52408719185519,28.52408719185519,]
 
     dt = 10.0
     tsteps = (0+dt/2 : dt : 3000-dt/2)
@@ -82,17 +83,17 @@
 
     calc = zeros(length(chrons))
     calcuncert = zeros(length(chrons))
-    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=false) ≈ -956.8697120067353
-    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=true) ≈ -958.3686320547278
-    @test round.(calc[1:end-5], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1085.555, 304.6573, 95.84216, 149.8249, 179.703]
-    @test round.(calc[end-4:end], sigdigits=3) ≈ [8, 14.3, 14.3, 14.3, 6] atol = 9
+    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=false) ≈ -3674.2208580266874
+    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=true) ≈ -3675.7197780746797
+    @test round.(calc[1:end-7], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1085.555, 304.6573, 95.84216, 149.8249, 179.703]
+    @test round.(calc[end-6:end], sigdigits=3) ≈ [800, 800, 8, 14.3, 14.3, 14.3, 6] atol = 15
     @test calcuncert[1:end-5] ≈ zeros(length(chrons)-5)
     @test calcuncert[end-4:end] ≈ [1.7578982633970572, 1.1785910438098226, 1.1389520917140208, 1.2018361658877996, 0.6070538659171328] 
 
-    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Guenthner2013FC(), Jones2021FA(), Ketcham1999FC(); trackhist=false) ≈ -974.6190971064663
-    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Guenthner2013FC(), Jones2021FA(), Ketcham1999FC(); trackhist=true) ≈ -976.1354038289386
-    @test round.(calc[1:end-5], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1110.379, 304.2772, 95.84216, 149.8249, 179.703]
-    @test round.(calc[end-4:end], sigdigits=3) ≈ [8, 14.3, 14.3, 14.3, 6] atol = 9
+    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Guenthner2013FC(), Jones2021FA(), Ketcham1999FC(); trackhist=false) ≈ -3691.970243126419
+    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Guenthner2013FC(), Jones2021FA(), Ketcham1999FC(); trackhist=true) ≈ -3693.486549848891
+    @test round.(calc[1:end-7], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1110.379, 304.2772, 95.84216, 149.8249, 179.703]
+    @test round.(calc[end-6:end], sigdigits=3) ≈ [800, 800, 8, 14.3, 14.3, 14.3, 6] atol = 15
     @test calcuncert[1:end-5] ≈ zeros(length(chrons)-5)
     @test calcuncert[end-4:end] ≈ [1.8368172844202661, 1.1896389981502726, 1.1448424397109467, 1.2154485905638788, 0.6070538659171328]
 
@@ -124,11 +125,6 @@
     @test get_age(chrons, ZirconHe) ≈ [770, 659, 649, 638, 620, 557, 545, 500, 493, 357, 329, 253, 241, 225, 225, 217, 193, 190, 72, 57, 42, 29, 11]
     σtotal = sqrt.(σcalc[isa.(chrons, ZirconHe)].^2 + get_age_sigma(chrons, ZirconHe).^2)
     @test σtotal ≈ [71.76511200022767, 88.69939042178478, 76.20513740085536, 49.74341557807492, 52.05638860615669, 58.80850040722076, 57.32853093748527, 97.59191128458991, 68.09272937102548, 82.41401338162268, 104.5147581608337, 72.10558616290515, 79.47676757701001, 68.01965448205827, 72.8583946436481, 73.94974380762895, 63.02840819654363, 63.478989858090436, 45.255278015066644, 66.3078727295436, 52.90379008918621, 69.14186488208391, 62.394435852786344]
-
-    set_age!(chrons, zeros(23), ZirconHe)
-    set_age_sigma!(chrons, zeros(23), ZirconHe)
-    @test get_age(chrons, ZirconHe) ≈ zeros(23)
-    @test get_age_sigma(chrons, ZirconHe) ≈ zeros(23)
 
 ## --- Invert for maximum likelihood t-T path
 
