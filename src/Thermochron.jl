@@ -11,7 +11,6 @@ module Thermochron
     using LoopVectorization
     using ProgressMeter: Progress, update!, finish!
     using LsqFit: curve_fit
-    using BangBang: setproperty!!
     using LogExpFunctions: logaddexp, logsubexp, logsumexp
 
     const FloatRange = typeof(1.0:1.0:10.0)
