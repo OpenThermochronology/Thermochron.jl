@@ -72,25 +72,6 @@ function MultipleDomain(T=Float64, C=PlanarAr;
     )
 end
 
-function modelage(mdd::MultipleDomain{T}, Tsteps::AbstractVector; redegasparent::Bool=false) where {T<:AbstractFloat}
-    age = fill!(mdd.model_age, zero(T))
-    parent = fill!(mdd.model_parent, zero(T))
-    daughter = fill!(mdd.model_daughter, zero(T))
-    fuse = mdd.fuse::Bool
-    for i in eachindex(mdd.domains, mdd.volume_fraction)
-        domain = mdd.domains[i]
-        modelage(domain, Tsteps)
-        p, d = degas!(domain, mdd.tsteps_degassing, mdd.Tsteps_degassing; redegasparent, fuse)
-        @. parent += p * mdd.volume_fraction[i]
-        @. daughter += d * mdd.volume_fraction[i]
-    end
-    for i in eachindex(parent, daughter)
-        age[i] = newton_ar_age(daughter[i], parent[i])
-    end
-    parent ./= nansum(parent)
-    nancumsum!(parent)
-    return age, parent
-end
 
 function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degassing::AbstractVector{T}; fuse::Bool=true, redegasparent::Bool=false) where T <: AbstractFloat
 
@@ -384,4 +365,36 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_de
 
     # Return views of the resulting step ages and degassing fractions
     return step_parent, step_daughter
+end
+
+
+function modelage(mdd::MultipleDomain{T}, Tsteps::AbstractVector; redegasparent::Bool=false) where {T<:AbstractFloat}
+    age = fill!(mdd.model_age, zero(T))
+    parent = fill!(mdd.model_parent, zero(T))
+    daughter = fill!(mdd.model_daughter, zero(T))
+    fuse = mdd.fuse::Bool
+    for i in eachindex(mdd.domains, mdd.volume_fraction)
+        domain = mdd.domains[i]
+        modelage(domain, Tsteps)
+        p, d = degas!(domain, mdd.tsteps_degassing, mdd.Tsteps_degassing; redegasparent, fuse)
+        @. parent += p * mdd.volume_fraction[i]
+        @. daughter += d * mdd.volume_fraction[i]
+    end
+    for i in eachindex(parent, daughter)
+        age[i] = newton_ar_age(daughter[i], parent[i])
+    end
+    parent ./= nansum(parent)
+    nancumsum!(parent)
+    return age, parent
+end
+
+function model_ll(mdd::MultipleDomain{T}) where {T<:AbstractFloat}
+    ll = zero(T)
+    for i in eachindex(mdd.age, mdd.age_sigma, mdd.fraction_released, mdd.fit)
+        if mdd.fit[i]
+            model_ageᵢ = linterp1(mdd.model_parent, mdd.model_age, mdd.fraction_released[i])
+            ll += norm_ll(mdd.age[i], mdd.age_sigma[i], model_ageᵢ)
+        end
+    end
+    return ll
 end
