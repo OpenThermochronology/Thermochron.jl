@@ -62,6 +62,7 @@
         (any(x->isa(x, ApatiteTrackLength), data)) && @info "Inverting for track lengths of $(count(x->isa(x, ApatiteTrackLength), data)) apatite fission tracks"
         (any(x->isa(x, SphericalAr), data)) && @info "Inverting for Ar ages of $(count(x->isa(x, SphericalAr), data)) generic spherical Ar chronometers"
         (any(x->isa(x, PlanarAr), data)) && @info "Inverting for Ar ages of $(count(x->isa(x, PlanarAr), data)) generic planar slab Ar chronometers"
+        (any(x->isa(x, MultipleDomain), data)) && @info "Inverting for ages of $(count(x->isa(x, MultipleDomain), data)) multiple domain diffusion chronometers"
         
         # Struct to hold t-T path proposals and related variables
         path = TtPath(agesteps, constraint, boundary, detail, maxpoints)
@@ -345,6 +346,7 @@
         (any(x->isa(x, ApatiteTrackLength), data)) && @info "Inverting for track lengths of $(count(x->isa(x, ApatiteTrackLength), data)) apatite fission tracks"
         (any(x->isa(x, SphericalAr), data)) && @info "Inverting for Ar ages of $(count(x->isa(x, SphericalAr), data)) generic spherical Ar chronometers"
         (any(x->isa(x, PlanarAr), data)) && @info "Inverting for Ar ages of $(count(x->isa(x, PlanarAr), data)) generic planar slab Ar chronometers"
+        (any(x->isa(x, MultipleDomain), data)) && @info "Inverting for ages of $(count(x->isa(x, MultipleDomain), data)) multiple domain diffusion chronometers"
 
         # Struct to hold t-T path proposals and related variables
         path = TtPath(agesteps, constraint, boundary, detail, maxpoints)
