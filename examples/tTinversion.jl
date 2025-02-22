@@ -47,8 +47,8 @@
     tinit = ceil(maximum(ds.crystallization_age_Ma)/dt) * dt # [Ma] Model start time
 
     model = (
-        nsteps = 400000,                # [n] How many steps of the Markov chain should we run?
-        burnin = 100000,                # [n] How long should we wait for MC to converge (become stationary)
+        nsteps = 40000,                # [n] How many steps of the Markov chain should we run?
+        burnin = 10000,                # [n] How long should we wait for MC to converge (become stationary)
         dr = 1.0,                       # [μm] Radius step size
         dTmax = 25.0,                   # [Ma/dt] Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
         Tinit = 400.0,                  # [C] Initial model temperature (i.e., crystallization temperature)
@@ -208,9 +208,9 @@
                 title = "$(C[i])",
             )
             agedist = tT.resultdist[t,:]
-            m = nanmean(agedist, dims=2)
-            l = nanpctile(agedist, 2.5, dims=2)
-            u = nanpctile(agedist, 97.5, dims=2)
+            m = nanmean(agedist, dim=2)
+            l = nanpctile(agedist, 2.5, dim=2)
+            u = nanpctile(agedist, 97.5, dim=2)
             scatter!(h, eU.(chrons[t]), m, 
                 yerror=(m-l, u-m), 
                 label="Model (95%CI)", 
@@ -238,9 +238,9 @@
             title = "ApatiteFT",
         )
         agedist = tT.resultdist[t,:]
-        m = nanmean(agedist, dims=2)
-        l = nanpctile(agedist, 2.5, dims=2)
-        u = nanpctile(agedist, 97.5, dims=2)
+        m = nanmean(agedist, dim=2)
+        l = nanpctile(agedist, 2.5, dim=2)
+        u = nanpctile(agedist, 97.5, dim=2)
         scatter!(h, rmr0, m, 
             yerror = (m-l, u-m), 
             label = "Model (95%CI)", 
@@ -269,9 +269,9 @@
                 title = "$(C[i])",
             )
             agedist = tT.resultdist[t,:]
-            m = nanmean(agedist, dims=2)
-            l = nanpctile(agedist, 2.5, dims=2)
-            u = nanpctile(agedist, 97.5, dims=2)
+            m = nanmean(agedist, dim=2)
+            l = nanpctile(agedist, 2.5, dim=2)
+            u = nanpctile(agedist, 97.5, dim=2)
             scatter!(h, m, 
                 yerror = (m-l, u-m), 
                 label = "Model (95%CI)", 
