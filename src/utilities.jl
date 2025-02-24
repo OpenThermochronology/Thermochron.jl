@@ -12,6 +12,26 @@
         -0.5*(log(2*pi*σ²) + δ^2/σ²)
     end
 
+    function copyunique!(dest, source)
+        isempty(source) && return dest
+        id = firstindex(dest)
+        for i in eachindex(source)
+            sᵢ = source[i]
+            add = true
+            for i in firstindex(dest):id
+                if dest[i] == sᵢ
+                    add=false
+                    break
+                end
+            end
+            if add
+                dest[id] = sᵢ
+                id += 1
+            end
+        end
+        return dest
+    end
+
     """
     ```julia
     sphereintersectionfraction(r₁, r₂, d)
@@ -293,18 +313,50 @@
     end
 
     # Log likelihood functions for ZRDAAM and RDAAM kinetic uncertainties
-    function kinetic_ll(zdmₚ::ZRDAAM, zdm::ZRDAAM)
-        norm_ll(log(zdm.DzD0), zdm.DzD0_logsigma, log(zdmₚ.DzD0)) + 
-        norm_ll(log(zdm.DzEa), zdm.DzEa_logsigma, log(zdmₚ.DzEa)) + 
-        norm_ll(log(zdm.DN17D0), zdm.DN17D0_logsigma, log(zdmₚ.DN17D0)) + 
-        norm_ll(log(zdm.DN17Ea), zdm.DN17Ea_logsigma, log(zdmₚ.DN17Ea)) +
-        norm_ll(zdm.rmin, zdm.rmin_sigma, zdmₚ.rmin)
+        
+    function kinetic_ll(dmₚ::ZRDAAM, dm::ZRDAAM)
+        norm_ll(log(dm.DzD0), dm.DzD0_logsigma, log(dmₚ.DzD0)) + 
+        norm_ll(log(dm.DzEa), dm.DzEa_logsigma, log(dmₚ.DzEa)) + 
+        norm_ll(log(dm.DN17D0), dm.DN17D0_logsigma, log(dmₚ.DN17D0)) + 
+        norm_ll(log(dm.DN17Ea), dm.DN17Ea_logsigma, log(dmₚ.DN17Ea)) +
+        norm_ll(dm.rmin, dm.rmin_sigma, dmₚ.rmin)
     end
-    function kinetic_ll(admₚ::RDAAM, adm::RDAAM)
-        norm_ll(log(adm.D0L), adm.D0L_logsigma, log(admₚ.D0L)) + 
-        norm_ll(log(adm.EaL), adm.EaL_logsigma, log(admₚ.EaL)) + 
-        norm_ll(log(adm.EaTrap), adm.EaTrap_logsigma, log(admₚ.EaTrap))+
-        norm_ll(adm.rmr0, adm.rmr0_sigma, admₚ.rmr0)
+    function kinetic_ll(dmₚ::RDAAM, dm::RDAAM)
+        norm_ll(log(dm.D0L), dm.D0L_logsigma, log(dmₚ.D0L)) + 
+        norm_ll(log(dm.EaL), dm.EaL_logsigma, log(dmₚ.EaL)) + 
+        norm_ll(log(dm.EaTrap), dm.EaTrap_logsigma, log(dmₚ.EaTrap))+
+        norm_ll(dm.rmr0, dm.rmr0_sigma, dmₚ.rmr0)
+    end
+    function kinetic_ll(dmₚ::Diffusivity, dm::Diffusivity)
+        norm_ll(log(dm.D0), dm.D0_logsigma, log(dmₚ.D0)) + 
+        norm_ll(log(dm.Ea), dm.Ea_logsigma, log(dmₚ.Ea))
+    end
+    function kinetic_ll(dmₚ::MDDiffusivity, dm::MDDiffusivity)
+        ll = norm_ll(log(dm.Ea), dm.Ea_logsigma, log(dmₚ.Ea))
+        for i in eachindex(dm.D0, dm.D0_logsigma)
+            ll += norm_ll(log(dm.D0[i]), dm.D0_logsigma[i], log(dmₚ.D0[i]))
+        end
+        return ll
+    end
+    function kinetic_ll(damodelsₚ::Vector{<:Model{T}}, damodels::Vector{<:Model{T}}) where {T}
+        ll = zero(T)
+        addzdm = addadm = true
+        for i in eachindex(damodelsₚ, damodels)
+            dm = damodels[i]
+            dmₚ = damodelsₚ[i]
+            if addzdm && dm isa ZRDAAM
+                ll += kinetic_ll(dmₚ::ZRDAAM{T}, dm::ZRDAAM{T})
+                addzdm = false
+            elseif addadm && dm isa RDAAM
+                ll += kinetic_ll(dmₚ::RDAAM{T}, dm::RDAAM{T})
+                addadm = false
+            elseif dm isa MDDiffusivity
+                ll += kinetic_ll(dmₚ::MDDiffusivity{T}, dm::MDDiffusivity{T})
+            elseif dm isa Diffusivity
+                ll += kinetic_ll(dmₚ::Diffusivity{T}, dm::Diffusivity{T})
+            end
+        end
+        return ll
     end
 
 
@@ -561,14 +613,20 @@
     end
 
     # Adjust kinetic models
+    movekinetics(dm) = dm
     function movekinetics(zdm::ZRDAAM)
         p = 0.5
         ZRDAAM(
             DzEa = (rand()<p) ? exp(log(zdm.DzEa)+randn()*zdm.DzEa_logsigma) : zdm.DzEa,
+            DzEa_logsigma = zdm.DzEa_logsigma,
             DzD0 = (rand()<p) ? exp(log(zdm.DzD0)+randn()*zdm.DzD0_logsigma) : zdm.DzD0,
+            DzD0_logsigma = zdm.DzD0_logsigma,
             DN17Ea = (rand()<p) ? exp(log(zdm.DN17Ea)+randn()*zdm.DN17Ea_logsigma) : zdm.DN17Ea,
+            DN17Ea_logsigma = zdm.DN17Ea_logsigma,
             DN17D0 = (rand()<p) ? exp(log(zdm.DN17D0)+randn()*zdm.DN17D0_logsigma) : zdm.DN17D0,
+            DN17D0_logsigma = zdm.DN17D0_logsigma,
             rmin = (rand()<p) ? reflecting(zdm.rmin + randn()*zdm.rmin_sigma, 0, 1) : zdm.rmin,
+            rmin_sigma = zdm.rmin_sigma,
         )
     end
     function movekinetics(adm::RDAAM)
@@ -576,11 +634,49 @@
         rmr0 = (rand()<p) ? reflecting(adm.rmr0 + randn()*adm.rmr0_sigma, 0, 1) : adm.rmr0
         RDAAM(
             D0L = (rand()<p) ? exp(log(adm.D0L)+randn()*adm.D0L_logsigma) : adm.D0L,
+            D0L_logsigma = adm.D0L_logsigma,
             EaL = (rand()<p) ? exp(log(adm.EaL)+randn()*adm.EaL_logsigma) : adm.EaL,
+            EaL_logsigma = adm.EaL_logsigma,
             EaTrap = (rand()<p) ? exp(log(adm.EaTrap)+randn()*adm.EaTrap_logsigma) : adm.EaTrap,
+            EaTrap_logsigma = adm.EaTrap_logsigma,
             rmr0 = rmr0,
+            rmr0_sigma = adm.rmr0_sigma,
             kappa = adm.kappa_rmr0 - rmr0,
         )
+    end
+    function movekinetics(dm::Diffusivity)
+        p = 0.5
+        Diffusivity(
+            D0 = (rand()<p) ? exp(log(dm.D0)+randn()*dm.D0_logsigma) : dm.D0,
+            D0_logsigma = dm.D0_logsigma,
+            Ea = (rand()<p) ? exp(log(dm.Ea)+randn()*dm.Ea_logsigma) : dm.Ea,
+            Ea_logsigma = dm.Ea_logsigma,
+        )
+    end
+    function movekinetics(dm::MDDiffusivity)
+        p = 0.5
+        MDDiffusivity(
+            D0 = (rand()<p) ? @.(exp(log(dm.D0)+randn()*dm.D0_logsigma)) : dm.D0,
+            D0_logsigma = dm.D0_logsigma,
+            Ea = (rand()<p) ? exp(log(dm.Ea)+randn()*dm.Ea_logsigma) : dm.Ea,
+            Ea_logsigma = dm.Ea_logsigma,
+        )
+    end
+    function movekinetics!(damodels::Vector{<:Model}, updatekinetics::BitVector)
+        fill!(updatekinetics, true)
+        for i in eachindex(damodels)
+            if updatekinetics[i]
+                dm = damodels[i]
+                dmₚ = movekinetics(dm)
+                for j in eachindex(damodels)
+                    if updatekinetics[j] && (damodels[j] == dm)
+                        damodels[j] = dmₚ
+                        updatekinetics[j] = false
+                    end
+                end
+            end
+        end
+        return damodels
     end
 
     # Adjust model uncertainties of chronometers
@@ -597,72 +693,89 @@
     end
 
     # Utility function to calculate model ages for all chronometers at once
-    function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, data::Vector{<:Chronometer{T}}, Tsteps::AbstractVector{T}, zdm::ZirconHeliumModel{T}, adm::ApatiteHeliumModel{T}, zftm::ZirconAnnealingModel{T}, mftm::MonaziteAnnealingModel{T}, aftm::ApatiteAnnealingModel{T}; trackhist::Bool=false, rescale::Bool=false) where {T<:AbstractFloat}
-        imax = argmax(i->length(data[i].tsteps), eachindex(data))
-        tsteps = data[imax].tsteps
+    function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, Tsteps::AbstractVector{T}; trackhist::Bool=false, rescale::Bool=false) where {T<:AbstractFloat}
+        imax = argmax(i->length((chrons[i].tsteps)::FloatRange), eachindex(chrons))
+        tsteps = (chrons[imax].tsteps)::FloatRange
         tmax = last(tsteps)
         dt = step(tsteps)
         @assert issorted(tsteps)
         @assert eachindex(tsteps) == eachindex(Tsteps)
 
         # Pre-anneal ZRDAAM samples, if any
-        isa(zdm, ZRDAAM) && anneal!(data, ZirconHe{T}, tsteps, Tsteps, zdm)
+        if any(x->isa(x, ZRDAAM), damodels)
+            zdm = (damodels[findfirst(x->isa(x, ZRDAAM), damodels)])::ZRDAAM{T}
+            anneal!(chrons, ZirconHe{T}, tsteps, Tsteps, zdm)
+        end
         # Pre-anneal RDAAM samples, if any
-        isa(adm, RDAAM) && anneal!(data, ApatiteHe{T}, tsteps, Tsteps, adm)
+        if any(x->isa(x, RDAAM), damodels)
+            adm = (damodels[findfirst(x->isa(x, RDAAM), damodels)])::RDAAM{T}
+            anneal!(chrons, ApatiteHe{T}, tsteps, Tsteps, adm)
+        end
 
         # Optionally rescale log likelihoods to avoid one chronometer type from dominating the inversion
-        scalegar = rescale ? sqrt(count(x->(isa(x, SphericalAr)||isa(x, PlanarAr)), data)) : 1
-        scaleghe = rescale ? sqrt(count(x->(isa(x, SphericalHe)||isa(x, PlanarHe)), data)) : 1
-        scalezhe = rescale ? sqrt(count(x->isa(x, ZirconHe), data)) : 1
-        scaleahe = rescale ? sqrt(count(x->isa(x, ApatiteHe), data)) : 1
-        scalezft = rescale ? sqrt(count(x->isa(x, ZirconFT), data)) : 1
-        scalemft = rescale ? sqrt(count(x->isa(x, MonaziteFT), data)) : 1
-        scaleaft = rescale ? sqrt(count(x->isa(x, ApatiteFT), data)) : 1
-        scaleztl = rescale ? sqrt(count(x->isa(x, ZirconTrackLength), data)) : 1
-        scalemtl = rescale ? sqrt(count(x->isa(x, MonaziteTrackLength), data)) : 1
-        scaleatl = rescale ? sqrt(count(x->isa(x, ApatiteTrackLength), data)) : 1
-        scalemdd = rescale ? sqrt(sum(x->(isa(x, MultipleDomain) ? count(x.fit) : 0), data)) : 1
+        scalegar = rescale ? sqrt(count(x->(isa(x, SphericalAr)||isa(x, PlanarAr)), chrons)) : 1
+        scaleghe = rescale ? sqrt(count(x->(isa(x, SphericalHe)||isa(x, PlanarHe)), chrons)) : 1
+        scalezhe = rescale ? sqrt(count(x->isa(x, ZirconHe), chrons)) : 1
+        scaleahe = rescale ? sqrt(count(x->isa(x, ApatiteHe), chrons)) : 1
+        scalezft = rescale ? sqrt(count(x->isa(x, ZirconFT), chrons)) : 1
+        scalemft = rescale ? sqrt(count(x->isa(x, MonaziteFT), chrons)) : 1
+        scaleaft = rescale ? sqrt(count(x->isa(x, ApatiteFT), chrons)) : 1
+        scaleztl = rescale ? sqrt(count(x->isa(x, ZirconTrackLength), chrons)) : 1
+        scalemtl = rescale ? sqrt(count(x->isa(x, MonaziteTrackLength), chrons)) : 1
+        scaleatl = rescale ? sqrt(count(x->isa(x, ApatiteTrackLength), chrons)) : 1
+        scalemdd = rescale ? sqrt(sum(x->(isa(x, MultipleDomain) ? count(x.fit) : 0), chrons)) : 1
 
         # Cycle through each Chronometer, model and calculate log likelihood
         ll = zero(T)
-        for i in eachindex(data, μcalc, σcalc)
-            c = data[i]
+        for i in eachindex(chrons, μcalc, σcalc)
+            c, dm = chrons[i], damodels[i]
             first_index = 1 + Int((tmax - last(c.tsteps))÷dt)
             if isa(c, SphericalAr) || isa(c, PlanarAr)
-                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]))
+                c::Union{SphericalAr{T}, PlanarAr{T}}
+                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), dm::Diffusivity{T})
                 ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scalegar
             elseif isa(c, SphericalHe) || isa(c, PlanarHe)
-                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]))
+                c::Union{SphericalHe{T}, PlanarHe{T}}
+                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), dm::Diffusivity{T})
                 ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scaleghe
             elseif isa(c, ZirconHe)
-                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), zdm)
+                c::ZirconHe{T}
+                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), dm::ZirconHeliumModel{T})
                 ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scalezhe
             elseif isa(c, ApatiteHe)
-                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), adm)
+                c::ApatiteHe{T}
+                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), dm::ApatiteHeliumModel{T})
                 ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scaleahe
             elseif isa(c, ZirconFT)
-                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), zftm)
+                c::ZirconFT{T}
+                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), dm::ZirconAnnealingModel{T})
                 ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scalezft
             elseif isa(c, MonaziteFT)
-                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), mftm)
+                c::MonaziteFT{T}
+                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), dm::MonaziteAnnealingModel{T})
                 ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scalemft
             elseif isa(c, ApatiteFT)
-                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), aftm)
+                c::ApatiteFT{T}
+                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), dm::ApatiteAnnealingModel{T})
                 ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scaleaft
             elseif isa(c, ZirconTrackLength)
-                μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), zftm; trackhist)
+                c::ZirconTrackLength{T}
+                μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), dm::ZirconAnnealingModel{T}; trackhist)
                 μcalc[i] = draw_from_population(c, σcalc[i])
                 ll += model_ll(c, σcalc[i])/scaleztl
             elseif isa(c, MonaziteTrackLength)
-                μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), mftm; trackhist)
+                c::MonaziteTrackLength{T}
+                μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), dm::MonaziteAnnealingModel{T}; trackhist)
                 μcalc[i] = draw_from_population(c, σcalc[i])
                 ll += model_ll(c, σcalc[i])/scalemtl
             elseif isa(c, ApatiteTrackLength)
-                μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), aftm; trackhist)
+                c::ApatiteTrackLength{T}
+                μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), dm::ApatiteAnnealingModel{T}; trackhist)
                 μcalc[i] = draw_from_population(c, σcalc[i])
                 ll += model_ll(c, σcalc[i])/scaleatl
             elseif isa(c, MultipleDomain)
-                age, fraction = modelage(c, @views(Tsteps[first_index:end]))
+                c::MultipleDomain{T, <:Union{PlanarAr{T}, SphericalAr{T}}}
+                age, fraction = modelage(c, @views(Tsteps[first_index:end]), dm::MDDiffusivity{T})
                 μcalc[i] = draw_from_population(age, fraction)
                 ll += model_ll(c, σcalc[i])/scalemdd
             else
@@ -673,13 +786,14 @@
 
         # Log likelihood term from comparing observed and expected fission track length histograms
         if trackhist
-            ll += tracklength_histogram_ll!(data, ZirconTrackLength)/scaleztl
-            ll += tracklength_histogram_ll!(data, MonaziteTrackLength)/scalemtl
-            ll += tracklength_histogram_ll!(data, ApatiteTrackLength)/scaleatl
+            ll += tracklength_histogram_ll!(chrons, ZirconTrackLength)/scaleztl
+            ll += tracklength_histogram_ll!(chrons, MonaziteTrackLength)/scalemtl
+            ll += tracklength_histogram_ll!(chrons, ApatiteTrackLength)/scaleatl
         end
             
         return ll
     end
+
 
     function tracklength_histogram_ll!(data::Vector{<:Chronometer{T}}, ::Type{C}) where {T<:AbstractFloat, C<:FissionTrackLength}
         # Initial log likelihood

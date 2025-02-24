@@ -24,14 +24,14 @@ end
 """
 ```julia
 ZRDAAM(
-    DzD0::T = 193188.0          # Diffusivity [cm^2/sec], crystalline endmember
-    DzD0_logsigma::T=1/2        # log units (default = 1/2 = a factor of ℯ two-sigma)
-    DzEa::T=165.0               # Activation energy [kJ/mol], crystalline endmember
-    DzEa_logsigma::T=1/2        # log units (default = 1/2 = a factor of ℯ two-sigma)
-    DN17D0::T = 6.367E-3        # Diffusivity [cm^2/sec], amorphous endmember
-    DN17D0_logsigma::T=1/2      # log units (default = 1/2 = a factor of ℯ two-sigma)
-    DN17Ea::T=71.0              # Activation energy [kJ/mol], amorphous endmember
-    DN17Ea_logsigma::T=1/2      # log units (default = 1/2 = a factor of ℯ two-sigma)
+    DzD0::T = 193188.0          # [cm^2/sec] Maximum diffusivity, crystalline endmember
+    DzD0_logsigma::T=log(2)/2   # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    DzEa::T=165.0               # [kJ/mol] Activation energy, crystalline endmember
+    DzEa_logsigma::T=log(2)/2   # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    DN17D0::T = 6.367E-3        # [cm^2/sec] Maximum diffusivity, amorphous endmember
+    DN17D0_logsigma::T=log(2)/2 # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    DN17Ea::T=71.0              # [kJ/mol] Activation energy, amorphous endmember
+    DN17Ea_logsigma::T=log(2)/2 # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
     lint0::T=45920.0            # [nm]
     SV::T=1.669                 # [1/nm]
     Bα::T=5.48E-19              # Amorphous material produced per alpha decay [g/alpha]
@@ -49,14 +49,14 @@ Zircon Radiation Damage Accumulation and Annealing Model (ZRDAAM) of
 Guenthner et al. 2013 (doi: 10.2475/03.2013.01)
 """
 Base.@kwdef struct ZRDAAM{T<:AbstractFloat} <: ZirconHeliumModel{T} 
-    DzD0::T = 193188.0          # Diffusivity [cm^2/sec], crystalline endmember
-    DzD0_logsigma::T=1/2        # log units (default = 1/2 = a factor of ℯ two-sigma)
-    DzEa::T=165.0               # Activation energy [kJ/mol], crystalline endmember
-    DzEa_logsigma::T=1/2        # log units (default = 1/2 = a factor of ℯ two-sigma)
-    DN17D0::T = 6.367E-3        # Diffusivity [cm^2/sec], amorphous endmember
-    DN17D0_logsigma::T=1/2      # log units (default = 1/2 = a factor of ℯ two-sigma)
-    DN17Ea::T=71.0              # Activation energy [kJ/mol], amorphous endmember
-    DN17Ea_logsigma::T=1/2      # log units (default = 1/2 = a factor of ℯ two-sigma)
+    DzD0::T = 193188.0          # [cm^2/sec] Maximum diffusivity, crystalline endmember
+    DzD0_logsigma::T=log(2)/2   # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    DzEa::T=165.0               # [kJ/mol] Activation energy, crystalline endmember
+    DzEa_logsigma::T=log(2)/2   # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    DN17D0::T = 6.367E-3        # [cm^2/sec] Maximum diffusivity, amorphous endmember
+    DN17D0_logsigma::T=log(2)/2 # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    DN17Ea::T=71.0              # [kJ/mol] Activation energy, amorphous endmember
+    DN17Ea_logsigma::T=log(2)/2 # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
     lint0::T=45920.0            # [nm]
     SV::T=1.669                 # [1/nm]
     Bα::T=5.48E-19              # Amorphous material produced per alpha decay [g/alpha]
@@ -73,12 +73,12 @@ end
 """
 ```julia
 RDAAM(
-    D0L::T=0.6071               # Diffusivity [cm^2/s]
-    D0L_logsigma::T=1/2         # log units (default = 1/2 = a factor of ℯ two-sigma)
-    EaL::T=122.3                # Activation energy [kJ/mol]
-    EaL_logsigma::T=1/2         # log units (default = 1/2 = a factor of ℯ two-sigma)
-    EaTrap::T=34.0              # Activation energy [kJ/mol]
-    EaTrap_logsigma::T=1/2      # log units (default = 1/2 = a factor of ℯ two-sigma)
+    D0L::T=0.6071               # [cm^2/sec] Maximum diffusivity
+    D0L_logsigma::T=log(2)/2    # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    EaL::T=122.3                # [kJ/mol] Activation energy
+    EaL_logsigma::T=log(2)/2    # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    EaTrap::T=34.0              # [kJ/mol] Activation energy
+    EaTrap_logsigma::T=log(2)/2 # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
     psi::T=1e-13                # empirical polynomial coefficient
     omega::T=1e-22              # empirical polynomial coefficient
     etaq::T=0.91                # Durango ηq
@@ -101,12 +101,12 @@ Apatite Radiation Damage Accumulation and Annealing Model (RDAAM) of
 Flowers et al. 2009 (doi: 10.1016/j.gca.2009.01.015)
 """
 Base.@kwdef struct RDAAM{T<:AbstractFloat} <: ApatiteHeliumModel{T} 
-    D0L::T=0.6071               # Diffusivity [cm^2/s]
-    D0L_logsigma::T=1/2         # log units (default = 1/2 = a factor of ℯ two-sigma)
-    EaL::T=122.3                # Activation energy [kJ/mol]
-    EaL_logsigma::T=1/2         # log units (default = 1/2 = a factor of ℯ two-sigma)
-    EaTrap::T=34.0              # Activation energy [kJ/mol]
-    EaTrap_logsigma::T=1/2      # log units (default = 1/2 = a factor of ℯ two-sigma)
+    D0L::T=0.6071               # [cm^2/sec] Maximum diffusivity
+    D0L_logsigma::T=log(2)/2    # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    EaL::T=122.3                # [kJ/mol] Activation energy
+    EaL_logsigma::T=log(2)/2    # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    EaTrap::T=34.0              # [kJ/mol] Activation energy
+    EaTrap_logsigma::T=log(2)/2 # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
     psi::T=1e-13                # empirical polynomial coefficient
     omega::T=1e-22              # empirical polynomial coefficient
     etaq::T=0.91                # Durango ηq
@@ -296,8 +296,8 @@ end
 ```julia
 modelage(mineral::ZirconHe, Tsteps, [ρᵣ], dm::ZRDAAM)
 modelage(mineral::ApatiteHe, Tsteps, [ρᵣ], dm::RDAAM)
-modelage(mineral::SphericalHe, Tsteps)
-modelage(mineral::PlanarHe, Tsteps)
+modelage(mineral::SphericalHe, Tsteps, dm::Diffusivity)
+modelage(mineral::PlanarHe, Tsteps, dm::Diffusivity)
 ```
 Calculate the predicted bulk U-Th/He age of a zircon, apatite, or other mineral
 that has experienced a given t-T path (specified by `mineral.tsteps` for time
@@ -561,13 +561,13 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
     # Numerically solve for raw helium age of the grain (i.e, as measured)
     return newton_he_age(μHe, μ238U, μ235U, μ232Th, μ147Sm)
 end
-function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}) where T <: AbstractFloat
+function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}, dm::Diffusivity{T}) where T <: AbstractFloat
 
     # Damage and annealing constants
-    D0 = mineral.D0*10000^2*SEC_MYR::T      # cm^2/sec, converted to micron^2/Myr  
-    Ea = mineral.Ea::T                      # kJ/mol
-    R = 0.008314472                         # kJ/(K*mol)
-    ΔT = mineral.offset::T + 273.15         # Conversion from C to K, plus temperature offset from the
+    D0 = dm.D0*10000^2*SEC_MYR::T       # cm^2/sec, converted to micron^2/Myr  
+    Ea = dm.Ea::T                       # kJ/mol
+    R = 0.008314472                     # kJ/(K*mol)
+    ΔT = mineral.offset::T + 273.15     # Conversion from C to K, plus temperature offset from the
 
     # Diffusivities of crystalline and amorphous endmembers
     De = mineral.De::Vector{T}
@@ -651,13 +651,13 @@ function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}) where T <:
     # Numerically solve for raw helium age of the grain (i.e, as measured)
     return newton_he_age(μHe, μ238U, μ235U, μ232Th, μ147Sm)
 end
-function modelage(mineral::PlanarHe{T}, Tsteps::AbstractVector{T}) where T <: AbstractFloat
+function modelage(mineral::PlanarHe{T}, Tsteps::AbstractVector{T}, dm::Diffusivity{T}) where T <: AbstractFloat
 
     # Damage and annealing constants
-    D0 = mineral.D0*10000^2*SEC_MYR::T      # cm^2/sec, converted to micron^2/Myr  
-    Ea = mineral.Ea::T                      # kJ/mol
-    R = 0.008314472                         # kJ/(K*mol)
-    ΔT = mineral.offset::T + 273.15         # Conversion from C to K, plus temperature offset from the
+    D0 = dm.D0*10000^2*SEC_MYR::T       # cm^2/sec, converted to micron^2/Myr  
+    Ea = dm.Ea::T                       # kJ/mol
+    R = 0.008314472                     # kJ/(K*mol)
+    ΔT = mineral.offset::T + 273.15     # Conversion from C to K, plus temperature offset from the
 
     # Diffusivities of crystalline and amorphous endmembers
     De = mineral.De::Vector{T}
@@ -746,8 +746,8 @@ function model_ll(mineral::Union{ZirconHe,ApatiteHe}, Tsteps, dm::DiffusivityMod
     σ² = mineral.age_sigma^2
     -0.5*(log(2*pi*σ²) + δ^2/σ²)
 end
-function model_ll(mineral::Union{SphericalHe,PlanarHe}, Tsteps)
-    age = modelage(mineral, Tsteps)
+function model_ll(mineral::Union{SphericalHe,PlanarHe}, Tsteps, dm::DiffusivityModel)
+    age = modelage(mineral, Tsteps, dm)
     δ = age - mineral.age
     σ² = mineral.age_sigma^2
     -0.5*(log(2*pi*σ²) + δ^2/σ²)

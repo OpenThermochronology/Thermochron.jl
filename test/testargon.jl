@@ -11,8 +11,9 @@
     tsteps = (0+dt/2 : dt : tCryst-dt/2)
     Tsteps = collect(range(650, 0, length=length(tsteps)))
 
-    SphericalAr(r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
-    @time "Allocating a mineral" mineral = SphericalAr(r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
+    dm = Diffusivity(;D0, Ea)
+    SphericalAr(r=r,dr=dr,K40=K40,agesteps=reverse(tsteps))
+    @time "Allocating a mineral" mineral = SphericalAr(r=r,dr=dr,K40=K40,agesteps=reverse(tsteps))
     @test isa(mineral, SphericalAr)
     show(mineral)
     println()
@@ -30,40 +31,40 @@
 
 ## --- Test integrated age program for SphericalAr
 
-    modelage(mineral,Tsteps) # to not time compilation
-    @time "Running modelage" age = modelage(mineral,Tsteps)
+    modelage(mineral,Tsteps,dm) # to not time compilation
+    @time "Running modelage" age = modelage(mineral,Tsteps,dm)
     @test age ≈ 871.8786612827483
     for _ in 1:4 # Re-run to ensure internal state does not change
-        @test modelage(mineral,Tsteps) ≈ 871.8786612827483
+        @test modelage(mineral,Tsteps,dm) ≈ 871.8786612827483
     end
 
     r = 35.
-    mineral = SphericalAr(r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
+    mineral = SphericalAr(r=r,dr=dr,K40=K40,agesteps=reverse(tsteps))
     for _ in 1:4 # Re-run to ensure internal state does not change
-        @test modelage(mineral,Tsteps) ≈ 884.3860118880771
+        @test modelage(mineral,Tsteps,dm) ≈ 884.3860118880771
     end
 
     r = 135.
-    mineral = SphericalAr(r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
+    mineral = SphericalAr(r=r,dr=dr,K40=K40,agesteps=reverse(tsteps))
     for _ in 1:4 # Re-run to ensure internal state does not change
-        @test modelage(mineral,Tsteps) ≈ 983.3459153313712
+        @test modelage(mineral,Tsteps,dm) ≈ 983.3459153313712
     end
 
     r = 1350.
-    mineral = SphericalAr(r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
+    mineral = SphericalAr(r=r,dr=dr,K40=K40,agesteps=reverse(tsteps))
     for _ in 1:4 # Re-run to ensure internal state does not change
-        @test modelage(mineral,Tsteps) ≈ 1185.1560217485087
+        @test modelage(mineral,Tsteps,dm) ≈ 1185.1560217485087
     end
 
 ## --- As above but check calculated age as well
 
     r = 35.
-    mineral = SphericalAr(age=900, age_sigma=15, r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
-    @test modelage(mineral,Tsteps) ≈ 884.3860118880771
+    mineral = SphericalAr(age=900, age_sigma=15, r=r,dr=dr,K40=K40,agesteps=reverse(tsteps))
+    @test modelage(mineral,Tsteps,dm) ≈ 884.3860118880771
 
 ## --- Test log likelihood
 
-    @test Thermochron.model_ll(mineral,Tsteps) ≈ -4.168759011549707
+    @test Thermochron.model_ll(mineral,Tsteps,dm) ≈ -4.168759011549707
 
 
 ## --- Test creating and allocating a PlanarAr
@@ -79,8 +80,9 @@
     tsteps = (0+dt/2 : dt : tCryst-dt/2)
     Tsteps = collect(range(650, 0, length=length(tsteps)))
 
-    PlanarAr(r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
-    @time "Allocating a mineral" mineral = PlanarAr(r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
+    dm = Diffusivity(;D0, Ea)
+    PlanarAr(r=r,dr=dr,K40=K40,agesteps=reverse(tsteps))
+    @time "Allocating a mineral" mineral = PlanarAr(r=r,dr=dr,K40=K40,agesteps=reverse(tsteps))
     @test isa(mineral, PlanarAr)
     show(mineral)
     println()
@@ -98,34 +100,34 @@
 
 ## --- Test integrated age program for PlanarAr
 
-    modelage(mineral,Tsteps) # to not time compilation
-    @time "Running modelage" age = modelage(mineral,Tsteps)
+    modelage(mineral,Tsteps,dm) # to not time compilation
+    @time "Running modelage" age = modelage(mineral,Tsteps,dm)
     @test age ≈ 935.724912311897
-    @test modelage(mineral,Tsteps) ≈  935.724912311897
+    @test modelage(mineral,Tsteps,dm) ≈  935.724912311897
 
     r = 35.
-    mineral = PlanarAr(r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
-    @test modelage(mineral,Tsteps) ≈ 949.7088668631848 
-    @test modelage(mineral,Tsteps) ≈ 949.7088668631848 
+    mineral = PlanarAr(r=r,dr=dr,K40=K40,agesteps=reverse(tsteps))
+    @test modelage(mineral,Tsteps,dm) ≈ 949.7088668631848 
+    @test modelage(mineral,Tsteps,dm) ≈ 949.7088668631848 
 
     r = 135.
-    mineral = PlanarAr(r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
-    @test modelage(mineral,Tsteps) ≈ 1058.3223124594606
-    @test modelage(mineral,Tsteps) ≈ 1058.3223124594606
+    mineral = PlanarAr(r=r,dr=dr,K40=K40,agesteps=reverse(tsteps))
+    @test modelage(mineral,Tsteps,dm) ≈ 1058.3223124594606
+    @test modelage(mineral,Tsteps,dm) ≈ 1058.3223124594606
 
     r = 1350.
-    mineral = PlanarAr(r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
-    @test modelage(mineral,Tsteps) ≈ 1276.566455014108
-    @test modelage(mineral,Tsteps) ≈ 1276.566455014108
+    mineral = PlanarAr(r=r,dr=dr,K40=K40,agesteps=reverse(tsteps))
+    @test modelage(mineral,Tsteps,dm) ≈ 1276.566455014108
+    @test modelage(mineral,Tsteps,dm) ≈ 1276.566455014108
 
 ## --- As above but check calculated age as well
 
     r = 35.
-    mineral = PlanarAr(age=950, age_sigma=15, r=r,dr=dr,K40=K40,D0=D0,Ea=Ea,agesteps=reverse(tsteps))
-    @test modelage(mineral,Tsteps) ≈ 949.7088668631848
+    mineral = PlanarAr(age=950, age_sigma=15, r=r,dr=dr,K40=K40,agesteps=reverse(tsteps))
+    @test modelage(mineral,Tsteps,dm) ≈ 949.7088668631848
 
 ## --- Test log likelihood
 
-    @test Thermochron.model_ll(mineral,Tsteps) ≈ -3.6271770865365536 
+    @test Thermochron.model_ll(mineral,Tsteps,dm) ≈ -3.6271770865365536 
 
 ## --- End of file

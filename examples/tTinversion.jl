@@ -47,8 +47,8 @@
     tinit = ceil(maximum(ds.crystallization_age_Ma)/dt) * dt # [Ma] Model start time
 
     model = (
-        nsteps = 40000,                # [n] How many steps of the Markov chain should we run?
-        burnin = 10000,                # [n] How long should we wait for MC to converge (become stationary)
+        nsteps = 400000,                # [n] How many steps of the Markov chain should we run?
+        burnin = 100000,                # [n] How long should we wait for MC to converge (become stationary)
         dr = 1.0,                       # [μm] Radius step size
         dTmax = 25.0,                   # [Ma/dt] Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
         Tinit = 400.0,                  # [C] Initial model temperature (i.e., crystallization temperature)
@@ -108,7 +108,7 @@
 
 ## --- Process data into Chronometer objects
 
-    chrons = chronometers(ds, model)
+    chrons, damodels = chronometers(ds, model)
 
     # Model uncertainty is not well known (depending on annealing parameters,
     # decay constants, diffusion parameters, etc.), but is certainly non-zero.
@@ -144,8 +144,8 @@
 ## --- Invert for maximum likelihood t-T path
 
     # Run Markov Chain
-    # @time tT = MCMC(chrons, model, boundary, constraint, detail)
-    @time tT, kinetics = MCMC_varkinetics(chrons, model, boundary, constraint, detail)
+    # @time tT = MCMC(chrons, damodels, model, boundary, constraint, detail)
+    @time tT, kinetics = MCMC_varkinetics(chrons, damodels, model, boundary, constraint, detail)
     @info """tT.tpointdist & tT.Tpointdist collected, size: $(size(tT.Tpointdist))
     Mean log-likelihood: $(nanmean(view(tT.lldist, model.burnin:model.nsteps)))
     Mean acceptance rate: $(nanmean(view(tT.acceptancedist, model.burnin:model.nsteps)))

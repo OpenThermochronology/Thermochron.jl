@@ -1,10 +1,31 @@
+## -- Multiple domain diffusivity
+
+    """
+    ```julia
+    MDDiffusivity(
+        D0::NTuple{N,T}             # [cm^2/sec] Maximum diffusivity
+        D0_logsigma::NTuple{N,T}    # [unitless] log uncertainty (default = 1/2 = a factor of ℯ two-sigma)
+        Ea::T                       # [kJ/mol] Activation energy
+        Ea_logsigma::T              # [unitless] log uncertainty (default = 1/2 = a factor of ℯ two-sigma)
+    )
+    ```
+    Multiple diffusivities for multiple domains
+    """
+    Base.@kwdef struct MDDiffusivity{T<:AbstractFloat, N} <: DiffusivityModel{T}
+        D0::NTuple{N,T}             # [cm^2/sec] Maximum diffusivity
+        D0_logsigma::NTuple{N,T}    # [unitless] log uncertainty (default = 1/2 = a factor of ℯ two-sigma)
+        Ea::T                       # [kJ/mol] Activation energy
+        Ea_logsigma::T              # [unitless] log uncertainty (default = 1/2 = a factor of ℯ two-sigma)
+    end
+    Base.getindex(d::MDDiffusivity{T}, i::Int) where {T} = Diffusivity{T}(d.D0[i], d.D0_logsigma[i], d.Ea, d.Ea_logsigma)
+
 ## -- Multiple domain diffusion functions
 
-function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degassing::AbstractVector{T}; fuse::Bool=true, redegasparent::Bool=false) where T <: AbstractFloat
+function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degassing::AbstractVector{T}, dm::Diffusivity{T}; fuse::Bool=true, redegasparent::Bool=false) where T <: AbstractFloat
 
     # Damage and annealing constants
-    D0 = (mineral.D0*10000^2)::T              # cm^2/sec, converted to micron^2/sec  
-    Ea = mineral.Ea::T                      # kJ/mol
+    D0 = (dm.D0*10000^2)::T                 # cm^2/sec, converted to micron^2/sec  
+    Ea = dm.Ea::T                           # kJ/mol
     R = 0.008314472                         # kJ/(K*mol)
     ΔT = mineral.offset::T + 273.15         # Conversion from C to K, plus temperature offset from the
 
@@ -142,11 +163,11 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degas
     # Return views of the resulting step ages and degassing fractions
     return step_parent, step_daughter
 end
-function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_degassing::AbstractVector{T}; fuse::Bool=true, redegasparent::Bool=false) where T <: AbstractFloat
+function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_degassing::AbstractVector{T}, dm::Diffusivity{T}; fuse::Bool=true, redegasparent::Bool=false) where T <: AbstractFloat
 
     # Damage and annealing constants
-    D0 = (mineral.D0*10000^2)::T              # cm^2/sec, converted to micron^2/sec  
-    Ea = mineral.Ea::T                      # kJ/mol
+    D0 = (dm.D0*10000^2)::T                 # cm^2/sec, converted to micron^2/sec  
+    Ea = dm.Ea::T                           # kJ/mol
     R = 0.008314472                         # kJ/(K*mol)
     ΔT = mineral.offset::T + 273.15         # Conversion from C to K, plus temperature offset from the
 
@@ -295,7 +316,7 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_de
 end
 
 
-function modelage(mdd::MultipleDomain{T}, Tsteps::AbstractVector; redegasparent::Bool=false) where {T<:AbstractFloat}
+function modelage(mdd::MultipleDomain{T}, Tsteps::AbstractVector, dm::MDDiffusivity{T}; redegasparent::Bool=false) where {T<:AbstractFloat}
     age = fill!(mdd.model_age, zero(T))
     parent = fill!(mdd.model_parent, zero(T))
     daughter = fill!(mdd.model_daughter, zero(T))
@@ -304,8 +325,8 @@ function modelage(mdd::MultipleDomain{T}, Tsteps::AbstractVector; redegasparent:
     # Degas
     for i in eachindex(mdd.domains, mdd.volume_fraction)
         domain = mdd.domains[i]
-        modelage(domain, Tsteps)
-        p, d = degas!(domain, mdd.tsteps_degassing, mdd.Tsteps_degassing; fuse, redegasparent)
+        modelage(domain, Tsteps, dm[i])
+        p, d = degas!(domain, mdd.tsteps_degassing, mdd.Tsteps_degassing, dm[i]; fuse, redegasparent)
         @. parent += p * mdd.volume_fraction[i]
         @. daughter += d * mdd.volume_fraction[i]
     end

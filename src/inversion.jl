@@ -1,8 +1,8 @@
     """
     ```julia
-    MCMC(data::Vector{<:Chronometer}, model::NamedTuple, npoints::Int, path.agepoints::Vector, path.Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval])
+    MCMC(chrons::Vector{<:Chronometer}, model::NamedTuple, npoints::Int, path.agepoints::Vector, path.Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval])
     ```
-    Markov chain Monte Carlo time-Temperature inversion of the thermochronometric data 
+    Markov chain Monte Carlo time-Temperature inversion of the thermochronometric chrons 
     specified as a vector `chrons` of `Chronometer` objects (`ZirconHe`, `ApatiteHe`, 
     `ApatiteFT`, etc.) and model parameters specified by the named tuple `model`, 
     with variable diffusion kinetics.
@@ -13,11 +13,14 @@
 
     ## Examples
     ```julia
-    tT = MCMC(data::NamedTuple, model::NamedTuple, constraint::Constraint, boundary::Boundary, [detail::DetailInterval])
+    tT = MCMC(chrons::NamedTuple, model::NamedTuple, constraint::Constraint, boundary::Boundary, [detail::DetailInterval])
     ```
     """
-    MCMC(data::NamedTuple, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where {T <: AbstractFloat} = MCMC(chronometers(T, data, model), model, boundary, constraint, detail)
-    function MCMC(data::Vector{<:ChronometerUnion{T}}, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
+    function MCMC(dataset::NamedTuple, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where {T <: AbstractFloat}
+        chrons, damodels = chronometers(T, dataset, model)
+        return MCMC(chrons, damodels, model, boundary, constraint, detail)
+    end
+    function MCMC(chrons::Vector{<:ChronometerUnion{T}}, damodels::Vector{<:ModelUnion{T}}, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
         # Process inputs
         burnin = (haskey(model, :burnin) ? model.burnin : 5*10^5)::Int
         nsteps = (haskey(model, :nsteps) ? model.nsteps : 10^6)::Int
@@ -38,46 +41,39 @@
         @assert tsteps == reverse(agesteps)
         @assert issorted(tsteps)
         σmodel = T(haskey(model, :σmodel) ? model.σmodel : 1)::T
-        σcalc = (haskey(model, :σcalc) ? model.σcalc : fill(σmodel, length(data)))::Vector{T}
-        μcalc = zeros(T, length(data))::Vector{T}
-        @assert eachindex(σcalc) == eachindex(μcalc) == eachindex(data)
+        σcalc = (haskey(model, :σcalc) ? model.σcalc : fill(σmodel, length(chrons)))::Vector{T}
+        μcalc = zeros(T, length(chrons))::Vector{T}
+        @assert eachindex(σcalc) == eachindex(μcalc) == eachindex(chrons)
         T0annealing = T(haskey(model, :T0annealing) ? model.T0annealing : 1)::T
         λannealing = T(haskey(model, :λannealing) ? model.λannealing : 7/burnin)::T
 
-        # Damage models for each mineral
-        zdm = (haskey(model, :zdm) ? model.zdm : ZRDAAM())::ZirconHeliumModel{T}
-        adm = (haskey(model, :adm) ? model.adm : RDAAM())::ApatiteHeliumModel{T}
-        zftm = (haskey(model, :zftm) ? model.zftm : Yamada2007PC())::ZirconAnnealingModel{T}
-        mftm = (haskey(model, :mftm) ? model.mftm : Jones2021FA())::MonaziteAnnealingModel{T}
-        aftm = (haskey(model, :aftm) ? model.aftm : Ketcham2007FC())::ApatiteAnnealingModel{T}
-
         # See what minerals we have
-        (haszhe = any(x->isa(x, ZirconHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, ZirconHe), data)) zircons"
-        (hasahe = any(x->isa(x, ApatiteHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, ApatiteHe), data)) apatites"
-        (any(x->isa(x, SphericalHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, SphericalHe), data)) generic spherical He chronometers"
-        (any(x->isa(x, PlanarHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, PlanarHe), data)) generic planar slab He chronometers"
-        (any(x->isa(x, ZirconFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, ZirconFT), data)) zircons"
-        (any(x->isa(x, MonaziteFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, MonaziteFT), data)) monazites"
-        (any(x->isa(x, ApatiteFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, ApatiteFT), data)) apatites"
-        (any(x->isa(x, ApatiteTrackLength), data)) && @info "Inverting for track lengths of $(count(x->isa(x, ApatiteTrackLength), data)) apatite fission tracks"
-        (any(x->isa(x, SphericalAr), data)) && @info "Inverting for Ar ages of $(count(x->isa(x, SphericalAr), data)) generic spherical Ar chronometers"
-        (any(x->isa(x, PlanarAr), data)) && @info "Inverting for Ar ages of $(count(x->isa(x, PlanarAr), data)) generic planar slab Ar chronometers"
-        (any(x->isa(x, MultipleDomain), data)) && @info "Inverting for ages of $(count(x->isa(x, MultipleDomain), data)) multiple domain diffusion chronometers"
-        
+        (haszhe = any(x->isa(x, ZirconHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, ZirconHe), chrons)) zircons"
+        (hasahe = any(x->isa(x, ApatiteHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, ApatiteHe), chrons)) apatites"
+        (any(x->isa(x, SphericalHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, SphericalHe), chrons)) generic spherical He chronometers"
+        (any(x->isa(x, PlanarHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, PlanarHe), chrons)) generic planar slab He chronometers"
+        (any(x->isa(x, ZirconFT), chrons)) && @info "Inverting for fission track ages of $(count(x->isa(x, ZirconFT), chrons)) zircons"
+        (any(x->isa(x, MonaziteFT), chrons)) && @info "Inverting for fission track ages of $(count(x->isa(x, MonaziteFT), chrons)) monazites"
+        (any(x->isa(x, ApatiteFT), chrons)) && @info "Inverting for fission track ages of $(count(x->isa(x, ApatiteFT), chrons)) apatites"
+        (any(x->isa(x, ApatiteTrackLength), chrons)) && @info "Inverting for track lengths of $(count(x->isa(x, ApatiteTrackLength), chrons)) apatite fission tracks"
+        (any(x->isa(x, SphericalAr), chrons)) && @info "Inverting for Ar ages of $(count(x->isa(x, SphericalAr), chrons)) generic spherical Ar chronometers"
+        (any(x->isa(x, PlanarAr), chrons)) && @info "Inverting for Ar ages of $(count(x->isa(x, PlanarAr), chrons)) generic planar slab Ar chronometers"
+        (any(x->isa(x, MultipleDomain), chrons)) && @info "Inverting for ages of $(count(x->isa(x, MultipleDomain), chrons)) multiple domain diffusion chronometers"
+
         # Struct to hold t-T path proposals and related variables
         path = TtPath(agesteps, constraint, boundary, detail, maxpoints)
-
-        # Initial propopsal
-        initialproposal!(path, npoints) 
-
-        # Log-likelihood for initial proposal
-        ll = llₚ = model!(μcalc, σcalc, data, path.Tsteps, zdm, adm, zftm, mftm, aftm; trackhist, rescale) + diff_ll(path.Tsteps, dTmax, dTmax_sigma) + 
-            (simplified ? -log(npoints) : zero(T))  + (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
 
         # Variables to hold proposals
         npointsₚ = npoints
         μcalcₚ = copy(μcalc)::Vector{T}
         σcalcₚ = copy(σcalc)::Vector{T}
+        
+        # Initial propopsal
+        initialproposal!(path, npoints) 
+
+        # Log-likelihood for initial proposal
+        ll = llₚ = model!(μcalc, σcalc, chrons, damodels, path.Tsteps; trackhist, rescale) + diff_ll(path.Tsteps, dTmax, dTmax_sigma) + 
+            (simplified ? -log(npoints) : zero(T))  + (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
 
         # Proposal probabilities (must sum to 1)
         p_move = 0.64
@@ -120,7 +116,7 @@
                 movebounds!(path)
 
                 # Move uncertainties
-                dynamicsigma && movesigma!(σcalcₚ, data)
+                dynamicsigma && movesigma!(σcalcₚ, chrons)
 
             end
 
@@ -133,7 +129,7 @@
             end
 
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdm, adm, zftm, mftm, aftm; trackhist, rescale)
+            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps; trackhist, rescale)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             simplified && (llₚ += -log(npointsₚ))
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
@@ -167,7 +163,7 @@
         # distributions to populate
         tpointdist = fill(T(NaN), totalpoints, nsteps)
         Tpointdist = fill(T(NaN), totalpoints, nsteps)
-        resultdist = fill(T(NaN), length(data), nsteps)
+        resultdist = fill(T(NaN), length(chrons), nsteps)
         σⱼtdist = zeros(T, nsteps)
         σⱼTdist = zeros(T, nsteps)
         lldist = zeros(T, nsteps)
@@ -209,7 +205,7 @@
                 movebounds!(path)
 
                 # Move uncertainties
-                dynamicsigma && movesigma!(σcalcₚ, data)
+                dynamicsigma && movesigma!(σcalcₚ, chrons)
 
             end
 
@@ -222,7 +218,7 @@
             end
 
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdm, adm, zftm, mftm, aftm; trackhist, rescale)
+            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps; trackhist, rescale)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             simplified && (llₚ += -log(npointsₚ))
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
@@ -285,7 +281,7 @@
     ```julia
     MCMC_varkinetics(chrons::Vector{<:Chronometer}, model::NamedTuple, npoints::Int, path.agepoints::Vector, path.Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval])
     ```
-    Markov chain Monte Carlo time-Temperature inversion of the thermochronometric data 
+    Markov chain Monte Carlo time-Temperature inversion of the thermochronometric chrons 
     specified as a vector `chrons` of `Chronometer` objects (`ZirconHe`, `ApatiteHe`, 
     `ApatiteFT`, etc.) and model parameters specified by the named tuple `model`, 
     with variable diffusion kinetics.
@@ -297,11 +293,14 @@
 
     ## Examples
     ```julia
-    tT, kinetics = MCMC_varkinetics(data::NamedTuple, model::NamedTuple, constraint::Constraint, boundary::Boundary, [detail::DetailInterval])
+    tT, kinetics = MCMC_varkinetics(chrons::NamedTuple, model::NamedTuple, constraint::Constraint, boundary::Boundary, [detail::DetailInterval])
     ```
     """
-    MCMC_varkinetics(data::NamedTuple, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where {T <: AbstractFloat} = MCMC_varkinetics(chronometers(T, data, model), model, boundary, constraint, detail)
-    function MCMC_varkinetics(data::Vector{<:ChronometerUnion{T}}, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
+    function MCMC_varkinetics(dataset::NamedTuple, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where {T <: AbstractFloat}
+        chrons, damodels = chronometers(T, dataset, model)
+        return MCMC_varkinetics(chrons, damodels, model, boundary, constraint, detail)
+    end
+    function MCMC_varkinetics(chrons::Vector{<:ChronometerUnion{T}}, damodels::Vector{<:ModelUnion{T}}, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
         # Process inputs
         burnin = (haskey(model, :burnin) ? model.burnin : 5*10^5)::Int
         nsteps = (haskey(model, :nsteps) ? model.nsteps : 10^6)::Int
@@ -322,48 +321,44 @@
         @assert tsteps == reverse(agesteps)
         @assert issorted(tsteps)
         σmodel = T(haskey(model, :σmodel) ? model.σmodel : 1)::T
-        σcalc = (haskey(model, :σcalc) ? model.σcalc : fill(σmodel, length(data)))::Vector{T}
-        μcalc = zeros(T, length(data))::Vector{T}
-        @assert eachindex(σcalc) == eachindex(μcalc) == eachindex(data)
+        σcalc = (haskey(model, :σcalc) ? model.σcalc : fill(σmodel, length(chrons)))::Vector{T}
+        μcalc = zeros(T, length(chrons))::Vector{T}
+        @assert eachindex(σcalc) == eachindex(μcalc) == eachindex(chrons)
         T0annealing = T(haskey(model, :T0annealing) ? model.T0annealing : 1)::T
         λannealing = T(haskey(model, :λannealing) ? model.λannealing : 7/burnin)::T
-        
-        # Damage models for each mineral
-        zdm₀ = zdm = zdmₚ = (haskey(model, :zdm) ? model.zdm : ZRDAAM())::ZirconHeliumModel{T}
-        adm₀ = adm = admₚ =  (haskey(model, :adm) ? model.adm : RDAAM())::ApatiteHeliumModel{T}
-        zftm = (haskey(model, :zftm) ? model.zftm : Yamada2007PC())::ZirconAnnealingModel{T}
-        mftm = (haskey(model, :mftm) ? model.mftm : Jones2021FA())::MonaziteAnnealingModel{T}
-        aftm = (haskey(model, :aftm) ? model.aftm : Ketcham2007FC())::ApatiteAnnealingModel{T}
 
         # See what minerals we have
-        (haszhe = any(x->isa(x, ZirconHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, ZirconHe), data)) zircons"
-        (hasahe = any(x->isa(x, ApatiteHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, ApatiteHe), data)) apatites"
-        (any(x->isa(x, SphericalHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, SphericalHe), data)) generic spherical He chronometers"
-        (any(x->isa(x, PlanarHe), data)) && @info "Inverting for He ages of $(count(x->isa(x, PlanarHe), data)) generic planar slab He chronometers"
-        (any(x->isa(x, ZirconFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, ZirconFT), data)) zircons"
-        (any(x->isa(x, MonaziteFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, MonaziteFT), data)) monazites"
-        (any(x->isa(x, ApatiteFT), data)) && @info "Inverting for fission track ages of $(count(x->isa(x, ApatiteFT), data)) apatites"
-        (any(x->isa(x, ApatiteTrackLength), data)) && @info "Inverting for track lengths of $(count(x->isa(x, ApatiteTrackLength), data)) apatite fission tracks"
-        (any(x->isa(x, SphericalAr), data)) && @info "Inverting for Ar ages of $(count(x->isa(x, SphericalAr), data)) generic spherical Ar chronometers"
-        (any(x->isa(x, PlanarAr), data)) && @info "Inverting for Ar ages of $(count(x->isa(x, PlanarAr), data)) generic planar slab Ar chronometers"
-        (any(x->isa(x, MultipleDomain), data)) && @info "Inverting for ages of $(count(x->isa(x, MultipleDomain), data)) multiple domain diffusion chronometers"
+        (haszhe = any(x->isa(x, ZirconHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, ZirconHe), chrons)) zircons"
+        (hasahe = any(x->isa(x, ApatiteHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, ApatiteHe), chrons)) apatites"
+        (any(x->isa(x, SphericalHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, SphericalHe), chrons)) generic spherical He chronometers"
+        (any(x->isa(x, PlanarHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, PlanarHe), chrons)) generic planar slab He chronometers"
+        (any(x->isa(x, ZirconFT), chrons)) && @info "Inverting for fission track ages of $(count(x->isa(x, ZirconFT), chrons)) zircons"
+        (any(x->isa(x, MonaziteFT), chrons)) && @info "Inverting for fission track ages of $(count(x->isa(x, MonaziteFT), chrons)) monazites"
+        (any(x->isa(x, ApatiteFT), chrons)) && @info "Inverting for fission track ages of $(count(x->isa(x, ApatiteFT), chrons)) apatites"
+        (any(x->isa(x, ApatiteTrackLength), chrons)) && @info "Inverting for track lengths of $(count(x->isa(x, ApatiteTrackLength), chrons)) apatite fission tracks"
+        (any(x->isa(x, SphericalAr), chrons)) && @info "Inverting for Ar ages of $(count(x->isa(x, SphericalAr), chrons)) generic spherical Ar chronometers"
+        (any(x->isa(x, PlanarAr), chrons)) && @info "Inverting for Ar ages of $(count(x->isa(x, PlanarAr), chrons)) generic planar slab Ar chronometers"
+        (any(x->isa(x, MultipleDomain), chrons)) && @info "Inverting for ages of $(count(x->isa(x, MultipleDomain), chrons)) multiple domain diffusion chronometers"
 
         # Struct to hold t-T path proposals and related variables
         path = TtPath(agesteps, constraint, boundary, detail, maxpoints)
+
+        # Variables to hold proposals
+        npointsₚ = npoints
+        μcalcₚ = copy(μcalc)::Vector{T}
+        σcalcₚ = copy(σcalc)::Vector{T}
+        damodelsₚ = copy(damodels)
+        damodels₀ = copy(damodels)
+        updatekinetics = falses(size(damodels))
 
         # Initial propopsal
         initialproposal!(path, npoints)
 
         # Log-likelihood for initial proposal
-        ll = llₚ = model!(μcalc, σcalc, data, path.Tsteps, zdm, adm, zftm, mftm, aftm; trackhist, rescale) + 
-            diff_ll(path.Tsteps, dTmax, dTmax_sigma) + kinetic_ll(admₚ, adm₀) + kinetic_ll(zdmₚ, zdm₀) + 
+        ll = llₚ = model!(μcalc, σcalc, chrons, damodels, path.Tsteps; trackhist, rescale) + 
+            diff_ll(path.Tsteps, dTmax, dTmax_sigma) + kinetic_ll(damodelsₚ, damodels₀) + 
             (simplified ? -log(npoints) : zero(T)) + (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
         
-        # Variables to hold proposals
-        npointsₚ = npoints
-        μcalcₚ = copy(μcalc)::Vector{T}
-        σcalcₚ = copy(σcalc)::Vector{T}
-
         # Proposal probabilities (must sum to 1)
         p_move = 0.6
         p_birth = 0.15 # Must equal p_death
@@ -378,8 +373,7 @@
 
             # Copy proposal from last accepted solution
             resetproposal!(path)
-            admₚ = adm
-            zdmₚ = zdm
+            copyto!(damodelsₚ, damodels)
             npointsₚ = npoints
             copyto!(σcalcₚ, σcalc)
 
@@ -408,12 +402,11 @@
                 movebounds!(path)
 
                 # Move uncertainties
-                dynamicsigma && movesigma!(σcalcₚ, data)
+                dynamicsigma && movesigma!(σcalcₚ, chrons)
 
             elseif (r < p_move+p_birth+p_death+p_bounds+p_kinetics)
                 # Adjust kinetic parameters, one at a time
-                haszhe && (zdmₚ = movekinetics(zdm))
-                hasahe && (admₚ = movekinetics(adm))
+                movekinetics!(damodelsₚ, updatekinetics)
 
             end
 
@@ -426,9 +419,9 @@
             end
                
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdmₚ, admₚ, zftm, mftm, aftm; trackhist, rescale)
+            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps; trackhist, rescale)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
-            llₚ += kinetic_ll(admₚ, adm₀) + kinetic_ll(zdmₚ, zdm₀)
+            llₚ += kinetic_ll(damodelsₚ, damodels₀)
             simplified && (llₚ += -log(npointsₚ))
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
@@ -447,8 +440,7 @@
 
                 # Update the currently accepted proposal
                 acceptproposal!(path)
-                adm = admₚ
-                zdm = zdmₚ
+                copyto!(damodels, damodelsₚ)
                 ll = llₚ
                 npoints = npointsₚ
                 copyto!(μcalc, μcalcₚ)
@@ -463,14 +455,13 @@
         # distributions to populate
         tpointdist = fill(T(NaN), totalpoints, nsteps)
         Tpointdist = fill(T(NaN), totalpoints, nsteps)
-        resultdist = fill(T(NaN), length(data), nsteps)
+        resultdist = fill(T(NaN), length(chrons), nsteps)
+        dmdist = similar(damodels, length(unique(damodels)), nsteps)
         σⱼtdist = zeros(T, nsteps)
         σⱼTdist = zeros(T, nsteps)
         lldist = zeros(T, nsteps)
         ndist = zeros(Int, nsteps)
         acceptancedist = falses(nsteps)
-        admdist = Array{typeof(adm)}(undef, nsteps)
-        zdmdist = Array{typeof(zdm)}(undef, nsteps)
 
         progress = Progress(nsteps, dt=1, desc="MCMC collection ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
@@ -479,8 +470,7 @@
 
             # Copy proposal from last accepted solution
             resetproposal!(path)
-            admₚ = adm
-            zdmₚ = zdm
+            copyto!(damodelsₚ, damodels)
             npointsₚ = npoints
             copyto!(σcalcₚ, σcalc)
 
@@ -509,12 +499,11 @@
                 movebounds!(path)
 
                 # Move uncertainties
-                dynamicsigma && movesigma!(σcalcₚ, data)
+                dynamicsigma && movesigma!(σcalcₚ, chrons)
 
             elseif (r < p_move+p_birth+p_death+p_bounds+p_kinetics)
                 # Adjust kinetic parameters, one at a time
-                haszhe && (zdmₚ = movekinetics(zdm))
-                hasahe && (admₚ = movekinetics(adm))
+                movekinetics!(damodelsₚ, updatekinetics)
 
             end
 
@@ -527,9 +516,9 @@
             end
 
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(μcalcₚ, σcalcₚ, data, path.Tsteps, zdmₚ, admₚ, zftm, mftm, aftm; trackhist, rescale)
+            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps; trackhist, rescale)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
-            llₚ += kinetic_ll(admₚ, adm₀) + kinetic_ll(zdmₚ, zdm₀)
+            llₚ += kinetic_ll(damodelsₚ, damodels₀)
             simplified && (llₚ += -log(npointsₚ))
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
@@ -548,8 +537,7 @@
 
                 # Update the currently accepted proposal
                 acceptproposal!(path)
-                adm = admₚ
-                zdm = zdmₚ
+                copyto!(damodels, damodelsₚ)
                 ll = llₚ
                 npoints = npointsₚ
                 copyto!(μcalc, μcalcₚ)
@@ -565,8 +553,7 @@
             σⱼtdist[n] = path.σⱼt[k]
             σⱼTdist[n] = path.σⱼT[k]
             resultdist[:,n] .= μcalc # distribution of He ages
-            admdist[n] = adm
-            zdmdist[n] = zdm
+            copyunique!(@views(dmdist[:,n]), damodels)
 
             # This is the actual output we want -- the distribution of t-T paths (t path is always identical)
             collectto!(view(tpointdist, :, n), view(path.agepoints, Base.OneTo(npoints)), path.boundary.agepoints, path.constraint.agepoints)
@@ -588,8 +575,7 @@
             acceptancedist,
         )
         kineticresult = KineticResult(
-            admdist,
-            zdmdist
+            dmdist,
         )
         return ttresult, kineticresult
     end

@@ -23,6 +23,12 @@
         npoints = 5,                # [n] Initial number of t-T points
         simplified = false,         # Prefer simpler tT paths?
         dynamicsigma = true,        # Update model uncertainties?
+        # Diffusivity and annealing models
+        zdm = ZRDAAM(), 
+        adm = RDAAM(), 
+        zftm = Yamada2007PC(), 
+        mftm = Jones2021FA(), 
+        aftm = Ketcham2007FC(),
         # Model uncertainty is not well known (depends on annealing parameters,
         # decay constants, diffusion parameters, etc.), but is certainly non-zero.
         # Here we add (in quadrature) a blanket model uncertainty of 25 Ma for all age-based chronometers.

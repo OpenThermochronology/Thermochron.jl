@@ -16,8 +16,6 @@
         Tsteps_experimental = mdds.temperature_C,
         fit = mdds.fit,
         volume_fraction = mdds.volume_fraction[.!isnan.(mdds.volume_fraction)],
-        lnD0a2 = mdds.lnD0_a_2[.!isnan.(mdds.lnD0_a_2)],
-        Ea = mdds.Ea_kJ_mol[.!isnan.(mdds.Ea_kJ_mol)],
         agesteps,
     )
     @test mdd isa MultipleDomain{Float64, PlanarAr{Float64}}
@@ -25,7 +23,15 @@
     println()
     display(mdd)
 
-    age, fraction = modelage(mdd, Tsteps)
+    tdomains = .!isnan.(mdds.lnD0_a_2)
+    dm = MDDiffusivity(
+        D0 = (Float64.(exp.(mdds.lnD0_a_2[tdomains]).*(100/10000)^2)...,),
+        D0_logsigma = (Float64.(haskey(mdds, :lnD0_a_2_sigma) ? mdds.lnD0_a_2_sigma[tdomains] : fill(log(2)/2, count(tdomains)))...,),
+        Ea = Float64(nanmean(mdds.Ea_kJ_mol)),
+        Ea_logsigma = Float64(haskey(mdds, :Ea_logsigma) ? nanmean(mdds.Ea_logsigma) : log(2)/2),
+    )
+
+    age, fraction = modelage(mdd, Tsteps, dm)
     # println(round.(age, sigdigits=5))
     # println(round.(fraction, sigdigits=5))
     @test round.(age, sigdigits=5) == [154.94, 217.94, 289.32, 358.84, 414.61, 460.5, 509.29, 547.24, 583.79, 616.32, 640.09, 662.0, 679.38, 692.71, 705.09, 714.04, 722.54, 729.61, 733.62, 736.62, 738.7, 740.32, 742.11, 743.55, 744.96, 746.07, 746.61, 747.06, 747.81, 749.02, 750.22, 750.56, 750.11, 750.41, 750.53, 749.47, 748.91, 749.65, 750.43, 750.88, 750.97, 751.02, 751.43, 752.13, 752.94, 753.67, 754.36, 754.96, 755.55, 756.07, 756.58, 757.05, 757.53, 757.96, 758.42, 758.84, 759.3, 759.71, 760.17, 760.59, 761.05, 761.47, 761.94, 762.35, 762.82, 763.23, 763.7, 764.11, 764.58, 764.98, 765.45, 765.84, 766.31, 766.69, 767.15, 767.53, 767.99, 768.36, 768.81, 769.17, 769.62, 769.97, 770.43, 770.85, 771.46, 772.1, 772.94, 773.87, 775.02, 776.31, 777.87, 779.73, 781.96, 784.52, 787.62, 791.45, 796.25, 802.46, 810.99, 892.04]
@@ -42,13 +48,11 @@
         Tsteps_experimental = mdds.temperature_C,
         fit = mdds.fit,
         volume_fraction = mdds.volume_fraction[.!isnan.(mdds.volume_fraction)],
-        lnD0a2 = mdds.lnD0_a_2[.!isnan.(mdds.lnD0_a_2)],
-        Ea = mdds.Ea_kJ_mol[.!isnan.(mdds.Ea_kJ_mol)],
         agesteps,
     )
     @test mdd isa MultipleDomain{Float64, SphericalAr{Float64}}
 
-    age, fraction = modelage(mdd, Tsteps)
+    age, fraction = modelage(mdd, Tsteps, dm)
     # println(round.(age, sigdigits=5))
     # println(round.(fraction, sigdigits=5))
     @test round.(age, sigdigits=5) == [146.5, 206.93, 275.91, 343.66, 398.52, 443.89, 492.63, 530.82, 567.9, 601.29, 625.87, 648.75, 667.16, 681.36, 694.79, 704.61, 714.1, 722.43, 727.57, 732.12, 735.92, 738.96, 741.87, 743.52, 744.95, 746.25, 747.28, 748.31, 749.04, 749.08, 749.32, 749.53, 748.93, 748.65, 749.07, 749.46, 749.61, 749.52, 749.69, 750.23, 750.89, 751.46, 751.95, 752.41, 752.95, 753.51, 754.11, 754.63, 755.17, 755.63, 756.11, 756.51, 756.96, 757.33, 757.76, 758.1, 758.53, 758.84, 759.26, 759.56, 759.97, 760.25, 760.66, 760.92, 761.32, 761.56, 761.96, 762.18, 762.58, 762.78, 763.18, 763.36, 763.75, 763.93, 764.32, 764.48, 764.87, 765.01, 765.41, 765.54, 765.93, 766.06, 766.46, 766.65, 767.13, 767.49, 768.1, 768.67, 769.47, 770.3, 771.38, 772.6, 774.13, 775.82, 777.91, 780.4, 783.46, 787.15, 791.71, 809.16]

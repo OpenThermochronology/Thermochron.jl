@@ -1,6 +1,7 @@
 ## --- Define AnnealingModel type hierarchy
 
-abstract type AnnealingModel{T} end
+abstract type Model{T} end
+abstract type AnnealingModel{T} <: Model{T} end
 abstract type ZirconAnnealingModel{T} <: AnnealingModel{T} end
 abstract type MonaziteAnnealingModel{T} <: AnnealingModel{T} end
 abstract type ApatiteAnnealingModel{T} <: AnnealingModel{T} end
@@ -8,15 +9,21 @@ abstract type FanningCurvilinearZircon{T} <: ZirconAnnealingModel{T} end
 abstract type FanningCurvilinearApatite{T} <: ApatiteAnnealingModel{T} end
 const FanningCurvilinear{T} = Union{FanningCurvilinearZircon{T}, FanningCurvilinearApatite{T}}
 
-# Implement methods to allow broadcasting
-Base.length(x::AnnealingModel) = 1
-Base.iterate(x::AnnealingModel) = (x, nothing)
-Base.iterate(x::AnnealingModel, state) = nothing
-
+# Implement methods to allow broadcasting and comparison
+Base.length(x::Model) = 1
+Base.iterate(x::Model) = (x, nothing)
+Base.iterate(x::Model, state) = nothing
+Base.:(==)(x::Model, y::Model) = false
+function Base.:(==)(x::T, y::T) where {T<:Model}
+    for n in fieldnames(T)
+        isequal(getfield(x, n), getfield(y, n)) || return false
+    end
+    return true
+end
 
 ## --- Define DiffusivityModel type hierarchy
 
-abstract type DiffusivityModel{T} end
+abstract type DiffusivityModel{T} <: Model{T} end
 abstract type ZirconHeliumModel{T} <: DiffusivityModel{T} end
 abstract type ApatiteHeliumModel{T} <: DiffusivityModel{T} end
 
@@ -25,6 +32,25 @@ Base.length(x::DiffusivityModel) = 1
 Base.iterate(x::DiffusivityModel) = (x, nothing)
 Base.iterate(x::DiffusivityModel, state) = nothing
 
+
+"""
+```julia
+Diffusivity(
+    D0::T = 59.98               # [cm^2/sec] Maximum diffusion coefficient
+    D0_logsigma::T = log(2)/2   # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    Ea::T = 205.94              # [kJ/mol] Activation energy
+    Ea_logsigma::T = log(2)/2   # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+)
+```
+A generic diffusivity model, with user-specified D0 and Ea.
+Default values are appropriate for argon in k-feldspar.
+"""
+Base.@kwdef struct Diffusivity{T<:AbstractFloat} <: DiffusivityModel{T}
+    D0::T = 59.98               # [cm^2/sec] Maximum diffusion coefficient
+    D0_logsigma::T = log(2)/2   # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    Ea::T = 205.94              # [kJ/mol] Activation energy
+    Ea_logsigma::T = log(2)/2   # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+end
 
 ## --- Define Boundary type to specify the working area
 
@@ -168,6 +194,16 @@ end
 abstract type AbstractKineticResult end
 
 struct KineticResult{T<:AbstractFloat} <: AbstractKineticResult
-    admdist::Vector{<:ApatiteHeliumModel{T}}
-    zdmdist::Vector{<:ZirconHeliumModel{T}}
+    dmdist::Matrix{<:Model{T}}
+end
+
+function zdmdist(kr::KineticResult)
+    any(x->isa(x, ZirconHeliumModel), kr) || return nothing
+    i = findfirst(x->isa(x, ZirconHeliumModel), kr[:,1])
+    return vec(kr[i,:])
+end
+function admdist(kr::KineticResult)
+    any(x->isa(x, ApatiteHeliumModel), kr) || return nothing
+    i = findfirst(x->isa(x, ApatiteHeliumModel), kr[:,1])
+    return vec(kr[i,:])
 end

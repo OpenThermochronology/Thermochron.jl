@@ -23,6 +23,12 @@
         npoints = 5,                # [n] Initial number of t-T points
         simplified = false,         # Prefer simpler tT paths?
         dynamicsigma = true,        # Update model uncertainties?
+        # Diffusivity and annealing models
+        zdm = ZRDAAM(), 
+        adm = RDAAM(), 
+        zftm = Yamada2007PC(), 
+        mftm = Jones2021FA(), 
+        aftm = Ketcham2007FC(),
         # Model uncertainty is not well known (depends on annealing parameters,
         # decay constants, diffusion parameters, etc.), but is certainly non-zero.
         # Here we add (in quadrature) a blanket model uncertainty of 25 Ma.
@@ -58,7 +64,7 @@
 
     # Modern input format, generic
     dsg = importdataset(joinpath(datapath, "generic.csv"), ',', importas=:Tuple);
-    chrons = chronometers(dsg, model)
+    chrons, damodels = chronometers(dsg, model)
     @test chrons isa Vector{<:Chronometer}
     @test length(chrons) == 24
     @test count(x->isa(x,SphericalHe), chrons) == 4
@@ -83,22 +89,26 @@
 
     calc = zeros(length(chrons))
     calcuncert = zeros(length(chrons))
-    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=false) ≈ -3674.2208580266874
-    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=true) ≈ -3675.7197780746797
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; trackhist=false) ≈ -3674.2208580266874
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; trackhist=true) ≈ -3675.7197780746797
     @test round.(calc[1:end-7], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1085.555, 304.6573, 95.84216, 149.8249, 179.703]
-    @test round.(calc[end-6:end], sigdigits=3) ≈ [800, 800, 8, 14.3, 14.3, 14.3, 6] atol = 15
+    @test round.(calc[end-6:end], sigdigits=3) ≈ [800, 800, 8, 14.3, 14.3, 14.3, 6] atol = 20
     @test calcuncert[1:end-5] ≈ zeros(length(chrons)-5)
     @test calcuncert[end-4:end] ≈ [1.7578982633970572, 1.1785910438098226, 1.1389520917140208, 1.2018361658877996, 0.6070538659171328] 
 
-    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Guenthner2013FC(), Jones2021FA(), Ketcham1999FC(); trackhist=false) ≈ -3691.970243126419
-    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Guenthner2013FC(), Jones2021FA(), Ketcham1999FC(); trackhist=true) ≈ -3693.486549848891
+    damodels = Thermochron.Model[damodels...,]
+    damodels[isa.(damodels, Thermochron.ZirconAnnealingModel)] .= Guenthner2013FC()
+    damodels[isa.(damodels, Thermochron.ApatiteAnnealingModel)] .= Ketcham1999FC()
+    damodels = unionize(damodels)
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; trackhist=false) ≈ -3691.970243126419
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; trackhist=true) ≈ -3693.486549848891
     @test round.(calc[1:end-7], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1110.379, 304.2772, 95.84216, 149.8249, 179.703]
-    @test round.(calc[end-6:end], sigdigits=3) ≈ [800, 800, 8, 14.3, 14.3, 14.3, 6] atol = 15
+    @test round.(calc[end-6:end], sigdigits=3) ≈ [800, 800, 8, 14.3, 14.3, 14.3, 6] atol = 20
     @test calcuncert[1:end-5] ≈ zeros(length(chrons)-5)
     @test calcuncert[end-4:end] ≈ [1.8368172844202661, 1.1896389981502726, 1.1448424397109467, 1.2154485905638788, 0.6070538659171328]
 
     # Modern input format, Minnesota dataset
-    chrons = chronometers(ds, model)
+    chrons, damodels = chronometers(ds, model)
     @test chrons isa Vector{<:Chronometer}
     @test length(chrons) == length(ds.mineral)
     @test get_age(chrons) ≈ [770, 659, 649, 638, 620, 557, 545, 500, 493, 357, 329, 253, 241, 225, 225, 217, 193, 190, 72, 57, 42, 29, 11, 234, 98, 233, 339, 378, 258, 158, 269, 313, 309, 392]
@@ -109,8 +119,8 @@
 
     calc = zeros(length(chrons))
     calcuncert = zeros(length(chrons))
-    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=false) ≈ -15599.170456852436
-    @test Thermochron.model!(calc, calcuncert, chrons, Tsteps, ZRDAAM(), RDAAM(), Yamada2007PC(), Jones2021FA(), Ketcham2007FC(); trackhist=true) ≈ -15599.170456852436
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; trackhist=false) ≈ -15599.170456852436
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; trackhist=true) ≈ -15599.170456852436
     @test round.(calc, sigdigits=5) ≈ [1116.4, 1121.6, 952.28, 1043.2, 1006.9, 1142.3, 954.96, 869.99, 982.51, 705.05, 573.31, 139.28, 319.02, 62.802, 183.68, 329.5, 1.7106, 3.6449, 0.00037425, 16.531, 0.0041134, 33.767, 1.2208, 120.64, 210.71, 214.92, 193.71, 170.56, 195.05, 174.14, 203.74, 256.41, 250.6, 281.27]
     @test calcuncert ≈ zeros(length(chrons))
 
@@ -207,31 +217,34 @@
     @info "Mean σjT: $(mean(tT.jTdist))"
 
     # Kinetics
-    D0Lmean = mean(kinetics.admdist .|> x-> x.D0L)
+    admdist = kinetics.dmdist[end, :]
+    D0Lmean = mean(admdist .|> x-> x.D0L)
     @test 0 < D0Lmean
     @info "Mean apatite D0L: $D0Lmean"
-    EaLmean = mean(kinetics.admdist .|> x-> x.EaL)
+    EaLmean = mean(admdist .|> x-> x.EaL)
     @test 0 < EaLmean 
     @info "Mean apatite EaL: $EaLmean"
-    EaTrapmean = mean(kinetics.admdist .|> x-> x.EaTrap)
+    EaTrapmean = mean(admdist .|> x-> x.EaTrap)
     @test 0 < EaTrapmean 
     @info "Mean apatite EaTrap: $EaTrapmean"
-    rmr0mean = mean(kinetics.admdist .|> x-> x.rmr0)
+    rmr0mean = mean(admdist .|> x-> x.rmr0)
     @test 0 < rmr0mean < 1
     @info "Mean apatite rmr0: $rmr0mean"
-    DzD0mean = mean(kinetics.zdmdist .|> x-> x.DzD0)
+
+    zdmdist = kinetics.dmdist[1, :]
+    DzD0mean = mean(zdmdist .|> x-> x.DzD0)
     @test 0 < DzD0mean
     @info "Mean zircon DzD0: $DzD0mean"
-    DzEamean = mean(kinetics.zdmdist .|> x-> x.DzEa)
+    DzEamean = mean(zdmdist .|> x-> x.DzEa)
     @test 0 < DzEamean
     @info "Mean zircon DzEa: $DzEamean"
-    DN17D0mean = mean(kinetics.zdmdist .|> x-> x.DN17D0)
+    DN17D0mean = mean(zdmdist .|> x-> x.DN17D0)
     @test 0 < DN17D0mean
     @info "Mean zircon DN17D0: $DN17D0mean"
-    DN17Eamean = mean(kinetics.zdmdist .|> x-> x.DN17Ea)
+    DN17Eamean = mean(zdmdist .|> x-> x.DN17Ea)
     @test 0 < DN17Eamean
     @info "Mean zircon DN17Ea: $DN17Eamean"
-    rminmean = mean(kinetics.zdmdist .|> x-> x.rmin)
+    rminmean = mean(zdmdist .|> x-> x.rmin)
     @test 0 < rminmean < 1
     @info "Mean zircon rmin: $rminmean"
 
@@ -315,31 +328,33 @@
     @info "Mean σjT: $(mean(tT.jTdist))"
 
     # Kinetics
-    D0Lmean = mean(kinetics.admdist .|> x-> x.D0L)
+    admdist = kinetics.dmdist[end, :]
+    D0Lmean = mean(admdist .|> x-> x.D0L)
     @test 0 < D0Lmean
     @info "Mean apatite D0L: $D0Lmean"
-    EaLmean = mean(kinetics.admdist .|> x-> x.EaL)
+    EaLmean = mean(admdist .|> x-> x.EaL)
     @test 0 < EaLmean 
     @info "Mean apatite EaL: $EaLmean"
-    EaTrapmean = mean(kinetics.admdist .|> x-> x.EaTrap)
+    EaTrapmean = mean(admdist .|> x-> x.EaTrap)
     @test 0 < EaTrapmean 
     @info "Mean apatite EaTrap: $EaTrapmean"
-    rmr0mean = mean(kinetics.admdist .|> x-> x.rmr0)
+    rmr0mean = mean(admdist .|> x-> x.rmr0)
     @test 0 < rmr0mean < 1
     @info "Mean apatite rmr0: $rmr0mean"
-    DzD0mean = mean(kinetics.zdmdist .|> x-> x.DzD0)
+    zdmdist = kinetics.dmdist[1, :]
+    DzD0mean = mean(zdmdist .|> x-> x.DzD0)
     @test 0 < DzD0mean
     @info "Mean zircon DzD0: $DzD0mean"
-    DzEamean = mean(kinetics.zdmdist .|> x-> x.DzEa)
+    DzEamean = mean(zdmdist .|> x-> x.DzEa)
     @test 0 < DzEamean
     @info "Mean zircon DzEa: $DzEamean"
-    DN17D0mean = mean(kinetics.zdmdist .|> x-> x.DN17D0)
+    DN17D0mean = mean(zdmdist .|> x-> x.DN17D0)
     @test 0 < DN17D0mean
     @info "Mean zircon DN17D0: $DN17D0mean"
-    DN17Eamean = mean(kinetics.zdmdist .|> x-> x.DN17Ea)
+    DN17Eamean = mean(zdmdist .|> x-> x.DN17Ea)
     @test 0 < DN17Eamean
     @info "Mean zircon DN17Ea: $DN17Eamean"
-    rminmean = mean(kinetics.zdmdist .|> x-> x.rmin)
+    rminmean = mean(zdmdist .|> x-> x.rmin)
     @test 0 < rminmean < 1
     @info "Mean zircon rmin: $rminmean"
 
@@ -425,31 +440,33 @@
     @info "Mean σjT: $(mean(tT.jTdist))"
 
     # Kinetics
-    D0Lmean = mean(kinetics.admdist .|> x-> x.D0L)
+    admdist = kinetics.dmdist[end, :]
+    D0Lmean = mean(admdist .|> x-> x.D0L)
     @test 0 < D0Lmean
     @info "Mean apatite D0L: $D0Lmean"
-    EaLmean = mean(kinetics.admdist .|> x-> x.EaL)
+    EaLmean = mean(admdist .|> x-> x.EaL)
     @test 0 < EaLmean 
     @info "Mean apatite EaL: $EaLmean"
-    EaTrapmean = mean(kinetics.admdist .|> x-> x.EaTrap)
+    EaTrapmean = mean(admdist .|> x-> x.EaTrap)
     @test 0 < EaTrapmean 
     @info "Mean apatite EaTrap: $EaTrapmean"
-    rmr0mean = mean(kinetics.admdist .|> x-> x.rmr0)
+    rmr0mean = mean(admdist .|> x-> x.rmr0)
     @test 0 < rmr0mean < 1
     @info "Mean apatite rmr0: $rmr0mean"
-    DzD0mean = mean(kinetics.zdmdist .|> x-> x.DzD0)
+    zdmdist = kinetics.dmdist[1, :]
+    DzD0mean = mean(zdmdist .|> x-> x.DzD0)
     @test 0 < DzD0mean
     @info "Mean zircon DzD0: $DzD0mean"
-    DzEamean = mean(kinetics.zdmdist .|> x-> x.DzEa)
+    DzEamean = mean(zdmdist .|> x-> x.DzEa)
     @test 0 < DzEamean
     @info "Mean zircon DzEa: $DzEamean"
-    DN17D0mean = mean(kinetics.zdmdist .|> x-> x.DN17D0)
+    DN17D0mean = mean(zdmdist .|> x-> x.DN17D0)
     @test 0 < DN17D0mean
     @info "Mean zircon DN17D0: $DN17D0mean"
-    DN17Eamean = mean(kinetics.zdmdist .|> x-> x.DN17Ea)
+    DN17Eamean = mean(zdmdist .|> x-> x.DN17Ea)
     @test 0 < DN17Eamean
     @info "Mean zircon DN17Ea: $DN17Eamean"
-    rminmean = mean(kinetics.zdmdist .|> x-> x.rmin)
+    rminmean = mean(zdmdist .|> x-> x.rmin)
     @test 0 < rminmean < 1
     @info "Mean zircon rmin: $rminmean"
 

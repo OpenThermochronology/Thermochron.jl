@@ -18,8 +18,8 @@ end
 ## --- Calculate apparent age given a particular t-T path
 """
 ```julia
-modelage(mineral::SphericalAr, Tsteps)
-modelage(mineral::PlanarAr, Tsteps)
+modelage(mineral::SphericalAr, Tsteps, dm::Diffusivity)
+modelage(mineral::PlanarAr, Tsteps, dm::Diffusivity)
 ```
 Calculate the precdicted bulk K/Ar age of a mineral that has experienced a given 
 t-T path (specified by `mineral.tsteps` for time and `Tsteps` for temperature, 
@@ -30,13 +30,13 @@ at spatial resolution `mineral.dr`.
 Spherical implementation based on the the Crank-Nicolson solution for diffusion out of a
 spherical mineral crystal in Ketcham, 2005 (doi: 10.2138/rmg.2005.58.11).
 """
-function modelage(mineral::SphericalAr{T}, Tsteps::AbstractVector{T}) where T <: AbstractFloat
+function modelage(mineral::SphericalAr{T}, Tsteps::AbstractVector{T}, dm::Diffusivity{T}) where T <: AbstractFloat
 
     # Damage and annealing constants
-    D0 = mineral.D0*10000^2*SEC_MYR::T      # cm^2/sec, converted to micron^2/Myr  
-    Ea = mineral.Ea::T                      # kJ/mol
-    R = 0.008314472                         # kJ/(K*mol)
-    ΔT = mineral.offset::T + 273.15         # Conversion from C to K, plus temperature offset from the
+    D0 = dm.D0*10000^2*SEC_MYR::T       # cm^2/sec, converted to micron^2/Myr  
+    Ea = dm.Ea::T                       # kJ/mol
+    R = 0.008314472                     # kJ/(K*mol)
+    ΔT = mineral.offset::T + 273.15     # Conversion from C to K, plus temperature offset from the surface
 
     # Diffusivities of crystalline and amorphous endmembers
     De = mineral.De::Vector{T}
@@ -117,13 +117,13 @@ function modelage(mineral::SphericalAr{T}, Tsteps::AbstractVector{T}) where T <:
     # Numerically solve for raw Ar age of the grain (i.e., as measured)
     return newton_ar_age(μAr, μ40K)
 end
-function modelage(mineral::PlanarAr{T}, Tsteps::AbstractVector{T}) where T <: AbstractFloat
+function modelage(mineral::PlanarAr{T}, Tsteps::AbstractVector{T}, dm::Diffusivity{T}) where T <: AbstractFloat
 
     # Damage and annealing constants
-    D0 = mineral.D0*10000^2*SEC_MYR::T      # cm^2/sec, converted to micron^2/Myr  
-    Ea = mineral.Ea::T                      # kJ/mol
-    R = 0.008314472                         # kJ/(K*mol)
-    ΔT = mineral.offset::T + 273.15         # Conversion from C to K, plus temperature offset from the
+    D0 = dm.D0*10000^2*SEC_MYR::T       # cm^2/sec, converted to micron^2/Myr  
+    Ea = dm.Ea::T                       # kJ/mol
+    R = 0.008314472                     # kJ/(K*mol)
+    ΔT = mineral.offset::T + 273.15     # Conversion from C to K, plus temperature offset from the surface
 
     # Diffusivities of crystalline and amorphous endmembers
     De = mineral.De::Vector{T}
@@ -201,8 +201,8 @@ function modelage(mineral::PlanarAr{T}, Tsteps::AbstractVector{T}) where T <: Ab
     return newton_ar_age(μAr, μ40K)
 end
 
-function model_ll(mineral::Union{SphericalAr,PlanarAr}, Tsteps)
-    age = modelage(mineral, Tsteps)
+function model_ll(mineral::Union{SphericalAr,PlanarAr}, Tsteps, dm)
+    age = modelage(mineral, Tsteps, dm)
     δ = age - mineral.age
     σ² = mineral.age_sigma^2
     -0.5*(log(2*pi*σ²) + δ^2/σ²)
