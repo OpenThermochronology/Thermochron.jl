@@ -32,6 +32,18 @@
         return dest
     end
 
+    function volumefraction(shape::Symbol, redges::AbstractArray, r::Number=last(redges))
+        if shape === :spherical
+            return (redges[2:end].^3 .- redges[1:end-1].^3)./r^3
+        elseif shape === :cylindrical
+            return (redges[2:end].^2 .- redges[1:end-1].^2)./r^2
+        elseif shape === :planar
+            return (redges[2:end] .- redges[1:end-1])./r
+        else
+            @error "Shape $shape not recognized; options are `:spherical`, `:cylindrical`, or `:planar`"
+        end
+    end
+
     """
     ```julia
     sphereintersectionfraction(r₁, r₂, d)

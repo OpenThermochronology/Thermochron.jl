@@ -45,8 +45,8 @@
     crystalradius = 29.26
     U = 33.0
     Th = 24.2
-    ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
-    @time "Allocating an apatite" apatite = ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
+    ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps), volumeweighting=:spherical)
+    @time "Allocating an apatite" apatite = ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps), volumeweighting=:spherical)
     @test isa(apatite, ApatiteHe)
     show(apatite)
     println()
@@ -88,7 +88,7 @@
     crystalradius = 35.
     U = 110.7
     Th = 35.1
-    apatite = ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
+    apatite = ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps), volumeweighting=:spherical)
     for _ in 1:4 # Re-run to ensure internal state does not change
         @test modelage(apatite,Tsteps,pr,dm) ≈ 106.07135444971297
     end
@@ -96,7 +96,7 @@
     crystalradius = 135.
     U = 173.8
     Th = 117.1
-    apatite = ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
+    apatite = ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps), volumeweighting=:spherical)
     for _ in 1:4 # Re-run to ensure internal state does not change
         @test modelage(apatite,Tsteps,pr,dm) ≈ 222.0762023094609
     end
@@ -104,7 +104,7 @@
     crystalradius = 135.
     U = 50.0
     Th = 40.0
-    apatite = ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
+    apatite = ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps), volumeweighting=:spherical)
     for _ in 1:4 # Re-run to ensure internal state does not change
         @test modelage(apatite,Tsteps,pr,dm) ≈ 221.98170127381994
     end
@@ -115,7 +115,7 @@
     U = 110.7
     Th = 35.1
     Sm = 38.13
-    apatite = ApatiteHe(age=100, age_sigma=5, r=crystalradius,dr=dr,U238=U,Th232=Th,Sm147=Sm, agesteps=reverse(tsteps))
+    apatite = ApatiteHe(age=100, age_sigma=5, r=crystalradius,dr=dr,U238=U,Th232=Th,Sm147=Sm, agesteps=reverse(tsteps), volumeweighting=:spherical)
     @test apatite.r147Sm ≈ fill(1.56203306122449e17, 35)
     @test modelage(apatite,Tsteps,pr,dm) ≈ 106.19413225855304
 

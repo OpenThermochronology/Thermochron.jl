@@ -197,13 +197,9 @@ struct KineticResult{T<:AbstractFloat} <: AbstractKineticResult
     dmdist::Matrix{<:Model{T}}
 end
 
-function zdmdist(kr::KineticResult)
-    any(x->isa(x, ZirconHeliumModel), kr) || return nothing
-    i = findfirst(x->isa(x, ZirconHeliumModel), kr[:,1])
-    return vec(kr[i,:])
-end
-function admdist(kr::KineticResult)
-    any(x->isa(x, ApatiteHeliumModel), kr) || return nothing
-    i = findfirst(x->isa(x, ApatiteHeliumModel), kr[:,1])
-    return vec(kr[i,:])
+# Query Diffusivities from a KineticResult
+function Diffusivity(kr::KineticResult)
+    any(x->isa(x, Diffusivity), kr) || return nothing
+    ia = findall(x->isa(x, Diffusivity), kr[:,1])
+    return collect(kr[ia,:]')
 end

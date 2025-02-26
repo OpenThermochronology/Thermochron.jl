@@ -41,8 +41,8 @@
     crystalradius = 29.26
     U = 462.98
     Th = 177.76
-    zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
-    @time "Allocating a zircon" zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
+    zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps), volumeweighting=:spherical)
+    @time "Allocating a zircon" zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps), volumeweighting=:spherical)
     @test isa(zircon, ZirconHe)
     show(zircon)
     println()
@@ -88,7 +88,7 @@
     crystalradius = 35.
     U = 1107.
     Th = 351.
-    zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
+    zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps), volumeweighting=:spherical)
     # Re-run to ensure internal state does not change
     for _ in 1:4
         @test modelage(zircon,Tsteps,pr,dm) ≈ 229.2186148665553
@@ -97,7 +97,7 @@
     crystalradius = 135.
     U = 1738.
     Th = 1171.
-    zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
+    zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps), volumeweighting=:spherical)
     # Re-run to ensure internal state does not change
     for _ in 1:4
         @test modelage(zircon,Tsteps,pr,dm) ≈ 9.782712202364312
@@ -106,7 +106,7 @@
     crystalradius = 135.
     U = 500.
     Th = 400.
-    zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
+    zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps), volumeweighting=:spherical)
     # Re-run to ensure internal state does not change
     for _ in 1:4
         @test modelage(zircon,Tsteps,pr,dm) ≈ 692.0250480712558
@@ -142,8 +142,11 @@
     crystalradius = 59.3
     U = 462.98
     Th = 177.76
-    zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
+    zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps), volumeweighting=:spherical)
     @test modelage(zircon,Tsteps,pr,dm) ≈ 137.8640379913473
+
+    zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
+    @test modelage(zircon,Tsteps,pr,dm) ≈  153.39166800612637 
 
 ## --- As above but with Sm as well
 
@@ -151,7 +154,7 @@
     U = 462.98
     Th = 177.76
     Sm = 38.13
-    zircon = ZirconHe(age=140, age_sigma=5, r=crystalradius,dr=dr,U238=U,Th232=Th,Sm147=Sm,agesteps=reverse(tsteps))
+    zircon = ZirconHe(age=140, age_sigma=5, r=crystalradius,dr=dr,U238=U,Th232=Th,Sm147=Sm,agesteps=reverse(tsteps), volumeweighting=:spherical)
     @test zircon.r147Sm ≈ fill(1.56203306122449e17, 59)
     @test modelage(zircon,Tsteps,pr,dm) ≈ 137.69909831083055 
 

@@ -125,6 +125,18 @@ Base.@kwdef struct RDAAM{T<:AbstractFloat} <: ApatiteHeliumModel{T}
     kappa_rmr0::T=1.04          # Damage conversion parameter (the sum of kappa and rmr0)
 end
 
+# Functions for querying helium models from kinetic results
+function ZirconHeliumModel(kr::KineticResult)
+    any(x->isa(x, ZirconHeliumModel), kr) || return nothing
+    i = findfirst(x->isa(x, ZirconHeliumModel), kr[:,1])
+    return vec(kr[i,:])
+end
+function ApatiteHeliumModel(kr::KineticResult)
+    any(x->isa(x, ApatiteHeliumModel), kr) || return nothing
+    i = findfirst(x->isa(x, ApatiteHeliumModel), kr[:,1])
+    return vec(kr[i,:])
+end
+
 ## --- Damage and annealing functions
 
 """

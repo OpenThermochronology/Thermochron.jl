@@ -50,19 +50,26 @@ struct ApatiteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
     rmr0::T                 # [unitless] relative resistance to annealing (0=most, 1=least)
 end
 function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64; 
-        length=T(NaN), 
-        angle=T(NaN), 
-        lcmod=lcmod(length, angle),
-        offset=zero(T),
-        agesteps, 
-        tsteps=reverse(agesteps), 
-        ledges=(0:1.0:20),
-        dpar=T(NaN), 
-        F=T(NaN), 
-        Cl=T(NaN), 
-        OH=T(NaN), 
-        rmr0=T(NaN),
+        length = T(NaN), 
+        angle = T(NaN), 
+        lcmod = lcmod(length, angle),
+        offset::Number = zero(T),
+        ledges = (0:1.0:20),
+        dpar = T(NaN), 
+        F = T(NaN), 
+        Cl = T(NaN), 
+        OH = T(NaN), 
+        rmr0 = T(NaN),
+        agesteps = nothing, 
+        tsteps = nothing, 
     )
+    # Temporal discretization
+    isnothing(tsteps) && isnothing(agesteps) && @error "At least one of `tsteps` or `agesteps` is required"
+    isnothing(tsteps) && (tsteps=reverse(agesteps))
+    isnothing(agesteps) && (agesteps=reverse(tsteps))
+    agesteps, tsteps = floatrange(agesteps), floatrange(tsteps)
+    @assert issorted(tsteps)
+    # Multikinetic fission track parameters
     if isnan(rmr0)
         s = F + Cl + OH
         rmr0 = if !isnan(s)
@@ -102,12 +109,19 @@ struct ZirconTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
     ldist::Vector{T}        # [um] Length log likelihood
 end
 function ZirconTrackLength(T::Type{<:AbstractFloat}=Float64; 
-        length=T(NaN), 
-        offset=zero(T),
-        agesteps, 
-        tsteps=reverse(agesteps), 
-        ledges=(0:1.0:20),
+        length = T(NaN), 
+        offset::Number = zero(T),
+        ledges = (0:1.0:20),
+        agesteps = nothing, 
+        tsteps = nothing,
     )
+    # Temporal discretization
+    isnothing(tsteps) && isnothing(agesteps) && @error "At least one of `tsteps` or `agesteps` is required"
+    isnothing(tsteps) && (tsteps=reverse(agesteps))
+    isnothing(agesteps) && (agesteps=reverse(tsteps))
+    agesteps, tsteps = floatrange(agesteps), floatrange(tsteps)
+    @assert issorted(tsteps)
+
     r=zeros(T, size(agesteps))
     pr=zeros(T, size(agesteps))
     ldist=zeros(T, Base.length(ledges)-1)
@@ -134,12 +148,19 @@ struct MonaziteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
     ldist::Vector{T}        # [um] Length log likelihood
 end
 function MonaziteTrackLength(T::Type{<:AbstractFloat}=Float64; 
-        length=T(NaN), 
-        offset=zero(T),
-        agesteps, 
-        tsteps=reverse(agesteps), 
-        ledges=(0:1.0:20),
+        length = T(NaN), 
+        offset::Number = zero(T),
+        ledges = (0:1.0:20),
+        agesteps = nothing, 
+        tsteps = nothing, 
     )
+    # Temporal discretization
+    isnothing(tsteps) && isnothing(agesteps) && @error "At least one of `tsteps` or `agesteps` is required"
+    isnothing(tsteps) && (tsteps=reverse(agesteps))
+    isnothing(agesteps) && (agesteps=reverse(tsteps))
+    agesteps, tsteps = floatrange(agesteps), floatrange(tsteps)
+    @assert issorted(tsteps)
+
     r=zeros(T, size(agesteps))
     pr=zeros(T, size(agesteps))
     ldist=zeros(T, Base.length(ledges)-1)
@@ -165,12 +186,18 @@ struct ZirconFT{T<:AbstractFloat} <: FissionTrackSample{T}
     tsteps::FloatRange      # [Ma] forward time since crystallization
 end
 function ZirconFT(T::Type{<:AbstractFloat}=Float64; 
-        age=T(NaN), 
-        age_sigma=T(NaN), 
-        offset=zero(T),
-        agesteps, 
-        tsteps=reverse(agesteps), 
+        age = T(NaN), 
+        age_sigma = T(NaN), 
+        offset::Number = zero(T),
+        agesteps = nothing, 
+        tsteps = nothing, 
     )
+    # Temporal discretization
+    isnothing(tsteps) && isnothing(agesteps) && @error "At least one of `tsteps` or `agesteps` is required"
+    isnothing(tsteps) && (tsteps=reverse(agesteps))
+    isnothing(agesteps) && (agesteps=reverse(tsteps))
+    agesteps, tsteps = floatrange(agesteps), floatrange(tsteps)
+    @assert issorted(tsteps)
     ZirconFT(
         T(age),
         T(age_sigma),
@@ -188,9 +215,9 @@ struct MonaziteFT{T<:AbstractFloat} <: FissionTrackSample{T}
     tsteps::FloatRange      # [Ma] forward time since crystallization
 end
 function MonaziteFT(T::Type{<:AbstractFloat}=Float64; 
-        age=T(NaN), 
-        age_sigma=T(NaN), 
-        offset=zero(T),
+        age = T(NaN), 
+        age_sigma = T(NaN), 
+        offset::Number = zero(T),
         agesteps, 
         tsteps=reverse(agesteps), 
     )
@@ -212,16 +239,16 @@ struct ApatiteFT{T<:AbstractFloat} <: FissionTrackSample{T}
     rmr0::T                 # [unitless] relative resistance to annealing (0=most, 1=least)
 end
 function ApatiteFT(T::Type{<:AbstractFloat}=Float64; 
-        age=T(NaN), 
-        age_sigma=T(NaN),
-        offset=zero(T),
+        age = T(NaN), 
+        age_sigma = T(NaN),
+        offset::Number = zero(T),
         agesteps, 
         tsteps=reverse(agesteps), 
-        dpar=T(NaN),
-        F=T(NaN),
-        Cl=T(NaN),
-        OH=T(NaN),
-        rmr0=T(NaN),
+        dpar = T(NaN),
+        F = T(NaN),
+        Cl = T(NaN),
+        OH = T(NaN),
+        rmr0 = T(NaN),
     )
     if isnan(rmr0)
         s = F + Cl + OH
@@ -247,18 +274,19 @@ end
 """
 ```julia
 ZirconHe(T=Float64;
-    age::Number=T(NaN),
-    age_sigma::Number=T(NaN),
+    age::Number = T(NaN),
+    age_sigma::Number = T(NaN),
     T(offset),
-    r::Number=one(T),
+    r::Number = one(T),
     dr::Number, 
     U238::Number,
     Th232::Number,
-    Sm147::Number=zero(T),
-    U238_matrix::Number=zero(T), 
-    Th232_matrix::Number=zero(T), 
-    Sm147_matrix::Number=zero(T), 
-    agesteps::AbstractRange
+    Sm147::Number = zero(T),
+    U238_matrix::Number = zero(T), 
+    Th232_matrix::Number = zero(T), 
+    Sm147_matrix::Number = zero(T), 
+    volumeweighting::Symbol=:cylindrical,
+    agesteps::AbstractRange,
 )
 ```
 Construct a `ZirconHe` chronometer representing a zircon with a raw 
@@ -297,20 +325,29 @@ struct ZirconHe{T<:AbstractFloat} <: HeliumSample{T}
     y::Vector{T}
 end
 function ZirconHe(T::Type{<:AbstractFloat}=Float64;
-        age::Number=T(NaN),
-        age_sigma::Number=T(NaN),
-        offset=zero(T),
-        r::Number=one(T),
+        age::Number = T(NaN),
+        age_sigma::Number = T(NaN),
+        offset::Number = zero(T),
+        r::Number = one(T),
         dr::Number, 
         U238::Number,
         Th232::Number,
-        Sm147::Number=zero(T),
-        U238_matrix::Number=zero(T), 
-        Th232_matrix::Number=zero(T), 
-        Sm147_matrix::Number=zero(T), 
-        agesteps::AbstractRange
+        Sm147::Number = zero(T),
+        U238_matrix::Number = zero(T), 
+        Th232_matrix::Number = zero(T), 
+        Sm147_matrix::Number = zero(T), 
+        volumeweighting::Symbol=:cylindrical,
+        agesteps = nothing,
+        tsteps = nothing,
     )
-    
+
+    # Temporal discretization
+    isnothing(tsteps) && isnothing(agesteps) && @error "At least one of `tsteps` or `agesteps` is required"
+    isnothing(tsteps) && (tsteps=reverse(agesteps))
+    isnothing(agesteps) && (agesteps=reverse(tsteps))
+    agesteps, tsteps = floatrange(agesteps), floatrange(tsteps)
+    @assert issorted(tsteps)
+
     # Zircon alpha stopping distances for each isotope in each decay chain, from
     # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
     alpharadii238U = (11.78, 14.09, 13.73, 14.13, 17.32, 16.69, 28.56, 16.48,)
@@ -319,20 +356,17 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
     # Ketcham et al. (2011), doi: 10.1016/j.gca.2011.10.011
     alpharadii147Sm = (4.76,)
 
-    # Temporal discretization
-    agesteps = floatrange(agesteps)
-    tsteps = reverse(agesteps)
-    @assert issorted(tsteps)
-
     # Crystal size and spatial discretization
     redges = floatrange(0 : dr : r)                 # Edges of each radius element
     rsteps = cntr(redges)                           # Centers of each radius element
     nrsteps = length(rsteps)+2                      # Number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
-    relvolumes = (redges[2:end].^3 - redges[1:end-1].^3)/r^3 # Relative volume fraction of spherical shell corresponding to each radius element
+    # Relative volume each concentric radial shell
+    relvolumes = volumefraction(volumeweighting, redges, r)
+
     # Additional discretization outside of grain, for alpha injection
     outsideredges = floatrange(r : dr : r+maximum(alpharadii238U))
     outsidersteps = cntr(outsideredges)
-    outsiderelvolumes = (outsideredges[2:end].^3 - outsideredges[1:end-1].^3)/r^3
+    outsiderelvolumes = volumefraction(volumeweighting, outsideredges, r)
 
     # Observed radial HPE profiles at present day
     r238U = fill(T(U238), size(rsteps))         # [PPMw]
@@ -525,17 +559,18 @@ end
 """
 ```julia
 ApatiteHe(T=Float64;
-    age::Number=T(NaN),
-    age_sigma::Number=T(NaN),
-    offset=zero(T),
+    age::Number = T(NaN),
+    age_sigma::Number = T(NaN),
+    offset::Number = zero(T),
     r::Number, 
-    dr::Number=one(T), 
+    dr::Number = one(T), 
     U238::Number, 
     Th232::Number, 
-    Sm147::Number=zero(T), 
-    U238_matrix::Number=zero(T), 
-    Th232_matrix::Number=zero(T), 
-    Sm147_matrix::Number=zero(T), 
+    Sm147::Number = zero(T), 
+    U238_matrix::Number = zero(T), 
+    Th232_matrix::Number = zero(T), 
+    Sm147_matrix::Number = zero(T), 
+    volumeweighting::Symbol = :spherical,
     agesteps::AbstractRange,
 )
 ```
@@ -575,19 +610,28 @@ struct ApatiteHe{T<:AbstractFloat} <: HeliumSample{T}
     y::Vector{T}
 end
 function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
-        age::Number=T(NaN),
-        age_sigma::Number=T(NaN),
-        offset=zero(T),
+        age::Number = T(NaN),
+        age_sigma::Number = T(NaN),
+        offset::Number = zero(T),
         r::Number, 
-        dr::Number=one(T), 
+        dr::Number = one(T), 
         U238::Number, 
         Th232::Number, 
-        Sm147::Number=zero(T), 
-        U238_matrix::Number=zero(T), 
-        Th232_matrix::Number=zero(T), 
-        Sm147_matrix::Number=zero(T), 
-        agesteps::AbstractRange,
+        Sm147::Number = zero(T), 
+        U238_matrix::Number = zero(T), 
+        Th232_matrix::Number = zero(T), 
+        Sm147_matrix::Number = zero(T), 
+        volumeweighting::Symbol = :cylindrical,
+        agesteps = nothing,
+        tsteps = nothing,
     )
+
+    # Temporal discretization
+    isnothing(tsteps) && isnothing(agesteps) && @error "At least one of `tsteps` or `agesteps` is required"
+    isnothing(tsteps) && (tsteps=reverse(agesteps))
+    isnothing(agesteps) && (agesteps=reverse(tsteps))
+    agesteps, tsteps = floatrange(agesteps), floatrange(tsteps)
+    @assert issorted(tsteps)
 
     # Apatite alpha stopping distances for each isotope in each decay chain, from
     # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
@@ -597,20 +641,17 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
     # Ketcham et al. (2011), doi: 10.1016/j.gca.2011.10.011
     alpharadii147Sm = (5.93,)
 
-    # Temporal discretization
-    agesteps = floatrange(agesteps)
-    tsteps = reverse(agesteps)
-    @assert issorted(tsteps)
-
     # Crystal size and spatial discretization
     redges = floatrange(0 : dr : r)                 # Edges of each radius element
     rsteps = cntr(redges)                           # Centers of each radius element
     nrsteps = length(rsteps)+2                      # Number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
-    relvolumes = (redges[2:end].^3 - redges[1:end-1].^3)/r^3 # Relative volume fraction of spherical shell corresponding to each radius element
+    # Relative volume each concentric radial shell
+    relvolumes = volumefraction(volumeweighting, redges, r)
+
     # Additional discretization outside of grain, for alpha injection
     outsideredges = floatrange(r : dr : r+maximum(alpharadii238U))
     outsidersteps = cntr(outsideredges)
-    outsiderelvolumes = (outsideredges[2:end].^3 - outsideredges[1:end-1].^3)/r^3
+    outsiderelvolumes = volumefraction(volumeweighting, outsideredges, r)
 
     # Observed radial HPE profiles at present day
     r238U = fill(T(U238), size(rsteps))         # [PPMw]
@@ -803,18 +844,18 @@ end
 """
 ```julia
 SphericalHe(T=Float64;
-    age::Number=T(NaN),
-    age_sigma::Number=T(NaN),
-    offset=zero(T),
-    stoppingpower::Number=T(1.189),
+    age::Number = T(NaN),
+    age_sigma::Number = T(NaN),
+    offset::Number = zero(T),
+    stoppingpower::Number = T(1.189),
     r::Number, 
-    dr::Number=one(T), 
+    dr::Number = one(T), 
     U238::Number, 
     Th232::Number, 
-    Sm147::Number=zero(T), 
-    U238_matrix::Number=zero(T), 
-    Th232_matrix::Number=zero(T), 
-    Sm147_matrix::Number=zero(T), 
+    Sm147::Number = zero(T), 
+    U238_matrix::Number = zero(T), 
+    Th232_matrix::Number = zero(T), 
+    Sm147_matrix::Number = zero(T), 
     agesteps::AbstractRange,
 )
 ```
@@ -851,20 +892,29 @@ struct SphericalHe{T<:AbstractFloat} <: HeliumSample{T}
     y::Vector{T}
 end
 function SphericalHe(T::Type{<:AbstractFloat}=Float64;
-        age::Number=T(NaN),
-        age_sigma::Number=T(NaN),
-        offset=zero(T),
-        stoppingpower::Number=T(1.189),
+        age::Number = T(NaN),
+        age_sigma::Number = T(NaN),
+        offset::Number = zero(T),
+        stoppingpower::Number = T(1.189),
         r::Number, 
-        dr::Number=one(T), 
+        dr::Number = one(T), 
         U238::Number, 
         Th232::Number, 
-        Sm147::Number=zero(T), 
-        U238_matrix::Number=zero(T), 
-        Th232_matrix::Number=zero(T), 
-        Sm147_matrix::Number=zero(T), 
-        agesteps::AbstractRange,
+        Sm147::Number = zero(T), 
+        U238_matrix::Number = zero(T), 
+        Th232_matrix::Number = zero(T), 
+        Sm147_matrix::Number = zero(T), 
+        volumeweighting::Symbol = :spherical,
+        agesteps = nothing,
+        tsteps = nothing,
     )
+
+    # Temporal discretization
+    isnothing(tsteps) && isnothing(agesteps) && @error "At least one of `tsteps` or `agesteps` is required"
+    isnothing(tsteps) && (tsteps=reverse(agesteps))
+    isnothing(agesteps) && (agesteps=reverse(tsteps))
+    agesteps, tsteps = floatrange(agesteps), floatrange(tsteps)
+    @assert issorted(tsteps)
 
     # Alpha stopping distances for each isotope in each decay chain, adjusted from those of apatite
     # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
@@ -874,20 +924,17 @@ function SphericalHe(T::Type{<:AbstractFloat}=Float64;
     # Ketcham et al. (2011), doi: 10.1016/j.gca.2011.10.011
     alpharadii147Sm = (5.93,)./stoppingpower
 
-    # Temporal discretization
-    agesteps = floatrange(agesteps)
-    tsteps = reverse(agesteps)
-    @assert issorted(tsteps)
-
     # Crystal size and spatial discretization
     redges = floatrange(0 : dr : r)                 # Edges of each radius element
     rsteps = cntr(redges)                           # Centers of each radius element
     nrsteps = length(rsteps)+2                      # Number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
-    relvolumes = (redges[2:end].^3 - redges[1:end-1].^3)/r^3 # Relative volume fraction of spherical shell corresponding to each radius element
+    # Relative volume each concentric radial shell
+    relvolumes = volumefraction(volumeweighting, redges, r)
+
     # Additional discretization outside of grain, for alpha injection
     outsideredges = floatrange(r : dr : r+maximum(alpharadii238U))
     outsidersteps = cntr(outsideredges)
-    outsiderelvolumes = (outsideredges[2:end].^3 - outsideredges[1:end-1].^3)/r^3
+    outsiderelvolumes = volumefraction(volumeweighting, outsideredges, r)
 
     # Observed radial HPE profiles at present day
     r238U = fill(T(U238), size(rsteps))         # [PPMw]
@@ -1061,18 +1108,18 @@ end
 """
 ```julia
 PlanarHe(T=Float64;
-    age::Number=T(NaN),
-    age_sigma::Number=T(NaN),
-    offset=zero(T),
-    stoppingpower::Number=T(1.189),
+    age::Number = T(NaN),
+    age_sigma::Number = T(NaN),
+    offset::Number = zero(T),
+    stoppingpower::Number = T(1.189),
     r::Number, 
-    dr::Number=one(T), 
+    dr::Number = one(T), 
     U238::Number, 
     Th232::Number, 
-    Sm147::Number=zero(T), 
-    U238_matrix::Number=zero(T), 
-    Th232_matrix::Number=zero(T), 
-    Sm147_matrix::Number=zero(T), 
+    Sm147::Number = zero(T), 
+    U238_matrix::Number = zero(T), 
+    Th232_matrix::Number = zero(T), 
+    Sm147_matrix::Number = zero(T), 
     agesteps::AbstractRange,
 )
 ```
@@ -1108,20 +1155,28 @@ struct PlanarHe{T<:AbstractFloat} <: HeliumSample{T}
     y::Vector{T}
 end
 function PlanarHe(T::Type{<:AbstractFloat}=Float64;
-        age::Number=T(NaN),
-        age_sigma::Number=T(NaN),
-        offset=zero(T),
-        stoppingpower::Number=T(1.189),
+        age::Number = T(NaN),
+        age_sigma::Number = T(NaN),
+        offset::Number = zero(T),
+        stoppingpower::Number = T(1.189),
         r::Number, 
-        dr::Number=one(T), 
+        dr::Number = one(T), 
         U238::Number, 
         Th232::Number, 
-        Sm147::Number=zero(T), 
-        U238_matrix::Number=zero(T), 
-        Th232_matrix::Number=zero(T), 
-        Sm147_matrix::Number=zero(T), 
-        agesteps::AbstractRange,
+        Sm147::Number = zero(T), 
+        U238_matrix::Number = zero(T), 
+        Th232_matrix::Number = zero(T), 
+        Sm147_matrix::Number = zero(T), 
+        agesteps = nothing,
+        tsteps = nothing,
     )
+
+    # Temporal discretization
+    isnothing(tsteps) && isnothing(agesteps) && @error "At least one of `tsteps` or `agesteps` is required"
+    isnothing(tsteps) && (tsteps=reverse(agesteps))
+    isnothing(agesteps) && (agesteps=reverse(tsteps))
+    agesteps, tsteps = floatrange(agesteps), floatrange(tsteps)
+    @assert issorted(tsteps)
 
     # Alpha stopping distances for each isotope in each decay chain, adjusted from those of apatite
     # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
@@ -1131,15 +1186,11 @@ function PlanarHe(T::Type{<:AbstractFloat}=Float64;
     # Ketcham et al. (2011), doi: 10.1016/j.gca.2011.10.011
     alpharadii147Sm = (5.93,)./stoppingpower
 
-    # Temporal discretization
-    agesteps = floatrange(agesteps)
-    tsteps = reverse(agesteps)
-    @assert issorted(tsteps)
-
     # Crystal size and spatial discretization
     redges = floatrange(0 : dr : r)                 # Edges of each halfwidth element
     rsteps = cntr(redges)                           # Centers of each halfwidth element
     nrsteps = length(rsteps)+2                      # Number of radial grid points -- note 2 implict points: one at negative halfwidth, one outside grain
+    
     # Additional discretization outside of grain, for alpha injection
     outsideredges = floatrange(r : dr : r+maximum(alpharadii238U))
     outsidersteps = cntr(outsideredges)
@@ -1315,11 +1366,11 @@ end
 """
 ```julia
 SphericalAr(T=Float64;
-    age::Number=T(NaN),
-    age_sigma::Number=T(NaN),
-    offset=zero(T),
+    age::Number = T(NaN),
+    age_sigma::Number = T(NaN),
+    offset::Number = zero(T),
     r::Number, 
-    dr::Number=one(T), 
+    dr::Number = one(T), 
     K40::Number=16.34, 
     agesteps::AbstractRange,
 )
@@ -1354,25 +1405,30 @@ struct SphericalAr{T<:AbstractFloat} <: ArgonSample{T}
     y::Vector{T}
 end
 function SphericalAr(T::Type{<:AbstractFloat}=Float64;
-        age::Number=T(NaN),
-        age_sigma::Number=T(NaN),
-        offset=zero(T),
+        age::Number = T(NaN),
+        age_sigma::Number = T(NaN),
+        offset::Number = zero(T),
         r::Number, 
-        dr::Number=one(T), 
-        K40::Number=16.34, 
-        agesteps::AbstractRange,
+        dr::Number = one(T), 
+        K40::Number = 16.34, 
+        volumeweighting::Symbol = :spherical,
+        agesteps = nothing,
+        tsteps = nothing,
     )
 
     # Temporal discretization
-    agesteps = floatrange(agesteps)
-    tsteps = reverse(agesteps)
+    isnothing(tsteps) && isnothing(agesteps) && @error "At least one of `tsteps` or `agesteps` is required"
+    isnothing(tsteps) && (tsteps=reverse(agesteps))
+    isnothing(agesteps) && (agesteps=reverse(tsteps))
+    agesteps, tsteps = floatrange(agesteps), floatrange(tsteps)
     @assert issorted(tsteps)
 
     # Crystal size and spatial discretization
     rsteps = floatrange(0+dr/2 : dr : r-dr/2)
     redges = floatrange(     0 : dr : r     )   # Edges of each radius element
     nrsteps = length(rsteps)+2                  # number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
-    relvolumes = (redges[2:end].^3 - redges[1:end-1].^3)/r^3 # Relative volume fraction of spherical shell corresponding to each radius element
+    # Relative volume each concentric radial shell
+    relvolumes = volumefraction(volumeweighting, redges, r)
 
     # Observed radial HPE profiles at present day
     r40K = fill(T(K40), size(rsteps))         # [PPMw]
@@ -1444,11 +1500,11 @@ end
 """
 ```julia
 PlanarAr(T=Float64;
-    age::Number=T(NaN),
-    age_sigma::Number=T(NaN),
-    offset=zero(T),
+    age::Number = T(NaN),
+    age_sigma::Number = T(NaN),
+    offset::Number = zero(T),
     r::Number, 
-    dr::Number=one(T), 
+    dr::Number = one(T), 
     K40::Number=16.34, 
     agesteps::AbstractRange,
 )
@@ -1482,18 +1538,21 @@ struct PlanarAr{T<:AbstractFloat} <: ArgonSample{T}
     y::Vector{T}
 end
 function PlanarAr(T::Type{<:AbstractFloat}=Float64;
-        age::Number=T(NaN),
-        age_sigma::Number=T(NaN),
-        offset=zero(T),
+        age::Number = T(NaN),
+        age_sigma::Number = T(NaN),
+        offset::Number = zero(T),
         r::Number, 
-        dr::Number=one(T), 
-        K40::Number=16.34, 
-        agesteps::AbstractRange,
+        dr::Number = one(T), 
+        K40::Number = 16.34, 
+        agesteps = nothing,
+        tsteps = nothing,
     )
 
     # Temporal discretization
-    agesteps = floatrange(agesteps)
-    tsteps = reverse(agesteps)
+    isnothing(tsteps) && isnothing(agesteps) && @error "At least one of `tsteps` or `agesteps` is required"
+    isnothing(tsteps) && (tsteps=reverse(agesteps))
+    isnothing(agesteps) && (agesteps=reverse(tsteps))
+    agesteps, tsteps = floatrange(agesteps), floatrange(tsteps)
     @assert issorted(tsteps)
 
     # Crystal size and spatial discretization
@@ -1732,8 +1791,11 @@ chronometers([T=Float64], data, model)
 Construct a vector of `Chronometer` objects given a dataset `data`
 and model parameters `model`
 """
-chronometers(ds, model) = chronometers(Float64, ds, model)
-function chronometers(T::Type{<:AbstractFloat}, ds, model)
+chronometers(ds, model; kwargs...) = chronometers(Float64, ds, model; kwargs...)
+function chronometers(T::Type{<:AbstractFloat}, ds, model;
+        zirconvolumeweighting = :cylindrical,
+        apatitevolumeweighting = :cylindrical,
+    )
     agesteps = floatrange(model.agesteps)
     tsteps = floatrange(model.tsteps)
     dr = haskey(model, :dr) ? model.dr : one(T)
@@ -1781,6 +1843,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model)
                     Th232_matrix = (haskey(ds, :Th232_matrix_ppm) && !isnan(ds.Th232_matrix_ppm[i])) ? ds.Th232_matrix_ppm[i] : 0,
                     Sm147_matrix = (haskey(ds, :Sm147_matrix_ppm) && !isnan(ds.Sm147_matrix_ppm[i])) ? ds.Sm147_matrix_ppm[i] : 0,
                     agesteps = agesteps[first_index:end],
+                    volumeweighting = zirconvolumeweighting,
                 )
                 push!(chrons, c)
                 push!(damodels, zdm)
@@ -1847,6 +1910,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model)
                     Th232_matrix = (haskey(ds, :Th232_matrix_ppm) && !isnan(ds.Th232_matrix_ppm[i])) ? ds.Th232_matrix_ppm[i] : 0,
                     Sm147_matrix = (haskey(ds, :Sm147_matrix_ppm) && !isnan(ds.Sm147_matrix_ppm[i])) ? ds.Sm147_matrix_ppm[i] : 0,
                     agesteps = agesteps[first_index:end],
+                    volumeweighting = apatitevolumeweighting,
                 )
                 push!(chrons, c)
                 push!(damodels, adm)

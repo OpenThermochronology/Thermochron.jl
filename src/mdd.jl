@@ -19,6 +19,13 @@
     end
     Base.getindex(d::MDDiffusivity{T}, i::Int) where {T} = Diffusivity{T}(d.D0[i], d.D0_logsigma[i], d.Ea, d.Ea_logsigma)
 
+    # Query MDDiffusivities from a KineticResult
+    function MDDiffusivity(kr::KineticResult)
+        any(x->isa(x, MDDiffusivity), kr) || return nothing
+        ia = findall(x->isa(x, MDDiffusivity), kr[:,1])
+        return collect(kr[ia,:]')
+    end
+    
 ## -- Multiple domain diffusion functions
 
 function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degassing::AbstractVector{T}, dm::Diffusivity{T}; fuse::Bool=true, redegasparent::Bool=false) where T <: AbstractFloat

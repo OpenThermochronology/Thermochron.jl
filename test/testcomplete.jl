@@ -63,8 +63,8 @@
 ## --- Test generation of Chronometer objects
 
     # Modern input format, generic
-    dsg = importdataset(joinpath(datapath, "generic.csv"), ',', importas=:Tuple);
-    chrons, damodels = chronometers(dsg, model)
+    dsg = importdataset(joinpath(datapath, "generic.csv"), ',', importas=:Tuple)
+    chrons, damodels = chronometers(dsg, model, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
     @test chrons isa Vector{<:Chronometer}
     @test length(chrons) == 24
     @test count(x->isa(x,SphericalHe), chrons) == 4
@@ -108,7 +108,7 @@
     @test calcuncert[end-4:end] ≈ [1.8368172844202661, 1.1896389981502726, 1.1448424397109467, 1.2154485905638788, 0.6070538659171328]
 
     # Modern input format, Minnesota dataset
-    chrons, damodels = chronometers(ds, model)
+    chrons, damodels = chronometers(ds, model, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
     @test chrons isa Vector{<:Chronometer}
     @test length(chrons) == length(ds.mineral)
     @test get_age(chrons) ≈ [770, 659, 649, 638, 620, 557, 545, 500, 493, 357, 329, 253, 241, 225, 225, 217, 193, 190, 72, 57, 42, 29, 11, 234, 98, 233, 339, 378, 258, 158, 269, 313, 309, 392]
@@ -123,6 +123,7 @@
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; trackhist=true) ≈ -15599.170456852436
     @test round.(calc, sigdigits=5) ≈ [1116.4, 1121.6, 952.28, 1043.2, 1006.9, 1142.3, 954.96, 869.99, 982.51, 705.05, 573.31, 139.28, 319.02, 62.802, 183.68, 329.5, 1.7106, 3.6449, 0.00037425, 16.531, 0.0041134, 33.767, 1.2208, 120.64, 210.71, 214.92, 193.71, 170.56, 195.05, 174.14, 203.74, 256.41, 250.6, 281.27]
     @test calcuncert ≈ zeros(length(chrons))
+    println(round.(calc, sigdigits=5))
 
     # Test an individual zircon
     @test first(calc) ≈ modelage(first(chrons), Tsteps, ZRDAAM())

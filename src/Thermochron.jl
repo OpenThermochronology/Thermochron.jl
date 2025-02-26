@@ -49,7 +49,7 @@ module Thermochron
 
     include("argon.jl")
     include("helium.jl")
-    export ZRDAAM, RDAAM                                               # Damage-and-annealing based helium diffusivity model types
+    export ZirconHeliumModel,ZRDAAM, ApatiteHeliumModel, RDAAM          # Damage-and-annealing based helium diffusivity model types
 
     include("mdd.jl")
     export MultipleDomain, MDDiffusivity
