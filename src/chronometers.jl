@@ -1997,7 +1997,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                     push!(damodels, dm)
                 end
             else
-                (geometry === "spherical") || @warn "Geometry \"$geometry\" not recognized in row $i, defaulting to spherical"
+                (geometry === "sphere") || (geometry === "spherical") || @warn "Geometry \"$geometry\" not recognized in row $i, defaulting to spherical"
                 # Spherical helium
                 if haskey(ds, :raw_He_age_Ma) && haskey(ds, :raw_He_age_sigma_Ma) && (0 < ds.raw_He_age_sigma_Ma[i]/ds.raw_He_age_Ma[i])
                     c = SphericalHe(T;
