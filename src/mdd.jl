@@ -109,7 +109,7 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degas
         daughterᵢ₋ = daughterᵢ
     end
     # Degas all remaining daughter in last step if fuse==true
-    fuse && (step_daughter[ntsteps] = daughterᵢ₋)
+    fuse && (step_daughter[ntsteps] = max(daughterᵢ₋, zero(T)))
 
     # Now diffuse parent isotope tracer, (as Ar-39), if neccesary
     if redegasparent || !(0 < sum(step_parent))
@@ -164,7 +164,7 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degas
             parentᵢ₋ = parentᵢ
         end
         # Degas all remaining parent in last step if fuse==true
-        fuse && (step_parent[ntsteps] = parentᵢ₋)
+        fuse && (step_parent[ntsteps] = max(parentᵢ₋, zero(T)))
     end
 
     # Return views of the resulting step ages and degassing fractions
@@ -256,7 +256,7 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_de
         daughterᵢ₋ = daughterᵢ
     end
     # Degas all remaining daughter in last step if fuse==true
-    fuse && (step_daughter[ntsteps] = daughterᵢ₋)
+    fuse && (step_daughter[ntsteps] = max(daughterᵢ₋, zero(T)))
 
     # Now diffuse parent isotope tracer, (as Ar-39), if neccesary
     if redegasparent || !(0 < sum(step_parent))
@@ -315,7 +315,7 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_de
             parentᵢ₋ = parentᵢ
         end
         # Degas all remaining parent in last step if fuse==true
-        fuse && (step_parent[ntsteps] = parentᵢ₋)
+        fuse && (step_parent[ntsteps] = max(parentᵢ₋, zero(T)))
     end
 
     # Return views of the resulting step ages and degassing fractions

@@ -788,6 +788,7 @@
             elseif isa(c, MultipleDomain)
                 c::MultipleDomain{T, <:Union{PlanarAr{T}, SphericalAr{T}}}
                 age, fraction = modelage(c, @views(Tsteps[first_index:end]), dm::MDDiffusivity{T}; redegasparent)
+                issorted(fraction) || @info fraction
                 redegasparent && (ll += degassing_ll(c))
                 μcalc[i] = draw_from_population(age, fraction)
                 ll += model_ll(c, σcalc[i])/scalemdd
