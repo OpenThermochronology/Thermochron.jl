@@ -1,35 +1,35 @@
-grain name,mineral,crystallization age [Ma],halfwidth [um],raw He age [Ma],raw He age sigma [Ma],U238 [ppm],Th232 [ppm],Sm147 [ppm],reference
-04RF1zA,zircon,3500,64,770,15,84,67,0,Guenthner et al. 2013
-04SC1zB,zircon,1779,71,659,51,415,111,0,Guenthner et al. 2013
-04SC1zA,zircon,1779,47,649,13,422,110,0,Guenthner et al. 2013
-04GF1zB,zircon,3500,63,638,12.6,254,104,0,Guenthner et al. 2013
-04GF1zA,zircon,3500,56,620,18.4,247,88,0,Guenthner et al. 2013
-04RF1zB,zircon,3500,72,557,10,155,177,0,Guenthner et al. 2013
-04MT1zA,zircon,3500,67,545,12,362,89,0,Guenthner et al. 2013
-04R1zB,zircon,1783,51,500,10,580,174,0,Guenthner et al. 2013
-04MT1zB,zircon,3500,68,493,43,346,78,0,Guenthner et al. 2013
-04R1zA,zircon,1783,42,357,7,656,167,0,Guenthner et al. 2013
-04MT1zF,zircon,3500,54,329,7,567,75,0,Miltich 2005
-04EQ1zA,zircon,3500,41,253,5.2,781,203,0,Guenthner et al. 2013
-04EQ1zF,zircon,3500,43,241,4.6,647,284,0,Guenthner et al. 2013
-04SH1zB,zircon,2603,56,225,4.6,883,184,0,Guenthner et al. 2013
-04EQ1zB,zircon,3500,42,225,6,748,218,0,Guenthner et al. 2013
-04MT1zD,zircon,3500,80,217,5,739,141,0,Miltich 2005
-04MT1zC,zircon,3500,45,193,4,980,252,0,Miltich 2005
-04MT1zE,zircon,3500,49,190,4,974,197,0,Miltich 2005
-04SG1zB,zircon,3500,55,72,2,1738,1171,0,Guenthner et al. 2013
-04EQ1zC,zircon,3500,36,57,1.1,894,246,0,Guenthner et al. 2013
-04EQ1zE,zircon,3500,35,42,1.1,1107,351,0,Guenthner et al. 2013
-04EQ1zD,zircon,3500,31,29,0.8,866,166,0,Guenthner et al. 2013
-04SH1zA,zircon,2603,50,11,0.2,1011,228,0,Guenthner et al. 2013
-04GF1a,apatite,3500,29,234,9.4,33,24.4,746.39,Miltich 2005
-04GF1AB,apatite,3500,57,98,2,6.6,1.8,0,Miltich 2005
-04GF1AC,apatite,3500,59,233,5,10.3,6.3,0,Miltich 2005
-04SG1AB,apatite,3500,51,339,6,107.1,91,0,Miltich 2005
-04SH1AB,apatite,2604,43,378,9.3,19.4,25.6,155.41,Miltich 2005
-04SH1AC,apatite,2604,52,258,5,16.9,30.2,0,Miltich 2005
-04MT1a,apatite,3500,44,158,3.3,53.3,36.7,240.99,Miltich 2005
-04MT1AB,apatite,3500,53,269,8.1,11,5.2,144.26,Miltich 2005
-04MT1AC,apatite,3500,79,313,5.8,25.9,16.8,111.11,Miltich 2005
-04EQ1AB,apatite,3500,76,309,6,21.9,8.7,0,Miltich 2005
-04EQ1AC,apatite,3500,95,392,8,46,6.4,0,Miltich 2005
+grain name,mineral,crystallization age [Ma],halfwidth [um],raw He age [Ma],raw He age sigma [Ma],U238 [ppm],Th232 [ppm],Sm147 [ppm],U238_matrix [ppm],Th232_matrix [ppm],Sm147_matrix [ppm],reference,notes
+04RF1zA,zircon,3500,64,770,15,84,67,0,2,8.9,0.6,Guenthner et al. 2013,"Matrix U,Th,Sm are Archean granitoid average"
+04SC1zB,zircon,1779,71,659,51,415,111,0,2,8.9,0.6,Guenthner et al. 2013,"Matrix U,Th,Sm are crustal granitoid average"
+04SC1zA,zircon,1779,47,649,13,422,110,0,2,8.9,0.6,Guenthner et al. 2013,"Matrix U,Th,Sm are crustal granitoid average"
+04GF1zB,zircon,3500,63,638,12.6,254,104,0,2,8.9,0.6,Guenthner et al. 2013,"Matrix U,Th,Sm are crustal granitoid average"
+04GF1zA,zircon,3500,56,620,18.4,247,88,0,2,8.9,0.6,Guenthner et al. 2013,"Matrix U,Th,Sm are crustal granitoid average"
+04RF1zB,zircon,3500,72,557,10,155,177,0,2,8.9,0.6,Guenthner et al. 2013,"Matrix U,Th,Sm are crustal granitoid average"
+04MT1zA,zircon,3500,67,545,12,362,89,0,2,8.9,0.6,Guenthner et al. 2013,"Matrix U,Th,Sm are crustal granitoid average"
+04R1zB,zircon,1783,51,500,10,580,174,0,2,8.9,0.6,Guenthner et al. 2013,"Matrix U,Th,Sm are crustal granitoid average"
+04MT1zB,zircon,3500,68,493,43,346,78,0,2,8.9,0.6,Guenthner et al. 2013,"Matrix U,Th,Sm are crustal granitoid average"
+04R1zA,zircon,1783,42,357,7,656,167,0,2,8.9,0.6,Guenthner et al. 2013,"Matrix U,Th,Sm are crustal granitoid average"
+04MT1zF,zircon,3500,54,329,7,567,75,0,2,8.9,0.6,Miltich 2005,"Matrix U,Th,Sm are crustal granitoid average"
+04EQ1zA,zircon,3500,41,253,5.2,781,203,0,2,8.9,0.6,Guenthner et al. 2013,"Matrix U,Th,Sm are crustal granitoid average"
+04EQ1zF,zircon,3500,43,241,4.6,647,284,0,2,8.9,0.6,Guenthner et al. 2013,"Matrix U,Th,Sm are crustal granitoid average"
+04SH1zB,zircon,2603,56,225,4.6,883,184,0,2,8.9,0.6,Guenthner et al. 2013,"Matrix U,Th,Sm are crustal granitoid average"
+04EQ1zB,zircon,3500,42,225,6,748,218,0,2,8.9,0.6,Guenthner et al. 2013,"Matrix U,Th,Sm are crustal granitoid average"
+04MT1zD,zircon,3500,80,217,5,739,141,0,2,8.9,0.6,Miltich 2005,"Matrix U,Th,Sm are crustal granitoid average"
+04MT1zC,zircon,3500,45,193,4,980,252,0,2,8.9,0.6,Miltich 2005,"Matrix U,Th,Sm are crustal granitoid average"
+04MT1zE,zircon,3500,49,190,4,974,197,0,2,8.9,0.6,Miltich 2005,"Matrix U,Th,Sm are crustal granitoid average"
+04SG1zB,zircon,3500,55,72,2,1738,1171,0,2,8.9,0.6,Guenthner et al. 2013,"Matrix U,Th,Sm are crustal granitoid average"
+04EQ1zC,zircon,3500,36,57,1.1,894,246,0,2,8.9,0.6,Guenthner et al. 2013,"Matrix U,Th,Sm are crustal granitoid average"
+04EQ1zE,zircon,3500,35,42,1.1,1107,351,0,2,8.9,0.6,Guenthner et al. 2013,"Matrix U,Th,Sm are crustal granitoid average"
+04EQ1zD,zircon,3500,31,29,0.8,866,166,0,2,8.9,0.6,Guenthner et al. 2013,"Matrix U,Th,Sm are crustal granitoid average"
+04SH1zA,zircon,2603,50,11,0.2,1011,228,0,2,8.9,0.6,Guenthner et al. 2013,"Matrix U,Th,Sm are crustal granitoid average"
+04GF1a,apatite,3500,29,234,9.4,33,24.4,112.24,2,8.9,0.6,Miltich 2005,"Matrix U,Th,Sm are crustal granitoid average"
+04GF1AB,apatite,3500,57,98,2,6.6,1.8,4.19,2,8.9,0.6,Miltich 2005,"Matrix U,Th,Sm are crustal granitoid average"
+04GF1AC,apatite,3500,59,233,5,10.3,6.3,14.68,2,8.9,0.6,Miltich 2005,"Matrix U,Th,Sm are crustal granitoid average"
+04SG1AB,apatite,3500,51,339,6,107.1,91,212.03,2,8.9,0.6,Miltich 2005,"Matrix U,Th,Sm are crustal granitoid average"
+04SH1AB,apatite,2604,43,378,9.3,19.4,25.6,23.31,2,8.9,0.6,Miltich 2005,"Matrix U,Th,Sm are crustal granitoid average"
+04SH1AC,apatite,2604,52,258,5,16.9,30.2,70.37,2,8.9,0.6,Miltich 2005,"Matrix U,Th,Sm are crustal granitoid average"
+04MT1a,apatite,3500,44,158,3.3,53.3,36.7,36.15,2,8.9,0.6,Miltich 2005,"Matrix U,Th,Sm are crustal granitoid average"
+04MT1AB,apatite,3500,53,269,8.1,11,5.2,21.64,2,8.9,0.6,Miltich 2005,"Matrix U,Th,Sm are crustal granitoid average"
+04MT1AC,apatite,3500,79,313,5.8,25.9,16.8,16.66,2,8.9,0.6,Miltich 2005,"Matrix U,Th,Sm are crustal granitoid average"
+04EQ1AB,apatite,3500,76,309,6,21.9,8.7,20.27,2,8.9,0.6,Miltich 2005,"Matrix U,Th,Sm are crustal granitoid average"
+04EQ1AC,apatite,3500,95,392,8,46,6.4,14.91,2,8.9,0.6,Miltich 2005,"Matrix U,Th,Sm are crustal granitoid average"

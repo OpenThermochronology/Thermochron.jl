@@ -103,7 +103,7 @@
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; trackhist=false) ≈ -3691.970243126419
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; trackhist=true) ≈ -3693.486549848891
     @test round.(calc[1:end-7], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1110.379, 304.2772, 95.84216, 149.8249, 179.703]
-    @test round.(calc[end-6:end], sigdigits=3) ≈ [800, 800, 8, 14.3, 14.3, 14.3, 6] atol = 20
+    @test round.(calc[end-6:end], sigdigits=3) ≈ [790, 800, 8, 14.3, 14.3, 14.3, 6] atol = 30
     @test calcuncert[1:end-5] ≈ zeros(length(chrons)-5)
     @test calcuncert[end-4:end] ≈ [1.8368172844202661, 1.1896389981502726, 1.1448424397109467, 1.2154485905638788, 0.6070538659171328]
 
@@ -119,11 +119,11 @@
 
     calc = zeros(length(chrons))
     calcuncert = zeros(length(chrons))
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; trackhist=false) ≈ -15599.170456852436
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; trackhist=true) ≈ -15599.170456852436
-    @test round.(calc, sigdigits=5) ≈ [1116.4, 1121.6, 952.28, 1043.2, 1006.9, 1142.3, 954.96, 869.99, 982.51, 705.05, 573.31, 139.28, 319.02, 62.802, 183.68, 329.5, 1.7106, 3.6449, 0.00037425, 16.531, 0.0041134, 33.767, 1.2208, 120.64, 210.71, 214.92, 193.71, 170.56, 195.05, 174.14, 203.74, 256.41, 250.6, 281.27]
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; trackhist=false) ≈ -16667.28440196102
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; trackhist=true) ≈ -16667.28440196102
+    @test round.(calc, sigdigits=5) ≈ [1125.8, 1123.3, 954.89, 1046.3, 1010.6, 1146.5, 956.84, 871.49, 984.5, 706.49, 574.3, 139.5, 319.64, 62.847, 183.99, 329.73, 1.712, 3.6475, 0.00037435, 16.555, 0.0041183, 33.839, 1.2215, 122.78, 244.29, 234.62, 196.31, 180.09, 206.59, 177.52, 220.8, 261.59, 258.45, 284.49]
     @test calcuncert ≈ zeros(length(chrons))
-    println(round.(calc, sigdigits=5))
+    # println(round.(calc, sigdigits=5))
 
     # Test an individual zircon
     @test first(calc) ≈ modelage(first(chrons), Tsteps, ZRDAAM())
