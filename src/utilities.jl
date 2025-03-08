@@ -705,7 +705,7 @@
     end
 
     # Utility function to calculate model ages for all chronometers at once
-    function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, Tsteps::AbstractVector{T}; trackhist::Bool=false, rescale::Bool=false, redegasparent::Bool=false) where {T<:AbstractFloat}
+    function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, Tsteps::AbstractVector{T}; trackhist::Bool=false, rescale::Bool=false, redegasparent::Bool=false, sigmadegassing::T=zero(T)) where {T<:AbstractFloat}
         imax = argmax(i->length((chrons[i].tsteps)::FloatRange), eachindex(chrons))
         tsteps = (chrons[imax].tsteps)::FloatRange
         tmax = last(tsteps)
@@ -788,6 +788,7 @@
             elseif isa(c, MultipleDomain)
                 c::MultipleDomain{T, <:Union{PlanarAr{T}, SphericalAr{T}}}
                 age, fraction = modelage(c, @views(Tsteps[first_index:end]), dm::MDDiffusivity{T}; redegasparent)
+                redegasparent && (ll += degassing_ll(c))
                 μcalc[i] = draw_from_population(age, fraction)
                 ll += model_ll(c, σcalc[i])/scalemdd
             else

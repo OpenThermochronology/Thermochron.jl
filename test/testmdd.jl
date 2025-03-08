@@ -11,7 +11,7 @@
     mdd = MultipleDomain(Float64, PlanarAr;
         age = mdds.age_Ma,
         age_sigma = mdds.age_sigma_Ma,
-        fraction_released = mdds.fraction_degassed,
+        fraction_experimental = mdds.fraction_degassed,
         tsteps_experimental = issorted(mdds.time_s, lt=<=) ? mdds.time_s : cumsum(mdds.time_s),
         Tsteps_experimental = mdds.temperature_C,
         fit = mdds.fit,
@@ -43,7 +43,7 @@
     mdd = MultipleDomain(Float64, SphericalAr;
         age = mdds.age_Ma,
         age_sigma = mdds.age_sigma_Ma,
-        fraction_released = mdds.fraction_degassed,
+        fraction_experimental = mdds.fraction_degassed,
         tsteps_experimental = issorted(mdds.time_s, lt=<=) ? mdds.time_s : cumsum(mdds.time_s),
         Tsteps_experimental = mdds.temperature_C,
         fit = mdds.fit,

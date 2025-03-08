@@ -1633,7 +1633,7 @@ end
     MultipleDomain(T=Float64, C=PlanarAr;
         age::AbstractVector,
         age_sigma::AbstractVector,
-        fraction_released::AbstractVector,
+        fraction_experimental::AbstractVector,
         tsteps_experimental::AbstractVector,
         Tsteps_experimental::AbstractVector,
         fit::AbstractVector,
@@ -1661,7 +1661,8 @@ end
     struct MultipleDomain{T<:AbstractFloat, C<:Union{SphericalAr{T}, PlanarAr{T}}} <: AbsoluteChronometer{T}
         age::Vector{T}                  # [Ma] measured ages at each degassing step
         age_sigma::Vector{T}            # [Ma] measured age uncertainties at each degassing step
-        fraction_released::Vector{T}    # [unitless] fraction of total Ar-39 released each degassing step
+        fraction_experimental::Vector{T}# [unitless] fraction of total Ar-39 released each degassing step
+        fraction_experimental_sigma::T  # [unitless] uncertainty in degassing fraction 
         tsteps_experimental::Vector{T}  # [s] time steps of experimental heating schedule
         Tsteps_experimental::Vector{T}  # [C] temperature steps of experimental heating schedule
         fit::BitVector                  # [Bool] Whether or not each step should be used in inversion
@@ -1681,7 +1682,8 @@ end
     function MultipleDomain(T=Float64, C=PlanarAr;
             age::AbstractVector,
             age_sigma::AbstractVector,
-            fraction_released::AbstractVector,
+            fraction_experimental::AbstractVector,
+            fraction_experimental_sigma::Number=maximum(diff(fraction_experimental)),
             tsteps_experimental::AbstractVector,
             Tsteps_experimental::AbstractVector,
             fit::AbstractVector,
@@ -1695,8 +1697,9 @@ end
             tsteps::AbstractRange=reverse(agesteps),
         )
         # Check input arrays are the right size and ordered properly
-        @assert eachindex(age) == eachindex(age_sigma) == eachindex(fraction_released) == eachindex(tsteps_experimental) == eachindex(Tsteps_experimental)
+        @assert eachindex(age) == eachindex(age_sigma) == eachindex(fraction_experimental) == eachindex(tsteps_experimental) == eachindex(Tsteps_experimental)
         @assert issorted(tsteps_experimental, lt=<=) "Degassing time steps must be in strictly increasing order"
+        @assert all(x->0<=x<=1, volume_fraction) "All \"fraction degassed\" values must be between 0 and 1"
 
         # Interpolate degassing t-T steps to the same resolution as the 
         tsteps_degassing = floatrange(first(tsteps_experimental), last(tsteps_experimental), length=length(agesteps))
@@ -1714,7 +1717,8 @@ end
         return MultipleDomain{T,C{T}}(
             T.(age),
             T.(age_sigma),
-            T.(fraction_released),
+            T.(fraction_experimental),
+            T(fraction_experimental_sigma),
             tsteps_experimental,
             Tsteps_experimental,
             Bool.(fit),
@@ -2053,7 +2057,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                 c = MultipleDomain(T, PlanarAr;
                     age = mdds.age_Ma,
                     age_sigma = mdds.age_sigma_Ma,
-                    fraction_released = mdds.fraction_degassed,
+                    fraction_experimental = mdds.fraction_degassed,
                     tsteps_experimental = issorted(mdds.time_s, lt=<=) ? mdds.time_s : cumsum(mdds.time_s),
                     Tsteps_experimental = mdds.temperature_C,
                     fit = mdds.fit,
@@ -2069,7 +2073,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                 c = MultipleDomain(T, SphericalAr;
                     age = mdds.age_Ma,
                     age_sigma = mdds.age_sigma_Ma,
-                    fraction_released = mdds.fraction_degassed,
+                    fraction_experimental = mdds.fraction_degassed,
                     tsteps_experimental = issorted(mdds.time_s, lt=<=) ? mdds.time_s : cumsum(mdds.time_s),
                     Tsteps_experimental = mdds.temperature_C,
                     fit = mdds.fit,

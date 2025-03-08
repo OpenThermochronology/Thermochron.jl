@@ -350,10 +350,21 @@ end
 
 function model_ll(mdd::MultipleDomain{T}, σ::T=zero(T)) where {T<:AbstractFloat}
     ll = zero(T)
-    for i in eachindex(mdd.age, mdd.age_sigma, mdd.fraction_released, mdd.fit)
+    for i in eachindex(mdd.age, mdd.age_sigma, mdd.fraction_experimental, mdd.fit)
         if mdd.fit[i]
-            model_ageᵢ = linterp1(mdd.model_fraction, mdd.model_age, mdd.fraction_released[i])
+            model_ageᵢ = linterp1(mdd.model_fraction, mdd.model_age, mdd.fraction_experimental[i])
             ll += norm_ll(mdd.age[i], mdd.age_sigma[i], model_ageᵢ, σ)
+        end
+    end
+    return ll
+end
+
+function degassing_ll(mdd::MultipleDomain{T}) where {T<:AbstractFloat}
+    ll = zero(T)
+    for i in eachindex(mdd.tsteps_experimental, mdd.fraction_experimental, mdd.fit)
+        if mdd.fit[i]
+            model_fractionᵢ = linterp1(mdd.tsteps_degassing, mdd.model_fraction, mdd.tsteps_experimental[i])
+            ll += norm_ll(mdd.fraction_experimental[i], mdd.fraction_experimental_sigma, model_fractionᵢ)
         end
     end
     return ll
