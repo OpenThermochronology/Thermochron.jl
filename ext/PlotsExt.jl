@@ -21,7 +21,7 @@ module PlotsExt
 
     # Error boxes for Ar-Ar age spectra
     Thermochron.errorbox(xc::AbstractVector, y::AbstractVector, t::BitVector=trues(length(y)); kwargs...) = errorbox!(plot(), xc, y, t; kwargs...)
-    function Thermochron.errorbox!(h::Plots.Plot, xc::AbstractVector, y::AbstractVector, t::BitVector=trues(length(y)); yerror::AbstractVector=zeros(size(x)), startvalue=0, framestyle=:box, label="", kwargs...)
+    function Thermochron.errorbox!(h::Union{Plots.Plot, Plots.Subplot}, xc::AbstractVector, y::AbstractVector, t::BitVector=trues(length(y)); yerror::AbstractVector=zeros(size(x)), startvalue=0, framestyle=:box, label="", kwargs...)
         @assert eachindex(y) == eachindex(yerror) == eachindex(t)
         @assert (eachindex(xc) == eachindex(y)) || eachindex(xc)==firstindex(y):lastindex(y)+1
         length(xc) == length(y) && (xc = [startvalue; xc])
@@ -37,6 +37,97 @@ module PlotsExt
             end
         end
         return h
+    end
+    Thermochron.errorbox(c::MultipleDomain; kwargs...) = errorbox!(plot(), c; kwargs...)
+    function Thermochron.errorbox!(h::Union{Plots.Plot, Plots.Subplot}, c::MultipleDomain; fillalpha=0.5, excludedalpha=0.15, color=:black, kwargs...)
+        errorbox!(h, c.fraction_experimental, c.age, c.fit;
+            yerror = 2*c.age_sigma,
+            label = "Data (2σ analytical)",
+            color, 
+            fillalpha,
+            kwargs...
+        )
+        errorbox!(h, c.fraction_experimental, c.age;
+            yerror = 2*c.age_sigma,
+            label = "Data (excluded)",
+            color,
+            fillalpha,
+            alpha = excludedalpha,
+            kwargs...
+        )
+    end
+
+    # Diffusivity and annealing models
+    function Plots.plot(d::ZRDAAM, dms::Vector{<:Thermochron.Model}; framestyle=:box, layout=(2,1), size=(600,800), fillalpha=0.85, kwargs...) 
+        hd = plot(; framestyle, xlabel="Log10(D0 [cm^2/s])", ylabel="Probability Density", kwargs...)
+        D0 = dms .|> x->log10(x.DzD0)
+        histogram!(hd, D0; normalized=true, lw=0, color=lines[1], label="", bins=(minimum(D0)-0.1):0.1:(maximum(D0)+0.1), fillalpha, kwargs...)
+        D0₀ = Normal(log10(d.DzD0), d.DzD0_logsigma/log(10))
+        x = range(mean(D0₀)-3std(D0₀), mean(D0₀)+3std(D0₀), length=100)
+        plot!(hd, x, pdf.(D0₀,x), color=lines[1], label="Crystalline zircon", kwargs...)
+        D0 = dms .|> x->log10(x.DN17D0)
+        histogram!(hd, D0; normalized=true, lw=0, color=lines[2], label="", bins=(minimum(D0)-0.1):0.1:(maximum(D0)+0.1), fillalpha, kwargs...)
+        D0₀ = Normal(log10(d.DN17D0), d.DN17D0_logsigma/log(10))
+        x = range(mean(D0₀)-3std(D0₀), mean(D0₀)+3std(D0₀), length=100)
+        plot!(hd, x, pdf.(D0₀,x), color=lines[2], label="Amorphous zircon", kwargs...)
+
+        he = plot(;framestyle, xlabel="Log10(Ea [kj/mol])", ylabel="Probability Density", kwargs...)
+        Ea = dms .|> x->log10(x.DzEa)
+        histogram!(he, Ea; normalized=true, lw=0, color=lines[1], label="", bins=(minimum(Ea)-0.01):0.01:(maximum(Ea)+0.01), fillalpha, kwargs...)
+        Ea₀ = Normal(log10(d.DzEa), d.DzEa_logsigma/log(10))
+        x = range(mean(Ea₀)-3std(Ea₀), mean(Ea₀)+3std(Ea₀), length=100)
+        plot!(he, x, pdf.(Ea₀,x), color=lines[1], label="Crystalline zircon", kwargs...)
+        Ea = dms .|> x->log10(x.DN17Ea)
+        histogram!(he, Ea; normalized=true, lw=0, color=lines[2], label="", bins=(minimum(Ea)-0.01):0.01:(maximum(Ea)+0.01), fillalpha, kwargs...)
+        Ea₀ = Normal(log10(d.DN17Ea), d.DN17Ea_logsigma/log(10))
+        x = range(mean(Ea₀)-3std(Ea₀), mean(Ea₀)+3std(Ea₀), length=100)
+        plot!(he, x, pdf.(Ea₀,x), color=lines[2], label="Amorphous zircon", kwargs...)
+
+        return plot(hd, he; layout, size, kwargs...)
+    end
+    function Plots.plot(d::RDAAM, dms::Vector{<:Thermochron.Model}; framestyle=:box, layout=(2,1), size=(600,800), fillalpha=0.85, kwargs...) 
+        hd = plot(; framestyle, xlabel="Log10(D0 [cm^2/s])", ylabel="Probability Density", kwargs...)
+        D0 = dms .|> x->log10(x.D0L)
+        histogram!(hd, D0; normalized=true, lw=0, color=lines[1], label="", bins=(minimum(D0)-0.1):0.1:(maximum(D0)+0.1), fillalpha, kwargs...)
+        D0₀ = Normal(log10(d.D0L), d.D0L_logsigma/log(10))
+        x = range(mean(D0₀)-3std(D0₀), mean(D0₀)+3std(D0₀), length=100)
+        plot!(hd, x, pdf.(D0₀,x), color=lines[1], label="D0L", kwargs...)
+
+        he = plot(;framestyle, xlabel="Log10(Ea [kj/mol])", ylabel="Probability Density", kwargs...)
+        Ea = dms .|> x->log10(x.EaL)
+        histogram!(he, Ea; normalized=true, lw=0, color=lines[1], label="", bins=(minimum(Ea)-0.02):0.02:(maximum(Ea)+0.02), fillalpha, kwargs...)
+        Ea₀ = Normal(log10(d.EaL), d.EaL_logsigma/log(10))
+        x = range(mean(Ea₀)-3std(Ea₀), mean(Ea₀)+3std(Ea₀), length=100)
+        plot!(he, x, pdf.(Ea₀,x), color=lines[1], label="EaL", kwargs...)
+        Ea = dms .|> x->log10(x.EaTrap)
+        histogram!(he, Ea; normalized=true, lw=0, color=lines[2], label="", bins=(minimum(Ea)-0.02):0.02:(maximum(Ea)+0.02), fillalpha, kwargs...)
+        Ea₀ = Normal(log10(d.EaTrap), d.EaTrap_logsigma/log(10))
+        x = range(mean(Ea₀)-3std(Ea₀), mean(Ea₀)+3std(Ea₀), length=100)
+        plot!(he, x, pdf.(Ea₀,x), color=lines[2], label="EaTrap", kwargs...)
+
+        return plot(hd, he; layout, size, kwargs...)
+    end
+    function Plots.plot(d::MDDiffusivity, dms::Vector{<:Thermochron.Model}, r=100.0; framestyle=:box, layout=(2,1), size=(600,800), fillalpha=0.85, kwargs...) 
+        ndomains = length(d.D0)
+        hd = plot(; framestyle, xlabel="Log10 D0/a^2", ylabel="Probability Density", kwargs...)
+        for j in 1:ndomains
+            D0a2 = dms .|> x->log10(x.D0[j]/(r/10000)^2)
+            histogram!(hd, D0a2; normalized=true, lw=0, color=lines[j], label="", bins=(minimum(D0a2)-0.1):0.1:(maximum(D0a2)+0.1), fillalpha, kwargs...)
+            D0a2₀ = Normal(log10(d.D0[j]./(r/10000)^2), d.D0_logsigma[j]/log(10))
+            x = range(mean(D0a2₀)-3std(D0a2₀), mean(D0a2₀)+3std(D0a2₀), length=100)
+            plot!(hd, x, pdf.(D0a2₀,x), color=lines[j], label="domain $j", kwargs...)
+        end
+
+        he = plot(; framestyle, xlabel="Log10 Ea [kj/mol]", ylabel="Probability Density")
+        for j in 1:ndomains
+            Ea = dms .|> x->log10(x.Ea[j])
+            histogram!(he, Ea; normalized=true, lw=0, color=lines[j], label="", bins=(minimum(Ea)-0.005):0.005:(maximum(Ea)+0.005), fillalpha, kwargs...)
+            Ea₀ = Normal(log10(d.Ea[j]), d.Ea_logsigma[j]/log(10))
+            x = range(mean(Ea₀)-3std(Ea₀), mean(Ea₀)+3std(Ea₀), length=100)
+            plot!(he, x, pdf.(Ea₀,x), color=lines[j], label="domain $j", kwargs...)
+        end
+        
+        return plot(hd, he; layout, size, kwargs...)
     end
 
     # Constraint boxes

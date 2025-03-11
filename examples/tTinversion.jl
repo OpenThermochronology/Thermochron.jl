@@ -8,7 +8,7 @@
 #       This file uses the MCMC, damage annealing, and Crank-Nicholson          #
 #   diffusion codes provided by the Thermochron.jl package.                     #
 #                                                                               #
-#   © 2025 C. Brenhin Keller and Kalin McDannell                                #                                                                            #
+#   © 2025 C. Brenhin Keller and Kalin McDannell                                #
 #                                                                               #
 #       If running for the first time, you might consider instantiating the     #
 #   manifest that came with this file                                           #
@@ -27,19 +27,19 @@
 
     # # # # # # # # # # Choice of regional thermochron data # # # # # # # # # #
 
-    # Literature samples from McDannell et al. 2022 (doi: 10.1130/G50315.1), Manitoba
-    # (12 ZirconHe, 5 ApatiteHe, 47 ApatiteFT, 269 ApatiteTrackLength)
-    name = "Manitoba"
-    ds = importdataset("manitoba.csv", ',', importas=:Tuple)
+    # # Literature samples from McDannell et al. 2022 (doi: 10.1130/G50315.1), Manitoba
+    # # (12 ZirconHe, 5 ApatiteHe, 47 ApatiteFT, 269 ApatiteTrackLength)
+    # name = "Manitoba"
+    # ds = importdataset("manitoba.csv", ',', importas=:Tuple)
 
     # # Literature samples from Guenthner et al. 2013 (AJS), Minnesota
     # # (23 ZirconHe, 11 ApatiteHe)
     # name = "Minnesota"
     # ds = importdataset("minnesota.csv", ',', importas=:Tuple)
 
-    # # OL13 multiple domain diffusion example
-    # name = "OL13"
-    # ds = importdataset("ol13.csv", ',', importas=:Tuple)
+    # OL13 multiple domain diffusion example
+    name = "OL13"
+    ds = importdataset("ol13.csv", ',', importas=:Tuple)
 
 ## --- Prepare problem
 
@@ -47,8 +47,8 @@
     tinit = ceil(maximum(ds.crystallization_age_Ma)/dt) * dt # [Ma] Model start time
 
     model = (
-        nsteps = 400000,                # [n] How many steps of the Markov chain should we run?
-        burnin = 100000,                # [n] How long should we wait for MC to converge (become stationary)
+        nsteps = 4000,                # [n] How many steps of the Markov chain should we run?
+        burnin = 1000,                # [n] How long should we wait for MC to converge (become stationary)
         dr = 1.0,                       # [μm] Radius step size
         dTmax = 25.0,                   # [Ma/dt] Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
         Tinit = 400.0,                  # [C] Initial model temperature (i.e., crystallization temperature)
@@ -78,13 +78,13 @@
     # Default: no detail interval
     detail = DetailInterval()
 
-    # # Uncomment this section to require greater t-T node density in some time interval
-    # # (typically the youngest end of the total time interval, where you may expect the data more resolving power)
-    # detail = DetailInterval(
-    #     agemin = 0.0, # Youngest end of detail interval
-    #     agemax = 1000, # Oldest end of detail interval
-    #     minpoints = 8, # Minimum number of points in detail interval
-    # )
+    # Uncomment this section to require greater t-T node density in some time interval
+    # (typically the youngest end of the total time interval, where you may expect the data more resolving power)
+    detail = DetailInterval(
+        agemin = 0.0, # Youngest end of detail interval
+        agemax = 1000, # Oldest end of detail interval
+        minpoints = 8, # Minimum number of points in detail interval
+    )
 
     # Boundary conditions (e.g. 10C at present and 650 C at the time of zircon formation).
     boundary = Boundary(
@@ -222,6 +222,18 @@
         end
     end
 
+    if @isdefined kinetics
+        for D in (RDAAM, ZRDAAM)
+            id = findfirst(x->isa(x, D), kinetics.dmdist[:,1])
+            im = findfirst(x->isa(x, D), damodels)
+            if !isnothing(id) && !isnothing(im)
+                hdm = plot(damodels[im], kinetics.dmdist[id,:])
+                savefig(hdm, name*"_$(D)_kinetics.pdf")
+                display(hdm)
+            end
+        end
+    end
+
 ## -- Plot calculated/observed ages as a function of rmr0 (ApatiteFT)
 
     t = isa.(chrons, ApatiteFT)
@@ -328,23 +340,12 @@
                 color = :powderblue,
                 framestyle = :box,
                 legend = :topleft,
-                label = "",
-            )
-            errorbox!(h, c.fraction_released, c.age, c.fit,
-                yerror = 2*c.age_sigma,
-                color = :black,
-                fillalpha = 0.5,
                 xlabel = "Fraction released",
                 ylabel = "Age [Ma]",
-                label = "Data (2σ analytical)",
+                label = "",
             )
-            errorbox!(h, c.fraction_released, c.age,
-                yerror = 2*c.age_sigma,
-                color = :black,
-                alpha = 0.15,
-                label = "Data (excluded)",
-            )
-            t = minimum(c.fraction_released[c.fit]) .<= modelfraction .<= maximum(c.fraction_released[c.fit])
+            errorbox!(h, c, color=:black)
+            t = minimum(c.fraction_experimental[c.fit]) .<= modelfraction .<= maximum(c.fraction_experimental[c.fit])
             plot!(h, modelfraction[t], modelage[t],
                 seriestype=:line,
                 color = :mediumblue,
@@ -353,6 +354,17 @@
             )
             savefig(h, "$(name)_$(ds.grain_name[i])_predicted.pdf")
             display(h)
+        end
+    end
+
+    if @isdefined kinetics
+        im = findall(x->isa(x, MDDiffusivity), damodels[:,1])
+        id = findall(x->isa(x, MDDiffusivity), kinetics.dmdist[:,1])
+        for i in eachindex(im,id)
+            r = last(first(chrons[im[i]].domains).redges)
+            hdm = plot(damodels[im[i]], kinetics.dmdist[id[i],:], r)
+            savefig(hdm, name*"_MDD_kinetics_$i.pdf")
+            display(hdm)
         end
     end
 
@@ -377,5 +389,26 @@
 
     savefig(k, name*"_tT.pdf")
     display(k)
+
+## --- Plot a zoomed-in version
+
+    # xrange = (0,100)
+    # yrange=(-10,60)
+    # @time (tTimageZoom, xcZoom, ycZoom) = image_from_paths!(tT; xresolution=1800, yresolution=1200, xrange, yrange)
+
+    # # Prepare axes
+    # k = plot(layout = grid(1,2, widths=[0.94, 0.06]), framestyle=:box)
+
+    # # Plot image with colorscale in first subplot
+    # A = imsc(tTimageZoom, ylcn, 0, nanpctile(tTimage[:],98.5))
+    # plot!(k[1], xlabel="Time (Ma)", ylabel="Temperature (°C)", tick_dir=:out, framestyle=:box)
+    # plot!(k[1], xcZoom, ycZoom, A, yflip=true, xflip=true, legend=false, xlims=xrange, ylims=yrange)
+
+    # # Add colorbar in second subplot
+    # cb = imsc(repeat(0:100, 1, 10), ylcn, 0, 100)
+    # plot!(k[2], 0:0.01:0.1, 0:0.01:1, cb, ylims=(0,1), xticks=false, framestyle=:box, yflip=false)
+
+    # savefig(k, name*"_tT.pdf")
+    # display(k)
 
 ## --- End of File
