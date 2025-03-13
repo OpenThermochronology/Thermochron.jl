@@ -91,9 +91,9 @@
     calcuncert = zeros(length(chrons))
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -3674.221222821153
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; trackhist=true) ≈ -3675.720142869145
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegasparent=true) ≈ -3607.8251957943057
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegasparent=true) ≈ -3689.967065538523
     @test round.(calc[1:end-7], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1085.555, 304.6573, 95.84216, 149.8249, 179.703]
-    @test round.(calc[end-6:end], sigdigits=3) ≈ [800, 800, 8, 14.3, 14.3, 14.3, 6] atol = 20
+    @test round.(calc[end-6:end], sigdigits=3) ≈ [800, 800, 8, 14.3, 14.3, 14.3, 6] atol = 30
     @test calcuncert[1:end-5] ≈ zeros(length(chrons)-5)
     @test calcuncert[end-4:end] ≈ [1.7578982633970572, 1.1785910438098226, 1.1389520917140208, 1.2018361658877996, 0.6070538659171328] 
 
@@ -103,7 +103,7 @@
     damodels = unionize(damodels)
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -3691.970607920884
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; trackhist=true) ≈ -3693.486914643356
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegasparent=true) ≈ -3625.574580894037
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegasparent=true) ≈ -3707.716450638254
     @test round.(calc[1:end-7], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1110.379, 304.2772, 95.84216, 149.8249, 179.703]
     @test round.(calc[end-6:end], sigdigits=3) ≈ [790, 800, 8, 14.3, 14.3, 14.3, 6] atol = 30
     @test calcuncert[1:end-5] ≈ zeros(length(chrons)-5)

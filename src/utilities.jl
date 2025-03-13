@@ -343,9 +343,10 @@
         norm_ll(log(dm.D0), dm.D0_logsigma, log(dmₚ.D0)) + 
         norm_ll(log(dm.Ea), dm.Ea_logsigma, log(dmₚ.Ea))
     end
-    function kinetic_ll(dmₚ::MDDiffusivity, dm::MDDiffusivity)
-        ll = norm_ll(log(dm.Ea), dm.Ea_logsigma, log(dmₚ.Ea))
-        for i in eachindex(dm.D0, dm.D0_logsigma)
+    function kinetic_ll(dmₚ::MDDiffusivity{T}, dm::MDDiffusivity{T}) where {T<:AbstractFloat}
+        ll = zero(T)
+        for i in eachindex(dm.Ea, dm.Ea_logsigma, dm.D0, dm.D0_logsigma)
+            ll += norm_ll(log(dm.Ea[i]), dm.Ea_logsigma[i], log(dmₚ.Ea[i]))
             ll += norm_ll(log(dm.D0[i]), dm.D0_logsigma[i], log(dmₚ.D0[i]))
         end
         return ll
@@ -625,52 +626,49 @@
     end
 
     # Adjust kinetic models
-    movekinetics(dm) = dm
-    function movekinetics(zdm::ZRDAAM)
-        p = 0.5
+    movekinetics(dm, p=0.5) = dm
+    function movekinetics(zdm::ZRDAAM{T}, p=0.5) where {T}
         ZRDAAM(
-            DzEa = (rand()<p) ? exp(log(zdm.DzEa)+randn()*zdm.DzEa_logsigma) : zdm.DzEa,
+            DzEa = (rand()<p) ? exp(log(zdm.DzEa)+randn(T)*zdm.DzEa_logsigma/2) : zdm.DzEa,
             DzEa_logsigma = zdm.DzEa_logsigma,
-            DzD0 = (rand()<p) ? exp(log(zdm.DzD0)+randn()*zdm.DzD0_logsigma) : zdm.DzD0,
+            DzD0 = (rand()<p) ? exp(log(zdm.DzD0)+randn(T)*zdm.DzD0_logsigma/2) : zdm.DzD0,
             DzD0_logsigma = zdm.DzD0_logsigma,
-            DN17Ea = (rand()<p) ? exp(log(zdm.DN17Ea)+randn()*zdm.DN17Ea_logsigma) : zdm.DN17Ea,
+            DN17Ea = (rand()<p) ? exp(log(zdm.DN17Ea)+randn(T)*zdm.DN17Ea_logsigma/2) : zdm.DN17Ea,
             DN17Ea_logsigma = zdm.DN17Ea_logsigma,
-            DN17D0 = (rand()<p) ? exp(log(zdm.DN17D0)+randn()*zdm.DN17D0_logsigma) : zdm.DN17D0,
+            DN17D0 = (rand()<p) ? exp(log(zdm.DN17D0)+randn(T)*zdm.DN17D0_logsigma/2) : zdm.DN17D0,
             DN17D0_logsigma = zdm.DN17D0_logsigma,
-            rmin = (rand()<p) ? reflecting(zdm.rmin + randn()*zdm.rmin_sigma, 0, 1) : zdm.rmin,
+            rmin = (rand()<p) ? reflecting(zdm.rmin + randn(T)*zdm.rmin_sigma/2, 0, 1) : zdm.rmin,
             rmin_sigma = zdm.rmin_sigma,
         )
     end
-    function movekinetics(adm::RDAAM)
-        p = 0.5
-        rmr0 = (rand()<p) ? reflecting(adm.rmr0 + randn()*adm.rmr0_sigma, 0, 1) : adm.rmr0
+    function movekinetics(adm::RDAAM{T}, p=0.5) where {T}
+        rmr0 = (rand()<p) ? reflecting(adm.rmr0 + randn(T)*adm.rmr0_sigma/2, 0, 1) : adm.rmr0
         RDAAM(
-            D0L = (rand()<p) ? exp(log(adm.D0L)+randn()*adm.D0L_logsigma) : adm.D0L,
+            D0L = (rand()<p) ? exp(log(adm.D0L)+randn(T)*adm.D0L_logsigma/2) : adm.D0L,
             D0L_logsigma = adm.D0L_logsigma,
-            EaL = (rand()<p) ? exp(log(adm.EaL)+randn()*adm.EaL_logsigma) : adm.EaL,
+            EaL = (rand()<p) ? exp(log(adm.EaL)+randn(T)*adm.EaL_logsigma/2) : adm.EaL,
             EaL_logsigma = adm.EaL_logsigma,
-            EaTrap = (rand()<p) ? exp(log(adm.EaTrap)+randn()*adm.EaTrap_logsigma) : adm.EaTrap,
+            EaTrap = (rand()<p) ? exp(log(adm.EaTrap)+randn(T)*adm.EaTrap_logsigma/2) : adm.EaTrap,
             EaTrap_logsigma = adm.EaTrap_logsigma,
             rmr0 = rmr0,
             rmr0_sigma = adm.rmr0_sigma,
             kappa = adm.kappa_rmr0 - rmr0,
         )
     end
-    function movekinetics(dm::Diffusivity)
-        p = 0.5
+    function movekinetics(dm::Diffusivity{T}, p=0.5) where {T}
         Diffusivity(
-            D0 = (rand()<p) ? exp(log(dm.D0)+randn()*dm.D0_logsigma) : dm.D0,
+            D0 = (rand()<p) ? exp(log(dm.D0)+randn(T)*dm.D0_logsigma/2) : dm.D0,
             D0_logsigma = dm.D0_logsigma,
-            Ea = (rand()<p) ? exp(log(dm.Ea)+randn()*dm.Ea_logsigma) : dm.Ea,
+            Ea = (rand()<p) ? exp(log(dm.Ea)+randn(T)*dm.Ea_logsigma/2) : dm.Ea,
             Ea_logsigma = dm.Ea_logsigma,
         )
     end
-    function movekinetics(dm::MDDiffusivity)
-        p = 0.5
+    function movekinetics(dm::MDDiffusivity{T,N}, p=0.5) where {T,N}
+        q = 4/N
         MDDiffusivity(
-            D0 = (rand()<p) ? @.(exp(log(dm.D0)+randn()*dm.D0_logsigma)) : dm.D0,
+            D0 = (rand()<p) ? @.(exp(log(dm.D0)+(rand()<q)*randn(T)*dm.D0_logsigma/4)) : dm.D0,
             D0_logsigma = dm.D0_logsigma,
-            Ea = (rand()<p) ? exp(log(dm.Ea)+randn()*dm.Ea_logsigma) : dm.Ea,
+            Ea = (rand()<p) ? @.(exp(log(dm.Ea)+(rand()<q)*randn(T)*dm.Ea_logsigma/8)) : dm.Ea,
             Ea_logsigma = dm.Ea_logsigma,
         )
     end

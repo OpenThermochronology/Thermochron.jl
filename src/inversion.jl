@@ -80,6 +80,8 @@
         p_birth = 0.15 # Must equal p_death
         p_death = 0.15 # Must equal p_birth
         p_bounds = 0.06
+        @assert p_move + p_birth + p_death + p_bounds ≈ 1
+        @assert p_birth == p_death
 
         bprogress = Progress(burnin, dt=1, desc="MCMC burn-in ($(burnin) steps)")
         progress_interval = ceil(Int,sqrt(burnin))
@@ -348,8 +350,9 @@
         npointsₚ = npoints
         μcalcₚ = copy(μcalc)::Vector{T}
         σcalcₚ = copy(σcalc)::Vector{T}
+        damodels₀ = damodels
+        damodels = copy(damodels)
         damodelsₚ = copy(damodels)
-        damodels₀ = copy(damodels)
         updatekinetics = falses(size(damodels))
 
         # Initial propopsal
@@ -362,10 +365,12 @@
         
         # Proposal probabilities (must sum to 1)
         p_move = 0.6
-        p_birth = 0.15 # Must equal p_death
-        p_death = 0.15 # Must equal p_birth
+        p_birth = 0.14 # Must equal p_death
+        p_death = 0.14 # Must equal p_birth
         p_bounds = 0.06
-        p_kinetics = 0.04
+        p_kinetics = 0.06
+        @assert p_move + p_birth + p_death + p_bounds + p_kinetics ≈ 1
+        @assert p_birth == p_death
 
         bprogress = Progress(burnin, dt=1, desc="MCMC burn-in ($(burnin) steps)")
         progress_interval = ceil(Int,sqrt(burnin))

@@ -27,11 +27,11 @@ ZRDAAM(
     DzD0::T = 193188.0          # [cm^2/sec] Maximum diffusivity, crystalline endmember
     DzD0_logsigma::T=log(2)/2   # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
     DzEa::T=165.0               # [kJ/mol] Activation energy, crystalline endmember
-    DzEa_logsigma::T=log(2)/2   # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    DzEa_logsigma::T=log(2)/4   # [unitless] log uncertainty (default = log(2)/4 = a factor of sqrt(2) two-sigma)
     DN17D0::T = 6.367E-3        # [cm^2/sec] Maximum diffusivity, amorphous endmember
     DN17D0_logsigma::T=log(2)/2 # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
     DN17Ea::T=71.0              # [kJ/mol] Activation energy, amorphous endmember
-    DN17Ea_logsigma::T=log(2)/2 # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    DN17Ea_logsigma::T=log(2)/4 # [unitless] log uncertainty (default = log(2)/4 = a factor of sqrt(2) two-sigma)
     lint0::T=45920.0            # [nm]
     SV::T=1.669                 # [1/nm]
     Bα::T=5.48E-19              # Amorphous material produced per alpha decay [g/alpha]
@@ -52,11 +52,11 @@ Base.@kwdef struct ZRDAAM{T<:AbstractFloat} <: ZirconHeliumModel{T}
     DzD0::T = 193188.0          # [cm^2/sec] Maximum diffusivity, crystalline endmember
     DzD0_logsigma::T=log(2)/2   # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
     DzEa::T=165.0               # [kJ/mol] Activation energy, crystalline endmember
-    DzEa_logsigma::T=log(2)/2   # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    DzEa_logsigma::T=log(2)/4   # [unitless] log uncertainty (default = log(2)/4 = a factor of sqrt(2) two-sigma)
     DN17D0::T = 6.367E-3        # [cm^2/sec] Maximum diffusivity, amorphous endmember
     DN17D0_logsigma::T=log(2)/2 # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
     DN17Ea::T=71.0              # [kJ/mol] Activation energy, amorphous endmember
-    DN17Ea_logsigma::T=log(2)/2 # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    DN17Ea_logsigma::T=log(2)/4 # [unitless] log uncertainty (default = log(2)/4 = a factor of sqrt(2) two-sigma)
     lint0::T=45920.0            # [nm]
     SV::T=1.669                 # [1/nm]
     Bα::T=5.48E-19              # Amorphous material produced per alpha decay [g/alpha]
@@ -76,9 +76,9 @@ RDAAM(
     D0L::T=0.6071               # [cm^2/sec] Maximum diffusivity
     D0L_logsigma::T=log(2)/2    # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
     EaL::T=122.3                # [kJ/mol] Activation energy
-    EaL_logsigma::T=log(2)/2    # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    EaL_logsigma::T=log(2)/4    # [unitless] log uncertainty (default = log(2)/4 = a factor of sqrt(2) two-sigma)
     EaTrap::T=34.0              # [kJ/mol] Activation energy
-    EaTrap_logsigma::T=log(2)/2 # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    EaTrap_logsigma::T=log(2)/4 # [unitless] log uncertainty (default = log(2)/4 = a factor of sqrt(2) two-sigma)
     psi::T=1e-13                # empirical polynomial coefficient
     omega::T=1e-22              # empirical polynomial coefficient
     etaq::T=0.91                # Durango ηq
@@ -104,9 +104,9 @@ Base.@kwdef struct RDAAM{T<:AbstractFloat} <: ApatiteHeliumModel{T}
     D0L::T=0.6071               # [cm^2/sec] Maximum diffusivity
     D0L_logsigma::T=log(2)/2    # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
     EaL::T=122.3                # [kJ/mol] Activation energy
-    EaL_logsigma::T=log(2)/2    # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    EaL_logsigma::T=log(2)/4    # [unitless] log uncertainty (default = log(2)/4 = a factor of sqrt(2) two-sigma)
     EaTrap::T=34.0              # [kJ/mol] Activation energy
-    EaTrap_logsigma::T=log(2)/2 # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    EaTrap_logsigma::T=log(2)/4 # [unitless] log uncertainty (default = log(2)/4 = a factor of sqrt(2) two-sigma)    psi::T=1e-13                # empirical polynomial coefficient
     psi::T=1e-13                # empirical polynomial coefficient
     omega::T=1e-22              # empirical polynomial coefficient
     etaq::T=0.91                # Durango ηq

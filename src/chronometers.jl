@@ -1634,6 +1634,7 @@ end
         age::AbstractVector,
         age_sigma::AbstractVector,
         fraction_experimental::AbstractVector,
+        fraction_experimental_sigma::Number=T(0.025),
         tsteps_experimental::AbstractVector,
         Tsteps_experimental::AbstractVector,
         fit::AbstractVector,
@@ -1683,7 +1684,7 @@ end
             age::AbstractVector,
             age_sigma::AbstractVector,
             fraction_experimental::AbstractVector,
-            fraction_experimental_sigma::Number=maximum(diff(fraction_experimental)),
+            fraction_experimental_sigma::Number=T(0.025),
             tsteps_experimental::AbstractVector,
             Tsteps_experimental::AbstractVector,
             fit::AbstractVector,
@@ -1975,7 +1976,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                         D0 = T(ds.D0_cm_2_s[i]),
                         D0_logsigma = T((haskey(ds, :D0_logsigma) && !isnan(ds.D0_logsigma[i])) ? ds.D0_logsigma[i] : log(2)/2),
                         Ea = T(ds.Ea_kJ_mol[i]),
-                        Ea_logsigma = T((haskey(ds, :Ea_logsigma) && !isnan(ds.Ea_logsigma[i])) ? ds.Ea_logsigma[i] : log(2)/2),
+                        Ea_logsigma = T((haskey(ds, :Ea_logsigma) && !isnan(ds.Ea_logsigma[i])) ? ds.Ea_logsigma[i] : log(2)/4),
                     )
                     push!(chrons, c)
                     push!(damodels, dm)
@@ -1995,7 +1996,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                         D0 = T(ds.D0_cm_2_s[i]),
                         D0_logsigma = T((haskey(ds, :D0_logsigma) && !isnan(ds.D0_logsigma[i])) ? ds.D0_logsigma[i] : log(2)/2),
                         Ea = T(ds.Ea_kJ_mol[i]),
-                        Ea_logsigma = T((haskey(ds, :Ea_logsigma) && !isnan(ds.Ea_logsigma[i])) ? ds.Ea_logsigma[i] : log(2)/2),
+                        Ea_logsigma = T((haskey(ds, :Ea_logsigma) && !isnan(ds.Ea_logsigma[i])) ? ds.Ea_logsigma[i] : log(2)/4),
                     )
                     push!(chrons, c)
                     push!(damodels, dm)
@@ -2023,7 +2024,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                         D0 = T(ds.D0_cm_2_s[i]),
                         D0_logsigma = T((haskey(ds, :D0_logsigma) && !isnan(ds.D0_logsigma[i])) ? ds.D0_logsigma[i] : log(2)/2),
                         Ea = T(ds.Ea_kJ_mol[i]),
-                        Ea_logsigma = T((haskey(ds, :Ea_logsigma) && !isnan(ds.Ea_logsigma[i])) ? ds.Ea_logsigma[i] : log(2)/2),
+                        Ea_logsigma = T((haskey(ds, :Ea_logsigma) && !isnan(ds.Ea_logsigma[i])) ? ds.Ea_logsigma[i] : log(2)/4),
                     )
                     push!(chrons, c)
                     push!(damodels, dm)
@@ -2043,7 +2044,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                         D0 = T(ds.D0_cm_2_s[i]),
                         D0_logsigma = T((haskey(ds, :D0_logsigma) && !isnan(ds.D0_logsigma[i])) ? ds.D0_logsigma[i] : log(2)/2),
                         Ea = T(ds.Ea_kJ_mol[i]),
-                        Ea_logsigma = T((haskey(ds, :Ea_logsigma) && !isnan(ds.Ea_logsigma[i])) ? ds.Ea_logsigma[i] : log(2)/2),
+                        Ea_logsigma = T((haskey(ds, :Ea_logsigma) && !isnan(ds.Ea_logsigma[i])) ? ds.Ea_logsigma[i] : log(2)/4),
                     )
                     push!(chrons, c)
                     push!(damodels, dm)
@@ -2089,8 +2090,8 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
             dm = MDDiffusivity(
                 D0 = (T.(exp.(mdds.lnD0_a_2[tdomains]).*(r/10000)^2)...,),
                 D0_logsigma = (T.(haskey(mdds, :lnD0_a_2_sigma) ? mdds.lnD0_a_2_sigma[tdomains] : fill(log(2)/2, count(tdomains)))...,),
-                Ea = T(nanmean(mdds.Ea_kJ_mol)),
-                Ea_logsigma = T(haskey(mdds, :Ea_logsigma) ? nanmean(mdds.Ea_logsigma) : log(2)/2),
+                Ea = (T.(mdds.Ea_kJ_mol[tdomains])...,),
+                Ea_logsigma = (T.(haskey(mdds, :Ea_logsigma) ? mdds.Ea_logsigma[tdomains] : fill(log(2)/8, count(tdomains)))...,),
             )
             push!(chrons, c)
             push!(damodels, dm)

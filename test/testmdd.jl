@@ -27,8 +27,8 @@
     dm = MDDiffusivity(
         D0 = (Float64.(exp.(mdds.lnD0_a_2[tdomains]).*(100/10000)^2)...,),
         D0_logsigma = (Float64.(haskey(mdds, :lnD0_a_2_sigma) ? mdds.lnD0_a_2_sigma[tdomains] : fill(log(2)/2, count(tdomains)))...,),
-        Ea = Float64(nanmean(mdds.Ea_kJ_mol)),
-        Ea_logsigma = Float64(haskey(mdds, :Ea_logsigma) ? nanmean(mdds.Ea_logsigma) : log(2)/2),
+        Ea = (Float64.(mdds.Ea_kJ_mol[tdomains])...,),
+        Ea_logsigma = (Float64.(haskey(mdds, :Ea_logsigma) ? mdds.Ea_logsigma[tdomains] : fill(log(2)/2, count(tdomains)))...,),
     )
 
     age, fraction = modelage(mdd, Tsteps, dm)

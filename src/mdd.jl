@@ -13,11 +13,11 @@
     """
     Base.@kwdef struct MDDiffusivity{T<:AbstractFloat, N} <: DiffusivityModel{T}
         D0::NTuple{N,T}             # [cm^2/sec] Maximum diffusivity
-        D0_logsigma::NTuple{N,T}    # [unitless] log uncertainty (default = 1/2 = a factor of ℯ two-sigma)
-        Ea::T                       # [kJ/mol] Activation energy
-        Ea_logsigma::T              # [unitless] log uncertainty (default = 1/2 = a factor of ℯ two-sigma)
+        D0_logsigma::NTuple{N,T}    # [unitless] log uncertainty
+        Ea::NTuple{N,T}             # [kJ/mol] Activation energy
+        Ea_logsigma::NTuple{N,T}    # [unitless] log uncertainty 
     end
-    Base.getindex(d::MDDiffusivity{T}, i::Int) where {T} = Diffusivity{T}(d.D0[i], d.D0_logsigma[i], d.Ea, d.Ea_logsigma)
+    Base.getindex(d::MDDiffusivity{T}, i::Int) where {T} = Diffusivity{T}(d.D0[i], d.D0_logsigma[i], d.Ea[i], d.Ea_logsigma[i])
 
     # Query MDDiffusivities from a KineticResult
     function MDDiffusivity(kr::KineticResult)
@@ -361,8 +361,9 @@ end
 
 function degassing_ll(mdd::MultipleDomain{T}) where {T<:AbstractFloat}
     ll = zero(T)
+    fit_until = findlast(mdd.fit)
     for i in eachindex(mdd.tsteps_experimental, mdd.fraction_experimental, mdd.fit)
-        if mdd.fit[i]
+        if i <= fit_until
             model_fractionᵢ = linterp1(mdd.tsteps_degassing, mdd.model_fraction, mdd.tsteps_experimental[i])
             ll += norm_ll(mdd.fraction_experimental[i], mdd.fraction_experimental_sigma, model_fractionᵢ)
         end
