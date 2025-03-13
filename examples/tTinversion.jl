@@ -27,19 +27,19 @@
 
     # # # # # # # # # # Choice of regional thermochron data # # # # # # # # # #
 
-    # # Literature samples from McDannell et al. 2022 (doi: 10.1130/G50315.1), Manitoba
-    # # (12 ZirconHe, 5 ApatiteHe, 47 ApatiteFT, 269 ApatiteTrackLength)
-    # name = "Manitoba"
-    # ds = importdataset("manitoba.csv", ',', importas=:Tuple)
+    # Literature samples from McDannell et al. 2022 (doi: 10.1130/G50315.1), Manitoba
+    # (12 ZirconHe, 5 ApatiteHe, 47 ApatiteFT, 269 ApatiteTrackLength)
+    name = "Manitoba"
+    ds = importdataset("manitoba.csv", ',', importas=:Tuple)
 
     # # Literature samples from Guenthner et al. 2013 (AJS), Minnesota
     # # (23 ZirconHe, 11 ApatiteHe)
     # name = "Minnesota"
     # ds = importdataset("minnesota.csv", ',', importas=:Tuple)
 
-    # OL13 multiple domain diffusion example
-    name = "OL13"
-    ds = importdataset("ol13.csv", ',', importas=:Tuple)
+    # # OL13 multiple domain diffusion example
+    # name = "OL13"
+    # ds = importdataset("ol13.csv", ',', importas=:Tuple)
 
 ## --- Prepare problem
 
@@ -47,8 +47,8 @@
     tinit = ceil(maximum(ds.crystallization_age_Ma)/dt) * dt # [Ma] Model start time
 
     model = (
-        nsteps = 4000,                # [n] How many steps of the Markov chain should we run?
-        burnin = 1000,                # [n] How long should we wait for MC to converge (become stationary)
+        nsteps = 400000,                # [n] How many steps of the Markov chain should we run?
+        burnin = 100000,                # [n] How long should we wait for MC to converge (become stationary)
         dr = 1.0,                       # [μm] Radius step size
         dTmax = 25.0,                   # [Ma/dt] Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
         Tinit = 400.0,                  # [C] Initial model temperature (i.e., crystallization temperature)
@@ -123,7 +123,7 @@
 
     # Empirical age uncertainty for apatite
     tap = isa.(chrons, ApatiteHe)
-    if any(tap)
+    if count(tap) > 1
         h = ageeuplot(chrons[tap], label="Internal uncertainty", title="apatite")
         empiricaluncertainty!(model.σcalc, chrons, ApatiteHe)
         σtotal = sqrt.(get_age_sigma(chrons[tap]).^2 + model.σcalc[tap].^2)
@@ -133,7 +133,7 @@
 
     # Empirical age uncertainty for zircon
     tzr = isa.(chrons, ZirconHe)
-    if any(tzr)
+    if count(tzr) > 1
         h = ageeuplot(chrons[tzr], label="Internal uncertainty", title="zircon")
         empiricaluncertainty!(model.σcalc, chrons, ZirconHe)
         σtotal = sqrt.(get_age_sigma(chrons[tzr]).^2 + model.σcalc[tzr].^2)
