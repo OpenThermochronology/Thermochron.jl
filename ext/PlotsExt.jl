@@ -112,7 +112,7 @@ module PlotsExt
         hd = plot(; framestyle, xlabel="Log10 D0/a^2", ylabel="Probability Density", kwargs...)
         for j in 1:ndomains
             D0a2 = dms .|> x->log10(x.D0[j]/(r/10000)^2)
-            histogram!(hd, D0a2; normalized=true, lw=0, color=lines[j], label="", bins=(minimum(D0a2)-0.1):0.1:(maximum(D0a2)+0.1), fillalpha, kwargs...)
+            histogram!(hd, D0a2; normalized=true, lw=0, color=lines[j], label="", bins=(minimum(D0a2)-0.05):0.1:(maximum(D0a2)+0.1), fillalpha, kwargs...)
             D0a2₀ = Normal(log10(d.D0[j]./(r/10000)^2), d.D0_logsigma[j]/log(10))
             x = range(mean(D0a2₀)-3std(D0a2₀), mean(D0a2₀)+3std(D0a2₀), length=100)
             plot!(hd, x, pdf.(D0a2₀,x), color=lines[j], label="domain $j", kwargs...)
@@ -121,7 +121,7 @@ module PlotsExt
         he = plot(; framestyle, xlabel="Log10 Ea [kj/mol]", ylabel="Probability Density")
         for j in 1:ndomains
             Ea = dms .|> x->log10(x.Ea[j])
-            histogram!(he, Ea; normalized=true, lw=0, color=lines[j], label="", bins=(minimum(Ea)-0.005):0.005:(maximum(Ea)+0.005), fillalpha, kwargs...)
+            histogram!(he, Ea; normalized=true, lw=0, color=lines[j], label="", bins=(minimum(Ea)-0.0025):0.005:(maximum(Ea)+0.005), fillalpha, kwargs...)
             Ea₀ = Normal(log10(d.Ea[j]), d.Ea_logsigma[j]/log(10))
             x = range(mean(Ea₀)-3std(Ea₀), mean(Ea₀)+3std(Ea₀), length=100)
             plot!(he, x, pdf.(Ea₀,x), color=lines[j], label="domain $j", kwargs...)
