@@ -217,7 +217,7 @@
                 color=mineralcolors[mincolor[i]], 
                 msc=mineralcolors[mincolor[i]], 
             )
-            savefig(h, name*"_$(C[i])_Age-eU.pdf")
+            savefig(h, "$(name)_$(C[i])_Age-eU.pdf")
             display(h)
         end
     end
@@ -228,7 +228,7 @@
             im = findfirst(x->isa(x, D), damodels)
             if !isnothing(id) && !isnothing(im)
                 hdm = plot(damodels[im], kinetics.dmdist[id,:])
-                savefig(hdm, name*"_$(D)_kinetics.pdf")
+                savefig(hdm, "$(name)_$(D)_kinetics.pdf")
                 display(hdm)
             end
         end
@@ -363,7 +363,7 @@
         for i in eachindex(im,id)
             r = last(first(chrons[im[i]].domains).redges)
             hdm = plot(damodels[im[i]], kinetics.dmdist[id[i],:], r)
-            savefig(hdm, name*"_MDD_kinetics_$i.pdf")
+            savefig(hdm, "$(name)_$(ds.grain_name[im[i]])_MDD_kinetics.pdf")
             display(hdm)
         end
     end
