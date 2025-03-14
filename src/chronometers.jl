@@ -1660,25 +1660,26 @@ end
     See also: `MDDiffusivity`, `PlanarAr`, `SphericalAr`, `degas!`
     """
     struct MultipleDomain{T<:AbstractFloat, C<:Union{SphericalAr{T}, PlanarAr{T}}} <: AbsoluteChronometer{T}
-        age::Vector{T}                  # [Ma] measured ages at each degassing step
-        age_sigma::Vector{T}            # [Ma] measured age uncertainties at each degassing step
-        fraction_experimental::Vector{T}# [unitless] fraction of total Ar-39 released each degassing step
-        fraction_experimental_sigma::T  # [unitless] uncertainty in degassing fraction 
-        tsteps_experimental::Vector{T}  # [s] time steps of experimental heating schedule
-        Tsteps_experimental::Vector{T}  # [C] temperature steps of experimental heating schedule
-        fit::BitVector                  # [Bool] Whether or not each step should be used in inversion
-        offset::T                       # [C] temperature offset relative to the surface
-        fuse::Bool                      # [Bool] Treat the grain as having fused (released all remaining Ar)
-        domains::Vector{C}              # Vector of chronometer obects for each domain
-        volume_fraction::Vector{T}      # [unitless] fraction of total volume represented by each domain
-        model_age::Vector{T}            # [Ma] calculated age at each model degassing step
-        model_parent::Vector{T}         # [atoms/g equivalent] parent tracer degassed
-        model_daughter::Vector{T}       # [atoms/g] daughter degassed
-        model_fraction::Vector{T}       # [unitless] cumulative fraction of parent degasssed
-        tsteps_degassing::FloatRange    # [s] time steps of model heating schedule
-        Tsteps_degassing::Vector{T}     # [C] temperature steps of model heating schedule
-        agesteps::FloatRange            # [Ma] age in Ma relative to the present
-        tsteps::FloatRange              # [Ma] forward time since crystallization
+        age::Vector{T}                      # [Ma] measured ages at each degassing step
+        age_sigma::Vector{T}                # [Ma] measured age uncertainties at each degassing step
+        fraction_experimental::Vector{T}    # [unitless] fraction of total Ar-39 released each degassing step
+        fraction_experimental_sigma::T      # [unitless] uncertainty in degassing fraction
+        midpoint_experimental::Vector{T}    # [unitless] midpoint of fraction_experimental for each step
+        tsteps_experimental::Vector{T}      # [s] time steps of experimental heating schedule
+        Tsteps_experimental::Vector{T}      # [C] temperature steps of experimental heating schedule
+        fit::BitVector                      # [Bool] Whether or not each step should be used in inversion
+        offset::T                           # [C] temperature offset relative to the surface
+        fuse::Bool                          # [Bool] Treat the grain as having fused (released all remaining Ar)
+        domains::Vector{C}                  # Vector of chronometer obects for each domain
+        volume_fraction::Vector{T}          # [unitless] fraction of total volume represented by each domain
+        model_age::Vector{T}                # [Ma] calculated age at each model degassing step
+        model_parent::Vector{T}             # [atoms/g equivalent] parent tracer degassed
+        model_daughter::Vector{T}           # [atoms/g] daughter degassed
+        model_fraction::Vector{T}           # [unitless] cumulative fraction of parent degasssed
+        tsteps_degassing::FloatRange        # [s] time steps of model heating schedule
+        Tsteps_degassing::Vector{T}         # [C] temperature steps of model heating schedule
+        agesteps::FloatRange                # [Ma] age in Ma relative to the present
+        tsteps::FloatRange                  # [Ma] forward time since crystallization
     end
     function MultipleDomain(T=Float64, C=PlanarAr;
             age::AbstractVector,
@@ -1702,7 +1703,10 @@ end
         @assert issorted(tsteps_experimental, lt=<=) "Degassing time steps must be in strictly increasing order"
         @assert all(x->0<=x<=1, volume_fraction) "All \"fraction degassed\" values must be between 0 and 1"
 
-        # Interpolate degassing t-T steps to the same resolution as the 
+        # Calculate midpoints of `fraction_experimental`
+        midpoint_experimental = @. T(fraction_experimental + [0; fraction_experimental[1:end-1]])/2
+
+        # Interpolate degassing t-T steps to the same resolution as the forward model
         tsteps_degassing = floatrange(first(tsteps_experimental), last(tsteps_experimental), length=length(agesteps))
         Tsteps_degassing = linterp1(tsteps_experimental, T.(Tsteps_experimental), tsteps_degassing) 
         model_age = zeros(T, length(tsteps_degassing))
@@ -1720,6 +1724,7 @@ end
             T.(age_sigma),
             T.(fraction_experimental),
             T(fraction_experimental_sigma),
+            midpoint_experimental,
             tsteps_experimental,
             Tsteps_experimental,
             Bool.(fit),

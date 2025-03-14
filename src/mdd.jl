@@ -350,9 +350,9 @@ end
 
 function model_ll(mdd::MultipleDomain{T}, σ::T=zero(T)) where {T<:AbstractFloat}
     ll = zero(T)
-    for i in eachindex(mdd.age, mdd.age_sigma, mdd.fraction_experimental, mdd.fit)
+    for i in eachindex(mdd.age, mdd.age_sigma, mdd.midpoint_experimental, mdd.fit)
         if mdd.fit[i]
-            model_ageᵢ = linterp1(mdd.model_fraction, mdd.model_age, mdd.fraction_experimental[i])
+            model_ageᵢ = linterp1(mdd.model_fraction, mdd.model_age, mdd.midpoint_experimental[i])
             ll += norm_ll(mdd.age[i], mdd.age_sigma[i], model_ageᵢ, σ)
         end
     end

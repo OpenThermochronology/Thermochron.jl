@@ -663,12 +663,11 @@
             Ea_logsigma = dm.Ea_logsigma,
         )
     end
-    function movekinetics(dm::MDDiffusivity{T,N}, p=0.5) where {T,N}
-        q = 4/N
+    function movekinetics(dm::MDDiffusivity{T}, p=0.5) where {T}
         MDDiffusivity(
-            D0 = (rand()<p) ? @.(exp(log(dm.D0)+(rand()<q)*randn(T)*dm.D0_logsigma/4)) : dm.D0,
+            D0 = (rand()<p) ? @.(exp(log(dm.D0)+(rand()<p)*randn(T)*dm.D0_logsigma/4)) : dm.D0,
             D0_logsigma = dm.D0_logsigma,
-            Ea = (rand()<p) ? @.(exp(log(dm.Ea)+(rand()<q)*randn(T)*dm.Ea_logsigma/8)) : dm.Ea,
+            Ea = (rand()<p) ? @.(exp(log(dm.Ea)+(rand()<p)*randn(T)*dm.Ea_logsigma/10)) : dm.Ea,
             Ea_logsigma = dm.Ea_logsigma,
         )
     end
