@@ -82,7 +82,7 @@ function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
     end
     r=zeros(T, size(agesteps))
     pr=zeros(T, size(agesteps))
-    ldist=zeros(T, Base.length(ledges)-1)
+    ldist=zeros(T, size(ledges).-1)
     ApatiteTrackLength(
         T(length),
         T(angle),
@@ -124,7 +124,7 @@ function ZirconTrackLength(T::Type{<:AbstractFloat}=Float64;
 
     r=zeros(T, size(agesteps))
     pr=zeros(T, size(agesteps))
-    ldist=zeros(T, Base.length(ledges)-1)
+    ldist=zeros(T, size(ledges).-1)
     ZirconTrackLength(
         T(length),
         T(offset),
@@ -163,7 +163,7 @@ function MonaziteTrackLength(T::Type{<:AbstractFloat}=Float64;
 
     r=zeros(T, size(agesteps))
     pr=zeros(T, size(agesteps))
-    ldist=zeros(T, Base.length(ledges)-1)
+    ldist=zeros(T, size(ledges).-1)
     MonaziteTrackLength(
         T(length),
         T(offset),
