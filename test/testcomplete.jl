@@ -90,7 +90,6 @@
     calc = zeros(length(chrons))
     calcuncert = zeros(length(chrons))
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈  -1378.542333190038
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; trackhist=true) ≈ -1380.0412532380305
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegasparent=true) ≈ -1574.146406616536
     @test round.(calc[1:end-7], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1085.555, 304.6573, 95.84216, 149.8249, 179.703]
     @test calc[end-6] ≈ 750 atol=60
@@ -103,7 +102,6 @@
     damodels[isa.(damodels, Thermochron.ApatiteAnnealingModel)] .= Ketcham1999FC()
     damodels = unionize(damodels)
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -1396.2917182897693
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; trackhist=true) ≈ -1397.8080250122416
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegasparent=true) ≈ -1591.8957917162672
     @test round.(calc[1:end-7], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1110.379, 304.2772, 95.84216, 149.8249, 179.703]
     @test round.(calc[end-5:end], sigdigits=3) ≈ [800, 8, 14.3, 14.3, 14.3, 6] atol = 30
@@ -123,8 +121,7 @@
 
     calc = zeros(length(chrons))
     calcuncert = zeros(length(chrons))
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; trackhist=false) ≈ -16667.28440196102
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; trackhist=true) ≈ -16667.28440196102
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -16667.28440196102
     @test round.(calc, sigdigits=5) ≈ [1125.8, 1123.3, 954.89, 1046.3, 1010.6, 1146.5, 956.84, 871.49, 984.5, 706.49, 574.3, 139.5, 319.64, 62.847, 183.99, 329.73, 1.712, 3.6475, 0.00037435, 16.555, 0.0041183, 33.839, 1.2215, 122.78, 244.29, 234.62, 196.31, 180.09, 206.59, 177.52, 220.8, 261.59, 258.45, 284.49]
     @test calcuncert ≈ zeros(length(chrons))
     # println(round.(calc, sigdigits=5))

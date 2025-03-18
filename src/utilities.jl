@@ -702,7 +702,7 @@
     end
 
     # Utility function to calculate model ages for all chronometers at once
-    function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, Tsteps::AbstractVector{T}; trackhist::Bool=false, rescalemdd::Bool=true, rescale::Bool=false, redegasparent::Bool=false) where {T<:AbstractFloat}
+    function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, Tsteps::AbstractVector{T}; rescalemdd::Bool=true, rescale::Bool=false, redegasparent::Bool=false) where {T<:AbstractFloat}
         imax = argmax(i->length((chrons[i].tsteps)::FloatRange), eachindex(chrons))
         tsteps = (chrons[imax].tsteps)::FloatRange
         tmax = last(tsteps)
@@ -769,17 +769,17 @@
                 ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scaleaft
             elseif isa(c, ZirconTrackLength)
                 c::ZirconTrackLength{T}
-                μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), dm::ZirconAnnealingModel{T}; trackhist)
+                μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), dm::ZirconAnnealingModel{T})
                 μcalc[i] = draw_from_population(c, σcalc[i])
                 ll += model_ll(c, σcalc[i])/scaleztl
             elseif isa(c, MonaziteTrackLength)
                 c::MonaziteTrackLength{T}
-                μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), dm::MonaziteAnnealingModel{T}; trackhist)
+                μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), dm::MonaziteAnnealingModel{T})
                 μcalc[i] = draw_from_population(c, σcalc[i])
                 ll += model_ll(c, σcalc[i])/scalemtl
             elseif isa(c, ApatiteTrackLength)
                 c::ApatiteTrackLength{T}
-                μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), dm::ApatiteAnnealingModel{T}; trackhist)
+                μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), dm::ApatiteAnnealingModel{T})
                 μcalc[i] = draw_from_population(c, σcalc[i])
                 ll += model_ll(c, σcalc[i])/scaleatl
             elseif isa(c, MultipleDomain)
@@ -794,59 +794,7 @@
                 μcalc[i] = T(NaN)
             end
         end
-
-        # Log likelihood term from comparing observed and expected fission track length histograms
-        if trackhist
-            ll += tracklength_histogram_ll!(chrons, ZirconTrackLength)/scaleztl
-            ll += tracklength_histogram_ll!(chrons, MonaziteTrackLength)/scalemtl
-            ll += tracklength_histogram_ll!(chrons, ApatiteTrackLength)/scaleatl
-        end
             
-        return ll
-    end
-
-
-    function tracklength_histogram_ll!(data::Vector{<:Chronometer{T}}, ::Type{C}) where {T<:AbstractFloat, C<:FissionTrackLength}
-        # Initial log likelihood
-        ll = zero(T)
-        # See how many tracks of type C we have
-        n_tracks = count(x->isa(x, C), data)
-        if n_tracks > 1
-            # Predicted track counts
-            i1 = findfirst(x->isa(x,C), data)
-            predicted = (data[i1]::C).ldist::Vector{T}
-            for i in eachindex(data)
-                if isa(data[i], C) && (i > i1)
-                    c = data[i]::C
-                    predicted .+= c.ldist
-                end
-            end
-            # Scale to match histogram of observed track counts, if any
-            Σpredicted = sum(predicted)
-            (Σpredicted > 0) && (predicted .*= n_tracks/Σpredicted)
-
-            # Observed track counts
-            i2 = findnext(x->isa(x,C), data, i1+1)
-            binedges = (data[i2]::C).ledges::FloatRange
-            observed = (data[i2]::C).ldist::Vector{T}
-            fill!(observed, zero(T))
-            for i in eachindex(data)
-                if isa(data[i], C) 
-                    c = data[i]::C
-                    li = Int((val(c) - first(binedges)) ÷ step(binedges)) + firstindex(observed)
-                    if firstindex(observed) <= li <= lastindex(observed)
-                        observed[li] += 1
-                    end
-                end
-            end
-
-            # Compare observed and predicted length histograms via counting statistics of each bin
-            # Approximately equivalent to a Pearson's chi-squared test on the two distributions
-            for i in eachindex(observed, predicted)
-                # Arrival distributions in each length bin should follow Possson distributions
-                ll += logcdf(Poisson(predicted[i]), observed[i])
-            end
-        end
         return ll
     end
     
