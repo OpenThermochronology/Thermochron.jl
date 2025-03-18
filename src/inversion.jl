@@ -29,6 +29,7 @@
         npoints = (haskey(model, :npoints) ? model.npoints : minpoints)::Int
         npoints = max(npoints, detail.minpoints+1)
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
+        rescalemdd = (haskey(model, :rescalemdd) ? model.rescalemdd : true)::Bool
         rescale = (haskey(model, :rescale) ? model.rescale : false)::Bool
         trackhist = (haskey(model, :trackhist) ? model.trackhist : false)::Bool
         simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
@@ -72,7 +73,7 @@
         initialproposal!(path, npoints) 
 
         # Log-likelihood for initial proposal
-        ll = llₚ = model!(μcalc, σcalc, chrons, damodels, path.Tsteps; trackhist, rescale) + diff_ll(path.Tsteps, dTmax, dTmax_sigma) + 
+        ll = llₚ = model!(μcalc, σcalc, chrons, damodels, path.Tsteps; trackhist, rescalemdd, rescale) + diff_ll(path.Tsteps, dTmax, dTmax_sigma) + 
             (simplified ? -log(npoints) : zero(T))  + (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
 
         # Proposal probabilities (must sum to 1)
@@ -131,7 +132,7 @@
             end
 
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps; trackhist, rescale)
+            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps; trackhist, rescalemdd, rescale)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             simplified && (llₚ += -log(npointsₚ))
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
@@ -220,7 +221,7 @@
             end
 
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps; trackhist, rescale)
+            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps; trackhist, rescalemdd, rescale)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             simplified && (llₚ += -log(npointsₚ))
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
@@ -311,6 +312,7 @@
         npoints = (haskey(model, :npoints) ? model.npoints : minpoints)::Int
         npoints = max(npoints, detail.minpoints+1)
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
+        rescalemdd = (haskey(model, :rescalemdd) ? model.rescalemdd : true)::Bool
         rescale = (haskey(model, :rescale) ? model.rescale : false)::Bool
         trackhist = (haskey(model, :trackhist) ? model.trackhist : false)::Bool
         simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
@@ -359,7 +361,7 @@
         initialproposal!(path, npoints)
 
         # Log-likelihood for initial proposal
-        ll = llₚ = model!(μcalc, σcalc, chrons, damodels, path.Tsteps; trackhist, rescale, redegasparent) + 
+        ll = llₚ = model!(μcalc, σcalc, chrons, damodels, path.Tsteps; trackhist, rescalemdd, rescale, redegasparent) + 
             diff_ll(path.Tsteps, dTmax, dTmax_sigma) + kinetic_ll(damodelsₚ, damodels₀) + 
             (simplified ? -log(npoints) : zero(T)) + (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
         
@@ -425,7 +427,7 @@
             end
                
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps; trackhist, rescale, redegasparent)
+            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps; trackhist, rescalemdd, rescale, redegasparent)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             llₚ += kinetic_ll(damodelsₚ, damodels₀)
             simplified && (llₚ += -log(npointsₚ))
@@ -522,7 +524,7 @@
             end
 
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps; trackhist, rescale, redegasparent)
+            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps; trackhist, rescalemdd, rescale, redegasparent)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             llₚ += kinetic_ll(damodelsₚ, damodels₀)
             simplified && (llₚ += -log(npointsₚ))

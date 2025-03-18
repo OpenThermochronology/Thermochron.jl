@@ -348,7 +348,7 @@ function modelage(mdd::MultipleDomain{T}, Tsteps::AbstractVector, dm::MDDiffusiv
     return age, fraction
 end
 
-function model_ll(mdd::MultipleDomain{T}, σ::T=zero(T)) where {T<:AbstractFloat}
+function model_ll(mdd::MultipleDomain{T}, σ::T=zero(T); rescalemdd=true) where {T<:AbstractFloat}
     ll = zero(T)
     for i in eachindex(mdd.age, mdd.age_sigma, mdd.midpoint_experimental, mdd.fit)
         if mdd.fit[i]
@@ -356,10 +356,11 @@ function model_ll(mdd::MultipleDomain{T}, σ::T=zero(T)) where {T<:AbstractFloat
             ll += norm_ll(mdd.age[i], mdd.age_sigma[i], model_ageᵢ, σ)
         end
     end
+    rescalemdd && (ll /= sqrt(count(mdd.fit)))
     return ll
 end
 
-function degassing_ll(mdd::MultipleDomain{T}) where {T<:AbstractFloat}
+function degassing_ll(mdd::MultipleDomain{T}; rescalemdd=true) where {T<:AbstractFloat}
     ll = zero(T)
     fit_until = findlast(mdd.fit)
     for i in eachindex(mdd.tsteps_experimental, mdd.fraction_experimental, mdd.fit)
@@ -368,5 +369,6 @@ function degassing_ll(mdd::MultipleDomain{T}) where {T<:AbstractFloat}
             ll += norm_ll(mdd.fraction_experimental[i], mdd.fraction_experimental_sigma, model_fractionᵢ)
         end
     end
+    rescalemdd && (ll /= sqrt(fit_until))
     return ll
 end

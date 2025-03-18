@@ -702,7 +702,7 @@
     end
 
     # Utility function to calculate model ages for all chronometers at once
-    function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, Tsteps::AbstractVector{T}; trackhist::Bool=false, rescale::Bool=false, redegasparent::Bool=false, sigmadegassing::T=zero(T)) where {T<:AbstractFloat}
+    function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, Tsteps::AbstractVector{T}; trackhist::Bool=false, rescalemdd::Bool=true, rescale::Bool=false, redegasparent::Bool=false) where {T<:AbstractFloat}
         imax = argmax(i->length((chrons[i].tsteps)::FloatRange), eachindex(chrons))
         tsteps = (chrons[imax].tsteps)::FloatRange
         tmax = last(tsteps)
@@ -732,7 +732,7 @@
         scaleztl = rescale ? sqrt(count(x->isa(x, ZirconTrackLength), chrons)) : 1
         scalemtl = rescale ? sqrt(count(x->isa(x, MonaziteTrackLength), chrons)) : 1
         scaleatl = rescale ? sqrt(count(x->isa(x, ApatiteTrackLength), chrons)) : 1
-        scalemdd = rescale ? sqrt(sum(x->(isa(x, MultipleDomain) ? count(x.fit) : 0), chrons)) : 1
+        scalemdd = rescale ? sqrt(count(x->isa(x, MultipleDomain), chrons)) : 1
 
         # Cycle through each Chronometer, model and calculate log likelihood
         ll = zero(T)
@@ -786,9 +786,9 @@
                 c::MultipleDomain{T, <:Union{PlanarAr{T}, SphericalAr{T}}}
                 age, fraction = modelage(c, @views(Tsteps[first_index:end]), dm::MDDiffusivity{T}; redegasparent)
                 issorted(fraction) || @info fraction
-                redegasparent && (ll += degassing_ll(c))
+                redegasparent && (ll += degassing_ll(c; rescalemdd)/scalemdd)
                 μcalc[i] = draw_from_population(age, fraction)
-                ll += model_ll(c, σcalc[i])/scalemdd
+                ll += model_ll(c, σcalc[i]; rescalemdd)/scalemdd
             else
                 # NaN if not calculated
                 μcalc[i] = T(NaN)
