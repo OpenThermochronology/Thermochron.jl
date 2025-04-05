@@ -278,10 +278,24 @@ export rmr0model
 
 """
 ```julia
+rmr0fromcl(Cl)
+```
+Calculate `rmr0` as a function of chlorine content `Cl` [APFU] for 
+"multikinetic" apatite fission track following the relation (Fig. 7a) 
+of Ketcham et al. 1999 (doi: 10.2138/am-1999-0903)
+```
+rmr0 = 1 - exp(2.107(1 - abs(Cl - 1)) - 1.834)
+```
+"""
+rmr0fromcl(Cl) = 1 - exp(2.107*(1 - abs(Cl - 1)) - 1.834)
+export rmr0fromcl
+
+"""
+```julia
 rmr0fromdpar(dpar)
 ```
 Calculate `rmr0` as a function of `dpar` for "multikinetic" apatite 
-fission track following the relation (Fig. 7) of Ketcham et al. 1999
+fission track following the relation (Fig. 7b) of Ketcham et al. 1999
 (doi: 10.2138/am-1999-0903)
 ```
 rmr0 = 1 - exp(0.647(dpar-1.75) - 1.834)
