@@ -256,6 +256,8 @@ function ApatiteFT(T::Type{<:AbstractFloat}=Float64;
         s = F + Cl + OH
         rmr0 = if !isnan(s)
             rmr0model(F/s*2, Cl/s*2, OH/s*2)
+        elseif !isnan(Cl)
+            rmr0fromcl(Cl)
         elseif !isnan(dpar)
             rmr0fromdpar(dpar)
         else
