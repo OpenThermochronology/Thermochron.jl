@@ -421,17 +421,18 @@ which they respetively implement include
 function modellength(track::ApatiteTrackLength{T}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}; trackhist::Bool=false) where {T <: AbstractFloat}
     agesteps = track.agesteps
     tsteps = track.tsteps
+    ΔT = track.offset::T
     rmr0 = track.rmr0
     r = track.r
     pr = track.pr
     @assert issorted(tsteps)
     @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps) == eachindex(pr) == eachindex(r)
     teq = dt = step(tsteps)
-    r[end] = rlr(reltracklength(teq, Tsteps[end], am), rmr0)
+    r[end] = rlr(reltracklength(teq, Tsteps[end]+ΔT, am), rmr0)
     pr[end] = reltrackdensityap(r[end]) * exp(λ238U * agesteps[end])
     @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
-        teq = equivalenttime(teq, Tsteps[i+1], Tsteps[i], am) + dt
-        r[i] = rlr(reltracklength(teq, Tsteps[i], am), rmr0)
+        teq = equivalenttime(teq, Tsteps[i+1]+ΔT, Tsteps[i]+ΔT, am) + dt
+        r[i] = rlr(reltracklength(teq, Tsteps[i]+ΔT, am), rmr0)
         pr[i] = reltrackdensityap(r[i]) * exp(λ238U * agesteps[i])
     end
     r .*= am.l0 # Convert from reduced length to length
@@ -445,16 +446,17 @@ end
 function modellength(track::MonaziteTrackLength{T}, Tsteps::AbstractVector, am::MonaziteAnnealingModel{T}; trackhist::Bool=false) where {T <: AbstractFloat}
     agesteps = track.agesteps
     tsteps = track.tsteps
+    ΔT = track.offset::T
     r = track.r
     pr = track.pr
     @assert issorted(tsteps)
     @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps) == eachindex(pr) == eachindex(r)
     teq = dt = step(tsteps)
-    r[end] = reltracklength(teq, Tsteps[end], am)
+    r[end] = reltracklength(teq, Tsteps[end]+ΔT, am)
     pr[end] = reltrackdensitymnz(r[end]) * exp(λ238U * agesteps[end])
     @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
-        teq = equivalenttime(teq, Tsteps[i+1], Tsteps[i], am) + dt
-        r[i] = reltracklength(teq, Tsteps[i], am)
+        teq = equivalenttime(teq, Tsteps[i+1]+ΔT, Tsteps[i]+ΔT, am) + dt
+        r[i] = reltracklength(teq, Tsteps[i]+ΔT, am)
         pr[i] = reltrackdensitymnz(r[i]) * exp(λ238U * agesteps[i])
     end
     r .*= am.l0 # Convert from reduced length to length
@@ -468,16 +470,17 @@ end
 function modellength(track::ZirconTrackLength{T}, Tsteps::AbstractVector, am::ZirconAnnealingModel{T}; trackhist::Bool=false) where {T <: AbstractFloat}
     agesteps = track.agesteps
     tsteps = track.tsteps
+    ΔT = track.offset::T
     r = track.r
     pr = track.pr
     @assert issorted(tsteps)
     @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps) == eachindex(pr) == eachindex(r)
     teq = dt = step(tsteps)
-    r[end] = reltracklength(teq, Tsteps[end], am)
+    r[end] = reltracklength(teq, Tsteps[end]+ΔT, am)
     pr[end] = reltrackdensityzrn(r[end]) * exp(λ238U * agesteps[end])
     @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
-        teq = equivalenttime(teq, Tsteps[i+1], Tsteps[i], am) + dt
-        r[i] = reltracklength(teq, Tsteps[i], am)
+        teq = equivalenttime(teq, Tsteps[i+1]+ΔT, Tsteps[i]+ΔT, am) + dt
+        r[i] = reltracklength(teq, Tsteps[i]+ΔT, am)
         pr[i] = reltrackdensityzrn(r[i]) * exp(λ238U * agesteps[i])
     end
     r .*= am.l0 # Convert from reduced length to length
