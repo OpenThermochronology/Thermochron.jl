@@ -118,11 +118,11 @@
     F = [1.75, 1.76, 1.64, 1.66, 1.64, 1.72, 1.72, 1.7, 1.66, 1.66]
     Cl = [0.01, 0.01, 0.0, 0.01, 0.0, 0.0, 0.01, 0.01, 0.0, 0.01]
     OH = [0.24, 0.23, 0.36, 0.33, 0.36, 0.28, 0.27, 0.29, 0.34, 0.33]
-    @test rmr0model.(F, Cl, OH) ≈ [0.8573573076438294, 0.857484193068046, 0.8569770580132927, 0.856210256388646, 0.8569770580132927, 0.857991689484071, 0.8569759763207477, 0.8567211907298894, 0.8572313896305666, 0.856210256388646]
+    @test rmr0model.(F, Cl, OH) ≈ [0.8383413701463746, 0.8384864523714617, 0.8379064580367148, 0.837028827709466, 0.8379064580367148, 0.8390665126742223, 0.8379052205668548, 0.837613698368861, 0.8381973725669695, 0.837028827709466]
 
     rmr0 = rmr0model.(F, Cl, OH)
     rmr = Thermochron.reltracklength.(1:10, 95, Ketcham2007FC())
-    @test Thermochron.rlr.(rmr, rmr0) ≈ [0.7390142328562013, 0.6849516733686434, 0.6428585390459669, 0.6061834471512542, 0.5490365748013377, 0.44555008284518977, 0.33418938122916036, 0.0, 0.0, 0.0]
+    @test Thermochron.rlr.(rmr, rmr0) ≈ [0.7769620100839816, 0.7427553656029127, 0.7198268222638269, 0.7025305928055717, 0.6824451061110656, 0.6616056711294463, 0.6513403125856504, 0.6383859899090678, 0.6210893164250876, 0.6145276486192635]
 
     @test rmr0fromcl.([0, 0.01, 0.1]) ≈ [0.840226804896754, 0.8368246680265121, 0.8027532902492818]
 
@@ -170,7 +170,7 @@
 
 ## --- Test apatite fission track model ages
 
-    apatite = ApatiteFT(agesteps=reverse(cntr(0:100)), F=1.75, Cl=0.01, OH=0.24)
+    apatite = ApatiteFT(agesteps=reverse(cntr(0:100)), F=0.2623736892278381, Cl=0.01, OH=1.7276263107721619)
     @test apatite isa ApatiteFT{Float64}
     @test apatite.rmr0 ≈ 0.8573573076438294
     show(apatite)
@@ -192,7 +192,7 @@
     @test modelage(apatite, reverse(1:100), Ketcham2007FC()) ≈ 67.93014962856782
 
     # As above but longer history
-    apatite = ApatiteFT(agesteps=reverse(cntr(0:200)), F=1.75, Cl=0.01, OH=0.24)
+    apatite = ApatiteFT(agesteps=reverse(cntr(0:200)), F=0.2623736892278381, Cl=0.01, OH=1.7276263107721619)
     @test apatite isa ApatiteFT{Float64}
     @test apatite.rmr0 ≈ 0.8573573076438294
 
@@ -231,7 +231,7 @@
 
 ## --- Test apatite track lengths
 
-    track = ApatiteTrackLength(length=15, angle=35, agesteps=reverse(cntr(0:20)), F=1.75, Cl=0.01, OH=0.24)
+    track = ApatiteTrackLength(length=15, angle=35, agesteps=reverse(cntr(0:20)), rmr0=0.8573573076438294)
     show(track)
     println()
     display(track)
