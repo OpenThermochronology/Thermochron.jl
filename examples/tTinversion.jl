@@ -295,6 +295,90 @@
         end
     end
 
+## -- Fission track length histograms -- ApatiteTrackLength for multiple samples
+    # uses "notes" column in the input file by specifying unique sample id, e.g., "LengthDist1", "LengthDist2", etc.
+    # for each sample
+
+    using HypothesisTests, StatsBase
+
+    # Filter for ApatiteTrackLength chronometers
+    aft = findall(x -> x isa ApatiteTrackLength, chrons)
+
+    # Extract 'notes' for those chronometers from the input file
+    aft_notes = ds.notes[aft]
+
+    # Determine unique sample IDs (e.g., "LengthDist1", "LengthDist2", etc.)
+    sample_ids = unique(aft_notes)
+
+    edges = 0:0.25:20  # Define histogram bin edges
+
+    for sid in sample_ids
+        idx = findall(aft_notes .== sid)
+        if isempty(idx)
+            continue
+        end
+
+        # Extract observed and modeled lengths
+        obs_lengths = Thermochron.val.(chrons[aft[idx]])
+        pred_lengths = vec(tT.resultdist[aft[idx], :])
+
+        # Summary statistics
+        μ_obs, σ_obs = mean(obs_lengths), std(obs_lengths)
+        μ_pred, σ_pred = mean(pred_lengths), std(pred_lengths)
+
+        ks = ApproximateTwoSampleKSTest(obs_lengths, pred_lengths)
+        D_stat = ks.δ  # Using the correct field name for the test statistic
+        p_val = pvalue(ks)
+        GoF = round((1.0 - D_stat), digits=2)
+
+        # Prepare annotation lines
+        annot = [
+            "Observed: $(round(μ_obs, digits=2)) ± $(round(σ_obs, digits=2)) µm",
+            "Model:    $(round(μ_pred, digits=2)) ± $(round(σ_pred, digits=2)) µm",
+            "GOF (K-S): $GoF"
+        ]
+
+        # Compute y-max for dynamic annotation height
+        obs_counts = fit(Histogram, obs_lengths, edges).weights
+        pred_counts = fit(Histogram, pred_lengths, edges).weights
+        bin_width = step(edges)
+        obs_dens = obs_counts / (sum(obs_counts) * bin_width)
+        pred_dens = pred_counts / (sum(pred_counts) * bin_width)
+        ymax = maximum([maximum(obs_dens), maximum(pred_dens)])
+
+        # Plot observed
+        h = histogram(obs_lengths, bins=edges,
+            normalized=true,
+            xlims=(0,20),
+            xlabel="Track length [μm]",
+            ylabel="Probability density",
+            label="Data (N=$(length(obs_lengths)))",
+            framestyle=:box,
+            legend=:topright,
+            color=:black,
+            alpha=0.75,
+            grid = false,
+            title="Apatite Track Lengths: $sid",
+        )
+
+        # Overlay model
+        histogram!(h, pred_lengths, bins=edges,
+            normalized=true,
+            label="Model",
+            color=mineralcolors["apatite"],
+            fill=true,
+            alpha=0.75,
+        )
+
+        # Annotate statistics and GOF
+        for (i, line) in enumerate(annot)
+            annotate!(h, (1.0, ymax * (1.0 - 0.07 * i), text(line, 8, :left)))
+        end
+
+        savefig(h, "$(name)_$(sid)_ApatiteTrackLength.pdf")
+        display(h)
+    end
+
 ## -- Fission track length histograms (ZirconTrackLength, ApatiteTrackLength, MonaziteTrackLength)
 
     C = (ZirconTrackLength, ApatiteTrackLength, MonaziteTrackLength)
