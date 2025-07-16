@@ -17,7 +17,7 @@
 ## ---  Load required packages
 
     using Thermochron, Plots
-
+    using HypothesisTests, StatsBase
     using LinearAlgebra
     # Diminishing returns with more than ~2 threads
     BLAS.get_num_threads() > 2 && BLAS.set_num_threads(2)
@@ -297,9 +297,7 @@
 
 ## -- Fission track length histograms -- ApatiteTrackLength for multiple samples
     # uses "notes" column in the input file by specifying unique sample id, e.g., "LengthDist1", "LengthDist2", etc.
-    # for each sample
-
-    using HypothesisTests, StatsBase
+    # for each sample # uses HypothesisTests and StatsBase packages
 
     # Filter for ApatiteTrackLength chronometers
     aft = findall(x -> x isa ApatiteTrackLength, chrons)
