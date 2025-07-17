@@ -17,7 +17,7 @@
 ## ---  Load required packages
 
     using Thermochron, Plots
-
+    using HypothesisTests
     using LinearAlgebra
     # Diminishing returns with more than ~2 threads
     BLAS.get_num_threads() > 2 && BLAS.set_num_threads(2)
@@ -291,6 +291,63 @@
                 msc = mineralcolors[mincolor[i]], 
             )
             savefig(h, "$(name)_$(C[i])_predicted.pdf")
+            display(h)
+        end
+    end
+
+## -- Fission track length histograms per "sample"
+    # uses "notes" column in the input file by specifying unique sample id, e.g., "LengthDist1", "LengthDist2", etc.
+    # for each sample. Uses HypothesisTests package for testing equivalence of distributions.
+
+    C = (ZirconTrackLength, ApatiteTrackLength, MonaziteTrackLength)
+    mincolor = ("zircon", "apatite", "monazite")
+    for i in eachindex(C, mincolor)
+        # Filter chronometers
+        t = isa.(chrons, C[i])
+        for sid in unique(ds.notes[t])
+            ts = t .& (ds.notes .== sid)
+            any(ts) || continue
+
+            # Extract observed and modeled lengths
+            obs_lengths = Thermochron.val.(chrons[ts])
+            pred_lengths = vec(tT.resultdist[ts, :])
+    
+            h = histogram(obs_lengths, bins=0:0.25:20, 
+                normalized=true,
+                xlims = (0,20),
+                xlabel = "Track length [μm]",
+                ylabel = "Probability density",
+                label = "Data (N=$(count(ts)))", 
+                framestyle = :box,
+                legend = :topleft,
+                color = :black,
+                alpha = 0.75,
+                title = "$(C[i])",
+            )
+            histogram!(h, pred_lengths, bins=0:0.25:20, 
+                normalized=true, 
+                label = "Model",
+                color = mineralcolors[mincolor[i]],
+                fill = true,
+                alpha = 0.75,
+            )
+            yl = ylims(h)
+
+            # Test for homogeneity
+            ks = ApproximateTwoSampleKSTest(obs_lengths, pred_lengths)
+            D_stat = ks.δ  # Using the correct field name for the test statistic
+            p_val = pvalue(ks)
+            GoF = 1.0 - D_stat
+
+            # Annotate statistics and GOF
+            annot = ["Observed: $(round(nanmean(obs_lengths), digits=2)) ± $(2*round(nanstd(obs_lengths), digits=2)) µm",
+                     "Model:    $(round(nanmean(pred_lengths), digits=2)) ± $(2*round(nanstd(pred_lengths), digits=2)) µm",
+                     "GOF (K-S): $(round(GoF, digits=2)",]
+            for i in eachindex(annot)
+                annotate!(h, (1.0, maximum(yl) * (1.0 - 0.07 * i), text(annot[i], 8, :left)))
+            end
+            
+            savefig(h, "$(name)_$(sid)_$(C[i])_predicted.pdf")
             display(h)
         end
     end
