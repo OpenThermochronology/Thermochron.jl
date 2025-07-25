@@ -211,7 +211,7 @@ Calculate the model c-axis equivalent length ("lc,mod") given a measured
 `θ` [degrees] following the approach of Donelick et al. 1999 
 (doi: 10.2138/am-1999-0902) 
 """
-lcmod(x::ApatiteTrackLength) = x.lcmod
+lcmod(x::ApatiteTrackLengthOriented) = x.lcmod
 function lcmod(l, θ)
     x = l*cos(deg2rad(θ))
     y = l*sin(deg2rad(θ))
@@ -426,7 +426,7 @@ end
 
 """
 ```julia
-modellength(track::ApatiteTrackLength, Tsteps, am::ApatiteAnnealingModel)
+modellength(track::ApatiteTrackLengthOriented, Tsteps, am::ApatiteAnnealingModel)
 ```
 Calculate the predicted mean and standard deviation of the distribution of fission  
 track lengths of an apatite that has experienced a given t-T path (specified by 
@@ -438,7 +438,7 @@ which they respetively implement include
   `Ketcham1999FC`       Fanning Curvilinear apatite model of Ketcham et al. 1999 (doi: 10.2138/am-1999-0903)
   `Ketcham2007FC`       Fanning Curvilinear apatite model of Ketcham et al. 2007 (doi: 10.2138/am.2007.2281)
 """
-function modellength(track::ApatiteTrackLength{T}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}; trackhist::Bool=false) where {T <: AbstractFloat}
+function modellength(track::ApatiteTrackLengthOriented{T}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}; trackhist::Bool=false) where {T <: AbstractFloat}
     agesteps = track.agesteps
     tsteps = track.tsteps
     ΔT = track.offset::T

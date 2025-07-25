@@ -235,7 +235,7 @@
 
 ## --- Test apatite track lengths
 
-    track = ApatiteTrackLength(length=15, angle=35, agesteps=reverse(cntr(0:20)), rmr0=0.8573573076438294)
+    track = ApatiteTrackLengthOriented(length=15, angle=35, agesteps=reverse(cntr(0:20)), rmr0=0.8573573076438294)
     show(track)
     println()
     display(track)
@@ -278,7 +278,7 @@
 
 ## -- Check the mean track length of a modelled Fish Canyon Apatite to be 15.35 +/- 0.06 um
 
-    track = ApatiteTrackLength(length=15, angle=35, agesteps=reverse(cntr(0:28)), dpar=2.16)
+    track = ApatiteTrackLengthOriented(length=15, angle=35, agesteps=reverse(cntr(0:28)), dpar=2.16)
     l, σ = modellength(track, fill(20., 28), Ketcham2007FC(); trackhist=true)
     @test l ≈ 15.35 atol=0.06
     @test l ≈ 15.376345688670545

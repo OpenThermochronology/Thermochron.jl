@@ -28,7 +28,7 @@
     # # # # # # # # # # Choice of regional thermochron data # # # # # # # # # #
 
     # Literature samples from McDannell et al. 2022 (doi: 10.1130/G50315.1), Manitoba
-    # (12 ZirconHe, 5 ApatiteHe, 47 ApatiteFT, 269 ApatiteTrackLength)
+    # (12 ZirconHe, 5 ApatiteHe, 47 ApatiteFT, 269 ApatiteTrackLengthOriented)
     name = "Manitoba"
     ds = importdataset("manitoba.csv", ',', importas=:Tuple)
 
@@ -295,12 +295,12 @@
         end
     end
 
-## -- Fission track length histograms per "sample"
+## -- Fission track length histograms on a "sample-by-sample" basis (apatite, zircon, monazite)
     # uses "notes" column in the input file by specifying unique sample id, e.g., "LengthDist1", "LengthDist2", etc.
     # for each sample. Uses HypothesisTests package for testing equivalence of distributions.
 
-    C = (ZirconTrackLength, ApatiteTrackLength, MonaziteTrackLength)
-    mincolor = ("zircon", "apatite", "monazite")
+    C = (ApatiteTrackLengthOriented, ZirconTrackLength, MonaziteTrackLength)
+    mincolor = ("apatite", "zircon", "monazite")
     for i in eachindex(C, mincolor)
         # Filter chronometers
         t = isa.(chrons, C[i])
@@ -353,10 +353,10 @@
         end
     end
 
-## -- Fission track length histograms (ZirconTrackLength, ApatiteTrackLength, MonaziteTrackLength)
+## -- Fission track length histograms (apatite, zircon, monazite)
 
-    C = (ZirconTrackLength, ApatiteTrackLength, MonaziteTrackLength)
-    mincolor = ("zircon", "apatite", "monazite")
+    C = (ApatiteTrackLengthOriented, ZirconTrackLength, MonaziteTrackLength)
+    mincolor = ("apatite", "zircon", "monazite")
     for i in eachindex(C, mincolor)
         t = isa.(chrons, C[i])
         if any(t)

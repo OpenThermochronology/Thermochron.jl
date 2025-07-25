@@ -38,7 +38,7 @@ end
 
 """
 ```julia
-ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64; 
+ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64; 
     length::Number = NaN,                   # [um] fission track length
     angle::Number = NaN,                    # [degrees] track angle from the c-axis
     lcmod::Number = lcmod(length, angle),   # [um] model length of an equivalent c-axis parallel rack
@@ -54,7 +54,7 @@ ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
     agesteps::AbstracVector | tsteps::AbstracVector, # Temporal discretization
 )
 ```
-Construct an `ApatiteTrackLength` chronometer representing a single apatite fission track
+Construct an `ApatiteTrackLengthOriented` chronometer representing a single apatite fission track
 `length` um long, oriented at `angle` degrees to the c-axis, a relative annealing  
 resistance specified by `rmr0`, optionally at a constant temperature offset (relative 
 to other samples) of `offset` [C].
@@ -69,7 +69,7 @@ Temporal discretization follows the age steps specified by `agesteps` (age befor
 and/or `tsteps` (forward time since crystallization), in Ma, where `tsteps` must be sorted 
 in increasing order.
 """
-struct ApatiteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
+struct ApatiteTrackLengthOriented{T<:AbstractFloat} <: FissionTrackLength{T}
     length::T               # [um] track length
     angle::T                # [degrees] track angle from the c-axis
     lcmod::T                # [um] model length of an equivalent c-axis parallel rack
@@ -84,7 +84,7 @@ struct ApatiteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
     ldist::Vector{T}        # [um] Length log likelihood
     rmr0::T                 # [unitless] relative resistance to annealing (0=most, 1=least)
 end
-function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64; 
+function ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64; 
         length::Number = NaN, 
         angle::Number = NaN, 
         lcmod::Number = lcmod(length, angle),
@@ -128,7 +128,7 @@ function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
     r=zeros(T, size(agesteps))
     pr=zeros(T, size(agesteps))
     ldist=zeros(T, size(ledges).-1)
-    ApatiteTrackLength(
+    ApatiteTrackLengthOriented(
         T(length),
         T(angle),
         T(lcmod),
@@ -1927,7 +1927,7 @@ val(x::MultipleDomain{T}) where {T} = nanmean(x.age, @.(x.fit/x.age_sigma^2))::T
 err(x::MultipleDomain{T}) where {T} = nanstd(x.age, @.(x.fit/x.age_sigma^2))::T
 val(x::FissionTrackLength{T}) where {T} = x.length::T
 err(x::FissionTrackLength{T}) where {T} = zero(T)
-val(x::ApatiteTrackLength{T}) where {T} = x.lcmod::T
+val(x::ApatiteTrackLengthOriented{T}) where {T} = x.lcmod::T
 
 
 ## -- Functions related to age and age uncertinty of absolute chronometers
@@ -2122,7 +2122,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
             end
             # Apatite fission track length
             if haskey(ds, :track_length_um) && (0 < ds.track_length_um[i])
-                c = ApatiteTrackLength(T;
+                c = ApatiteTrackLengthOriented(T;
                     length = ds.track_length_um[i], 
                     angle = (haskey(ds, :track_angle_degrees) && !isnan(ds.track_angle_degrees[i])) ? ds.track_angle_degrees[i] : 0,
                     offset = (haskey(ds, :offset_C) && !isnan(ds.offset_C[i])) ? ds.offset_C[i] : 0,
