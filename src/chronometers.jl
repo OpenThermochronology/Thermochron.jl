@@ -41,6 +41,8 @@ struct ApatiteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
     angle::T                # [degrees] track angle from the c-axis
     lcmod::T                # [um] model length of an equivalent c-axis parallel rack
     offset::T               # [C] temperature offset relative to the surface
+    l0::T                   # [um] Initial track length
+    l0_sigma::T             # [um] Initial track length unertainty
     agesteps::FloatRange    # [Ma] age in Ma relative to the present
     tsteps::FloatRange      # [Ma] forward time since crystallization
     r::Vector{T}            # [unitless]
@@ -54,12 +56,14 @@ function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
         angle::Number = NaN, 
         lcmod::Number = lcmod(length, angle),
         offset::Number = zero(T),
-        ledges = (0:1.0:20),
+        l0::Number = 16.38,
+        l0_sigma::Number = 0.09,
         dpar::Number = NaN, 
         F::Number = NaN, 
         Cl::Number = NaN, 
         OH::Number = NaN, 
         rmr0::Number = NaN,
+        ledges = (0:1.0:20),
         agesteps = nothing, 
         tsteps = nothing, 
     )
@@ -90,6 +94,8 @@ function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
         T(angle),
         T(lcmod),
         T(offset),
+        T(l0),
+        T(l0_sigma),
         floatrange(agesteps),
         floatrange(tsteps),
         r,
@@ -103,6 +109,8 @@ end
 struct ZirconTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
     length::T               # [um] track length
     offset::T               # [C] temperature offset relative to the surface
+    l0::T                   # [um] initial track length
+    l0_sigma::T             # [um] initial track length uncertainty
     agesteps::FloatRange    # [Ma] age in Ma relative to the present
     tsteps::FloatRange      # [Ma] forward time since crystallization
     r::Vector{T}            # [unitless]
@@ -113,6 +121,8 @@ end
 function ZirconTrackLength(T::Type{<:AbstractFloat}=Float64; 
         length::Number = NaN, 
         offset::Number = zero(T),
+        l0::Number = 11.17,
+        l0_sigma::Number = 0.051,
         ledges = (0:1.0:20),
         agesteps = nothing, 
         tsteps = nothing,
@@ -130,6 +140,8 @@ function ZirconTrackLength(T::Type{<:AbstractFloat}=Float64;
     ZirconTrackLength(
         T(length),
         T(offset),
+        T(l0),
+        T(l0_sigma),
         floatrange(agesteps),
         floatrange(tsteps),
         r,
@@ -142,6 +154,8 @@ end
 struct MonaziteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
     length::T               # [um] track length
     offset::T               # [C] temperature offset relative to the surface
+    l0::T                   # [um] initial track length
+    l0_sigma::T             # [um] initial track length uncertainty
     agesteps::FloatRange    # [Ma] age in Ma relative to the present
     tsteps::FloatRange      # [Ma] forward time since crystallization
     r::Vector{T}            # [unitless]
@@ -152,6 +166,8 @@ end
 function MonaziteTrackLength(T::Type{<:AbstractFloat}=Float64; 
         length::Number = NaN,
         offset::Number = zero(T),
+        l0::Number = 10.60,
+        l0_sigma::Number = 0.19,
         ledges = (0:1.0:20),
         agesteps = nothing, 
         tsteps = nothing, 
@@ -169,6 +185,8 @@ function MonaziteTrackLength(T::Type{<:AbstractFloat}=Float64;
     MonaziteTrackLength(
         T(length),
         T(offset),
+        T(l0),
+        T(l0_sigma),
         floatrange(agesteps),
         floatrange(tsteps),
         r,
@@ -280,7 +298,7 @@ end
 ZirconHe(T=Float64;
     age::Number = T(NaN),
     age_sigma::Number = T(NaN),
-    T(offset),
+    offset::Number = zero(T),
     r::Number = one(T),
     dr::Number, 
     U238::Number,
