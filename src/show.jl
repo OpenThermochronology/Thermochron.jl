@@ -31,7 +31,7 @@ function Base.show(io::IO, x::T) where {T<:FissionTrackLength}
     l = round(x.length, sigdigits=3)
     print(io, "$t($(l) μm)")
 end
-function Base.show(io::IO, x::T) where {T<:ApatiteTrackLength}
+function Base.show(io::IO, x::T) where {T<:ApatiteTrackLengthOriented}
     t = Base.typename(T).wrapper
     l = round(x.length, sigdigits=3)
     θ = round(x.angle, sigdigits=3)
@@ -104,7 +104,7 @@ function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:FissionTrackLengt
     """
     )
 end
-function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:ApatiteTrackLength}
+function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:ApatiteTrackLengthOriented}
     print(io, """$T:
       length    : $(x.length) μm
       angle     : $(x.angle) degrees from c-axis

@@ -51,8 +51,11 @@ Download an example script such as [tTinversion.jl](examples/tTinversion.jl) fro
 See also the test suite for more information and examples.
 
 ## Citation
-When using model results derived from Thermochron.jl, you may cite this package as:
-> Keller, C.B., McDannell, K.T., Guenthner, W.R., and Shuster, D.L. (2022). *Thermochron.jl: Open-source time-Temperature inversion of thermochronometric data.* https://doi.org/10.17605/osf.io/wq2U5
+Thermochron.jl may be cited as:
+> Keller, C.B., McDannell, K.T., Guenthner, W.R., and Shuster, D.L. (2022). *Thermochron.jl: Open-source time-Temperature inversion of thermochronometric data.* [10.17605/osf.io/wq2U5](https://doi.org/10.17605/osf.io/wq2U5)
+
+## Acknowledgments
+The development of Thermochron.jl has been supported in part by National Science Foundation under grant EAR-2044800.
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
 [docs-stable-url]: https://OpenThermochronology.github.io/Thermochron.jl/stable/

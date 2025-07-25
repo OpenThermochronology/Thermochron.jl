@@ -78,7 +78,7 @@
     @test count(x->isa(x,ApatiteFT), chrons) == 1
     @test count(x->isa(x,ZirconTrackLength), chrons) == 1
     @test count(x->isa(x,MonaziteTrackLength), chrons) == 1
-    @test count(x->isa(x,ApatiteTrackLength), chrons) == 3
+    @test count(x->isa(x,ApatiteTrackLengthOriented), chrons) == 3
     @test count(x->isa(x,MultipleDomain), chrons) == 2
     @test get_age(chrons) ≈ [150.37, 263.92, 150.37, 263.92, 263.92, 917.84, 1023.73, 1023.73, 380., 380., 120., 120., 1080., 300., 100., 150., 180., 808.3268143245239, 808.3268143245239,] 
     @test get_age_sigma(chrons) ≈ [5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,28.52408719185519,28.52408719185519,]

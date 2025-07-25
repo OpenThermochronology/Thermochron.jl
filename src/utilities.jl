@@ -180,9 +180,14 @@
         return dint
     end
 
-    # Alpha particle stopping power relative to apatite
-    # as calculated from the mean alpha stopping distances of  
-    # Ketcham et al. 2011 (doi: 10.1016/j.gca.2011.10.011)
+    """
+    ```julia
+    alphastoppingpower(mineral)
+    ```
+    Alpha particle stopping power relative to that of apatite,
+    as calculated from the mean alpha stopping distances of  
+    Ketcham et al. 2011 (doi: 10.1016/j.gca.2011.10.011)
+    """
     alphastoppingpower(mineral::String) = alphastoppingpower(Symbol(lowercase(mineral)))
     function alphastoppingpower(mineral::Symbol)
         if mineral===:apatite
@@ -211,6 +216,7 @@
             1.189 # Average of all the above
         end
     end
+    export alphastoppingpower
 
     # Utility function for agepoint and Tpoint buffers
     function collectto!(buffer, a, b, c)
@@ -731,7 +737,7 @@
         scaleaft = rescale ? sqrt(count(x->isa(x, ApatiteFT), chrons)) : 1
         scaleztl = rescale ? sqrt(count(x->isa(x, ZirconTrackLength), chrons)) : 1
         scalemtl = rescale ? sqrt(count(x->isa(x, MonaziteTrackLength), chrons)) : 1
-        scaleatl = rescale ? sqrt(count(x->isa(x, ApatiteTrackLength), chrons)) : 1
+        scaleatl = rescale ? sqrt(count(x->isa(x, ApatiteTrackLengthOriented), chrons)) : 1
         scalemdd = rescale ? sqrt(count(x->isa(x, MultipleDomain), chrons)) : 1
 
         # Cycle through each Chronometer, model and calculate log likelihood
@@ -777,8 +783,8 @@
                 μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), dm::MonaziteAnnealingModel{T})
                 μcalc[i] = draw_from_population(c, σcalc[i])
                 ll += model_ll(c, σcalc[i])/scalemtl
-            elseif isa(c, ApatiteTrackLength)
-                c::ApatiteTrackLength{T}
+            elseif isa(c, ApatiteTrackLengthOriented)
+                c::ApatiteTrackLengthOriented{T}
                 μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), dm::ApatiteAnnealingModel{T})
                 μcalc[i] = draw_from_population(c, σcalc[i])
                 ll += model_ll(c, σcalc[i])/scaleatl
