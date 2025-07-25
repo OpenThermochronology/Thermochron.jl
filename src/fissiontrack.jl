@@ -304,6 +304,46 @@ rmr0 = 1 - exp(0.647(dpar-1.75) - 1.834)
 rmr0fromdpar(dpar) = 1 - exp(0.647(dpar-1.75) - 1.834)
 export rmr0fromdpar
 
+
+# dpar = [1.5851, 1.6458, 1.7066, 1.8646, 1.9497, 1.8767, 1.8403, 2.0469, 2.1441, 2.3385, 2.4236, 2.4358, 2.9948, 4.5625, 4.9757]
+# l0 = [15.7784, 16.2913, 16.0571, 15.9679, 16.2969, 16.2077, 16.2077, 16.1463, 16.1408, 16.4195, 16.3805, 16.4474, 16.3805, 16.9882, 16.9268]
+# l0m = 15.63 .+ 0.283.*dpar
+# nanstd(l0 - l0m)
+"""
+```julia
+l0 = apatitel0fromdpar(dpar)
+```
+Calculate `l0` as a function of `dpar` for "multikinetic" apatite 
+fission track following the relation (equation 1) of Carlson et al. 1999
+(doi: 10.2138/am-1999-0901), that is
+
+``l_{0,m} = 15.63 + 0.283*D_{par}``
+
+The results may be used along with a constant uncertainty of 0.1367 based on the scatter around the 
+appropriate line in Figure 1 of Carlson et al. 1999.
+"""
+apatitel0fromdpar(dpar) = 15.63 + 0.283*dpar
+export apatitel0fromdpar
+
+# dpar = [1.5894, 1.6402, 1.7012, 1.8333, 1.8638, 1.8841, 1.9451, 2.0569, 2.1484, 2.3415, 2.4329, 2.4431, 2.9919, 4.5772, 4.9837]
+# l0 = [16.189, 16.5693, 16.4301, 16.5183, 16.3606, 16.5229, 16.5507, 16.4487, 16.4394, 16.6481, 16.6342, 16.6759, 16.6064, 17.0701, 17.0377]
+# l0mod = 16.10 .+ 0.205.*dpar
+"""
+```julia
+l0 = apatitel0modfromdpar(dpar)
+```
+Calculate c-axis-projected `l0` as a function of `dpar` for "multikinetic" apatite 
+fission track following the relation (equation 1) of Carlson et al. 1999
+(doi: 10.2138/am-1999-0901), that is
+
+``l_{0,c,mod} = 16.10 + 0.205*D_{par}``
+
+The results may be used along with a constant uncertainty of 0.1311 based on the scatter around the 
+appropriate line in Figure 1 of Carlson et al. 1999.
+"""
+apatitel0modfromdpar(dpar) = 16.10 + 0.205*dpar
+export apatitel0modfromdpar
+
 ## --- Track length conversion for "multikinetic" fission track
 
 function rlr(rmr::T, rmr0::T, kappa=1.04-rmr0) where {T<:AbstractFloat}

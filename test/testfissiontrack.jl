@@ -128,6 +128,10 @@
 
     @test rmr0fromdpar.([2., 3., 4.,]) ≈ [0.8121760141157299, 0.6412932224989447, 0.3149407855476274]
 
+    @test apatitel0modfromdpar.([2., 3., 4.,]) ≈ [16.51, 16.715, 16.92]
+
+    @test apatitel0fromdpar.([2., 3., 4.,]) ≈ [16.196, 16.479, 16.762]
+
 ## --- Test zircon fission track model ages
 
     zircon = ZirconFT(agesteps=reverse(cntr(0:100)))
