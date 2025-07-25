@@ -50,16 +50,16 @@ struct ApatiteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
     rmr0::T                 # [unitless] relative resistance to annealing (0=most, 1=least)
 end
 function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64; 
-        length = T(NaN), 
-        angle = T(NaN), 
-        lcmod = lcmod(length, angle),
+        length::Number = NaN, 
+        angle::Number = NaN, 
+        lcmod::Number = lcmod(length, angle),
         offset::Number = zero(T),
         ledges = (0:1.0:20),
-        dpar = T(NaN), 
-        F = T(NaN), 
-        Cl = T(NaN), 
-        OH = T(NaN), 
-        rmr0 = T(NaN),
+        dpar::Number = NaN, 
+        F::Number = NaN, 
+        Cl::Number = NaN, 
+        OH::Number = NaN, 
+        rmr0::Number = NaN,
         agesteps = nothing, 
         tsteps = nothing, 
     )
@@ -111,7 +111,7 @@ struct ZirconTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
     ldist::Vector{T}        # [um] Length log likelihood
 end
 function ZirconTrackLength(T::Type{<:AbstractFloat}=Float64; 
-        length = T(NaN), 
+        length::Number = NaN, 
         offset::Number = zero(T),
         ledges = (0:1.0:20),
         agesteps = nothing, 
@@ -150,7 +150,7 @@ struct MonaziteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
     ldist::Vector{T}        # [um] Length log likelihood
 end
 function MonaziteTrackLength(T::Type{<:AbstractFloat}=Float64; 
-        length = T(NaN), 
+        length::Number = NaN,
         offset::Number = zero(T),
         ledges = (0:1.0:20),
         agesteps = nothing, 
@@ -246,11 +246,11 @@ function ApatiteFT(T::Type{<:AbstractFloat}=Float64;
         offset::Number = zero(T),
         agesteps, 
         tsteps=reverse(agesteps), 
-        dpar = T(NaN),
-        F = T(NaN),
-        Cl = T(NaN),
-        OH = T(NaN),
-        rmr0 = T(NaN),
+        dpar::Number = NaN,
+        F::Number = NaN,
+        Cl::Number = NaN,
+        OH::Number = NaN,
+        rmr0::Number = NaN,
     )
     if isnan(rmr0)
         s = F + Cl + OH
