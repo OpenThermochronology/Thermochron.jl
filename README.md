@@ -6,7 +6,8 @@
 [![CI (Julia nightly)][ci-nightly-img]][ci-nightly-url]
 [![codecov.io][codecov-img]][codecov-url]
 
-Open-source time-Temperature inversion of thermochronometric data.
+Open-source time-Temperature inversion of thermochronometric data. 
+Citation: Keller, C.B., McDannell, K.T., Guenthner, W.R., and Shuster, D.L. (2022). Thermochron.jl: Open-source time-Temperature inversion of thermochronometric data. https://doi.org/10.17605/osf.io/wq2U5
 
 Implements a transdimensional Bayesian Markov chain Monte Carlo (MCMC) time-Temperature inversion with optional Simulated Annealing (e.g., [1](https://en.wikipedia.org/wiki/Simulated_annealing), [2](https://doi.org/10.1007/978-94-015-7744-1_2)) and kinetic uncertainty propagation/inversion.
 
