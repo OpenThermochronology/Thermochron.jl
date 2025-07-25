@@ -180,9 +180,14 @@
         return dint
     end
 
-    # Alpha particle stopping power relative to apatite
-    # as calculated from the mean alpha stopping distances of  
-    # Ketcham et al. 2011 (doi: 10.1016/j.gca.2011.10.011)
+    """
+    ```julia
+    alphastoppingpower(mineral)
+    ```
+    Alpha particle stopping power relative to that of apatite,
+    as calculated from the mean alpha stopping distances of  
+    Ketcham et al. 2011 (doi: 10.1016/j.gca.2011.10.011)
+    """
     alphastoppingpower(mineral::String) = alphastoppingpower(Symbol(lowercase(mineral)))
     function alphastoppingpower(mineral::Symbol)
         if mineral===:apatite
@@ -211,6 +216,7 @@
             1.189 # Average of all the above
         end
     end
+    export alphastoppingpower
 
     # Utility function for agepoint and Tpoint buffers
     function collectto!(buffer, a, b, c)
