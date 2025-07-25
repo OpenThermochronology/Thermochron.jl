@@ -86,6 +86,16 @@ function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
             0.83
         end
     end
+    if isnan(l0) 
+        l0 = if !isnan(dpar)
+            apatitel0modfromdpar(dpar)
+        else
+            16.38
+        end
+    end
+    if isnan(l0_sigma)
+        l0_sigma = 0.1311
+    end
     r=zeros(T, size(agesteps))
     pr=zeros(T, size(agesteps))
     ldist=zeros(T, size(ledges).-1)
@@ -127,6 +137,13 @@ function ZirconTrackLength(T::Type{<:AbstractFloat}=Float64;
         agesteps = nothing, 
         tsteps = nothing,
     )
+    # Initial track length and uncertainty
+    if isnan(l0) 
+        l0 = 11.17
+    end
+    if isnan(l0_sigma)
+        l0_sigma = 0.051
+    end
     # Temporal discretization
     isnothing(tsteps) && isnothing(agesteps) && @error "At least one of `tsteps` or `agesteps` is required"
     isnothing(tsteps) && (tsteps=reverse(agesteps))
@@ -172,6 +189,13 @@ function MonaziteTrackLength(T::Type{<:AbstractFloat}=Float64;
         agesteps = nothing, 
         tsteps = nothing, 
     )
+    # Initial track length and uncertainty
+    if isnan(l0) 
+        l0 = 10.60
+    end
+    if isnan(l0_sigma)
+        l0_sigma = 0.19
+    end
     # Temporal discretization
     isnothing(tsteps) && isnothing(agesteps) && @error "At least one of `tsteps` or `agesteps` is required"
     isnothing(tsteps) && (tsteps=reverse(agesteps))
@@ -293,6 +317,7 @@ function ApatiteFT(T::Type{<:AbstractFloat}=Float64;
 end
 
 ## --- Helium sample types
+
 """
 ```julia
 ZirconHe(T=Float64;
@@ -1896,6 +1921,8 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                 c = ZirconTrackLength(T;
                     length = ds.track_length_um[i], 
                     offset = (haskey(ds, :offset_C) && !isnan(ds.offset_C[i])) ? ds.offset_C[i] : 0,
+                    l0 = haskey(ds, :l0_um) ? ds.l0_um[i] : NaN,
+                    l0_sigma = haskey(ds, :l0_sigma_um) ? ds.l0_sigma_um[i] : NaN,
                     agesteps = agesteps[first_index:end],
                 )
                 push!(chrons, c)
@@ -1919,6 +1946,8 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                 c = MonaziteTrackLength(T;
                     length = ds.track_length_um[i], 
                     offset = (haskey(ds, :offset_C) && !isnan(ds.offset_C[i])) ? ds.offset_C[i] : 0,
+                    l0 = haskey(ds, :l0_um) ? ds.l0_um[i] : NaN,
+                    l0_sigma = haskey(ds, :l0_sigma_um) ? ds.l0_sigma_um[i] : NaN,
                     agesteps = agesteps[first_index:end],
                 )
                 push!(chrons, c)
@@ -1969,6 +1998,8 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                     length = ds.track_length_um[i], 
                     angle = (haskey(ds, :track_angle_degrees) && !isnan(ds.track_angle_degrees[i])) ? ds.track_angle_degrees[i] : 0,
                     offset = (haskey(ds, :offset_C) && !isnan(ds.offset_C[i])) ? ds.offset_C[i] : 0,
+                    l0 = haskey(ds, :l0_um) ? ds.l0_um[i] : NaN,
+                    l0_sigma = haskey(ds, :l0_sigma_um) ? ds.l0_sigma_um[i] : NaN,
                     dpar = haskey(ds, :dpar_um) ? ds.dpar_um[i] : NaN,
                     F = haskey(ds, :F_apfu) ? ds.F_apfu[i] : NaN,
                     Cl = haskey(ds, :Cl_apfu) ? ds.Cl_apfu[i] : NaN,
