@@ -6,8 +6,6 @@ Yamada2007PC(
     c0p = -63.37     # Yamada et al. 2007 zircon
     c1p = 0.212      # Yamada et al. 2007 zircon
     bp = 43.00       # Yamada et al. 2007 zircon
-    l0 = 11.17       # [um] effective initial track length (μmax)
-    l0_sigma = 0.051 # [um] effective initial track length uncertainty (σ)
 )
 ```
 Parallel Curvilinear zircon annealing model of Yamada, 2007 
@@ -17,8 +15,6 @@ Base.@kwdef struct Yamada2007PC{T<:AbstractFloat} <: ZirconAnnealingModel{T}
     c0p::T = -63.37 - 0.212log(3600) # Yamada et al. 2007 zircon, converted from log(h) to log(s)
     c1p::T = 0.212      # Yamada et al. 2007 zircon
     bp::T = 43.00       # Yamada et al. 2007 zircon
-    l0::T = 11.17       # [um] effective initial track length (μmax)
-    l0_sigma::T = 0.051 # [um] effective initial track length uncertainty (σ)
 end
 
 """
@@ -29,8 +25,6 @@ Guenthner2013FC(
     C2 = -314.93688      # Guenthner et al. 2013 re-fit of Yamada et al. 2007 zircon
     C3 = -14.2868        # Guenthner et al. 2013 re-fit of Yamada et al. 2007 zircon
     alpha = -0.057206897 # Guenthner et al. 2013 re-fit of Yamada et al. 2007 zircon
-    l0 = 11.17           # [um] Initial track length
-    l0_sigma = 0.051     # [um] Initial track length uncertainty
 )
 ```
 Fanning Curvilinear zircon annealing model with simplified Box-Cox transform 
@@ -42,8 +36,6 @@ Base.@kwdef struct Guenthner2013FC{T<:AbstractFloat} <: FanningCurvilinearZircon
     C2::T = -314.93688      # Guenthner et al. 2013 re-fit of Yamada et al. 2007 zircon
     C3::T = -14.2868        # Guenthner et al. 2013 re-fit of Yamada et al. 2007 zircon
     alpha::T = -0.057206897 # Guenthner et al. 2013 re-fit of Yamada et al. 2007 zircon
-    l0::T = 11.17           # [um] Initial track length
-    l0_sigma::T = 0.051     # [um] Initial track length uncertainty
 end
 
 """
@@ -55,8 +47,6 @@ Ketcham1999FC(
     C3::T = -7.6423     # "Simultaneous fit" from Ketcham et al. 1999 apatite
     alpha::T = -0.12327 # Box-Cox transform parameter
     beta::T = -11.988   # Box-Cox transform parameter
-    l0::T = 16.38       # [um] Initial track length
-    l0_sigma::T = 0.09  # [um] Initial track length unertainty
 )
 ```
 Fanning Curvilinear apatite annealing model from Ketcham, 1999 (doi: 10.2138/am-1999-0903)
@@ -68,8 +58,6 @@ Base.@kwdef struct Ketcham1999FC{T<:AbstractFloat} <: FanningCurvilinearApatite{
     C3::T = -7.6423     # "Simultaneous fit" from Ketcham et al. 1999 apatite
     alpha::T = -0.12327 # Box-Cox transform parameter
     beta::T = -11.988   # Box-Cox transform parameter
-    l0::T = 16.38       # [um] Initial track length
-    l0_sigma::T = 0.09  # [um] Initial track length unertainty
 end
 
 """
@@ -80,8 +68,6 @@ Ketcham2007FC(
     C2 = -65.12969   # "Simultaneous fit" from Ketcham et al. 2007 apatite
     C3 = -7.91715    # "Simultaneous fit" from Ketcham et al. 2007 apatite
     alpha = 0.04672  # "Simultaneous fit" from Ketcham et al. 2007 apatite
-    l0 = 16.38       # [um] Initial track length
-    l0_sigma = 0.09  # [um] Initial track length unertainty
 )
 ```
 Fanning Curvilinear apatite annealing model with simplified Box-Cox transform 
@@ -93,8 +79,6 @@ Base.@kwdef struct Ketcham2007FC{T<:AbstractFloat} <: FanningCurvilinearApatite{
     C2::T = -65.12969   # "Simultaneous fit" from Ketcham et al. 2007 apatite
     C3::T = -7.91715    # "Simultaneous fit" from Ketcham et al. 2007 apatite
     alpha::T = 0.04672  # "Simultaneous fit" from Ketcham et al. 2007 apatite
-    l0::T = 16.38       # [um] Initial track length
-    l0_sigma::T = 0.09  # [um] Initial track length unertainty
 end
 
 """
@@ -104,8 +88,6 @@ Jones2021FA(
     C1 = -4.192812e-5    # Annealing parameter
     C2 = -22.70885029    # Annealing parameter
     C3 = 0.0             # Annealing parameter
-    l0 = 10.60           # [um] Initial track length
-    l0_sigma = 0.19      # [um] Initial track length uncertainty
 )
 ```
 Parallel Arrhenius monazite annealing model modified from
@@ -116,8 +98,6 @@ Base.@kwdef struct Jones2021FA{T<:AbstractFloat} <: MonaziteAnnealingModel{T}
     C1::T = -4.192812e-5    # Annealing parameter
     C2::T = -22.70885029    # Annealing parameter
     C3::T = 0.0             # Annealing parameter
-    l0::T = 10.60           # [um] Initial track length
-    l0_sigma::T = 0.19      # [um] Initial track length uncertainty
 end
 
 ## --- Fission track functions
@@ -142,7 +122,7 @@ reltracklength(t, T, am::AnnealingModel)
 Calculate the relative track length `r` (equal to `l/l₀`) expected after 
 isothermal heating at `T` C for `t` Myr and annealing parameters `am`. 
     
-Possible annealing model types and the references for the equations 
+Possible annealing model types and the references for t he equations 
 which they respetively implement include 
   `Ketcham1999FC`       Fanning Curvilinear apatite model of Ketcham et al. 1999 (doi: 10.2138/am-1999-0903)
   `Ketcham2007FC`       Fanning Curvilinear apatite model of Ketcham et al. 2007 (doi: 10.2138/am.2007.2281)
@@ -475,9 +455,9 @@ function modellength(track::ApatiteTrackLength{T}, Tsteps::AbstractVector, am::A
         r[i] = rlr(reltracklength(teq, Tsteps[i]+ΔT, am), rmr0)
         pr[i] = reltrackdensityap(r[i]) * exp(λ238U * agesteps[i])
     end
-    r .*= am.l0 # Convert from reduced length to length
+    r .*= track.l0 # Convert from reduced length to length
     μ, σ = nanmean(r, pr), nanstd(r, pr)
-    σ = sqrt(σ^2 + am.l0_sigma^2)
+    σ = sqrt(σ^2 + track.l0_sigma^2)
     if trackhist
         binlikelihoods!(track, σ)
     end
@@ -499,9 +479,9 @@ function modellength(track::MonaziteTrackLength{T}, Tsteps::AbstractVector, am::
         r[i] = reltracklength(teq, Tsteps[i]+ΔT, am)
         pr[i] = reltrackdensitymnz(r[i]) * exp(λ238U * agesteps[i])
     end
-    r .*= am.l0 # Convert from reduced length to length
+    r .*= track.l0 # Convert from reduced length to length
     μ, σ = nanmean(r, pr), nanstd(r, pr)
-    σ = sqrt(σ^2 + am.l0_sigma^2)
+    σ = sqrt(σ^2 + track.l0_sigma^2)
     if trackhist
         binlikelihoods!(track, σ)
     end
@@ -523,9 +503,9 @@ function modellength(track::ZirconTrackLength{T}, Tsteps::AbstractVector, am::Zi
         r[i] = reltracklength(teq, Tsteps[i]+ΔT, am)
         pr[i] = reltrackdensityzrn(r[i]) * exp(λ238U * agesteps[i])
     end
-    r .*= am.l0 # Convert from reduced length to length
+    r .*= track.l0 # Convert from reduced length to length
     μ, σ = nanmean(r, pr), nanstd(r, pr)
-    σ = sqrt(σ^2 + am.l0_sigma^2)
+    σ = sqrt(σ^2 + track.l0_sigma^2)
     if trackhist
         binlikelihoods!(track, σ)
     end
