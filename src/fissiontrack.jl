@@ -60,9 +60,9 @@ Base.@kwdef struct Ketcham1999FC{T<:AbstractFloat} <: FanningCurvilinearApatite{
     beta::T = -11.988   # Box-Cox transform parameter, c-axis projected model
 end
 function Ketcham1999FC(s::Symbol)
-    if s === :c_axis_projected
+    if s === :oriented || s === :c_axis_projected
         Ketcham1999FC()
-    elseif s === :unprojected
+    elseif s === :unoriented || s === :unprojected
         Ketcham1999FC(
             C0 = -26.039,     # "Simultaneous fit" from Ketcham et al. 1999 apatite
             C1 = 0.53168,     # "Simultaneous fit" from Ketcham et al. 1999 apatite
@@ -72,7 +72,7 @@ function Ketcham1999FC(s::Symbol)
             beta = -7.4224,   # Box-Cox transform parameter
         )
     else
-        @error "unsupported option :$s, use :c_axis_projected or :unprojected"
+        @error "unsupported option :$s, use :c_axis_projected or :unprojected (alternatively :oriented or :unoriented)"
     end
 end
 

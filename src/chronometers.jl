@@ -2105,6 +2105,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
     zftm = (haskey(model, :zftm) ? model.zftm : Yamada2007PC())::ZirconAnnealingModel{T}
     mftm = (haskey(model, :mftm) ? model.mftm : Jones2021FA())::MonaziteAnnealingModel{T}
     aftm = (haskey(model, :aftm) ? model.aftm : Ketcham2007FC())::ApatiteAnnealingModel{T}
+    uaftm = (haskey(model, :uaftm) ? model.aftm : Ketcham1999FC(:unoriented))::ApatiteAnnealingModel{T}
 
     chrons = Chronometer[]
     damodels = Model[]
@@ -2223,21 +2224,38 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
             end
             # Apatite fission track length
             if haskey(ds, :track_length_um) && (0 < ds.track_length_um[i])
-                c = ApatiteTrackLengthOriented(T;
-                    length = ds.track_length_um[i], 
-                    angle = (haskey(ds, :track_angle_degrees) && !isnan(ds.track_angle_degrees[i])) ? ds.track_angle_degrees[i] : 0,
-                    offset = (haskey(ds, :offset_C) && !isnan(ds.offset_C[i])) ? ds.offset_C[i] : 0,
-                    l0 = haskey(ds, :l0_um) ? ds.l0_um[i] : NaN,
-                    l0_sigma = haskey(ds, :l0_sigma_um) ? ds.l0_sigma_um[i] : NaN,
-                    dpar = haskey(ds, :dpar_um) ? ds.dpar_um[i] : NaN,
-                    F = haskey(ds, :F_apfu) ? ds.F_apfu[i] : NaN,
-                    Cl = haskey(ds, :Cl_apfu) ? ds.Cl_apfu[i] : NaN,
-                    OH = haskey(ds, :OH_apfu) ? ds.OH_apfu[i] : NaN,
-                    rmr0 =haskey(ds, :rmr0) ? ds.rmr0[i] : NaN,
-                    agesteps = agesteps[first_index:end],
-                )
-                push!(chrons, c)
-                push!(damodels, aftm)
+                if haskey(ds, :track_angle_degrees) && !isnan(ds.track_angle_degrees[i])
+                    c = ApatiteTrackLengthOriented(T;
+                        length = ds.track_length_um[i], 
+                        angle = ds.track_angle_degrees[i],
+                        offset = (haskey(ds, :offset_C) && !isnan(ds.offset_C[i])) ? ds.offset_C[i] : 0,
+                        l0 = haskey(ds, :l0_um) ? ds.l0_um[i] : NaN,
+                        l0_sigma = haskey(ds, :l0_sigma_um) ? ds.l0_sigma_um[i] : NaN,
+                        dpar = haskey(ds, :dpar_um) ? ds.dpar_um[i] : NaN,
+                        F = haskey(ds, :F_apfu) ? ds.F_apfu[i] : NaN,
+                        Cl = haskey(ds, :Cl_apfu) ? ds.Cl_apfu[i] : NaN,
+                        OH = haskey(ds, :OH_apfu) ? ds.OH_apfu[i] : NaN,
+                        rmr0 = haskey(ds, :rmr0) ? ds.rmr0[i] : NaN,
+                        agesteps = agesteps[first_index:end],
+                    )
+                    push!(chrons, c)
+                    push!(damodels, aftm)
+                else
+                    c = ApatiteTrackLengthOriented(T;
+                        length = ds.track_length_um[i], 
+                        offset = (haskey(ds, :offset_C) && !isnan(ds.offset_C[i])) ? ds.offset_C[i] : 0,
+                        l0 = haskey(ds, :l0_um) ? ds.l0_um[i] : NaN,
+                        l0_sigma = haskey(ds, :l0_sigma_um) ? ds.l0_sigma_um[i] : NaN,
+                        dpar = haskey(ds, :dpar_um) ? ds.dpar_um[i] : NaN,
+                        F = haskey(ds, :F_apfu) ? ds.F_apfu[i] : NaN,
+                        Cl = haskey(ds, :Cl_apfu) ? ds.Cl_apfu[i] : NaN,
+                        OH = haskey(ds, :OH_apfu) ? ds.OH_apfu[i] : NaN,
+                        rmr0 = haskey(ds, :rmr0) ? ds.rmr0[i] : NaN,
+                        agesteps = agesteps[first_index:end],
+                    )
+                    push!(chrons, c)
+                    push!(damodels, uaftm)
+                end
             end
         elseif haskey(ds, :D0_cm_2_s) && haskey(ds, :Ea_kJ_mol) && (0 < ds.D0_cm_2_s[i]) && (0 < ds.Ea_kJ_mol[i])
             geometry = haskey(ds, :geometry) ? lowercase(string(ds.geometry[i])) : "spherical"

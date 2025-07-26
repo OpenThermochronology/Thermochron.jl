@@ -279,7 +279,7 @@
 ## -- Check the mean track length of a modelled Fish Canyon Apatite to be 15.35 +/- 0.06 um
 
     track = ApatiteTrackLength(length=15, agesteps=reverse(cntr(0:28)), dpar=2.16)
-    l, σ = modellength(track, fill(20., 28), Ketcham1999FC(:unprojected); trackhist=true)
+    l, σ = modellength(track, fill(20., 28), Ketcham1999FC(:unoriented); trackhist=true)
     @test l ≈ 14.81 atol=0.06
     @test l ≈ 14.806170753804404
     @test σ ≈ 0.1866057638730374
