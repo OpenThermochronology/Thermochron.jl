@@ -35,7 +35,7 @@ module Thermochron
     
     include("types.jl")
     export Constraint, Unconformity, Boundary, DetailInterval           # Types used as inputs to MCMC functions
-    export Diffusivity
+    export Diffusivity                                                  # Type for generic user-specified diffusivities
     
     include("chronometers.jl")
     const ChronometerUnion{T} = Union{ZirconFT{T}, MonaziteFT{T}, ApatiteFT{T}, ZirconTrackLength{T}, MonaziteTrackLength{T}, ApatiteTrackLength{T}, ApatiteTrackLengthOriented{T}, ZirconHe{T}, ApatiteHe{T}, SphericalHe{T}, PlanarHe{T}, SphericalAr{T}, PlanarAr{T}, MultipleDomain{T, SphericalAr{T}}, MultipleDomain{T, PlanarAr{T}}}
@@ -44,15 +44,17 @@ module Thermochron
     export ZirconFT, MonaziteFT, ApatiteFT                              # Concrete fission track types
     export SphericalHe, PlanarHe, ZirconHe, ApatiteHe                   # Concrete U-Th/He types
     export SphericalAr, PlanarAr                                        # Concrete K/Ar types
-    export chronometers, empiricaluncertainty!, eU,                     # Functions
-        get_age, get_age_sigma, set_age!, set_age_sigma!
+    export get_age, get_age_sigma, empiricaluncertainty!, eU            # Functions
+        
+    include("parsing.jl")
+    export chronometers                                                 # Parse datasets into Chronometer objects
 
     include("argon.jl")
     include("helium.jl")
-    export ZirconHeliumModel,ZRDAAM, ApatiteHeliumModel, RDAAM          # Damage-and-annealing based helium diffusivity model types
+    export ZirconHeliumModel, ZRDAAM, ApatiteHeliumModel, RDAAM          # Damage-and-annealing based helium diffusivity model types
 
     include("mdd.jl")
-    export MultipleDomain, MDDiffusivity
+    export MultipleDomain, MDDiffusivity                                # Multiple-domain diffusion model and diffusivity types
 
     include("fissiontrack.jl")
     export Ketcham1999FC, Ketcham2007FC                                 # Apatite fission track annealing model types
