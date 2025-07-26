@@ -49,15 +49,31 @@ Ketcham1999FC(
     beta::T = -11.988   # Box-Cox transform parameter
 )
 ```
-Fanning Curvilinear apatite annealing model from Ketcham, 1999 (doi: 10.2138/am-1999-0903)
+C-axis projected Fanning Curvilinear apatite annealing model from Ketcham, 1999 (doi: 10.2138/am-1999-0903)
 """
 Base.@kwdef struct Ketcham1999FC{T<:AbstractFloat} <: FanningCurvilinearApatite{T} 
-    C0::T = -19.844     # "Simultaneous fit" from Ketcham et al. 1999 apatite
-    C1::T = 0.38951     # "Simultaneous fit" from Ketcham et al. 1999 apatite
-    C2::T = -51.253     # "Simultaneous fit" from Ketcham et al. 1999 apatite
-    C3::T = -7.6423     # "Simultaneous fit" from Ketcham et al. 1999 apatite
-    alpha::T = -0.12327 # Box-Cox transform parameter
-    beta::T = -11.988   # Box-Cox transform parameter
+    C0::T = -19.844     # "Simultaneous fit" from Ketcham et al. 1999 apatite, c-axis projected model
+    C1::T = 0.38951     # "Simultaneous fit" from Ketcham et al. 1999 apatite, c-axis projected model
+    C2::T = -51.253     # "Simultaneous fit" from Ketcham et al. 1999 apatite, c-axis projected model
+    C3::T = -7.6423     # "Simultaneous fit" from Ketcham et al. 1999 apatite, c-axis projected model
+    alpha::T = -0.12327 # Box-Cox transform parameter, c-axis projected model
+    beta::T = -11.988   # Box-Cox transform parameter, c-axis projected model
+end
+function Ketcham1999FC(s::Symbol)
+    if s === :c_axis_projected
+        Ketcham1999FC()
+    elseif s === :unprojected
+        Ketcham1999FC(
+            C0 = -26.039,     # "Simultaneous fit" from Ketcham et al. 1999 apatite
+            C1 = 0.53168,     # "Simultaneous fit" from Ketcham et al. 1999 apatite
+            C2 = -62.319,     # "Simultaneous fit" from Ketcham et al. 1999 apatite
+            C3 = -7.8935,     # "Simultaneous fit" from Ketcham et al. 1999 apatite
+            alpha = -0.20196, # Box-Cox transform parameter
+            beta = -7.4224,   # Box-Cox transform parameter
+        )
+    else
+        @error "unsupported option :$s, use :c_axis_projected or :unprojected"
+    end
 end
 
 """
@@ -438,7 +454,7 @@ which they respetively implement include
   `Ketcham1999FC`       Fanning Curvilinear apatite model of Ketcham et al. 1999 (doi: 10.2138/am-1999-0903)
   `Ketcham2007FC`       Fanning Curvilinear apatite model of Ketcham et al. 2007 (doi: 10.2138/am.2007.2281)
 """
-function modellength(track::ApatiteTrackLengthOriented{T}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}; trackhist::Bool=false) where {T <: AbstractFloat}
+function modellength(track::Union{ApatiteTrackLength{T}, ApatiteTrackLengthOriented{T}}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}; trackhist::Bool=false) where {T <: AbstractFloat}
     agesteps = track.agesteps
     tsteps = track.tsteps
     ΔT = track.offset::T

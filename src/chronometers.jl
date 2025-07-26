@@ -54,8 +54,8 @@ ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64;
     agesteps::AbstracVector | tsteps::AbstracVector, # Temporal discretization
 )
 ```
-Construct an `ApatiteTrackLengthOriented` chronometer representing a single apatite fission track
-`length` um long, oriented at `angle` degrees to the c-axis, a relative annealing  
+Construct an `ApatiteTrackLengthOriented` chronometer representing a single apatite fission 
+track `length` um long, oriented at `angle` degrees to the c-axis, with a relative annealing  
 resistance specified by `rmr0`, optionally at a constant temperature offset (relative 
 to other samples) of `offset` [C].
 
@@ -132,6 +132,107 @@ function ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64;
         T(length),
         T(angle),
         T(lcmod),
+        T(offset),
+        T(l0),
+        T(l0_sigma),
+        floatrange(agesteps),
+        floatrange(tsteps),
+        r,
+        pr,
+        floatrange(ledges),
+        ldist,
+        T(rmr0),
+    )
+end
+
+
+"""
+```julia
+ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64; 
+    length::Number = NaN,                   # [um] fission track length
+    offset::Number = zero(T),               # [C] temperature offset relative to other samples
+    l0::Number = 16.38,                     # [um] Initial track length
+    l0_sigma::Number = 0.09,                # [um] Initial track length unertainty
+    dpar::Number = NaN,                     # [um] diameter parallel to track
+    F::Number = NaN,                        # [APFU] F concentration, in atoms per formula unit
+    Cl::Number = NaN,                       # [APFU] Cl concentration, in atoms per formula unit
+    OH::Number = NaN,                       # [APFU] OH concentration, in atoms per formula unit
+    rmr0::Number = NaN,                     # [unitless] annealing parameter
+    ledges = (0:1.0:20),                    # [um] length bin edges, for internal model length histogram
+    agesteps::AbstracVector | tsteps::AbstracVector, # Temporal discretization
+)
+```
+Construct an `ApatiteTrackLengthOriented` chronometer representing a single apatite 
+fission track `length` um long with a relative annealing resistance specified by `rmr0`, 
+optionally at a constant temperature offset (relative to other samples) of `offset` [C].
+
+If not provided directly, `rmr0` will be calculated, in order of preference:
+1. from `F`, `Cl`, and `OH` together, via the `rmr0model` function
+2. from `Cl` alone, via the `rmr0fromcl` function
+3. from `dpar`, via the `rmr0fromdpar` functions
+4. using a default fallback value of 0.83, if none of the above are provided.
+
+Temporal discretization follows the age steps specified by `agesteps` (age before present)
+and/or `tsteps` (forward time since crystallization), in Ma, where `tsteps` must be sorted 
+in increasing order.
+"""
+struct ApatiteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
+    length::T               # [um] track length
+    offset::T               # [C] temperature offset relative to other samples
+    l0::T                   # [um] Initial track length
+    l0_sigma::T             # [um] Initial track length unertainty
+    agesteps::FloatRange    # [Ma] age in Ma relative to the present
+    tsteps::FloatRange      # [Ma] forward time since crystallization
+    r::Vector{T}            # [unitless]
+    pr::Vector{T}           # [unitless]
+    ledges::FloatRange      # [um] Length distribution edges
+    ldist::Vector{T}        # [um] Length log likelihood
+    rmr0::T                 # [unitless] relative resistance to annealing (0=most, 1=least)
+end
+function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64; 
+        length::Number = NaN, 
+        offset::Number = zero(T),
+        l0::Number = 16.38,
+        l0_sigma::Number = 0.09,
+        dpar::Number = NaN, 
+        F::Number = NaN, 
+        Cl::Number = NaN, 
+        OH::Number = NaN, 
+        rmr0::Number = NaN,
+        ledges = (0:1.0:20),
+        agesteps = nothing, 
+        tsteps = nothing, 
+    )
+    # Temporal discretization
+    tsteps, agesteps = checkdiscretization(tsteps, agesteps)
+    # Multikinetic fission track parameters
+    if isnan(rmr0)
+        s = F + Cl + OH
+        rmr0 = if !isnan(s)
+            rmr0model(F/s*2, Cl/s*2, OH/s*2)
+        elseif !isnan(Cl)
+            rmr0fromcl(Cl)
+        elseif !isnan(dpar)
+            rmr0fromdpar(dpar)
+        else
+            0.83
+        end
+    end
+    if isnan(l0) 
+        l0 = if !isnan(dpar)
+            apatitel0modfromdpar(dpar)
+        else
+            16.38
+        end
+    end
+    if isnan(l0_sigma)
+        l0_sigma = 0.1311
+    end
+    r=zeros(T, size(agesteps))
+    pr=zeros(T, size(agesteps))
+    ldist=zeros(T, size(ledges).-1)
+    ApatiteTrackLength(
+        T(length),
         T(offset),
         T(l0),
         T(l0_sigma),

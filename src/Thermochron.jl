@@ -38,9 +38,9 @@ module Thermochron
     export Diffusivity
     
     include("chronometers.jl")
-    const ChronometerUnion{T} = Union{ZirconFT{T}, MonaziteFT{T}, ApatiteFT{T}, ZirconTrackLength{T}, MonaziteTrackLength{T}, ApatiteTrackLengthOriented{T}, ZirconHe{T}, ApatiteHe{T}, SphericalHe{T}, PlanarHe{T}, SphericalAr{T}, PlanarAr{T}, MultipleDomain{T, SphericalAr{T}}, MultipleDomain{T, PlanarAr{T}}}
+    const ChronometerUnion{T} = Union{ZirconFT{T}, MonaziteFT{T}, ApatiteFT{T}, ZirconTrackLength{T}, MonaziteTrackLength{T}, ApatiteTrackLength{T}, ApatiteTrackLengthOriented{T}, ZirconHe{T}, ApatiteHe{T}, SphericalHe{T}, PlanarHe{T}, SphericalAr{T}, PlanarAr{T}, MultipleDomain{T, SphericalAr{T}}, MultipleDomain{T, PlanarAr{T}}}
     export Chronometer, AbsoluteChronometer                             # Abstract types
-    export ZirconTrackLength, MonaziteTrackLength, ApatiteTrackLengthOriented   # Concrete fission track length types
+    export ZirconTrackLength, MonaziteTrackLength, ApatiteTrackLength, ApatiteTrackLengthOriented   # Concrete fission track length types
     export ZirconFT, MonaziteFT, ApatiteFT                              # Concrete fission track types
     export SphericalHe, PlanarHe, ZirconHe, ApatiteHe                   # Concrete U-Th/He types
     export SphericalAr, PlanarAr                                        # Concrete K/Ar types
