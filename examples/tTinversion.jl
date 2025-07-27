@@ -67,7 +67,8 @@
         # Damage and annealing models for diffusivity (specify custom kinetics if desired)
         adm = RDAAM(),                  # Flowers et al. 2009 (doi: 10.1016/j.gca.2009.01.015) apatite diffusivity model
         zdm = ZRDAAM(),                 # Guenthner et al. 2013 (doi: 10.2475/03.2013.01) zircon diffusivity model
-        aftm = Ketcham1999FC(),         # Ketcham et al. 2007 (doi: 10.2138/am.2007.2281) apatite fission track model
+        uaftm = Ketcham1999FC(:unoriented), # Ketcham et al. 1999 (doi: 10.2138/am-1999-0903) unoriented apatite fission track model  
+        aftm = Ketcham1999FC(),         # Ketcham et al. 1999 (doi: 10.2138/am-1999-0903) oriented apatite fission track model
         zftm = Yamada2007PC(),          # Yamada et al. 2007 (doi: 10.1016/j.chemgeo.2006.09.002) zircon fission track model
         mftm = Jones2021FA(),           # Re-fit from Jones et al. 2021 (doi: 10.5194/gchron-3-89-2021) monazite fission track 
         # Optional simulated annealing during burnin, wherein p_accept = max(exp((llₚ-ll)/T), 1)

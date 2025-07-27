@@ -737,7 +737,8 @@
         scaleaft = rescale ? sqrt(count(x->isa(x, ApatiteFT), chrons)) : 1
         scaleztl = rescale ? sqrt(count(x->isa(x, ZirconTrackLength), chrons)) : 1
         scalemtl = rescale ? sqrt(count(x->isa(x, MonaziteTrackLength), chrons)) : 1
-        scaleatl = rescale ? sqrt(count(x->isa(x, ApatiteTrackLengthOriented), chrons)) : 1
+        scaleatl = rescale ? sqrt(count(x->isa(x, ApatiteTrackLength), chrons)) : 1
+        scaleato = rescale ? sqrt(count(x->isa(x, ApatiteTrackLengthOriented), chrons)) : 1
         scalemdd = rescale ? sqrt(count(x->isa(x, MultipleDomain), chrons)) : 1
 
         # Cycle through each Chronometer, model and calculate log likelihood
@@ -783,11 +784,16 @@
                 μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), dm::MonaziteAnnealingModel{T})
                 μcalc[i] = draw_from_population(c, σcalc[i])
                 ll += model_ll(c, σcalc[i])/scalemtl
+            elseif isa(c, ApatiteTrackLength)
+                c::ApatiteTrackLength{T}
+                μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), dm::ApatiteAnnealingModel{T})
+                μcalc[i] = draw_from_population(c, σcalc[i])
+                ll += model_ll(c, σcalc[i])/scaleatl
             elseif isa(c, ApatiteTrackLengthOriented)
                 c::ApatiteTrackLengthOriented{T}
                 μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), dm::ApatiteAnnealingModel{T})
                 μcalc[i] = draw_from_population(c, σcalc[i])
-                ll += model_ll(c, σcalc[i])/scaleatl
+                ll += model_ll(c, σcalc[i])/scaleato
             elseif isa(c, MultipleDomain)
                 c::MultipleDomain{T, <:Union{PlanarAr{T}, SphericalAr{T}}}
                 age, fraction = modelage(c, @views(Tsteps[first_index:end]), dm::MDDiffusivity{T}; redegasparent)
