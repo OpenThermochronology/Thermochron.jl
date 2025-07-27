@@ -171,7 +171,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                     push!(chrons, c)
                     push!(damodels, aftm)
                 else
-                    c = ApatiteTrackLengthOriented(T;
+                    c = ApatiteTrackLength(T;
                         length = ds.track_length_um[i], 
                         offset = (haskey(ds, :offset_C) && !isnan(ds.offset_C[i])) ? ds.offset_C[i] : 0,
                         l0 = haskey(ds, :l0_um) ? ds.l0_um[i] : NaN,
