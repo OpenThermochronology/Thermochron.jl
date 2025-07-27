@@ -749,31 +749,31 @@
             if isa(c, SphericalAr) || isa(c, PlanarAr)
                 c::Union{SphericalAr{T}, PlanarAr{T}}
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), dm::Diffusivity{T})
-                ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scalegar
+                ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scalegar
             elseif isa(c, SphericalHe) || isa(c, PlanarHe)
                 c::Union{SphericalHe{T}, PlanarHe{T}}
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), dm::Diffusivity{T})
-                ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scaleghe
+                ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scaleghe
             elseif isa(c, ZirconHe)
                 c::ZirconHe{T}
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), dm::ZirconHeliumModel{T})
-                ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scalezhe
+                ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scalezhe
             elseif isa(c, ApatiteHe)
                 c::ApatiteHe{T}
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), dm::ApatiteHeliumModel{T})
-                ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scaleahe
+                ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scaleahe
             elseif isa(c, ZirconFT)
                 c::ZirconFT{T}
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), dm::ZirconAnnealingModel{T})
-                ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scalezft
+                ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scalezft
             elseif isa(c, MonaziteFT)
                 c::MonaziteFT{T}
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), dm::MonaziteAnnealingModel{T})
-                ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scalemft
+                ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scalemft
             elseif isa(c, ApatiteFT)
                 c::ApatiteFT{T}
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), dm::ApatiteAnnealingModel{T})
-                ll += norm_ll(μcalc[i], σcalc[i], val(c), err(c))/scaleaft
+                ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scaleaft
             elseif isa(c, ZirconTrackLength)
                 c::ZirconTrackLength{T}
                 μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), dm::ZirconAnnealingModel{T})

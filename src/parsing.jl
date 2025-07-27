@@ -367,7 +367,7 @@ function empiricaluncertainty!(σcalc::AbstractVector{T}, chrons::AbstractArray{
     inds = findall(cᵢ->cᵢ isa C, chrons)
     chrons_C = chrons[inds]
     eU_C = eU.(chrons_C)
-    ages_C = val.(chrons_C)
+    ages_C = value.(chrons_C)
     ΔT_C = temperatureoffset.(chrons_C)
     for i ∈ inds
         nearest_eU = minimum(j->abs(eU(chrons[j]) - eU(chrons[i])), setdiff(inds, i))

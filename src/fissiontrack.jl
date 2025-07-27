@@ -558,7 +558,7 @@ function model_ll(track::FissionTrackLength{T}, σ::T) where {T<:AbstractFloat}
     ll = typemin(T)
     Σpr = nansum(track.pr)
     if σ > 0 && Σpr > 0
-        kernel = Normal{T}(val(track), σ)
+        kernel = Normal{T}(value(track), σ)
         @inbounds for i in eachindex(track.pr)
             if (track.pr[i] > 0) && (track.r[i] > 0)
                 lpr = log(track.pr[i])

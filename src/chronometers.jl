@@ -2014,13 +2014,22 @@ end
 
 ## --- Utility functions to get values, uncertainties, etc. from any chronometers
 
-val(x::AbsoluteChronometer{T}) where {T} = x.age::T
-err(x::AbsoluteChronometer{T}) where {T} = x.age_sigma::T
-val(x::MultipleDomain{T}) where {T} = nanmean(x.age, @.(x.fit/x.age_sigma^2))::T
-err(x::MultipleDomain{T}) where {T} = nanstd(x.age, @.(x.fit/x.age_sigma^2))::T
-val(x::FissionTrackLength{T}) where {T} = x.length::T
-err(x::FissionTrackLength{T}) where {T} = zero(T)
-val(x::ApatiteTrackLengthOriented{T}) where {T} = x.lcmod::T
+value(x::AbsoluteChronometer{T}) where {T} = x.age::T
+stdev(x::AbsoluteChronometer{T}) where {T} = x.age_sigma::T
+value(x::MultipleDomain{T}) where {T} = nanmean(x.age, @.(x.fit/x.age_sigma^2))::T
+stdev(x::MultipleDomain{T}) where {T} = nanstd(x.age, @.(x.fit/x.age_sigma^2))::T
+value(x::FissionTrackLength{T}) where {T} = x.length::T
+stdev(x::FissionTrackLength{T}) where {T} = zero(T)
+value(x::ApatiteTrackLengthOriented{T}) where {T} = x.lcmod::T
+
+function val(x::Chronometer)
+    @warn "Thermochron.val has been deprecated in favor of Thermochron.value"
+    value(x)
+end
+function err(x::Chronometer)
+    @warn "Thermochron.err has been deprecated in favor of Thermochron.stdev"
+    stdev(x)
+end
 
 temperatureoffset(x::Chronometer) = x.offset
 
@@ -2033,14 +2042,14 @@ function eU(x::HeliumSample{T}) where {T<:AbstractFloat}
     return T(eu)
 end
 
-## -- Functions related to age and age uncertinty of absolute chronometers
+## -- Utility functions related to age and age uncertinty of absolute chronometers
 
 # Get age and age sigma from a vector of chronometers
 function get_age(x::AbstractArray{<:Chronometer{T}}, ::Type{C}=AbsoluteChronometer{T}) where {T<:AbstractFloat, C<:AbsoluteChronometer}
     result = sizehint!(T[], length(x))
     for xᵢ in x
         if isa(xᵢ, C)
-            push!(result, val(xᵢ))
+            push!(result, value(xᵢ))
         end
     end
     return result
@@ -2049,8 +2058,10 @@ function get_age_sigma(x::AbstractArray{<:Chronometer{T}}, ::Type{C}=AbsoluteChr
     result = sizehint!(T[], length(x))
     for xᵢ in x
         if isa(xᵢ, C)
-            push!(result, err(xᵢ))
+            push!(result, stdev(xᵢ))
         end
     end
     return result
 end
+
+## --- End of File

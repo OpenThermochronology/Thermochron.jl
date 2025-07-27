@@ -302,7 +302,7 @@
     for i in eachindex(C, mincolor)
         t = isa.(chrons, C[i])
         if any(t)
-            h = histogram(Thermochron.val.(chrons[t]), bins=0:0.25:20, 
+            h = histogram(Thermochron.value.(chrons[t]), bins=0:0.25:20, 
                 normalized=true,
                 xlims = (0,20),
                 xlabel = "Track length [μm]",
@@ -342,7 +342,7 @@
             any(ts) || continue
 
             # Extract observed and modeled lengths
-            obs_lengths = Thermochron.val.(chrons[ts])
+            obs_lengths = Thermochron.value.(chrons[ts])
             pred_lengths = vec(tT.resultdist[ts, :])
     
             h = histogram(obs_lengths, bins=0:0.25:20, 
