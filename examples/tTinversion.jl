@@ -17,7 +17,6 @@
 ## ---  Load required packages
 
     using Thermochron, Plots
-    using HypothesisTests
     using LinearAlgebra
     # Diminishing returns with more than ~2 threads
     BLAS.get_num_threads() > 2 && BLAS.set_num_threads(2)
@@ -126,7 +125,7 @@
     tap = isa.(chrons, ApatiteHe)
     if count(tap) > 1
         h = ageeuplot(chrons[tap], label="Internal uncertainty", title="apatite")
-        empiricaluncertainty!(model.σcalc, chrons, ApatiteHe)
+        empiricaluncertainty!(model.σcalc, chrons, ApatiteHe, sigma_eU=10, sigma_offset=10)
         σtotal = sqrt.(get_age_sigma(chrons[tap]).^2 + model.σcalc[tap].^2)
         ageeuplot!(h, chrons[tap], yerror=2*σtotal, label="Empirical uncertainty")
         display(h)
@@ -136,7 +135,7 @@
     tzr = isa.(chrons, ZirconHe)
     if count(tzr) > 1
         h = ageeuplot(chrons[tzr], label="Internal uncertainty", title="zircon")
-        empiricaluncertainty!(model.σcalc, chrons, ZirconHe)
+        empiricaluncertainty!(model.σcalc, chrons, ZirconHe, sigma_eU=100, sigma_offset=10)
         σtotal = sqrt.(get_age_sigma(chrons[tzr]).^2 + model.σcalc[tzr].^2)
         ageeuplot!(h, chrons[tzr], yerror=2*σtotal, label="Empirical uncertainty")
         display(h)
@@ -296,9 +295,42 @@
         end
     end
 
+## -- Fission track length histograms (apatite, zircon, monazite)
+
+    C = (ApatiteTrackLengthOriented, ZirconTrackLength, MonaziteTrackLength)
+    mincolor = ("apatite", "zircon", "monazite")
+    for i in eachindex(C, mincolor)
+        t = isa.(chrons, C[i])
+        if any(t)
+            h = histogram(Thermochron.value.(chrons[t]), bins=0:0.25:20, 
+                normalized=true,
+                xlims = (0,20),
+                xlabel = "Track length [μm]",
+                ylabel = "Probability density",
+                label = "Data (N=$(count(t)))", 
+                framestyle = :box,
+                legend = :topleft,
+                color = :black,
+                alpha = 0.75,
+                title = "$(C[i])",
+            )
+            lengthdist = tT.resultdist[t,:]
+            histogram!(h, vec(lengthdist), bins=0:0.25:20, 
+                normalized=true, 
+                label = "Model",
+                color = mineralcolors[mincolor[i]],
+                fill = true,
+                alpha = 0.75,
+            )
+            savefig(h, "$(name)_$(C[i])_predicted.pdf")
+            display(h)
+        end
+    end
+
 ## -- Fission track length histograms on a "sample-by-sample" basis (apatite, zircon, monazite)
     # uses "notes" column in the input file by specifying unique sample id, e.g., "LengthDist1", "LengthDist2", etc.
     # for each sample. Uses HypothesisTests package for testing equivalence of distributions.
+    using HypothesisTests
 
     C = (ApatiteTrackLengthOriented, ZirconTrackLength, MonaziteTrackLength)
     mincolor = ("apatite", "zircon", "monazite")
@@ -310,7 +342,7 @@
             any(ts) || continue
 
             # Extract observed and modeled lengths
-            obs_lengths = Thermochron.val.(chrons[ts])
+            obs_lengths = Thermochron.value.(chrons[ts])
             pred_lengths = vec(tT.resultdist[ts, :])
     
             h = histogram(obs_lengths, bins=0:0.25:20, 
@@ -350,38 +382,6 @@
             end
             
             savefig(h, "$(name)_$(sid)_$(C[i])_predicted.pdf")
-            display(h)
-        end
-    end
-
-## -- Fission track length histograms (apatite, zircon, monazite)
-
-    C = (ApatiteTrackLengthOriented, ZirconTrackLength, MonaziteTrackLength)
-    mincolor = ("apatite", "zircon", "monazite")
-    for i in eachindex(C, mincolor)
-        t = isa.(chrons, C[i])
-        if any(t)
-            h = histogram(Thermochron.val.(chrons[t]), bins=0:0.25:20, 
-                normalized=true,
-                xlims = (0,20),
-                xlabel = "Track length [μm]",
-                ylabel = "Probability density",
-                label = "Data (N=$(count(t)))", 
-                framestyle = :box,
-                legend = :topleft,
-                color = :black,
-                alpha = 0.75,
-                title = "$(C[i])",
-            )
-            lengthdist = tT.resultdist[t,:]
-            histogram!(h, vec(lengthdist), bins=0:0.25:20, 
-                normalized=true, 
-                label = "Model",
-                color = mineralcolors[mincolor[i]],
-                fill = true,
-                alpha = 0.75,
-            )
-            savefig(h, "$(name)_$(C[i])_predicted.pdf")
             display(h)
         end
     end

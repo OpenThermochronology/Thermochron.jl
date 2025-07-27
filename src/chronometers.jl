@@ -25,14 +25,6 @@ abstract type FissionTrackSample{T} <: AbsoluteChronometer{T} end
 abstract type HeliumSample{T} <: AbsoluteChronometer{T} end
 abstract type ArgonSample{T} <: AbsoluteChronometer{T} end
 
-eU(x::Chronometer{T}) where {T<:AbstractFloat} = T(NaN)
-function eU(x::HeliumSample{T}) where {T<:AbstractFloat}
-    # Convert from atoms/g to ppm
-    eu = nanmean(x.r238U) / (6.022E23 / 1E6 / 238)
-    eu += 0.238*nanmean(x.r232Th) / (6.022E23 / 1E6 / 232)
-    eu += 0.012*nanmean(x.r147Sm) / (6.022E23 / 1E6 / 147)
-    return T(eu)
-end
 
 ## --- Fission track length types
 
@@ -2020,25 +2012,44 @@ function checkdiscretization(tsteps, agesteps)
     return tsteps, agesteps
 end
 
-## --- Internal functions to get values and uncertainties from any chronometers
+## --- Utility functions to get values, uncertainties, etc. from any chronometers
 
-val(x::AbsoluteChronometer{T}) where {T} = x.age::T
-err(x::AbsoluteChronometer{T}) where {T} = x.age_sigma::T
-val(x::MultipleDomain{T}) where {T} = nanmean(x.age, @.(x.fit/x.age_sigma^2))::T
-err(x::MultipleDomain{T}) where {T} = nanstd(x.age, @.(x.fit/x.age_sigma^2))::T
-val(x::FissionTrackLength{T}) where {T} = x.length::T
-err(x::FissionTrackLength{T}) where {T} = zero(T)
-val(x::ApatiteTrackLengthOriented{T}) where {T} = x.lcmod::T
+value(x::AbsoluteChronometer{T}) where {T} = x.age::T
+stdev(x::AbsoluteChronometer{T}) where {T} = x.age_sigma::T
+value(x::MultipleDomain{T}) where {T} = nanmean(x.age, @.(x.fit/x.age_sigma^2))::T
+stdev(x::MultipleDomain{T}) where {T} = nanstd(x.age, @.(x.fit/x.age_sigma^2))::T
+value(x::FissionTrackLength{T}) where {T} = x.length::T
+stdev(x::FissionTrackLength{T}) where {T} = zero(T)
+value(x::ApatiteTrackLengthOriented{T}) where {T} = x.lcmod::T
 
+function val(x::Chronometer)
+    @warn "Thermochron.val has been deprecated in favor of Thermochron.value"
+    value(x)
+end
+function err(x::Chronometer)
+    @warn "Thermochron.err has been deprecated in favor of Thermochron.stdev"
+    stdev(x)
+end
 
-## -- Functions related to age and age uncertinty of absolute chronometers
+temperatureoffset(x::Chronometer) = x.offset
+
+eU(x::Chronometer{T}) where {T<:AbstractFloat} = T(NaN)
+function eU(x::HeliumSample{T}) where {T<:AbstractFloat}
+    # Convert from atoms/g to ppm
+    eu = nanmean(x.r238U) / (6.022E23 / 1E6 / 238)
+    eu += 0.238*nanmean(x.r232Th) / (6.022E23 / 1E6 / 232)
+    eu += 0.012*nanmean(x.r147Sm) / (6.022E23 / 1E6 / 147)
+    return T(eu)
+end
+
+## -- Utility functions related to age and age uncertinty of absolute chronometers
 
 # Get age and age sigma from a vector of chronometers
 function get_age(x::AbstractArray{<:Chronometer{T}}, ::Type{C}=AbsoluteChronometer{T}) where {T<:AbstractFloat, C<:AbsoluteChronometer}
     result = sizehint!(T[], length(x))
     for xᵢ in x
         if isa(xᵢ, C)
-            push!(result, val(xᵢ))
+            push!(result, value(xᵢ))
         end
     end
     return result
@@ -2047,24 +2058,10 @@ function get_age_sigma(x::AbstractArray{<:Chronometer{T}}, ::Type{C}=AbsoluteChr
     result = sizehint!(T[], length(x))
     for xᵢ in x
         if isa(xᵢ, C)
-            push!(result, err(xᵢ))
+            push!(result, stdev(xᵢ))
         end
     end
     return result
 end
 
-function empiricaluncertainty!(σcalc::AbstractVector{T}, x::AbstractArray{<:Chronometer{T}}, ::Type{C}; fraction::Number=1/sqrt(2), sigma_eU::Number = ((C<:ZirconHe) ? 100. : 10.)) where {T<:AbstractFloat, C<:HeliumSample}
-    @assert eachindex(σcalc) == eachindex(x)
-    @assert 0 <= fraction <= 1
-    t = isa.(x, C)
-    eU_C = eU.(x[t])
-    ages_C = get_age(x, C)
-    for i ∈ findall(t)
-        nearest_eU = minimum(j->abs(eU(x[j]) - eU(x[i])), setdiff(findall(t), i))
-        W = normpdf.(eU(x[i]), max(sigma_eU, nearest_eU/2), eU_C)
-        # Assume some fraction of weighted variance is from unknown external uncertainty
-        σₑ = nanstd(ages_C, W) * fraction   # External uncertainty (est)
-        σcalc[i] = max(σₑ, σcalc[i])
-    end
-    return x
-end
+## --- End of File

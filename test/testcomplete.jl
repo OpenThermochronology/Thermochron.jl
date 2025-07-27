@@ -112,6 +112,13 @@
     @test calcuncert[1:19] ≈ zeros(19)
     @test calcuncert[20:end] ≈ [1.8368172844202661, 1.1896389981502726, 1.1448424397109467, 1.2154485905638788, 1.1896389981502726, 0.6070538659171328]
 
+    # Test empirical uncertainty estimation
+    σcalc = zeros(length(chrons))
+    empiricaluncertainty!(σcalc, chrons, ZirconHe, sigma_offset=15)
+    empiricaluncertainty!(σcalc, chrons, ApatiteHe, sigma_offset=15)
+    t = isa.(chrons, ZirconHe) .| isa.(chrons, ApatiteHe)
+    @test σcalc[t] ≈  [57.014755105003104, 57.014755105003104, 14.8734143752182, 14.8734143752182, 89.77854252945355, 23.42048935550962] 
+
     # Modern input format, Minnesota dataset
     chrons, damodels = chronometers(ds, model, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
     @test chrons isa Vector{<:Chronometer}
