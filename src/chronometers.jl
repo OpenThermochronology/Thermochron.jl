@@ -25,14 +25,6 @@ abstract type FissionTrackSample{T} <: AbsoluteChronometer{T} end
 abstract type HeliumSample{T} <: AbsoluteChronometer{T} end
 abstract type ArgonSample{T} <: AbsoluteChronometer{T} end
 
-eU(x::Chronometer{T}) where {T<:AbstractFloat} = T(NaN)
-function eU(x::HeliumSample{T}) where {T<:AbstractFloat}
-    # Convert from atoms/g to ppm
-    eu = nanmean(x.r238U) / (6.022E23 / 1E6 / 238)
-    eu += 0.238*nanmean(x.r232Th) / (6.022E23 / 1E6 / 232)
-    eu += 0.012*nanmean(x.r147Sm) / (6.022E23 / 1E6 / 147)
-    return T(eu)
-end
 
 ## --- Fission track length types
 
@@ -2020,7 +2012,7 @@ function checkdiscretization(tsteps, agesteps)
     return tsteps, agesteps
 end
 
-## --- Internal functions to get values and uncertainties from any chronometers
+## --- Utility functions to get values, uncertainties, etc. from any chronometers
 
 val(x::AbsoluteChronometer{T}) where {T} = x.age::T
 err(x::AbsoluteChronometer{T}) where {T} = x.age_sigma::T
@@ -2030,6 +2022,16 @@ val(x::FissionTrackLength{T}) where {T} = x.length::T
 err(x::FissionTrackLength{T}) where {T} = zero(T)
 val(x::ApatiteTrackLengthOriented{T}) where {T} = x.lcmod::T
 
+temperatureoffset(x::Chronometer) = x.offset
+
+eU(x::Chronometer{T}) where {T<:AbstractFloat} = T(NaN)
+function eU(x::HeliumSample{T}) where {T<:AbstractFloat}
+    # Convert from atoms/g to ppm
+    eu = nanmean(x.r238U) / (6.022E23 / 1E6 / 238)
+    eu += 0.238*nanmean(x.r232Th) / (6.022E23 / 1E6 / 232)
+    eu += 0.012*nanmean(x.r147Sm) / (6.022E23 / 1E6 / 147)
+    return T(eu)
+end
 
 ## -- Functions related to age and age uncertinty of absolute chronometers
 
@@ -2053,18 +2055,44 @@ function get_age_sigma(x::AbstractArray{<:Chronometer{T}}, ::Type{C}=AbsoluteChr
     return result
 end
 
-function empiricaluncertainty!(σcalc::AbstractVector{T}, x::AbstractArray{<:Chronometer{T}}, ::Type{C}; fraction::Number=1/sqrt(2), sigma_eU::Number = ((C<:ZirconHe) ? 100. : 10.)) where {T<:AbstractFloat, C<:HeliumSample}
-    @assert eachindex(σcalc) == eachindex(x)
+"""
+```julia
+function empiricaluncertainty!(σcalc, chrons, C::Type{<:HeliumSample}; 
+    fraction::Number = 1/sqrt(2), 
+    sigma_eU::Number = (C<:ZirconHe) ? 100.0 : (C<:ApatiteHe) ? 10.0 : 25.0,
+    sigma_offset::Number = 10.0,
+)
+```
+Given a vector of chronometers `chrons`, update the uncertainties in `σcalc`
+to reflect the uncertainty implied by the observed (empirical) scatter in the
+helium ages for samples with similar eU and temperature offset (i.e., elevation).
+
+By default, half the empirical variance (`1/sqrt(2)` of the standard deviation)
+is interpreted as external uncertainty which should be reflected in `σcalc`.
+
+Similarity in eU and offset is assessed on the basis of Gaussian kernels with
+bandwidth equal to `sigma_eU` for eU and `sigma_offset` for temperature offset.
+"""
+function empiricaluncertainty!(σcalc::AbstractVector{T}, chrons::AbstractArray{<:Chronometer{T}}, ::Type{C}; 
+        fraction::Number = 1/sqrt(2), 
+        sigma_eU::Number = (C<:ZirconHe) ? 100.0 : (C<:ApatiteHe) ? 10.0 : 25.0,
+        sigma_offset::Number = 10.0,
+    ) where {T<:AbstractFloat, C<:HeliumSample}
+    @assert eachindex(σcalc) == eachindex(chrons)
     @assert 0 <= fraction <= 1
-    t = isa.(x, C)
-    eU_C = eU.(x[t])
-    ages_C = get_age(x, C)
-    for i ∈ findall(t)
-        nearest_eU = minimum(j->abs(eU(x[j]) - eU(x[i])), setdiff(findall(t), i))
-        W = normpdf.(eU(x[i]), max(sigma_eU, nearest_eU/2), eU_C)
+    inds = findall(cᵢ->cᵢ isa C, chrons)
+    chrons_C = chrons[inds]
+    eU_C = eU.(chrons_C)
+    ages_C = val.(chrons_C)
+    ΔT_C = temperatureoffset.(chrons_C)
+    for i ∈ inds
+        nearest_eU = minimum(j->abs(eU(chrons[j]) - eU(chrons[i])), setdiff(inds, i))
+        eU_kernel = Normal(eU(chrons[i]), max(sigma_eU, nearest_eU/2))
+        ΔT_kernel = Normal(temperatureoffset(chrons[i]), sigma_offset)
+        W = pdf.(eU_kernel, eU_C) .* pdf.(ΔT_kernel, ΔT_C)
         # Assume some fraction of weighted variance is from unknown external uncertainty
         σₑ = nanstd(ages_C, W) * fraction   # External uncertainty (est)
         σcalc[i] = max(σₑ, σcalc[i])
     end
-    return x
+    return σcalc
 end
