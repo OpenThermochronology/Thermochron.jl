@@ -8,8 +8,6 @@
 
 Open-source time-Temperature inversion of thermochronometric data. 
 
-**Citation: Keller, C.B., McDannell, K.T., Guenthner, W.R., and Shuster, D.L. (2022). Thermochron.jl: Open-source time-Temperature inversion of thermochronometric data. https://doi.org/10.17605/osf.io/wq2U5**
-
 Implements a transdimensional Bayesian Markov chain Monte Carlo (MCMC) time-Temperature inversion with optional Simulated Annealing (e.g., [1](https://en.wikipedia.org/wiki/Simulated_annealing), [2](https://doi.org/10.1007/978-94-015-7744-1_2)) and kinetic uncertainty propagation/inversion.
 
 Currently, this package supports the inversion of mineral helium and argon ages using a spherical Crank-Nicolson forward diffusion model following the equations of [Gallagher 1995](https://doi.org/10.1016/0012-821X(95)00197-K) and [Ketcham 2005](https://doi.org/10.2138/rmg.2005.58.11) along with the damage and annealing model of [Guenthner et al. 2013](https://doi.org/10.2475/03.2013.01) for zircon U-Th/He (ZRDAAM), the damage and annealing model of [Flowers et al. 2009](https://doi.org/10.1016/j.gca.2009.01.015) for apatite U-Th/He (RDAAM), or any constant user-specified $D_0$ and $E_a$ for any other generic He or Ar chronometer. The K-feldspar multi-diffusion domain (MDD) method of [Lovera et al. 1989](https://doi.org/10.1029/JB094iB12p17917) is also included. 
