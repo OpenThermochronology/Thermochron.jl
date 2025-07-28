@@ -300,6 +300,20 @@ rmr0 = 1 - exp(0.647(dpar-1.75) - 1.834)
 rmr0fromdpar(dpar) = 1 - exp(0.647(dpar-1.75) - 1.834)
 export rmr0fromdpar
 
+"""
+```julia
+dparfromrmr0(rmr0)
+```
+Calculate `dpar` as a function of `rmr0` for "multikinetic" apatite 
+fission track following the relation (Fig. 7b) of Ketcham et al. 1999
+(doi: 10.2138/am-1999-0903)
+```
+dpar = (log(1 - rmr0) + 1.834)/0.647 + 1.75
+```
+"""
+dparfromrmr0(rmr0) = (log(1 - rmr0) + 1.834)/0.647 + 1.75
+export dparfromrmr0
+
 
 # dpar = [1.5851, 1.6458, 1.7066, 1.8646, 1.9497, 1.8767, 1.8403, 2.0469, 2.1441, 2.3385, 2.4236, 2.4358, 2.9948, 4.5625, 4.9757]
 # l0 = [15.7784, 16.2913, 16.0571, 15.9679, 16.2969, 16.2077, 16.2077, 16.1463, 16.1408, 16.4195, 16.3805, 16.4474, 16.3805, 16.9882, 16.9268]
