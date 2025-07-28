@@ -52,14 +52,14 @@ resistance specified by `rmr0`, optionally at a constant temperature offset (rel
 to other samples) of `offset` [C].
 
 If not provided directly, `rmr0` will be calculated, in order of preference:
-1. from `F`, `Cl`, and `OH` together, via the `rmr0model` function
-2. from `Cl` alone, via the `rmr0fromcl` function
-3. from `dpar`, via the `rmr0fromdpar` functions
+1. from `F`, `Cl`, and `OH` together, via the `apatite_rmr0model` function
+2. from `Cl` alone, via the `apatite_rmr0fromcl` function
+3. from `dpar`, via the `apatite_rmr0fromdpar` functions
 4. using a default fallback value of 0.83, if none of the above are provided.
 
 If not provided directly, `l0` and `l0_sigma` will be estimated using the 
-`apatitel0fromdpar` function, where dpar in turn is estimated using the
-`dparfromrmr0` function if not provided directly.
+`apatite_l0fromdpar` function, where dpar in turn is estimated using the
+`apatite_dparfromrmr0` function if not provided directly.
 
 Temporal discretization follows the age steps specified by `agesteps` (age before present)
 and/or `tsteps` (forward time since crystallization), in Ma, where `tsteps` must be sorted 
@@ -102,22 +102,22 @@ function ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64;
     if isnan(rmr0)
         s = F + Cl + OH
         rmr0 = if !isnan(s)
-            rmr0model(F/s*2, Cl/s*2, OH/s*2)
+            apatite_rmr0model(F/s*2, Cl/s*2, OH/s*2)
         elseif !isnan(Cl)
-            rmr0fromcl(Cl)
+            apatite_rmr0fromcl(Cl)
         elseif !isnan(dpar)
-            rmr0fromdpar(dpar)
+            apatite_rmr0fromdpar(dpar)
         else
             0.83
         end
     end
     if isnan(dpar)
         # Estimate dpar using the relation of Ketcham et al. 1999 (Fig. 7b)
-        dpar = dparfromrmr0(rmr0)
+        dpar = apatite_dparfromrmr0(rmr0)
     end
     if isnan(l0) 
         # Estimate l0 using the relation of Carlson et al. 1999 for c-axis-projected tracks (Equation 2)
-        l0 = apatitel0modfromdpar(dpar)
+        l0 = apatite_l0modfromdpar(dpar)
     end
     if isnan(l0_sigma)
         # Scatter around the fit of Carlson et al. 1999 for c-axis-projected tracks
@@ -165,14 +165,14 @@ fission track `length` um long with a relative annealing resistance specified by
 optionally at a constant temperature offset (relative to other samples) of `offset` [C].
 
 If not provided directly, `rmr0` will be calculated, in order of preference:
-1. from `F`, `Cl`, and `OH` together, via the `rmr0model` function
-2. from `Cl` alone, via the `rmr0fromcl` function
-3. from `dpar`, via the `rmr0fromdpar` functions
+1. from `F`, `Cl`, and `OH` together, via the `apatite_rmr0model` function
+2. from `Cl` alone, via the `apatite_rmr0fromcl` function
+3. from `dpar`, via the `apatite_rmr0fromdpar` functions
 4. using a default fallback value of 0.83, if none of the above are provided.
 
 If not provided directly, `l0` and `l0_sigma` will be estimated using the 
-`apatitel0fromdpar` function, where dpar in turn is estimated using the
-`dparfromrmr0` function if not provided directly.
+`apatite_l0fromdpar` function, where dpar in turn is estimated using the
+`apatite_dparfromrmr0` function if not provided directly.
 
 Temporal discretization follows the age steps specified by `agesteps` (age before present)
 and/or `tsteps` (forward time since crystallization), in Ma, where `tsteps` must be sorted 
@@ -211,22 +211,22 @@ function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
     if isnan(rmr0)
         s = F + Cl + OH
         rmr0 = if !isnan(s)
-            rmr0model(F/s*2, Cl/s*2, OH/s*2)
+            apatite_rmr0model(F/s*2, Cl/s*2, OH/s*2)
         elseif !isnan(Cl)
-            rmr0fromcl(Cl)
+            apatite_rmr0fromcl(Cl)
         elseif !isnan(dpar)
-            rmr0fromdpar(dpar)
+            apatite_rmr0fromdpar(dpar)
         else
             0.83
         end
     end
     if isnan(dpar)
         # Estimate dpar using the relation of Ketcham et al. 1999 (Fig. 7b)
-        dpar = dparfromrmr0(rmr0)
+        dpar = apatite_dparfromrmr0(rmr0)
     end
     if isnan(l0) 
         # Use the relation of Carlson et al. 1999 for unoriented tracks (equation 1)
-        l0 = apatitel0fromdpar(dpar)
+        l0 = apatite_l0fromdpar(dpar)
     end
     if isnan(l0_sigma)
         # Scatter around the fit of Carlson et al. 1999 for unoriented tracks
@@ -491,9 +491,9 @@ of `age` ± `age_sigma` [Ma] and a relative annealing resistance specified by `r
 and optionally a constant temperature offset (relative to other samples) of `offset` [C].
 
 If not provided directly, `rmr0` will be calculated, in order of preference:
-1. from `F`, `Cl`, and `OH` together, via the `rmr0model` function
-2. from `Cl` alone, via the `rmr0fromcl` function
-3. from `dpar`, via the `rmr0fromdpar` functions
+1. from `F`, `Cl`, and `OH` together, via the `apatite_rmr0model` function
+2. from `Cl` alone, via the `apatite_rmr0fromcl` function
+3. from `dpar`, via the `apatite_rmr0fromdpar` functions
 4. using a default fallback value of 0.83, if none of the above are provided.
 
 Temporal discretization follows the age steps specified by `agesteps` (age before present)
@@ -526,11 +526,11 @@ function ApatiteFT(T::Type{<:AbstractFloat}=Float64;
     if isnan(rmr0)
         s = F + Cl + OH
         rmr0 = if !isnan(s)
-            rmr0model(F/s*2, Cl/s*2, OH/s*2)
+            apatite_rmr0model(F/s*2, Cl/s*2, OH/s*2)
         elseif !isnan(Cl)
-            rmr0fromcl(Cl)
+            apatite_rmr0fromcl(Cl)
         elseif !isnan(dpar)
-            rmr0fromdpar(dpar)
+            apatite_rmr0fromdpar(dpar)
         else
             0.83
         end

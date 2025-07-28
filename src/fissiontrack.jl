@@ -251,7 +251,7 @@ export lcmod
 
 """
 ```julia
-rmr0model(F, Cl, OH, Mn=0, Fe=0, others=0)
+apatite_rmr0model(F, Cl, OH, Mn=0, Fe=0, others=0)
 ```
 Calculate rmr0 as a function of composition (specified in terms of
 atoms per fomula unit, or APFU) for "multikinetic" apatite fission 
@@ -264,17 +264,17 @@ rmr0 = (-0.0495 -0.0348F +0.3528|Cl - 1| +0.0701|OH - 1|
         -0.8592Mn -1.2252Fe -0.1721Others)^0.1433
 ```
 """
-function rmr0model(F, Cl, OH, Mn=0, Fe=0, others=0)
+function apatite_rmr0model(F, Cl, OH, Mn=0, Fe=0, others=0)
     F+Cl+OH ≈ 2 || error("F, Cl, and OH should sum to 2")
     h = (- 0.0348F + 0.3528abs(Cl - 1) + 0.0701abs(OH - 1) +
          - 0.8592Mn - 1.2252Fe - 0.1721others -0.0495      )
     return h^0.1433
 end
-export rmr0model
+export apatite_rmr0model
 
 """
 ```julia
-rmr0fromcl(Cl)
+apatite_rmr0fromcl(Cl)
 ```
 Calculate `rmr0` as a function of chlorine content `Cl` [APFU] for 
 "multikinetic" apatite fission track following the relation (Fig. 7a) 
@@ -283,12 +283,12 @@ of Ketcham et al. 1999 (doi: 10.2138/am-1999-0903)
 rmr0 = 1 - exp(2.107(1 - abs(Cl - 1)) - 1.834)
 ```
 """
-rmr0fromcl(Cl) = 1 - exp(2.107*(1 - abs(Cl - 1)) - 1.834)
-export rmr0fromcl
+apatite_rmr0fromcl(Cl) = 1 - exp(2.107*(1 - abs(Cl - 1)) - 1.834)
+export apatite_rmr0fromcl
 
 """
 ```julia
-rmr0fromdpar(dpar)
+apatite_rmr0fromdpar(dpar)
 ```
 Calculate `rmr0` as a function of `dpar` for "multikinetic" apatite 
 fission track following the relation (Fig. 7b) of Ketcham et al. 1999
@@ -297,12 +297,12 @@ fission track following the relation (Fig. 7b) of Ketcham et al. 1999
 rmr0 = 1 - exp(0.647(dpar-1.75) - 1.834)
 ```
 """
-rmr0fromdpar(dpar) = 1 - exp(0.647(dpar-1.75) - 1.834)
-export rmr0fromdpar
+apatite_rmr0fromdpar(dpar) = 1 - exp(0.647(dpar-1.75) - 1.834)
+export apatite_rmr0fromdpar
 
 """
 ```julia
-dparfromrmr0(rmr0)
+apatite_dparfromrmr0(rmr0)
 ```
 Calculate `dpar` as a function of `rmr0` for "multikinetic" apatite 
 fission track following the relation (Fig. 7b) of Ketcham et al. 1999
@@ -311,8 +311,8 @@ fission track following the relation (Fig. 7b) of Ketcham et al. 1999
 dpar = (log(1 - rmr0) + 1.834)/0.647 + 1.75
 ```
 """
-dparfromrmr0(rmr0) = (log(1 - rmr0) + 1.834)/0.647 + 1.75
-export dparfromrmr0
+apatite_dparfromrmr0(rmr0) = (log(1 - rmr0) + 1.834)/0.647 + 1.75
+export apatite_dparfromrmr0
 
 
 # dpar = [1.5851, 1.6458, 1.7066, 1.8646, 1.9497, 1.8767, 1.8403, 2.0469, 2.1441, 2.3385, 2.4236, 2.4358, 2.9948, 4.5625, 4.9757]
@@ -321,7 +321,7 @@ export dparfromrmr0
 # nanstd(l0 - l0m)
 """
 ```julia
-l0 = apatitel0fromdpar(dpar)
+l0 = apatite_l0fromdpar(dpar)
 ```
 Calculate `l0` as a function of `dpar` for "multikinetic" apatite 
 fission track following the relation (equation 1) of Carlson et al. 1999
@@ -332,15 +332,15 @@ fission track following the relation (equation 1) of Carlson et al. 1999
 The results may be used along with a constant uncertainty of 0.1367 based on the scatter around the 
 appropriate line in Figure 1 of Carlson et al. 1999.
 """
-apatitel0fromdpar(dpar) = 15.63 + 0.283*dpar
-export apatitel0fromdpar
+apatite_l0fromdpar(dpar) = 15.63 + 0.283*dpar
+export apatite_l0fromdpar
 
 # dpar = [1.5894, 1.6402, 1.7012, 1.8333, 1.8638, 1.8841, 1.9451, 2.0569, 2.1484, 2.3415, 2.4329, 2.4431, 2.9919, 4.5772, 4.9837]
 # l0 = [16.189, 16.5693, 16.4301, 16.5183, 16.3606, 16.5229, 16.5507, 16.4487, 16.4394, 16.6481, 16.6342, 16.6759, 16.6064, 17.0701, 17.0377]
 # l0mod = 16.10 .+ 0.205.*dpar
 """
 ```julia
-l0 = apatitel0modfromdpar(dpar)
+l0 = apatite_l0modfromdpar(dpar)
 ```
 Calculate c-axis-projected `l0` as a function of `dpar` for "multikinetic" apatite 
 fission track following the relation (equation 2) of Carlson et al. 1999
@@ -351,8 +351,8 @@ fission track following the relation (equation 2) of Carlson et al. 1999
 The results may be used along with a constant uncertainty of 0.1311 based on the scatter around the 
 appropriate line in Figure 1 of Carlson et al. 1999.
 """
-apatitel0modfromdpar(dpar) = 16.10 + 0.205*dpar
-export apatitel0modfromdpar
+apatite_l0modfromdpar(dpar) = 16.10 + 0.205*dpar
+export apatite_l0modfromdpar
 
 ## --- Track length conversion for "multikinetic" fission track
 
