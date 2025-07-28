@@ -343,7 +343,7 @@ export apatitel0fromdpar
 l0 = apatitel0modfromdpar(dpar)
 ```
 Calculate c-axis-projected `l0` as a function of `dpar` for "multikinetic" apatite 
-fission track following the relation (equation 1) of Carlson et al. 1999
+fission track following the relation (equation 2) of Carlson et al. 1999
 (doi: 10.2138/am-1999-0901), that is
 
 ``l_{0,c,mod} = 16.10 + 0.205*D_{par}``

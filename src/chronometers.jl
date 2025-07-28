@@ -35,8 +35,8 @@ ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64;
     angle::Number = NaN,                    # [degrees] track angle from the c-axis
     lcmod::Number = lcmod(length, angle),   # [um] model length of an equivalent c-axis parallel rack
     offset::Number = zero(T),               # [C] temperature offset relative to other samples
-    l0::Number = 16.38,                     # [um] Initial track length
-    l0_sigma::Number = 0.1311,              # [um] Initial track length unertainty
+    l0::Number = NaN,                       # [um] Initial track length
+    l0_sigma::Number = NaN,                 # [um] Initial track length unertainty
     dpar::Number = NaN,                     # [um] diameter parallel to track
     F::Number = NaN,                        # [APFU] F concentration, in atoms per formula unit
     Cl::Number = NaN,                       # [APFU] Cl concentration, in atoms per formula unit
@@ -56,6 +56,10 @@ If not provided directly, `rmr0` will be calculated, in order of preference:
 2. from `Cl` alone, via the `rmr0fromcl` function
 3. from `dpar`, via the `rmr0fromdpar` functions
 4. using a default fallback value of 0.83, if none of the above are provided.
+
+If not provided directly, `l0` and `l0_sigma` will be estimated using the 
+`apatitel0fromdpar` function, where dpar in turn is estimated using the
+`dparfromrmr0` function if not provided directly.
 
 Temporal discretization follows the age steps specified by `agesteps` (age before present)
 and/or `tsteps` (forward time since crystallization), in Ma, where `tsteps` must be sorted 
@@ -107,14 +111,16 @@ function ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64;
             0.83
         end
     end
+    if isnan(dpar)
+        # Estimate dpar using the relation of Ketcham et al. 1999 (Fig. 7b)
+        dpar = dparfromrmr0(rmr0)
+    end
     if isnan(l0) 
-        l0 = if !isnan(dpar)
-            apatitel0modfromdpar(dpar)
-        else
-            16.38
-        end
+        # Estimate l0 using the relation of Carlson et al. 1999 for c-axis-projected tracks (Equation 2)
+        l0 = apatitel0modfromdpar(dpar)
     end
     if isnan(l0_sigma)
+        # Scatter around the fit of Carlson et al. 1999 for c-axis-projected tracks
         l0_sigma = 0.1311
     end
     r=zeros(T, size(agesteps))
@@ -143,8 +149,8 @@ end
 ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64; 
     length::Number = NaN,                   # [um] fission track length
     offset::Number = zero(T),               # [C] temperature offset relative to other samples
-    l0::Number = 16.38,                     # [um] Initial track length
-    l0_sigma::Number = 0.1311,              # [um] Initial track length unertainty
+    l0::Number = NaN,                       # [um] Initial track length
+    l0_sigma::Number = NaN,                 # [um] Initial track length unertainty
     dpar::Number = NaN,                     # [um] diameter parallel to track
     F::Number = NaN,                        # [APFU] F concentration, in atoms per formula unit
     Cl::Number = NaN,                       # [APFU] Cl concentration, in atoms per formula unit
@@ -163,6 +169,10 @@ If not provided directly, `rmr0` will be calculated, in order of preference:
 2. from `Cl` alone, via the `rmr0fromcl` function
 3. from `dpar`, via the `rmr0fromdpar` functions
 4. using a default fallback value of 0.83, if none of the above are provided.
+
+If not provided directly, `l0` and `l0_sigma` will be estimated using the 
+`apatitel0fromdpar` function, where dpar in turn is estimated using the
+`dparfromrmr0` function if not provided directly.
 
 Temporal discretization follows the age steps specified by `agesteps` (age before present)
 and/or `tsteps` (forward time since crystallization), in Ma, where `tsteps` must be sorted 
@@ -210,15 +220,17 @@ function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
             0.83
         end
     end
+    if isnan(dpar)
+        # Estimate dpar using the relation of Ketcham et al. 1999 (Fig. 7b)
+        dpar = dparfromrmr0(rmr0)
+    end
     if isnan(l0) 
-        l0 = if !isnan(dpar)
-            apatitel0modfromdpar(dpar)
-        else
-            16.38
-        end
+        # Use the relation of Carlson et al. 1999 for unoriented tracks (equation 1)
+        l0 = apatitel0fromdpar(dpar)
     end
     if isnan(l0_sigma)
-        l0_sigma = 0.1311
+        # Scatter around the fit of Carlson et al. 1999 for unoriented tracks
+        l0_sigma = 0.1367
     end
     r=zeros(T, size(agesteps))
     pr=zeros(T, size(agesteps))
