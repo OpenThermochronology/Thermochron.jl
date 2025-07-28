@@ -283,21 +283,19 @@
 ## -- Check the mean track length of a modelled Fish Canyon Apatite to be 15.35 +/- 0.06 um
 
     track = ApatiteTrackLength(length=15, agesteps=reverse(cntr(0:28)), dpar=2.16, l0=16.38, l0_sigma=0.09)
-    l, σ = modellength(track, fill(20., 28), Ketcham1999FC(:unoriented); trackhist=true)
+    l, σ = modellength(track, fill(20., 28), Ketcham1999FC(:unoriented))
     @test l ≈ 14.81 atol=0.06
     @test l ≈ 14.806170753804404
     @test σ ≈ 0.1866057638730374
-
-    @test round.(track.ldist, sigdigits=4) ≈  [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 7.78e-277, 1.763e-200, 1.428e-136, 4.2620000000000003e-85, 4.9650000000000005e-46, 2.589e-19, 9.662e-5, 0.7893, 0.2106, 7.662e-7, 0.0, 0.0, 0.0]
+    @test round.(track.r, sigdigits=4) ≈ [14.61, 14.62, 14.63, 14.64, 14.65, 14.66, 14.67, 14.68, 14.69, 14.7, 14.71, 14.73, 14.74, 14.75, 14.77, 14.78, 14.8, 14.82, 14.84, 14.86, 14.88, 14.91, 14.94, 14.97, 15.01, 15.06, 15.13, 15.23]
     @test Thermochron.model_ll(track, fill(20., 28), Ketcham2007FC()) ≈ -1.9253575272471508
 
     track = ApatiteTrackLengthOriented(length=15, angle=35, agesteps=reverse(cntr(0:28)), dpar=2.16, l0=16.38, l0_sigma=0.09)
-    l, σ = modellength(track, fill(20., 28), Ketcham2007FC(); trackhist=true)
+    l, σ = modellength(track, fill(20., 28), Ketcham2007FC())
     @test l ≈ 15.35 atol=0.06
     @test l ≈ 15.376345688670545
     @test σ ≈ 0.1342688478623522
-
-    @test round.(track.ldist, sigdigits=4) ≈ [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.2570000000000001e-222, 7.635e-132, 4.523e-65, 3.2259999999999996e-22, 0.007669, 0.9922, 0.0001799, 0.0, 0.0, 0.0]
+    @test round.(track.r, sigdigits=4) ≈ [15.26, 15.27, 15.27, 15.28, 15.28, 15.29, 15.29, 15.3, 15.31, 15.31, 15.32, 15.33, 15.34, 15.34, 15.35, 15.36, 15.37, 15.38, 15.4, 15.41, 15.42, 15.44, 15.46, 15.48, 15.5, 15.53, 15.57, 15.64]
     @test Thermochron.model_ll(track, fill(20., 28), Ketcham2007FC()) ≈ 0.840405624475848
 
 ## --- Test c-axis equivalent model lengths

@@ -468,7 +468,7 @@ which they respetively implement include
   `Ketcham1999FC`       Fanning Curvilinear apatite model of Ketcham et al. 1999 (doi: 10.2138/am-1999-0903)
   `Ketcham2007FC`       Fanning Curvilinear apatite model of Ketcham et al. 2007 (doi: 10.2138/am.2007.2281)
 """
-function modellength(track::Union{ApatiteTrackLength{T}, ApatiteTrackLengthOriented{T}}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}; trackhist::Bool=false) where {T <: AbstractFloat}
+function modellength(track::Union{ApatiteTrackLength{T}, ApatiteTrackLengthOriented{T}}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}) where {T <: AbstractFloat}
     agesteps = track.agesteps
     tsteps = track.tsteps
     ΔT = track.offset::T
@@ -488,12 +488,9 @@ function modellength(track::Union{ApatiteTrackLength{T}, ApatiteTrackLengthOrien
     r .*= track.l0 # Convert from reduced length to length
     μ, σ = nanmean(r, pr), nanstd(r, pr)
     σ = sqrt(σ^2 + track.l0_sigma^2)
-    if trackhist
-        binlikelihoods!(track, σ)
-    end
     return μ, σ
 end
-function modellength(track::MonaziteTrackLength{T}, Tsteps::AbstractVector, am::MonaziteAnnealingModel{T}; trackhist::Bool=false) where {T <: AbstractFloat}
+function modellength(track::MonaziteTrackLength{T}, Tsteps::AbstractVector, am::MonaziteAnnealingModel{T}) where {T <: AbstractFloat}
     agesteps = track.agesteps
     tsteps = track.tsteps
     ΔT = track.offset::T
@@ -512,12 +509,9 @@ function modellength(track::MonaziteTrackLength{T}, Tsteps::AbstractVector, am::
     r .*= track.l0 # Convert from reduced length to length
     μ, σ = nanmean(r, pr), nanstd(r, pr)
     σ = sqrt(σ^2 + track.l0_sigma^2)
-    if trackhist
-        binlikelihoods!(track, σ)
-    end
     return μ, σ
 end
-function modellength(track::ZirconTrackLength{T}, Tsteps::AbstractVector, am::ZirconAnnealingModel{T}; trackhist::Bool=false) where {T <: AbstractFloat}
+function modellength(track::ZirconTrackLength{T}, Tsteps::AbstractVector, am::ZirconAnnealingModel{T}) where {T <: AbstractFloat}
     agesteps = track.agesteps
     tsteps = track.tsteps
     ΔT = track.offset::T
@@ -536,38 +530,14 @@ function modellength(track::ZirconTrackLength{T}, Tsteps::AbstractVector, am::Zi
     r .*= track.l0 # Convert from reduced length to length
     μ, σ = nanmean(r, pr), nanstd(r, pr)
     σ = sqrt(σ^2 + track.l0_sigma^2)
-    if trackhist
-        binlikelihoods!(track, σ)
-    end
     return μ, σ
 end
 
-function binlikelihoods!(track::FissionTrackLength{T}, bandwidth::T) where {T<:AbstractFloat}
-    fill!(track.ldist, zero(T))
-    if bandwidth > 0
-        kernel = Normal{T}(zero(T), bandwidth)
-        @assert eachindex(track.ldist) == 1:length(track.ledges)-1
-        @assert eachindex(track.ledges) == 1:length(track.ledges)
-        @inbounds for i in eachindex(track.pr)
-            if (track.pr[i] > 0) && (track.r[i] > 0)
-                lastcdf = cdf(kernel, first(track.ledges) - track.r[i])
-                for li in eachindex(track.ldist)
-                    nextcdf = cdf(kernel, track.ledges[li + 1] - track.r[i])
-                    track.ldist[li] += (nextcdf - lastcdf) * track.pr[i]
-                    lastcdf = nextcdf
-                end
-            end
-        end
-        track.ldist ./= nansum(track.ldist)*step(track.ledges)  # Normalize
-    end
-    return track
-end
 
 function model_ll(track::FissionTrackLength, Tsteps::AbstractVector, am::AnnealingModel)
     l,σ = modellength(track, Tsteps, am)
     return model_ll(track, σ)
 end
-
 function model_ll(track::FissionTrackLength{T}, σ::T) where {T<:AbstractFloat}
     ll = typemin(T)
     Σpr = nansum(track.pr)

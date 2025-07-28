@@ -42,7 +42,6 @@ ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64;
     Cl::Number = NaN,                       # [APFU] Cl concentration, in atoms per formula unit
     OH::Number = NaN,                       # [APFU] OH concentration, in atoms per formula unit
     rmr0::Number = NaN,                     # [unitless] annealing parameter
-    ledges = (0:1.0:20),                    # [um] length bin edges, for internal model length histogram
     agesteps::AbstracVector | tsteps::AbstracVector, # Temporal discretization
 )
 ```
@@ -76,8 +75,6 @@ struct ApatiteTrackLengthOriented{T<:AbstractFloat} <: FissionTrackLength{T}
     tsteps::FloatRange      # [Ma] forward time since crystallization
     r::Vector{T}            # [unitless]
     pr::Vector{T}           # [unitless]
-    ledges::FloatRange      # [um] Length distribution edges
-    ldist::Vector{T}        # [um] Length log likelihood
     rmr0::T                 # [unitless] relative resistance to annealing (0=most, 1=least)
 end
 function ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64; 
@@ -92,7 +89,6 @@ function ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64;
         Cl::Number = NaN, 
         OH::Number = NaN, 
         rmr0::Number = NaN,
-        ledges = (0:1.0:20),
         agesteps = nothing, 
         tsteps = nothing, 
     )
@@ -125,7 +121,6 @@ function ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64;
     end
     r=zeros(T, size(agesteps))
     pr=zeros(T, size(agesteps))
-    ldist=zeros(T, size(ledges).-1)
     ApatiteTrackLengthOriented(
         T(length),
         T(angle),
@@ -137,8 +132,6 @@ function ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64;
         floatrange(tsteps),
         r,
         pr,
-        floatrange(ledges),
-        ldist,
         T(rmr0),
     )
 end
@@ -156,7 +149,6 @@ ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
     Cl::Number = NaN,                       # [APFU] Cl concentration, in atoms per formula unit
     OH::Number = NaN,                       # [APFU] OH concentration, in atoms per formula unit
     rmr0::Number = NaN,                     # [unitless] annealing parameter
-    ledges = (0:1.0:20),                    # [um] length bin edges, for internal model length histogram
     agesteps::AbstracVector | tsteps::AbstracVector, # Temporal discretization
 )
 ```
@@ -187,8 +179,6 @@ struct ApatiteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
     tsteps::FloatRange      # [Ma] forward time since crystallization
     r::Vector{T}            # [unitless]
     pr::Vector{T}           # [unitless]
-    ledges::FloatRange      # [um] Length distribution edges
-    ldist::Vector{T}        # [um] Length log likelihood
     rmr0::T                 # [unitless] relative resistance to annealing (0=most, 1=least)
 end
 function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64; 
@@ -201,7 +191,6 @@ function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
         Cl::Number = NaN, 
         OH::Number = NaN, 
         rmr0::Number = NaN,
-        ledges = (0:1.0:20),
         agesteps = nothing, 
         tsteps = nothing, 
     )
@@ -234,7 +223,6 @@ function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
     end
     r=zeros(T, size(agesteps))
     pr=zeros(T, size(agesteps))
-    ldist=zeros(T, size(ledges).-1)
     ApatiteTrackLength(
         T(length),
         T(offset),
@@ -244,8 +232,6 @@ function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
         floatrange(tsteps),
         r,
         pr,
-        floatrange(ledges),
-        ldist,
         T(rmr0),
     )
 end
@@ -258,7 +244,6 @@ ZirconTrackLength(T::Type{<:AbstractFloat}=Float64;
     offset::Number = zero(T),               # [C] temperature offset relative to other samples
     l0::Number = 11.17,                     # [um] Initial track length
     l0_sigma::Number = 0.051,               # [um] Initial track length unertainty    
-    ledges = (0:1.0:20),                    # [um] length bin edges, for internal model length histogram
     agesteps::AbstracVector | tsteps::AbstracVector, # Temporal discretization
 )
 ```
@@ -279,15 +264,12 @@ struct ZirconTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
     tsteps::FloatRange      # [Ma] forward time since crystallization
     r::Vector{T}            # [unitless]
     pr::Vector{T}           # [unitless]
-    ledges::FloatRange      # [um] Length distribution edges
-    ldist::Vector{T}        # [um] Length log likelihood
 end
 function ZirconTrackLength(T::Type{<:AbstractFloat}=Float64; 
         length::Number = NaN, 
         offset::Number = zero(T),
         l0::Number = 11.17,
         l0_sigma::Number = 0.051,
-        ledges = (0:1.0:20),
         agesteps = nothing, 
         tsteps = nothing,
     )
@@ -302,7 +284,6 @@ function ZirconTrackLength(T::Type{<:AbstractFloat}=Float64;
     end
     r=zeros(T, size(agesteps))
     pr=zeros(T, size(agesteps))
-    ldist=zeros(T, size(ledges).-1)
     ZirconTrackLength(
         T(length),
         T(offset),
@@ -312,8 +293,6 @@ function ZirconTrackLength(T::Type{<:AbstractFloat}=Float64;
         floatrange(tsteps),
         r,
         pr,
-        floatrange(ledges),
-        ldist,
     )
 end
 
@@ -325,7 +304,6 @@ MonaziteTrackLength(T::Type{<:AbstractFloat} = Float64;
     offset::Number = zero(T),               # [C] temperature offset relative to other samples
     l0::Number = 10.60,                     # [um] Initial track length
     l0_sigma::Number = 0.19,                # [um] Initial track length unertainty    
-    ledges = (0:1.0:20),                    # [um] length bin edges, for internal model length histogram
     agesteps::AbstracVector | tsteps::AbstracVector, # Temporal discretization
 )
 ```
@@ -346,15 +324,12 @@ struct MonaziteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
     tsteps::FloatRange      # [Ma] forward time since crystallization
     r::Vector{T}            # [unitless]
     pr::Vector{T}           # [unitless]
-    ledges::FloatRange      # [um] Length distribution edges
-    ldist::Vector{T}        # [um] Length log likelihood
 end
 function MonaziteTrackLength(T::Type{<:AbstractFloat}=Float64; 
         length::Number = NaN,
         offset::Number = zero(T),
         l0::Number = 10.60,
         l0_sigma::Number = 0.19,
-        ledges = (0:1.0:20),
         agesteps = nothing, 
         tsteps = nothing, 
     )
@@ -369,7 +344,6 @@ function MonaziteTrackLength(T::Type{<:AbstractFloat}=Float64;
     end
     r=zeros(T, size(agesteps))
     pr=zeros(T, size(agesteps))
-    ldist=zeros(T, size(ledges).-1)
     MonaziteTrackLength(
         T(length),
         T(offset),
@@ -379,8 +353,6 @@ function MonaziteTrackLength(T::Type{<:AbstractFloat}=Float64;
         floatrange(tsteps),
         r,
         pr,
-        floatrange(ledges),
-        ldist,
     )
 end
 
