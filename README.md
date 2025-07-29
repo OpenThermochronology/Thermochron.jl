@@ -36,6 +36,8 @@ Fission track chronometers:
 | [`ApatiteTrackLength`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.ApatiteTrackLength)  | apatite | track length | [`Ketcham1999FC(:unoriented)`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Ketcham1999FC) |
 | [`ApatiteTrackLengthOriented`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.ApatiteTrackLengthOriented) | apatite  | track length | [`Ketcham1999FC`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Ketcham1999FC), [`Ketcham2007FC`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Ketcham2007FC) |
 
+Inversions may include any combination of chronometers.
+
 Additional systems and models are expected to be added in future releases.
 
 ## Installation
@@ -44,16 +46,23 @@ As a registered Julia package, Thermochron.jl can by installed by typing
 ```julia
 ] add Thermochron
 ```
-at the Julia REPL, or alternatively
+at the Julia REPL (where `]` enters `Pkg` (package manager) mode, backspace to exit), or alternatively
 ```julia
 using Pkg
 Pkg.add("Thermochron")
 ```
 
-## Usage
-Download an example script such as [tTinversion.jl](examples/tTinversion.jl) from the [examples](examples) folder, along with any relevant data files, and run it in your favorite Julia-connected editor or IDE (e.g. [vscode/vscodium](https://github.com/julia-vscode/julia-vscode#installing-juliavs-codevs-code-julia-extension)). A Manifest.toml is also provided in the examples folder, which you may `Pkg.instantiate` to ensure you have the same versions of all relevant packages that the example was built for.
+After installation, you can check that everything is working properly by running the [unit test suite](test) (again from `Pkg` mode)
+```
+test Thermochron
+```
 
-See also the test suite for more information and examples.
+## Usage
+Usage is via a [tTinversion.jl](examples/tTinversion.jl) script, an example of which may be donwloaded from the [examples](examples) folder, along with any relevant data files. 
+
+This script may be run either from the command line (e.g., `julia ./tTinversion.jl`) or interactively via your favorite Julia-connected editor or IDE (e.g., [vscode/vscodium](https://github.com/julia-vscode/julia-vscode#installing-juliavs-codevs-code-julia-extension)). A Manifest.toml is also provided in the examples folder, which you may optionally `Pkg.instantiate` to ensure you have the same versions of all relevant packages that the example was built for.
+
+Several example input data files are also provided in the [examples](examples) folder, including [generic.csv](examples/generic.csv), which illustrates the full range of possible chronometers.
 
 ## Citation
 Thermochron.jl may be cited as:
