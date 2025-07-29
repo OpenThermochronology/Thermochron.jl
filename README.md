@@ -17,13 +17,13 @@ Apatite fission track age and fission track length data are supported with the a
 Diffusion-based chronometers:
 | Chronometer                  | Mineral  | System         | Geometry   | Diffusion and/or annealing model(s)   |
 | :---                         | :---     | :---           | :---       | :---                                  |
-| `ZirconHe`                   | zircon   | helium         | spherical  | `ZRDAAM`                              |
-| `ApatiteHe`                  | apatite  | helium         | spherical  | `RDAAM`                               |
-| `SphericalHe`                | any      | helium         | spherical  | `Diffusivity` (user-specified D₀, Eₐ) |
-| `PlanarHe`                   | any      | helium         | slab       | `Diffusivity` (user-specified D₀, Eₐ) |
-| `SphericalAr`                | any      | argon          | spherical  | `Diffusivity` (user-specified D₀, Eₐ) |
-| `PlanarAr`                   | any      | argon          | slab       | `Diffusivity` (user-specified D₀, Eₐ) |
-| `MultipleDomain`             | feldspar | argon          | slab/sphere| `MDDiffusivity`                       |
+| [`ZirconHe`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.ZirconHe) | zircon | helium | spherical  | [`ZRDAAM`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.ZRDAAM) |
+| [`ApatiteHe`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.ApatiteHe) | apatite  | helium  | spherical | [`RDAAM`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.RDAAM) |
+| [`SphericalHe`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.SphericalHe) | any | helium | spherical | [`Diffusivity`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Diffusivity) (user-specified D₀, Eₐ) |
+| [`PlanarHe`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.PlanarHe) | any | helium | slab | `Diffusivity` (user-specified D₀, Eₐ) |
+| [`SphericalAr`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.SphericalAr) | any | argon | spherical | [`Diffusivity`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Diffusivity) (user-specified D₀, Eₐ) |
+| [`PlanarAr`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.PlanarAr) | any | argon | slab | [`Diffusivity`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Diffusivity) (user-specified D₀, Eₐ) |
+| [`MultipleDomain`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.MultipleDomain) | feldspar | argon | slab/sphere| [`MDDiffusivity`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.MDDiffusivity) |
 
 Fission track chronometers:
 | Chronometer                  | Mineral  | System            | Annealing model(s)                  |
