@@ -39,7 +39,8 @@ Fission track chronometers:
 Additional systems and models are expected to be added in future releases.
 
 ## Installation
-Thermochron.jl can be installed in the same ways you would install any other registered Julia package, i.e.
+Thermochron.jl is written in the open-source programming language Julia, for which installation instructions are available at [julialang.org/install](https://julialang.org/install/).
+As a registered Julia package, Thermochron.jl can by installed by typing
 ```julia
 ] add Thermochron
 ```
@@ -50,7 +51,7 @@ Pkg.add("Thermochron")
 ```
 
 ## Usage
-Download an example script such as [tTinversion.jl](examples/tTinversion.jl) from the [examples](examples) folder, along with any relevant data files, and run it in your favorite Julia-connected editor or IDE. A Manifest.toml is also provided in the examples folder, which you may `Pkg.instantiate` to ensure you have the same versions of all relevant packages that the example was built for.
+Download an example script such as [tTinversion.jl](examples/tTinversion.jl) from the [examples](examples) folder, along with any relevant data files, and run it in your favorite Julia-connected editor or IDE (e.g. [vscode/vscodium](https://github.com/julia-vscode/julia-vscode#installing-juliavs-codevs-code-julia-extension)). A Manifest.toml is also provided in the examples folder, which you may `Pkg.instantiate` to ensure you have the same versions of all relevant packages that the example was built for.
 
 See also the test suite for more information and examples.
 
