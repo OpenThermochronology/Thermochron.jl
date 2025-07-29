@@ -297,8 +297,8 @@
 
 ## -- Fission track length histograms (apatite, zircon, monazite)
 
-    C = (ApatiteTrackLengthOriented, ZirconTrackLength, MonaziteTrackLength)
-    mincolor = ("apatite", "zircon", "monazite")
+    C = (ApatiteTrackLengthOriented, ApatiteTrackLength, ZirconTrackLength, MonaziteTrackLength)
+    mincolor = ("apatite", "apatite", "zircon", "monazite")
     for i in eachindex(C, mincolor)
         t = isa.(chrons, C[i])
         if any(t)
@@ -332,8 +332,8 @@
     # for each sample. Uses HypothesisTests package for testing equivalence of distributions.
     using HypothesisTests
 
-    C = (ApatiteTrackLengthOriented, ZirconTrackLength, MonaziteTrackLength)
-    mincolor = ("apatite", "zircon", "monazite")
+    C = (ApatiteTrackLengthOriented, ApatiteTrackLength, ZirconTrackLength, MonaziteTrackLength)
+    mincolor = ("apatite", "apatite", "zircon", "monazite")
     for i in eachindex(C, mincolor)
         # Filter chronometers
         t = isa.(chrons, C[i])
