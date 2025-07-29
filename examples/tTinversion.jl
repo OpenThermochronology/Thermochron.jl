@@ -337,8 +337,10 @@
     for i in eachindex(C, mincolor)
         # Filter chronometers
         t = isa.(chrons, C[i])
-        for sid in unique(ds.notes[t])
-            ts = t .& (ds.notes .== sid)
+        # Use "notes" if present, otherwise "offset" if present, otherwise grain name
+        sample_ids = haskey(ds, :notes) ? ds.notes : haskey(ds, :offset_C) ? ds.offset_C : ds.grain_name
+        for sid in unique(sample_ids[t])
+            ts = t .& (sample_ids .== sid)
             any(ts) || continue
 
             # Extract observed and modeled lengths
@@ -352,7 +354,7 @@
                 ylabel = "Probability density",
                 label = "Data (N=$(count(ts)))", 
                 framestyle = :box,
-                legend = :best,
+                legend = :topleft,
                 grid = false,
                 color = :black,
                 alpha = 0.75,
@@ -376,9 +378,10 @@
             # Annotate statistics and GOF
             annot = ["Observed: $(round(nanmean(obs_lengths), digits=2)) ± $(round(nanstd(obs_lengths), digits=2)) µm",
                      "Model:    $(round(nanmean(pred_lengths), digits=2)) ± $(round(nanstd(pred_lengths), digits=2)) µm",
-                     "GOF (K-S): $(round(GoF, digits=2))",]
+                     "GOF (K-S): $(round(GoF, digits=2))",
+                     "$sid",]
             for i in eachindex(annot)
-                annotate!(h, (1.0, maximum(yl) * (1.0 - 0.07 * i), text(annot[i], 8, :left)))
+                annotate!(h, (1.0, maximum(yl) * (0.85 - 0.05 * i), text(annot[i], 8, :left)))
             end
             
             savefig(h, "$(name)_$(sid)_$(C[i])_predicted.pdf")
