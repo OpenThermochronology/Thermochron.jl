@@ -71,11 +71,11 @@ struct ApatiteTrackLengthOriented{T<:AbstractFloat} <: FissionTrackLength{T}
     offset::T               # [C] temperature offset relative to other samples
     l0::T                   # [um] Initial track length
     l0_sigma::T             # [um] Initial track length unertainty
+    rmr0::T                 # [unitless] relative resistance to annealing (0=most, 1=least)
+    r::Vector{T}            # [unitless] reduced track lengths for each timestep
+    pr::Vector{T}           # [unitless] reduced track densities for each timestep
     agesteps::FloatRange    # [Ma] age in Ma relative to the present
     tsteps::FloatRange      # [Ma] forward time since crystallization
-    r::Vector{T}            # [unitless]
-    pr::Vector{T}           # [unitless]
-    rmr0::T                 # [unitless] relative resistance to annealing (0=most, 1=least)
 end
 function ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64; 
         length::Number = NaN, 
@@ -128,11 +128,11 @@ function ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64;
         T(offset),
         T(l0),
         T(l0_sigma),
-        floatrange(agesteps),
-        floatrange(tsteps),
+        T(rmr0),
         r,
         pr,
-        T(rmr0),
+        floatrange(agesteps),
+        floatrange(tsteps),
     )
 end
 
@@ -175,11 +175,11 @@ struct ApatiteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
     offset::T               # [C] temperature offset relative to other samples
     l0::T                   # [um] Initial track length
     l0_sigma::T             # [um] Initial track length unertainty
+    rmr0::T                 # [unitless] relative resistance to annealing (0=most, 1=least)
+    r::Vector{T}            # [unitless] reduced track lengths for each timestep
+    pr::Vector{T}           # [unitless] reduced track densities for each timestep
     agesteps::FloatRange    # [Ma] age in Ma relative to the present
     tsteps::FloatRange      # [Ma] forward time since crystallization
-    r::Vector{T}            # [unitless]
-    pr::Vector{T}           # [unitless]
-    rmr0::T                 # [unitless] relative resistance to annealing (0=most, 1=least)
 end
 function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64; 
         length::Number = NaN, 
@@ -228,11 +228,11 @@ function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
         T(offset),
         T(l0),
         T(l0_sigma),
-        floatrange(agesteps),
-        floatrange(tsteps),
+        T(rmr0),
         r,
         pr,
-        T(rmr0),
+        floatrange(agesteps),
+        floatrange(tsteps),
     )
 end
 
@@ -260,10 +260,10 @@ struct ZirconTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
     offset::T               # [C] temperature offset relative to other samples
     l0::T                   # [um] initial track length
     l0_sigma::T             # [um] initial track length uncertainty
+    r::Vector{T}            # [unitless] reduced track lengths for each timestep
+    pr::Vector{T}           # [unitless] reduced track densities for each timestep
     agesteps::FloatRange    # [Ma] age in Ma relative to the present
     tsteps::FloatRange      # [Ma] forward time since crystallization
-    r::Vector{T}            # [unitless]
-    pr::Vector{T}           # [unitless]
 end
 function ZirconTrackLength(T::Type{<:AbstractFloat}=Float64; 
         length::Number = NaN, 
@@ -289,10 +289,10 @@ function ZirconTrackLength(T::Type{<:AbstractFloat}=Float64;
         T(offset),
         T(l0),
         T(l0_sigma),
-        floatrange(agesteps),
-        floatrange(tsteps),
         r,
         pr,
+        floatrange(agesteps),
+        floatrange(tsteps),
     )
 end
 
@@ -320,10 +320,10 @@ struct MonaziteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
     offset::T               # [C] temperature offset relative to other samples
     l0::T                   # [um] initial track length
     l0_sigma::T             # [um] initial track length uncertainty
+    r::Vector{T}            # [unitless] reduced track lengths for each timestep
+    pr::Vector{T}           # [unitless] reduced track densities for each timestep
     agesteps::FloatRange    # [Ma] age in Ma relative to the present
     tsteps::FloatRange      # [Ma] forward time since crystallization
-    r::Vector{T}            # [unitless]
-    pr::Vector{T}           # [unitless]
 end
 function MonaziteTrackLength(T::Type{<:AbstractFloat}=Float64; 
         length::Number = NaN,
@@ -349,10 +349,10 @@ function MonaziteTrackLength(T::Type{<:AbstractFloat}=Float64;
         T(offset),
         T(l0),
         T(l0_sigma),
-        floatrange(agesteps),
-        floatrange(tsteps),
         r,
         pr,
+        floatrange(agesteps),
+        floatrange(tsteps),
     )
 end
 
@@ -476,9 +476,9 @@ struct ApatiteFT{T<:AbstractFloat} <: FissionTrackSample{T}
     age::T                  # [Ma] fission track age
     age_sigma::T            # [Ma] fission track age uncertainty (one-sigma)
     offset::T               # [C] temperature offset relative to other samples
+    rmr0::T                 # [unitless] relative resistance to annealing (0=most, 1=least)
     agesteps::FloatRange    # [Ma] age in Ma relative to the present
     tsteps::FloatRange      # [Ma] forward time since crystallization
-    rmr0::T                 # [unitless] relative resistance to annealing (0=most, 1=least)
 end
 function ApatiteFT(T::Type{<:AbstractFloat}=Float64; 
         age::Number = NaN, 
@@ -511,9 +511,9 @@ function ApatiteFT(T::Type{<:AbstractFloat}=Float64;
         T(age),
         T(age_sigma),
         T(offset),
+        T(rmr0),
         floatrange(agesteps),
         floatrange(tsteps),
-        T(rmr0),
     )
 end
 
