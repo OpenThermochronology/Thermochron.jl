@@ -337,8 +337,8 @@
     for i in eachindex(C, mincolor)
         # Filter chronometers
         t = isa.(chrons, C[i])
-        # Use "notes" if present, otherwise "offset" if present, otherwise grain name
-        sample_ids = haskey(ds, :notes) ? ds.notes : haskey(ds, :offset_C) ? ds.offset_C : ds.grain_name
+        # Use "notes" if present, otherwise "offset" if present, otherwise "grain name"
+        sample_ids = haskey(ds, :notes) ? ds.notes : (haskey(ds, :offset_C) && length(unique(ds.offset_C)) > 1) ? ds.offset_C : ds.grain_name
         for sid in unique(sample_ids[t])
             ts = t .& (sample_ids .== sid)
             any(ts) || continue
