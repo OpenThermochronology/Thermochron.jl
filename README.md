@@ -20,7 +20,7 @@ Diffusion-based chronometers:
 | [`ZirconHe`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.ZirconHe) | zircon | helium | spherical  | [`ZRDAAM`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.ZRDAAM) |
 | [`ApatiteHe`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.ApatiteHe) | apatite  | helium  | spherical | [`RDAAM`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.RDAAM) |
 | [`SphericalHe`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.SphericalHe) | any | helium | spherical | [`Diffusivity`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Diffusivity) (user-specified D₀, Eₐ) |
-| [`PlanarHe`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.PlanarHe) | any | helium | slab | `Diffusivity` (user-specified D₀, Eₐ) |
+| [`PlanarHe`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.PlanarHe) | any | helium | slab | [`Diffusivity`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Diffusivity) (user-specified D₀, Eₐ) |
 | [`SphericalAr`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.SphericalAr) | any | argon | spherical | [`Diffusivity`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Diffusivity) (user-specified D₀, Eₐ) |
 | [`PlanarAr`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.PlanarAr) | any | argon | slab | [`Diffusivity`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Diffusivity) (user-specified D₀, Eₐ) |
 | [`MultipleDomain`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.MultipleDomain) | feldspar | argon | slab/sphere| [`MDDiffusivity`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.MDDiffusivity) |
@@ -28,13 +28,13 @@ Diffusion-based chronometers:
 Fission track chronometers:
 | Chronometer                  | Mineral  | System            | Annealing model(s)                  |
 | :---                         | :---     | :---              | :---                                |
-| `ZirconFT`                   | zircon   | fission track age | `Yamada2007PC`,`Guenthner2013FC`    |
-| `MonaziteFT`                 | monazite | fission track age | `Jones2021FA`                       |
-| `ApatiteFT`                  | apatite  | fission track age | `Ketcham1999FC`, `Ketcham2007FC`    |
-| `ZirconTrackLength`          | zircon   | track length      | `Yamada2007PC`, `Guenthner2013FC`   |
-| `MonaziteTrackLength`        | monazite | track length      | `Jones2021FA`                       |
-| `ApatiteTrackLength`         | apatite  | track length      | `Ketcham1999FC(:unoriented)`        |
-| `ApatiteTrackLengthOriented` | apatite  | track length      | `Ketcham1999FC`, `Ketcham2007FC`    |
+| [`ZirconFT`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.ZirconFT) | zircon | fission track age | [`Yamada2007PC`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Yamada2007PC),[`Guenthner2013FC`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Guenthner2013FC) |
+| [`MonaziteFT`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.MonaziteFT) | monazite | fission track age | [`Jones2021FA`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Jones2021FA) |
+| [`ApatiteFT`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.ApatiteFT) | apatite  | fission track age | [`Ketcham1999FC`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Ketcham1999FC) [`Ketcham2007FC`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Ketcham2007FC) |
+| [`ZirconTrackLength`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.ZirconTrackLength) | zircon | track length | [`Yamada2007PC`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Yamada2007PC), [`Guenthner2013FC`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Guenthner2013FC) |
+| [`MonaziteTrackLength`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.MonaziteTrackLength)  | monazite | track length | [`Jones2021FA`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Jones2021FA) |
+| [`ApatiteTrackLength`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.ApatiteTrackLength)  | apatite | track length | [`Ketcham1999FC(:unoriented)`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Ketcham1999FC) |
+| [`ApatiteTrackLengthOriented`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.ApatiteTrackLengthOriented) | apatite  | track length | [`Ketcham1999FC`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Ketcham1999FC), [`Ketcham2007FC`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Ketcham2007FC) |
 
 Additional systems and models are expected to be added in future releases.
 
