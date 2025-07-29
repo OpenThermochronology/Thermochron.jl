@@ -18,9 +18,9 @@
     """
     function MCMC(dataset::NamedTuple, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where {T <: AbstractFloat}
         chrons, damodels = chronometers(T, dataset, model)
-        return MCMC(chrons, damodels, model, boundary, constraint, detail)
+        MCMC(chrons, damodels, model, boundary, constraint, detail)
     end
-    function MCMC(chrons::Vector{<:ChronometerUnion{T}}, damodels::Vector{<:ModelUnion{T}}, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
+    function MCMC(chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
         # Process inputs
         burnin = (haskey(model, :burnin) ? model.burnin : 5*10^5)::Int
         nsteps = (haskey(model, :nsteps) ? model.nsteps : 10^6)::Int
@@ -303,9 +303,9 @@
     """
     function MCMC_varkinetics(dataset::NamedTuple, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where {T <: AbstractFloat}
         chrons, damodels = chronometers(T, dataset, model)
-        return MCMC_varkinetics(chrons, damodels, model, boundary, constraint, detail)
+        MCMC_varkinetics(chrons, damodels, model, boundary, constraint, detail)
     end
-    function MCMC_varkinetics(chrons::Vector{<:ChronometerUnion{T}}, damodels::Vector{<:ModelUnion{T}}, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
+    function MCMC_varkinetics(chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
         # Process inputs
         burnin = (haskey(model, :burnin) ? model.burnin : 5*10^5)::Int
         nsteps = (haskey(model, :nsteps) ? model.nsteps : 10^6)::Int

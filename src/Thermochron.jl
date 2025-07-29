@@ -38,7 +38,6 @@ module Thermochron
     export Diffusivity                                                  # Type for generic user-specified diffusivities
     
     include("chronometers.jl")
-    const ChronometerUnion{T} = Union{ZirconFT{T}, MonaziteFT{T}, ApatiteFT{T}, ZirconTrackLength{T}, MonaziteTrackLength{T}, ApatiteTrackLength{T}, ApatiteTrackLengthOriented{T}, ZirconHe{T}, ApatiteHe{T}, SphericalHe{T}, PlanarHe{T}, SphericalAr{T}, PlanarAr{T}, MultipleDomain{T, SphericalAr{T}}, MultipleDomain{T, PlanarAr{T}}}
     export Chronometer, AbsoluteChronometer                             # Abstract types
     export ZirconTrackLength, MonaziteTrackLength, ApatiteTrackLength, ApatiteTrackLengthOriented   # Concrete fission track length types
     export ZirconFT, MonaziteFT, ApatiteFT                              # Concrete fission track types
@@ -61,7 +60,6 @@ module Thermochron
     export Yamada2007PC, Guenthner2013FC                                # Zircon fission track annealing models
     export Jones2021FA                                                  # Other mineral annealing models
     export modelage, modellength                                        # Functions
-    const ModelUnion{T} = Union{Diffusivity{T}, MDDiffusivity{T}, RDAAM{T}, ZRDAAM{T}, Yamada2007PC{T}, Guenthner2013FC{T}, Ketcham1999FC{T}, Ketcham2007FC{T}, Jones2021FA{T}}
 
     include("utilities.jl")
     include("inversion.jl")

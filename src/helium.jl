@@ -164,7 +164,7 @@ anneal!(ρᵣ::Matrix, dt::Number, tsteps, Tsteps, [dm::DiffusivityModel=ZRDAAM(
 ```
 In-place version of `anneal`
 """
-function anneal!(data::Vector{<:ChronometerUnion{T}}, ::Type{C}, tsteps::AbstractVector{T}, Tsteps::AbstractVector{T}, dm::DiffusivityModel{T}) where {T<:AbstractFloat, C<:HeliumSample}
+function anneal!(data::Vector{<:Chronometer{T}}, ::Type{C}, tsteps::AbstractVector{T}, Tsteps::AbstractVector{T}, dm::DiffusivityModel{T}) where {T<:AbstractFloat, C<:HeliumSample}
     @assert eachindex(tsteps) == eachindex(Tsteps)
     if any(x->isa(x, C), data)
         im = argmax(i->isa(data[i], C) ? length(data[i].tsteps) : 0, eachindex(data))
