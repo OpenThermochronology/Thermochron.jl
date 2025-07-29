@@ -22,8 +22,8 @@ modelage(mineral::SphericalAr, Tsteps, dm::Diffusivity)
 modelage(mineral::PlanarAr, Tsteps, dm::Diffusivity)
 ```
 Calculate the precdicted bulk K/Ar age of a mineral that has experienced a given 
-t-T path (specified by `mineral.tsteps` for time and `Tsteps` for temperature, 
-at a time resolution of `step(mineral.tsteps)`) using a Crank-Nicholson diffusion 
+t-T path (specified by `mineral.tsteps` for time and `Tsteps` for temperature), 
+at a time resolution determined by `mineral.tsteps` using a Crank-Nicolson diffusion 
 solution for a spherical (or planar slab) grain of radius (or halfwidth ) `mineral.r` 
 at spatial resolution `mineral.dr`.
 
@@ -49,7 +49,6 @@ function modelage(mineral::SphericalAr{T}, Tsteps::AbstractVector{T}, dm::Diffus
     dr = step(mineral.rsteps)
     rsteps = mineral.rsteps
     nrsteps = mineral.nrsteps
-    dt = step(mineral.tsteps)
     tsteps = mineral.tsteps
     ntsteps = length(tsteps)
     @assert eachindex(tsteps) == eachindex(Tsteps) == Base.OneTo(ntsteps)
@@ -57,7 +56,6 @@ function modelage(mineral::SphericalAr{T}, Tsteps::AbstractVector{T}, dm::Diffus
 
     # Common β factor is constant across all radii since diffusivity is constant
     β = mineral.β::Vector{T}
-    fill!(β, 2 * dr^2 / (De[1]*dt))
 
     # Output matrix for all timesteps
     # u = v*r is the coordinate transform (u-substitution) for the Crank-
@@ -67,7 +65,7 @@ function modelage(mineral::SphericalAr{T}, Tsteps::AbstractVector{T}, dm::Diffus
     @assert axes(u,1) == 1:nrsteps
     fill!(u, zero(T)) # initial u = v = 0 everywhere
 
-    # Vector for RHS of Crank-Nicholson equation with regular grid cells
+    # Vector for RHS of Crank-Nicolson equation with regular grid cells
     y = mineral.y
 
     # Tridiagonal matrix for LHS of Crank-Nicolson equation with regular grid cells
@@ -75,6 +73,8 @@ function modelage(mineral::SphericalAr{T}, Tsteps::AbstractVector{T}, dm::Diffus
     F = mineral.F       # LU object for in-place lu factorization
 
     @inbounds for i in Base.OneTo(ntsteps)
+        # Duration of current timestep
+        dt = step_at(tsteps, i)
 
         # Update β for current temperature
         fill!(β, 2 * dr^2 / (De[i]*dt))
@@ -94,7 +94,7 @@ function modelage(mineral::SphericalAr{T}, Tsteps::AbstractVector{T}, dm::Diffus
         A.d[nrsteps] = 1
         y[nrsteps] = u[nrsteps,i]
 
-        # RHS of tridiagonal Crank-Nicholson equation for regular grid cells.
+        # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
         @turbo for k = 2:nrsteps-1
             𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
@@ -135,7 +135,6 @@ function modelage(mineral::PlanarAr{T}, Tsteps::AbstractVector{T}, dm::Diffusivi
     # Get time and radius discretization
     dr = step(mineral.rsteps)
     nrsteps = mineral.nrsteps
-    dt = step(mineral.tsteps)
     tsteps = mineral.tsteps
     ntsteps = length(tsteps)
     @assert eachindex(tsteps) == eachindex(Tsteps) == Base.OneTo(ntsteps)
@@ -143,7 +142,6 @@ function modelage(mineral::PlanarAr{T}, Tsteps::AbstractVector{T}, dm::Diffusivi
 
     # Common β factor is constant across all radii since diffusivity is constant
     β = mineral.β::Vector{T}
-    fill!(β, 2 * dr^2 / (De[1]*dt))
 
     # Output matrix for all timesteps
     u = mineral.u::DenseMatrix{T}
@@ -151,7 +149,7 @@ function modelage(mineral::PlanarAr{T}, Tsteps::AbstractVector{T}, dm::Diffusivi
     @assert axes(u,1) == 1:nrsteps
     fill!(u, zero(T)) # initial u = v = 0 everywhere
 
-    # Vector for RHS of Crank-Nicholson equation with regular grid cells
+    # Vector for RHS of Crank-Nicolson equation with regular grid cells
     y = mineral.y
 
     # Tridiagonal matrix for LHS of Crank-Nicolson equation with regular grid cells
@@ -159,6 +157,8 @@ function modelage(mineral::PlanarAr{T}, Tsteps::AbstractVector{T}, dm::Diffusivi
     F = mineral.F       # LU object for in-place lu factorization
 
     @inbounds for i in Base.OneTo(ntsteps)
+        # Duration of current timestep
+        dt = step_at(tsteps, i)
 
         # Update β for current temperature
         fill!(β, 2 * dr^2 / (De[i]*dt))
@@ -178,7 +178,7 @@ function modelage(mineral::PlanarAr{T}, Tsteps::AbstractVector{T}, dm::Diffusivi
         A.d[nrsteps] = 1
         y[nrsteps] = u[nrsteps,i]
 
-        # RHS of tridiagonal Crank-Nicholson equation for regular grid cells.
+        # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
         @turbo for k = 2:nrsteps-1
             𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]

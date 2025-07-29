@@ -145,13 +145,13 @@ end
 ```
 ZirconHe damage annealing model as in Guenthner et al. 2013 (AJS)
 """
-function anneal(dt::Number, tsteps::AbstractVector, Tsteps::AbstractVector, dm::DiffusivityModel=ZRDAAM())
+function anneal(tsteps::AbstractVector, Tsteps::AbstractVector, dm::DiffusivityModel=ZRDAAM())
     # Allocate matrix to hold reduced track lengths for all previous timesteps
     ntsteps = length(tsteps)
     ρᵣ = zeros(ntsteps,ntsteps)
     teq = zeros(ntsteps)
     # In=-place version
-    anneal!(ρᵣ, teq, dt, tsteps, Tsteps, dm)
+    anneal!(ρᵣ, teq, tsteps, Tsteps, dm)
     return ρᵣ, teq
 end
 
@@ -164,25 +164,24 @@ anneal!(ρᵣ::Matrix, dt::Number, tsteps, Tsteps, [dm::DiffusivityModel=ZRDAAM(
 ```
 In-place version of `anneal`
 """
-function anneal!(data::Vector{<:ChronometerUnion{T}}, ::Type{C}, tsteps::AbstractRange{T}, Tsteps::AbstractVector{T}, dm::DiffusivityModel{T}) where {T<:AbstractFloat, C<:HeliumSample}
-    dt = step(tsteps)::T
+function anneal!(data::Vector{<:ChronometerUnion{T}}, ::Type{C}, tsteps::AbstractVector{T}, Tsteps::AbstractVector{T}, dm::DiffusivityModel{T}) where {T<:AbstractFloat, C<:HeliumSample}
+    @assert eachindex(tsteps) == eachindex(Tsteps)
     if any(x->isa(x, C), data)
-        imax = argmax(i->isa(data[i], C) ? length(data[i].tsteps) : 0, eachindex(data))
-        m = data[imax]::C
-        tmax = last(m.tsteps)::T
-        @assert dt == step(m.tsteps)
-        first_index = 1 + Int((last(tsteps) - tmax)÷dt)
+        im = argmax(i->isa(data[i], C) ? length(data[i].tsteps) : 0, eachindex(data))
+        c = data[im]::C
+        first_index = firstindex(Tsteps) + length(tsteps) - length(c.tsteps)
         if first_index > 1
-            anneal!(m, @views(Tsteps[first_index:end]), dm)
+            anneal!(c, @views(Tsteps[first_index:end]), dm)
         else
-            anneal!(m, Tsteps, dm)
+            anneal!(c, Tsteps, dm)
         end
-        pr = m.pr
+        pr = c.pr
+        ntsteps = length(c.tsteps)
+        @assert ntsteps == length(axes(pr, 1)) == length(axes(pr, 2))
         for i in eachindex(data)
-            if i!=imax && isa(data[i], C)
+            if i!=im && isa(data[i], C)
                 c = data[i]::C
-                @assert dt == step(c.tsteps)
-                first_index = 1 + Int((tmax - last(c.tsteps))÷dt)
+                first_index = firstindex(pr) + ntsteps - length(c.tsteps)
                 if first_index > 1
                     mul!(c.annealeddamage, @views(pr[first_index:end, first_index:end]), c.alphadamage)
                 else
@@ -194,26 +193,28 @@ function anneal!(data::Vector{<:ChronometerUnion{T}}, ::Type{C}, tsteps::Abstrac
     return data
 end
 function anneal!(mineral::ZirconHe, Tsteps::AbstractVector, dm::ZRDAAM)
-    anneal!(mineral.pr, view(mineral.annealeddamage,:,1), step(mineral.tsteps), mineral.tsteps, Tsteps, dm)
+    anneal!(mineral.pr, view(mineral.annealeddamage,:,1), mineral.tsteps, Tsteps, dm)
     mul!(mineral.annealeddamage, mineral.pr, mineral.alphadamage)
     return mineral
 end
 function anneal!(mineral::ApatiteHe, Tsteps::AbstractVector, dm::RDAAM)
-    anneal!(mineral.pr, view(mineral.annealeddamage,:,1), step(mineral.tsteps), mineral.tsteps, Tsteps, dm)
+    anneal!(mineral.pr, view(mineral.annealeddamage,:,1), mineral.tsteps, Tsteps, dm)
     mul!(mineral.annealeddamage, mineral.pr, mineral.alphadamage)
     return mineral
 end
-function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, dt::Number, tsteps::AbstractVector, Tsteps::AbstractVector, dm::ZRDAAM{T}) where T <: AbstractFloat
+function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::AbstractVector, Tsteps::AbstractVector, dm::ZRDAAM{T}) where T <: AbstractFloat
     @assert eachindex(tsteps) == eachindex(Tsteps) == eachindex(teq) == axes(ρᵣ, 1) == axes(ρᵣ,2) == Base.OneTo(length(tsteps))
     ntsteps = length(tsteps)
     ∅ = zero(T)
     fill!(teq, ∅)
 
     # First timestep
+    dt = step_at(tsteps, 1)
     ρᵣ[1,1] = 1 / ((dm.C0 + dm.C1*(log(dt)-dm.C2)/(log(1 / (Tsteps[1]+273.15))-dm.C3))^(1/dm.beta)+1)
 
     # All subsequent timesteps
     @inbounds for i=2:ntsteps
+        dt = step_at(tsteps, i)
         lᵢ = log(1 / (Tsteps[i]+273.15)) - dm.C3
 
         # Convert any existing track length reduction for damage from
@@ -225,7 +226,6 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, dt::Number, t
 
         # Calculate the new reduced track lengths for all previous time steps
         # Accumulating annealing strictly in terms of reduced track length
-        teqᵢ = view(teq, 1:i)
         @turbo for j in 1:i
             ρᵣ[i,j] = 1 / ((dm.C0 + dm.C1 * (log(dt + teq[j]) - dm.C2) / lᵢ)^(1/dm.beta) + 1)
         end
@@ -249,7 +249,7 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, dt::Number, t
 
     return ρᵣ
 end
-function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, dt::Number, tsteps::AbstractVector, Tsteps::AbstractVector, dm::RDAAM{T}) where T <: AbstractFloat
+function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::AbstractVector, Tsteps::AbstractVector, dm::RDAAM{T}) where T <: AbstractFloat
 
     ∅ = zero(T)
     ntsteps = length(tsteps)
@@ -258,10 +258,12 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, dt::Number, t
     fill!(teq, ∅)
 
     # First timestep
+    dt = step_at(tsteps, 1)
     ρᵣ[1,1] = 1 / ((dm.C0 + dm.C1*(log(dt)-dm.C2)/(log(1 / (Tsteps[1]+273.15))-dm.C3))^(1/dm.beta)+1)
 
     # All subsequent timesteps
     @inbounds for i=2:ntsteps
+        dt = step_at(tsteps, i)
         lᵢ = log(1 / (Tsteps[i]+273.15)) - dm.C3
 
         # Convert any existing track length reduction for ρᵣ from
@@ -313,7 +315,7 @@ modelage(mineral::PlanarHe, Tsteps, dm::Diffusivity)
 ```
 Calculate the predicted bulk U-Th/He age of a zircon, apatite, or other mineral
 that has experienced a given t-T path (specified by `mineral.tsteps` for time
-and `Tsteps` for temperature, at a time resolution of `step(mineral.tsteps)`) 
+and `Tsteps` for temperature), at a time resolution determined by `mineral.tsteps`
 using a Crank-Nicolson diffusion solution for a spherical (or planar slab) grain
 of radius (or halfwidth) `mineral.r` at spatial resolution `mineral.dr`.
 
@@ -355,7 +357,6 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T})
     dr = step(zircon.rsteps)
     rsteps = zircon.rsteps
     nrsteps = zircon.nrsteps
-    dt = step(zircon.tsteps)
     tsteps = zircon.tsteps
     ntsteps = length(tsteps)
     @assert eachindex(tsteps) == eachindex(Tsteps) == Base.OneTo(ntsteps)
@@ -368,6 +369,7 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T})
     annealeddamage = zircon.annealeddamage::Matrix{T}
 
     # Calculate initial alpha damage
+    dt = step_at(tsteps, 1)
     β = zircon.β::Vector{T}
     @turbo for k = 1:(nrsteps-2)
         fₐ = 1-exp(-Bα*annealeddamage[1,k]*Phi)
@@ -394,6 +396,7 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T})
     F = zircon.F        # LU object for in-place lu factorization
 
     @inbounds for i=2:ntsteps
+        dt = step_at(tsteps, i)
 
         # Calculate alpha damage
         @turbo for k = 1:(nrsteps-2)
@@ -480,7 +483,6 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
     dr = step(apatite.rsteps)
     rsteps = apatite.rsteps
     nrsteps = apatite.nrsteps
-    dt = step(apatite.tsteps)
     tsteps = apatite.tsteps
     ntsteps = length(tsteps)
     @assert eachindex(tsteps) == eachindex(Tsteps) == Base.OneTo(ntsteps)
@@ -493,6 +495,7 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
     annealeddamage = apatite.annealeddamage::Matrix{T}
 
     # Calculate initial alpha damage
+    dt = step_at(tsteps, 1)
     β = apatite.β::Vector{T}
     @turbo for k = 1:(nrsteps-2)
         track_density = annealeddamage[1,k]*damage_conversion # cm/cm3
@@ -519,6 +522,8 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
     F = apatite.F       # LU object for in-place lu factorization
 
     @inbounds for i in Base.OneTo(ntsteps)
+        # Duration of current timestep
+        dt = step_at(tsteps, i)
 
         # Calculate alpha damage
         @turbo for k = 1:(nrsteps-2)
@@ -592,11 +597,12 @@ function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}, dm::Diffus
     dr = step(mineral.rsteps)
     rsteps = mineral.rsteps
     nrsteps = mineral.nrsteps
-    dt = step(mineral.tsteps)
-    ntsteps = length(mineral.tsteps)
+    tsteps = mineral.tsteps
+    ntsteps = length(tsteps)
     alphadeposition = mineral.alphadeposition::Matrix{T}
 
     # Common β factor is constant across all radii since diffusivity is constant
+    dt = step_at(tsteps, 1)
     β = mineral.β::Vector{T}
     fill!(β, 2 * dr^2 / (De[1]*dt))
 
@@ -616,6 +622,8 @@ function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}, dm::Diffus
     F = mineral.F       # LU object for in-place lu factorization
 
     @inbounds for i in Base.OneTo(ntsteps)
+        # Duration of current timestep
+        dt = step_at(tsteps, i)
 
         # Update β for current temperature
         fill!(β, 2 * dr^2 / (De[i]*dt))
@@ -681,11 +689,12 @@ function modelage(mineral::PlanarHe{T}, Tsteps::AbstractVector{T}, dm::Diffusivi
     # Get time and radius discretization
     dr = step(mineral.rsteps)
     nrsteps = mineral.nrsteps
-    dt = step(mineral.tsteps)
-    ntsteps = length(mineral.tsteps)
+    tsteps = mineral.tsteps
+    ntsteps = length(tsteps)
     alphadeposition = mineral.alphadeposition::Matrix{T}
 
     # Common β factor is constant across all radii since diffusivity is constant
+    dt = step_at(tsteps, 1)
     β = mineral.β::Vector{T}
     fill!(β, 2 * dr^2 / (De[1]*dt))
 
@@ -703,6 +712,8 @@ function modelage(mineral::PlanarHe{T}, Tsteps::AbstractVector{T}, dm::Diffusivi
     F = mineral.F       # LU object for in-place lu factorization
 
     @inbounds for i in Base.OneTo(ntsteps)
+        # Duration of current timestep
+        dt = step_at(tsteps, i)
 
         # Update β for current temperature
         fill!(β, 2 * dr^2 / (De[i]*dt))

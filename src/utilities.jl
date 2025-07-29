@@ -1,5 +1,28 @@
 ## ---  Various useful internal utility functions
 
+    # Get local step size for an AbstractVector
+    function step_at(x::AbstractVector{T}, i::Integer) where {T<:Number}
+        length(x) > 1 || return zero(T)
+        f,l = firstindex(x), lastindex(x)
+        if f < i < l
+            # Assume boundaries are halfway between nodes, implying a step width 
+            # of (x[i+1]-x[i])/2 + (x[i]-x[i-1])/2, or simplified
+            T((x[i+1] - x[i-1])/2)
+        elseif i <= f
+            # Assume first step is symmetric
+            (x[f+1] - x[f])
+        else
+            # Assume last step is symmetric
+            (x[l] - x[l-1])
+        end
+    end
+    # Step size is constant for many ranges
+    @inline step_at(x::OrdinalRange, i::Integer) = step(x)
+    # This is not public API and so may be liable to change in future Julia versions
+    # but can seemingly mean a factor of two in performance over using `step` function 
+    # according to benchmarks based on use of `step_at` in this package
+    @inline step_at(x::StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, i::Integer) = x.step.hi + x.step.lo 
+
     # Normal log likelihood
     @inline function norm_ll(mu::Number, sigma::Number, x::Number)
         δ = x - mu
@@ -711,8 +734,6 @@
     function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, Tsteps::AbstractVector{T}; rescalemdd::Bool=true, rescale::Bool=false, redegasparent::Bool=false) where {T<:AbstractFloat}
         imax = argmax(i->length((chrons[i].tsteps)::FloatRange), eachindex(chrons))
         tsteps = (chrons[imax].tsteps)::FloatRange
-        tmax = last(tsteps)
-        dt = step(tsteps)
         @assert issorted(tsteps)
         @assert eachindex(tsteps) == eachindex(Tsteps)
 
@@ -745,7 +766,7 @@
         ll = zero(T)
         for i in eachindex(chrons, μcalc, σcalc)
             c, dm = chrons[i], damodels[i]
-            first_index = 1 + Int((tmax - last(c.tsteps))÷dt)
+            first_index = firstindex(Tsteps) + length(tsteps) - length(c.tsteps)
             if isa(c, SphericalAr) || isa(c, PlanarAr)
                 c::Union{SphericalAr{T}, PlanarAr{T}}
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), dm::Diffusivity{T})

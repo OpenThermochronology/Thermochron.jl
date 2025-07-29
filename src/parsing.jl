@@ -12,11 +12,11 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
         zirconvolumeweighting = :cylindrical,
         apatitevolumeweighting = :cylindrical,
     )
+    dr = haskey(model, :dr) ? model.dr : one(T)
     agesteps = floatrange(model.agesteps)
     tsteps = floatrange(model.tsteps)
-    dr = haskey(model, :dr) ? model.dr : one(T)
-    @assert issorted(tsteps)
-    @assert tsteps == reverse(agesteps)
+    @assert issorted(tsteps) "`tsteps` must be in strictly increasing order"
+    @assert tsteps ≈ (maximum(agesteps)+minimum(agesteps)) .- agesteps "`tsteps` and `agesteps must represent the same chronology"
 
     haskey(ds, :mineral) || @error "dataset must contain a column labeled `mineral`"
     mineral = ds.mineral
@@ -40,7 +40,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
     chrons = Chronometer[]
     damodels = Model[]
     for i in eachindex(mineral)
-        first_index = 1 + round(Int,(maximum(agesteps) - crystage[i])/step(tsteps))
+        first_index = findclosest(crystage[i], agesteps)
         mineral = lowercase(string(ds.mineral[i]))
 
         if mineral == "zircon"

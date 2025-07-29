@@ -725,27 +725,30 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
     r147Smdam = 1*r147Sm # No smoothing of alpha damage, 1 alpha per 147 Sm
 
     # Calculate corrected alpha deposition and recoil damage each time step for each radius
-    dt_2 = step(tsteps)/2
     decay = zeros(T, length(tsteps))
     # Allocate deposition and damage arrays
     alphadeposition = zeros(T, length(tsteps), nrsteps-2)
     alphadamage = zeros(T, length(tsteps), nrsteps-2)
     pr = zeros(T, length(tsteps), length(tsteps))
 
+    # Calculate bin edges given agesteps, assuming step boundaries are halfway between steps
+    agebinedges = [agesteps[1]-step_at(agesteps, 1)/2; cntr(agesteps); agesteps[end]+step_at(agesteps, lastindex(agesteps))/2]
+    leftedges, rightedges = agebinedges[1:end-1], agebinedges[2:end]
+
     # U-238
-    @. decay = exp(λ238U*(agesteps + dt_2)) - exp(λ238U*(agesteps - dt_2))
+    @. decay = exp(λ238U*leftedges) - exp(λ238U*rightedges)
     mul!(alphadeposition, decay, r238UHe', one(T), one(T))
     mul!(alphadamage, decay, r238Udam', one(T), one(T))
     # U-235
-    @. decay = exp(λ235U*(agesteps + dt_2)) - exp(λ235U*(agesteps - dt_2))
+    @. decay = exp(λ235U*leftedges) - exp(λ235U*rightedges)
     mul!(alphadeposition, decay, r235UHe', one(T), one(T))
     mul!(alphadamage, decay, r235Udam', one(T), one(T))
     # Th-232
-    @. decay = exp(λ232Th*(agesteps + dt_2)) - exp(λ232Th*(agesteps - dt_2))
+    @. decay = exp(λ232Th*leftedges) - exp(λ232Th*rightedges)
     mul!(alphadeposition, decay, r232ThHe', one(T), one(T))
     mul!(alphadamage, decay, r232Thdam', one(T), one(T))
     # Sm-147
-    @. decay = exp(λ147Sm*(agesteps + dt_2)) - exp(λ147Sm*(agesteps - dt_2))
+    @. decay = exp(λ147Sm*leftedges) - exp(λ147Sm*rightedges)
     mul!(alphadeposition, decay, r147SmHe', one(T), one(T))
     mul!(alphadamage, decay, r147Smdam', one(T), one(T))
 
@@ -1007,27 +1010,30 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
     r147Smdam = 1*r147Sm # No smoothing of alpha damage, 1 alpha per 147 Sm
 
     # Calculate corrected alpha deposition and recoil damage each time step for each radius
-    dt_2 = step(tsteps)/2
     decay = zeros(T, length(tsteps))
     # Allocate deposition and damage arrays
     alphadeposition = zeros(T, length(tsteps), nrsteps-2)
     alphadamage = zeros(T, length(tsteps), nrsteps-2)
     pr = zeros(T, length(tsteps), length(tsteps))
 
+    # Calculate bin edges given agesteps
+    agebinedges = [agesteps[1]-step_at(agesteps, 1)/2; cntr(agesteps); agesteps[end]+step_at(agesteps, lastindex(agesteps))/2]
+    leftedges, rightedges = agebinedges[1:end-1], agebinedges[2:end]
+
     # U-238
-    @. decay = exp(λ238U*(agesteps + dt_2)) - exp(λ238U*(agesteps - dt_2))
+    @. decay = exp(λ238U*leftedges) - exp(λ238U*rightedges)
     mul!(alphadeposition, decay, r238UHe', one(T), one(T))
     mul!(alphadamage, decay, r238Udam', one(T), one(T))
     # U-235
-    @. decay = exp(λ235U*(agesteps + dt_2)) - exp(λ235U*(agesteps - dt_2))
+    @. decay = exp(λ235U*leftedges) - exp(λ235U*rightedges)
     mul!(alphadeposition, decay, r235UHe', one(T), one(T))
     mul!(alphadamage, decay, r235Udam', one(T), one(T))
     # Th-232
-    @. decay = exp(λ232Th*(agesteps + dt_2)) - exp(λ232Th*(agesteps - dt_2))
+    @. decay = exp(λ232Th*leftedges) - exp(λ232Th*rightedges)
     mul!(alphadeposition, decay, r232ThHe', one(T), one(T))
     mul!(alphadamage, decay, r232Thdam', one(T), one(T))
     # Sm-147
-    @. decay = exp(λ147Sm*(agesteps + dt_2)) - exp(λ147Sm*(agesteps - dt_2))
+    @. decay = exp(λ147Sm*leftedges) - exp(λ147Sm*rightedges)
     mul!(alphadeposition, decay, r147SmHe', one(T), one(T))
     mul!(alphadamage, decay, r147Smdam', one(T), one(T))
 
@@ -1282,22 +1288,25 @@ function SphericalHe(T::Type{<:AbstractFloat}=Float64;
     end
 
     # Calculate corrected alpha deposition and recoil damage each time step for each radius
-    dt_2 = step(tsteps)/2
     decay = zeros(T, length(tsteps))
     # Allocate deposition arrays
     alphadeposition = zeros(T, length(tsteps), nrsteps-2)
 
+    # Calculate bin edges given agesteps, assuming step boundaries are halfway between steps
+    agebinedges = [agesteps[1]-step_at(agesteps, 1)/2; cntr(agesteps); agesteps[end]+step_at(agesteps, lastindex(agesteps))/2]
+    leftedges, rightedges = agebinedges[1:end-1], agebinedges[2:end]
+
     # U-238
-    @. decay = exp(λ238U*(agesteps + dt_2)) - exp(λ238U*(agesteps - dt_2))
+    @. decay = exp(λ238U*leftedges) - exp(λ238U*rightedges)
     mul!(alphadeposition, decay, r238UHe', one(T), one(T))
     # U-235
-    @. decay = exp(λ235U*(agesteps + dt_2)) - exp(λ235U*(agesteps - dt_2))
+    @. decay = exp(λ235U*leftedges) - exp(λ235U*rightedges)
     mul!(alphadeposition, decay, r235UHe', one(T), one(T))
     # Th-232
-    @. decay = exp(λ232Th*(agesteps + dt_2)) - exp(λ232Th*(agesteps - dt_2))
+    @. decay = exp(λ232Th*leftedges) - exp(λ232Th*rightedges)
     mul!(alphadeposition, decay, r232ThHe', one(T), one(T))
     # Sm-147
-    @. decay = exp(λ147Sm*(agesteps + dt_2)) - exp(λ147Sm*(agesteps - dt_2))
+    @. decay = exp(λ147Sm*leftedges) - exp(λ147Sm*rightedges)
     mul!(alphadeposition, decay, r147SmHe', one(T), one(T))
 
     # Allocate additional variables that will be needed for Crank-Nicolson
@@ -1539,22 +1548,25 @@ function PlanarHe(T::Type{<:AbstractFloat}=Float64;
     end
 
     # Calculate corrected alpha deposition and recoil damage each time step for each halfwidth
-    dt_2 = step(tsteps)/2
     decay = zeros(T, length(tsteps))
     # Allocate deposition arrays
     alphadeposition = zeros(T, length(tsteps), nrsteps-2)
 
+    # Calculate bin edges given agesteps, assuming step boundaries are halfway between steps
+    agebinedges = [agesteps[1]-step_at(agesteps, 1)/2; cntr(agesteps); agesteps[end]+step_at(agesteps, lastindex(agesteps))/2]
+    leftedges, rightedges = agebinedges[1:end-1], agebinedges[2:end]
+
     # U-238
-    @. decay = exp(λ238U*(agesteps + dt_2)) - exp(λ238U*(agesteps - dt_2))
+    @. decay = exp(λ238U*leftedges) - exp(λ238U*rightedges)
     mul!(alphadeposition, decay, r238UHe', one(T), one(T))
     # U-235
-    @. decay = exp(λ235U*(agesteps + dt_2)) - exp(λ235U*(agesteps - dt_2))
+    @. decay = exp(λ235U*leftedges) - exp(λ235U*rightedges)
     mul!(alphadeposition, decay, r235UHe', one(T), one(T))
     # Th-232
-    @. decay = exp(λ232Th*(agesteps + dt_2)) - exp(λ232Th*(agesteps - dt_2))
+    @. decay = exp(λ232Th*leftedges) - exp(λ232Th*rightedges)
     mul!(alphadeposition, decay, r232ThHe', one(T), one(T))
     # Sm-147
-    @. decay = exp(λ147Sm*(agesteps + dt_2)) - exp(λ147Sm*(agesteps - dt_2))
+    @. decay = exp(λ147Sm*leftedges) - exp(λ147Sm*rightedges)
     mul!(alphadeposition, decay, r147SmHe', one(T), one(T))
 
     # Allocate additional variables that will be needed for Crank-Nicolson
@@ -1676,13 +1688,16 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
     r40KAr = r40K .* BR40K
 
     # Calculate corrected argon deposition and recoil damage each time step for each radius
-    dt_2 = step(tsteps)/2
     decay = zeros(T, length(tsteps))
     # Allocate deposition arrays
     argondeposition = zeros(T, length(tsteps), nrsteps-2)
 
+    # Calculate bin edges given agesteps, assuming step boundaries are halfway between steps
+    agebinedges = [agesteps[1]-step_at(agesteps, 1)/2; cntr(agesteps); agesteps[end]+step_at(agesteps, lastindex(agesteps))/2]
+    leftedges, rightedges = agebinedges[1:end-1], agebinedges[2:end]
+
     # K-40
-    @. decay = exp(λ40K*(agesteps + dt_2)) - exp(λ40K*(agesteps - dt_2))
+    @. decay = exp(λ40K*leftedges) - exp(λ40K*rightedges)
     mul!(argondeposition, decay, r40KAr', one(T), one(T))
 
     # Allocate additional variables that will be needed for Crank-Nicolson
@@ -1804,16 +1819,19 @@ function PlanarAr(T::Type{<:AbstractFloat}=Float64;
     r40KAr = r40K .* BR40K
 
     # Calculate corrected argon deposition each time step for each radius
-    dt_2 = step(tsteps)/2
     decay = zeros(T, length(tsteps))
     # Allocate deposition arrays
     argondeposition = zeros(T, length(tsteps), nrsteps-2)
 
+    # Calculate bin edges given agesteps
+    agebinedges = [agesteps[1]-step_at(agesteps, 1)/2; cntr(agesteps); agesteps[end]+step_at(agesteps, lastindex(agesteps))/2]
+    leftedges, rightedges = agebinedges[1:end-1], agebinedges[2:end]
+
     # K-40
-    @. decay = exp(λ40K*(agesteps + dt_2)) - exp(λ40K*(agesteps - dt_2))
+    @. decay = exp(λ40K*leftedges) - exp(λ40K*rightedges)
     mul!(argondeposition, decay, r40KAr', one(T), one(T))
 
-    # Allocate additional variables that will be needed for Crank-Nicholson
+    # Allocate additional variables that will be needed for Crank-Nicolson
     β = zeros(T, nrsteps)
 
     # Allocate arrays for diffusivities
@@ -1832,11 +1850,11 @@ function PlanarAr(T::Type{<:AbstractFloat}=Float64;
     du = ones(T, nrsteps-1)    # Supra-diagonal row
     du2 = ones(T, nrsteps-2)   # sup-sup-diagonal row for pivoting
 
-    # Tridiagonal matrix for LHS of Crank-Nicholson equation with regular grid cells
+    # Tridiagonal matrix for LHS of Crank-Nicolson equation with regular grid cells
     A = Tridiagonal(dl, d, du, du2)
     F = lu(A, allowsingular=true)
 
-    # Vector for RHS of Crank-Nicholson equation with regular grid cells
+    # Vector for RHS of Crank-Nicolson equation with regular grid cells
     y = zeros(T, nrsteps)
 
     return PlanarAr(
@@ -1933,11 +1951,8 @@ end
             tsteps=nothing,
         )
         # Temporal discretization
-        isnothing(tsteps) && isnothing(agesteps) && @error "At least one of `tsteps` or `agesteps` is required"
-        isnothing(tsteps) && (tsteps = (maximum(agesteps)+minimum(agesteps)) .- agesteps)
-        isnothing(agesteps) && (agesteps = (maximum(tsteps)+minimum(tsteps)) .- tsteps)
+        tsteps, agesteps = checkdiscretization(tsteps, agesteps)
         agesteps, tsteps = floatrange(agesteps), floatrange(tsteps)
-        @assert issorted(tsteps)
         
         # Check input arrays are the right size and ordered properly
         @assert eachindex(age) == eachindex(age_sigma) == eachindex(fraction_experimental) == eachindex(tsteps_experimental) == eachindex(Tsteps_experimental)
@@ -1991,7 +2006,7 @@ function checkdiscretization(tsteps, agesteps)
     isnothing(tsteps) && isnothing(agesteps) && @error "At least one of `tsteps` or `agesteps` is required"
     isnothing(tsteps) && (tsteps = (maximum(agesteps)+minimum(agesteps)) .- agesteps)
     isnothing(agesteps) && (agesteps = (maximum(tsteps)+minimum(tsteps)) .- tsteps)
-    @assert issorted(tsteps) "`tsteps` must be sorted in increasing order"
+    @assert issorted(tsteps) "`tsteps` must be in strictly increasing order"
     @assert tsteps ≈ (maximum(agesteps)+minimum(agesteps)) .- agesteps "`tsteps` and `agesteps must represent the same chronology"
     return tsteps, agesteps
 end

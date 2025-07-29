@@ -47,7 +47,6 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degas
     # Get time and radius discretization
     dr = step(mineral.rsteps)
     nrsteps = mineral.nrsteps::Int
-    dt = step(tsteps_degassing)
     ntsteps = length(tsteps_degassing)
     step_parent = @views(mineral.step_parent[1:ntsteps])
     step_daughter = @views(mineral.step_daughter[1:ntsteps])
@@ -55,7 +54,6 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degas
 
     # Common β factor is constant across all radii since diffusivity is constant
     β = mineral.β::Vector{T}
-    fill!(β, 2 * dr^2 / (De[1]*dt))
 
     # Vector for RHS of Crank-Nicholson equation with regular grid cells
     y = mineral.y
@@ -72,6 +70,8 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degas
     
     daughterᵢ₋ = nanmean(@views(u[2:end-1, 1]))
     @inbounds for i in Base.OneTo(ntsteps-fuse)
+        # Duration of current timestep
+        dt = step_at(tsteps_degassing, i)
 
         # Update β for current temperature
         fill!(β, 2 * dr^2 / (De[i]*dt))
@@ -127,6 +127,8 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degas
 
         parentᵢ₋ = nanmean(@views(u[2:end-1, 1]))
         @inbounds for i in Base.OneTo(ntsteps-fuse)
+            # Duration of current timestep
+            dt = step_at(tsteps_degassing, i)
 
             # Update β for current temperature
             fill!(β, 2 * dr^2 / (De[i]*dt))
@@ -191,7 +193,6 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_de
     dr = step(mineral.rsteps)
     nrsteps = mineral.nrsteps::Int
     relvolumes = mineral.relvolumes::Vector{T}
-    dt = step(tsteps_degassing)
     ntsteps = length(tsteps_degassing)
     step_parent = @views(mineral.step_parent[1:ntsteps])
     step_daughter = @views(mineral.step_daughter[1:ntsteps])
@@ -199,7 +200,6 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_de
 
     # Common β factor is constant across all radii since diffusivity is constant
     β = mineral.β::Vector{T}
-    fill!(β, 2 * dr^2 / (De[1]*dt))
 
     # Vector for RHS of Crank-Nicholson equation with regular grid cells
     y = mineral.y
@@ -215,6 +215,8 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_de
     F = mineral.F       # LU object for in-place lu factorization
     
     @inbounds for i in Base.OneTo(ntsteps-fuse)
+        # Duration of current timestep
+        dt = step_at(tsteps_degassing, i)
 
         # Update β for current temperature
         fill!(β, 2 * dr^2 / (De[i]*dt))
@@ -274,6 +276,8 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_de
         u[end,1] = 0
 
         @inbounds for i in Base.OneTo(ntsteps-fuse)
+            # Duration of current timestep
+            dt = step_at(tsteps_degassing, i)
 
             # Update β for current temperature
             fill!(β, 2 * dr^2 / (De[i]*dt))
