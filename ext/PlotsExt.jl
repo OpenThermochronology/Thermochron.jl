@@ -8,16 +8,16 @@ module PlotsExt
     Plots.plot(x, y::Vector{<:Chronometer}, args...; framestyle=:box, kwargs...) = plot!(plot(), x, y, args...; framestyle, kwargs...)
     Plots.plot(x::Vector{<:Chronometer}, y::Vector{<:Chronometer}, args...; framestyle=:box, kwargs...) = plot!(plot(), x, y, args...; framestyle, kwargs...)
     for P in (Plots.Plot, Plots.Subplot)
-        @eval Plots.plot!(hdl::($P), y::Vector{<:Chronometer}; framestyle=:box, kwargs...) = plot!(hdl, Thermochron.val.(y); yerror=2*Thermochron.err.(y), framestyle, kwargs...)
-        @eval Plots.plot!(hdl::($P), x, y::Vector{<:Chronometer}; framestyle=:box, kwargs...) = plot!(hdl, x, Thermochron.val.(y); yerror=2*Thermochron.err.(y), framestyle, kwargs...)
-        @eval Plots.plot!(hdl::($P), x::Vector{<:Chronometer}, y; framestyle=:box, kwargs...) = plot!(hdl, Thermochron.val.(x), y; xerror=2*Thermochron.err.(x), framestyle, kwargs...)
-        @eval Plots.plot!(hdl::($P), x::Vector{<:Chronometer}, y::Vector{<:Chronometer}; framestyle=:box, kwargs...) = plot!(hdl, Thermochron.val.(x), Thermochron.val.(y); xerror=2*Thermochron.err.(x), yerror=2*Thermochron.err.(y), framestyle, kwargs...)
+        @eval Plots.plot!(hdl::($P), y::Vector{<:Chronometer}; framestyle=:box, kwargs...) = plot!(hdl, Thermochron.value.(y); yerror=2*Thermochron.stdev.(y), framestyle, kwargs...)
+        @eval Plots.plot!(hdl::($P), x, y::Vector{<:Chronometer}; framestyle=:box, kwargs...) = plot!(hdl, x, Thermochron.value.(y); yerror=2*Thermochron.stdev.(y), framestyle, kwargs...)
+        @eval Plots.plot!(hdl::($P), x::Vector{<:Chronometer}, y; framestyle=:box, kwargs...) = plot!(hdl, Thermochron.value.(x), y; xerror=2*Thermochron.stdev.(x), framestyle, kwargs...)
+        @eval Plots.plot!(hdl::($P), x::Vector{<:Chronometer}, y::Vector{<:Chronometer}; framestyle=:box, kwargs...) = plot!(hdl, Thermochron.value.(x), Thermochron.value.(y); xerror=2*Thermochron.stdev.(x), yerror=2*Thermochron.stdev.(y), framestyle, kwargs...)
     end
 
     # Age-eU plots
     Thermochron.ageeuplot(x::Vector{<:Chronometer}, args...; framestyle=:box, xlabel="eU [ppm]", ylabel="Age [Ma]", kwargs...) = ageeuplot!(plot(), x, args...; framestyle, xlabel, ylabel, kwargs...)
-    Thermochron.ageeuplot!(hdl::Plots.Plot, x::Vector{<:Chronometer}; seriestype=:scatter, mscolor=:auto, kwargs...) = plot!(hdl, Thermochron.eU.(x), Thermochron.val.(x); yerror=2*Thermochron.err.(x), seriestype, mscolor, kwargs...)
-    Thermochron.ageeuplot!(hdl::Plots.Subplot, x::Vector{<:Chronometer}; seriestype=:scatter, mscolor=:auto, kwargs...) = plot!(hdl, Thermochron.eU.(x), Thermochron.val.(x); yerror=2*Thermochron.err.(x), seriestype, mscolor, kwargs...)
+    Thermochron.ageeuplot!(hdl::Plots.Plot, x::Vector{<:Chronometer}; seriestype=:scatter, mscolor=:auto, kwargs...) = plot!(hdl, Thermochron.eU.(x), Thermochron.value.(x); yerror=2*Thermochron.stdev.(x), seriestype, mscolor, kwargs...)
+    Thermochron.ageeuplot!(hdl::Plots.Subplot, x::Vector{<:Chronometer}; seriestype=:scatter, mscolor=:auto, kwargs...) = plot!(hdl, Thermochron.eU.(x), Thermochron.value.(x); yerror=2*Thermochron.stdev.(x), seriestype, mscolor, kwargs...)
 
     # Error boxes for Ar-Ar age spectra
     Thermochron.errorbox(xc::AbstractVector, y::AbstractVector, t::BitVector=trues(length(y)); kwargs...) = errorbox!(plot(), xc, y, t; kwargs...)
