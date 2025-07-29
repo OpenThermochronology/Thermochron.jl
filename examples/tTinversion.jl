@@ -374,8 +374,8 @@
             GoF = 1.0 - D_stat
 
             # Annotate statistics and GOF
-            annot = ["Observed: $(round(nanmean(obs_lengths), digits=2)) ± $(2*round(nanstd(obs_lengths), digits=2)) µm",
-                     "Model:    $(round(nanmean(pred_lengths), digits=2)) ± $(2*round(nanstd(pred_lengths), digits=2)) µm",
+            annot = ["Observed: $(round(nanmean(obs_lengths), digits=2)) ± $(round(nanstd(obs_lengths), digits=2)) µm",
+                     "Model:    $(round(nanmean(pred_lengths), digits=2)) ± $(round(nanstd(pred_lengths), digits=2)) µm",
                      "GOF (K-S): $(round(GoF, digits=2))",]
             for i in eachindex(annot)
                 annotate!(h, (1.0, maximum(yl) * (1.0 - 0.07 * i), text(annot[i], 8, :left)))
