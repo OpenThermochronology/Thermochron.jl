@@ -140,18 +140,8 @@
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - ll) / simannealT(n, T0annealing, λannealing)
-
-                # Update jumping distribution based on size of current accepted p_move
-                if dynamicjumping && r < p_move
-                    if path.agepointsₚ[k] != path.agepoints[k]
-                        path.σⱼtₚ[k] = ℯ * abs(path.agepointsₚ[k] - path.agepoints[k])
-                    end
-                    if path.Tpointsₚ[k] != path.Tpoints[k]
-                        path.σⱼTₚ[k] = ℯ * abs(path.Tpointsₚ[k] - path.Tpoints[k])
-                    end
-                end
-
                 # Update the currently accepted proposal
+                dynamicjumping && r < p_move && updatejumping!(path, k)
                 acceptproposal!(path)
                 ll = llₚ
                 npoints = npointsₚ
@@ -174,7 +164,7 @@
         ndist = zeros(Int, nsteps)
         acceptancedist = falses(nsteps)
 
-        progress = Progress(nsteps, dt=1, desc="MCMC collection ($(nsteps) steps):")
+        progress = Progress(nsteps, dt=2, desc="MCMC collection ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
         for n = 1:nsteps
             @label crestart
@@ -229,18 +219,8 @@
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - ll)
-
-                # Update jumping distribution based on size of current accepted p_move
-                if dynamicjumping && r < p_move
-                    if path.agepointsₚ[k] != path.agepoints[k]
-                        path.σⱼtₚ[k] = ℯ * abs(path.agepointsₚ[k] - path.agepoints[k])
-                    end
-                    if path.Tpointsₚ[k] != path.Tpoints[k]
-                        path.σⱼTₚ[k] = ℯ * abs(path.Tpointsₚ[k] - path.Tpoints[k])
-                    end
-                end
-
                 # Update the currently accepted proposal
+                dynamicjumping && r < p_move && updatejumping!(path, k)
                 acceptproposal!(path)
                 ll = llₚ
                 npoints = npointsₚ                
@@ -376,7 +356,7 @@
         @assert p_move + p_birth + p_death + p_bounds + p_kinetics ≈ 1
         @assert p_birth == p_death
 
-        bprogress = Progress(burnin, dt=1, desc="MCMC burn-in ($(burnin) steps)")
+        bprogress = Progress(burnin, dt=2, desc="MCMC burn-in ($(burnin) steps)")
         progress_interval = ceil(Int,sqrt(burnin))
         for n = 1:burnin
             @label brestart
@@ -437,18 +417,8 @@
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - ll) / simannealT(n, T0annealing, λannealing) 
-
-                # Update jumping distribution based on size of current accepted p_move
-                if dynamicjumping && r < p_move
-                    if path.agepointsₚ[k] != path.agepoints[k]
-                        path.σⱼtₚ[k] = ℯ * abs(path.agepointsₚ[k] - path.agepoints[k])
-                    end
-                    if path.Tpointsₚ[k] != path.Tpoints[k]
-                        path.σⱼTₚ[k] = ℯ * abs(path.Tpointsₚ[k] - path.Tpoints[k])
-                    end
-                end
-
                 # Update the currently accepted proposal
+                dynamicjumping && r < p_move && updatejumping!(path, k)
                 acceptproposal!(path)
                 copyto!(damodels, damodelsₚ)
                 ll = llₚ
@@ -534,18 +504,8 @@
 
             # Accept or reject proposal based on likelihood
             if log(rand()) < (llₚ - ll)
-
-                # Update jumping distribution based on size of current accepted p_move
-                if dynamicjumping && r < p_move
-                    if path.agepointsₚ[k] != path.agepoints[k]
-                        path.σⱼtₚ[k] = ℯ * abs(path.agepointsₚ[k] - path.agepoints[k])
-                    end
-                    if path.Tpointsₚ[k] != path.Tpoints[k]
-                        path.σⱼTₚ[k] = ℯ * abs(path.Tpointsₚ[k] - path.Tpoints[k])
-                    end
-                end
-
                 # Update the currently accepted proposal
+                dynamicjumping && r < p_move && updatejumping!(path, k)
                 acceptproposal!(path)
                 copyto!(damodels, damodelsₚ)
                 ll = llₚ

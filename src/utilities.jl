@@ -688,6 +688,17 @@
         copyto!(path.boundary.Tpoints, path.boundary.Tpointsₚ)
     end
 
+    # Update jumping distribution
+    function updatejumping!(path::TtPath, k::Int)
+        if path.agepointsₚ[k] != path.agepoints[k]
+            path.σⱼtₚ[k] = ℯ * abs(path.agepointsₚ[k] - path.agepoints[k])
+        end
+        if path.Tpointsₚ[k] != path.Tpoints[k]
+            path.σⱼTₚ[k] = ℯ * abs(path.Tpointsₚ[k] - path.Tpoints[k])
+        end
+        return path
+    end
+
     # Adjust kinetic models
     movekinetics(dm, p=0.5) = dm
     function movekinetics(zdm::ZRDAAM{T}, p=0.5) where {T}
