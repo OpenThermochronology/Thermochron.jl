@@ -93,7 +93,7 @@ function ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64;
         tsteps = nothing, 
     )
     # Temporal discretization
-    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
+    agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
     # Multikinetic fission track parameters
     if isnan(rmr0)
         s = F + Cl + OH
@@ -195,7 +195,7 @@ function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
         tsteps = nothing, 
     )
     # Temporal discretization
-    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
+    agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
     # Multikinetic fission track parameters
     if isnan(rmr0)
         s = F + Cl + OH
@@ -274,7 +274,7 @@ function ZirconTrackLength(T::Type{<:AbstractFloat}=Float64;
         tsteps = nothing,
     )
     # Temporal discretization
-    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
+    agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
     # Initial track length and uncertainty
     if isnan(l0) 
         l0 = 11.17
@@ -334,7 +334,7 @@ function MonaziteTrackLength(T::Type{<:AbstractFloat}=Float64;
         tsteps = nothing, 
     )
     # Temporal discretization
-    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
+    agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
     # Initial track length and uncertainty
     if isnan(l0) 
         l0 = 10.60
@@ -390,7 +390,7 @@ function ZirconFT(T::Type{<:AbstractFloat}=Float64;
         tsteps = nothing, 
     )
     # Temporal discretization
-    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
+    agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
     ZirconFT(
         T(age),
         T(age_sigma),
@@ -433,7 +433,7 @@ function MonaziteFT(T::Type{<:AbstractFloat}=Float64;
         tsteps=nothing, 
     )
     # Temporal discretization
-    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
+    agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
     MonaziteFT(
         T(age),
         T(age_sigma),
@@ -493,7 +493,7 @@ function ApatiteFT(T::Type{<:AbstractFloat}=Float64;
         tsteps=nothing, 
     )
     # Temporal discretization
-    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
+    agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
     # Multikinetic fission track parameters
     if isnan(rmr0)
         s = F + Cl + OH
@@ -591,7 +591,7 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
     )
 
     # Temporal discretization
-    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
+    agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
 
     # Zircon alpha stopping distances for each isotope in each decay chain, from
     # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
@@ -875,7 +875,7 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
     )
 
     # Temporal discretization
-    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
+    agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
 
     # Apatite alpha stopping distances for each isotope in each decay chain, from
     # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
@@ -1158,7 +1158,7 @@ function SphericalHe(T::Type{<:AbstractFloat}=Float64;
     )
 
     # Temporal discretization
-    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
+    agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
 
     # Alpha stopping distances for each isotope in each decay chain, adjusted from those of apatite
     # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
@@ -1420,7 +1420,7 @@ function PlanarHe(T::Type{<:AbstractFloat}=Float64;
     )
 
     # Temporal discretization
-    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
+    agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
 
     # Alpha stopping distances for each isotope in each decay chain, adjusted from those of apatite
     # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
@@ -1665,7 +1665,7 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
     )
 
     # Temporal discretization
-    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
+    agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
 
     # Crystal size and spatial discretization
     rsteps = floatrange(0+dr/2 : dr : r-dr/2)
@@ -1797,7 +1797,7 @@ function PlanarAr(T::Type{<:AbstractFloat}=Float64;
     )
 
     # Temporal discretization
-    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
+    agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
 
     # Crystal size and spatial discretization
     rsteps = floatrange(0+dr/2 : dr : r-dr/2)
@@ -1943,7 +1943,7 @@ end
             tsteps=nothing,
         )
         # Temporal discretization
-        tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
+        agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
         
         # Check input arrays are the right size and ordered properly
         @assert eachindex(age) == eachindex(age_sigma) == eachindex(fraction_experimental) == eachindex(tsteps_experimental) == eachindex(Tsteps_experimental)

@@ -1,12 +1,15 @@
 ## --- Check validity and consistency of temporal discretization
 
-function checkdiscretization(::Type{T}, tsteps, agesteps) where {T<:AbstractFloat}
+function checktimediscretization(::Type{T}, agesteps, tsteps=nothing) where {T<:AbstractFloat}
     isnothing(tsteps) && isnothing(agesteps) && @error "At least one of `tsteps` or `agesteps` is required"
     isnothing(tsteps) && (tsteps = ((first(agesteps) - step_at(agesteps,1)/2) .- agesteps))
     isnothing(agesteps) && (agesteps = (last(tsteps) + step_at(tsteps, lastindex(tsteps))/2) .- tsteps)
-    @assert issorted(tsteps) "`tsteps` must be in strictly increasing order"
-    @assert tsteps ≈ (first(agesteps) - step_at(agesteps,1)/2) .- agesteps "`tsteps` and `agesteps must represent the same chronology"
-    return applyeltype(T, tsteps), applyeltype(T, agesteps)
+    @assert issorted(tsteps, lt=<=) "`tsteps` must be in strictly increasing order"
+    @assert first(tsteps) >= 0 "all `tsteps` must be positive"
+    @assert issorted(agesteps, lt=<=, rev=true) "`agesteps` must be in strictly decreasing order"
+    @assert last(agesteps) >= 0 "all `agesteps` must be positive"
+    @assert tsteps ≈ (first(agesteps) - step_at(agesteps,1)/2) .- agesteps "`tsteps` and `agesteps` must represent the same chronology"
+    return applyeltype(T, agesteps), applyeltype(T, tsteps)
 end
 
 # Ensure a specific element type
@@ -34,7 +37,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
     # Temporal discretization
     tsteps = haskey(model, :tsteps) ? model.tsteps : nothing
     agesteps = haskey(model, :agesteps) ? model.agesteps : nothing
-    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
+    agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
 
     haskey(ds, :mineral) || @error "dataset must contain a column labeled `mineral`"
     mineral = ds.mineral

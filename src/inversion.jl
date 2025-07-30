@@ -37,6 +37,8 @@
         dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10)::T
         dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : dTmax/4)::T
         agesteps = applyeltype(T, model.agesteps)
+        @assert issorted(agesteps, lt=<=, rev=true) "`agesteps` must be in strictly decreasing order"
+        @assert last(agesteps) >= 0 "all `agesteps` must be positive"
         σmodel = T(haskey(model, :σmodel) ? model.σmodel : 1)::T
         σcalc = (haskey(model, :σcalc) ? model.σcalc : fill(σmodel, length(chrons)))::Vector{T}
         μcalc = zeros(T, length(chrons))::Vector{T}
@@ -319,6 +321,8 @@
         dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10)::T
         dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : dTmax/4)::T
         agesteps = applyeltype(T, model.agesteps)
+        @assert issorted(agesteps, lt=<=, rev=true) "`agesteps` must be in strictly decreasing order"
+        @assert last(agesteps) >= 0 "all `agesteps` must be positive"
         σmodel = T(haskey(model, :σmodel) ? model.σmodel : 1)::T
         σcalc = (haskey(model, :σcalc) ? model.σcalc : fill(σmodel, length(chrons)))::Vector{T}
         μcalc = zeros(T, length(chrons))::Vector{T}

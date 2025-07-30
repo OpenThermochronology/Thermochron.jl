@@ -46,7 +46,7 @@ module Thermochron
     export get_age, get_age_sigma, empiricaluncertainty!, eU            # Functions
         
     include("parsing.jl")
-    export chronometers                                                 # Parse datasets into Chronometer objects
+    export chronometers, checktimediscretization                        # Parse datasets into Chronometer objects
 
     include("argon.jl")
     include("helium.jl")
