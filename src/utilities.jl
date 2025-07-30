@@ -23,6 +23,34 @@
     # according to benchmarks based on use of `step_at` in this package
     @inline step_at(x::StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, i::Integer) = x.step.hi + x.step.lo 
 
+    function leftbound_at(x::AbstractVector{T}, i::Integer) where {T<:Number}
+        Tf = float(T)
+        length(x) > 1 || Tf(NaN)
+        f,l = firstindex(x), lastindex(x)
+        # Assume boundaries are halfway between nodes
+        if f < i < l
+            Tf((x[i-1] + x[i])/2)
+        elseif i <= f
+            Tf(x[f] - (x[f+1] - x[f])/2)
+        else
+            Tf((x[l-1] + x[l])/2)
+        end
+    end
+    function rightbound_at(x::AbstractVector{T}, i::Integer) where {T<:Number}
+        Tf = float(T)
+        length(x) > 1 || Tf(NaN)
+        f,l = firstindex(x), lastindex(x)
+        # Assume boundaries are halfway between nodes
+        if f < i < l
+            Tf((x[i] + x[i+1])/2)
+        elseif i <= f
+            Tf((x[f] + x[f+1])/2)
+        else
+            Tf(x[l] + (x[l] - x[l-1])/2)
+        end
+    end
+
+
     # Normal log likelihood
     @inline function norm_ll(mu::Number, sigma::Number, x::Number)
         δ = x - mu
@@ -254,26 +282,32 @@
     end
 
     # Utility functions for checking the nummber of distinct t-T nodes in a given time interval
-    function pointsininterval(points::DenseArray, npoints::Int, min::Number, max::Number)
+    function pointsininterval(points::DenseArray, npoints::Int, lower::Number, upper::Number)
         n = 0
         @inbounds for i = 1:npoints
-            if  min < points[i] < max
+            if  lower < points[i] <= upper
                 n += 1
             end
         end
         return n
     end
-    function pointsininterval(points::DenseArray, npoints::Int, min::Number, max::Number, δ::Number)
+    function pointsininterval(points::DenseArray, npoints::Int, lower::Number, upper::Number, nodes::DenseArray)
         n = 0
-        @inbounds for i = 1:npoints
-            if  min < points[i] < max
-                n += isdistinct(points, i, δ, npoints)
+        @inbounds for n in eachindex(nodes)
+            if lower < nodes[n] <= upper
+                for i in 1:npoints
+                    l, u = minmax(leftbound_at(nodes, n), rightbound_at(nodes, n))
+                    if max(lower,l) <= points[i] < min(upper, u)
+                        n += 1
+                        break
+                    end
+                end
             end
         end
         return n
     end
-    proposeddetail(path::TtPath, npointsₚ::Int, detail::DetailInterval) = pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, -step(path.agesteps))
-    accepteddetail(path::TtPath, npoints::Int, detail::DetailInterval) = pointsininterval(path.agepoints, npoints, detail.agemin, detail.agemax, -step(path.agesteps))
+    proposeddetail(path::TtPath, npointsₚ::Int, detail::DetailInterval) = pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, path.agesteps)
+    accepteddetail(path::TtPath, npoints::Int, detail::DetailInterval) = pointsininterval(path.agepoints, npoints, detail.agemin, detail.agemax, path.agesteps)
     mindetail(path::TtPath, npoints::Int, detail::DetailInterval) = min(accepteddetail(path, npoints, detail), detail.minpoints)
 
     # Check if point k is distinct from other points in list within ± δ
@@ -732,10 +766,15 @@
 
     # Utility function to calculate model ages for all chronometers at once
     function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, Tsteps::AbstractVector{T}; rescalemdd::Bool=true, rescale::Bool=false, redegasparent::Bool=false) where {T<:AbstractFloat}
-        imax = argmax(i->length((chrons[i].tsteps)::FloatRange), eachindex(chrons))
-        tsteps = (chrons[imax].tsteps)::FloatRange
+        imax = argmax(i->length(timediscretization(chrons[i])), eachindex(chrons))
+        tsteps = timediscretization(chrons[imax])
         @assert issorted(tsteps)
-        @assert eachindex(tsteps) == eachindex(Tsteps)
+        if eachindex(tsteps) != eachindex(Tsteps)
+            @info chrons[imax]
+            @info tsteps
+            @info Tsteps
+        end
+        @assert eachindex(tsteps) == eachindex(Tsteps) "`tsteps` has indices $(eachindex(tsteps)) while `Tsteps` has indices $(eachindex(Tsteps))"
 
         # Pre-anneal ZRDAAM samples, if any
         if any(x->isa(x, ZRDAAM), damodels)
@@ -766,7 +805,7 @@
         ll = zero(T)
         for i in eachindex(chrons, μcalc, σcalc)
             c, dm = chrons[i], damodels[i]
-            first_index = firstindex(Tsteps) + length(tsteps) - length(c.tsteps)
+            first_index = firstindex(Tsteps) + length(tsteps) - length(timediscretization(c))
             if isa(c, SphericalAr) || isa(c, PlanarAr)
                 c::Union{SphericalAr{T}, PlanarAr{T}}
                 μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), dm::Diffusivity{T})

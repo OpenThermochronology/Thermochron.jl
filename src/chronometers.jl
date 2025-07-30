@@ -64,7 +64,7 @@ Temporal discretization follows the age steps specified by `agesteps` (age befor
 and/or `tsteps` (forward time since crystallization), in Ma, where `tsteps` must be sorted 
 in increasing order.
 """
-struct ApatiteTrackLengthOriented{T<:AbstractFloat} <: FissionTrackLength{T}
+struct ApatiteTrackLengthOriented{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTrackLength{T}
     length::T               # [um] track length
     angle::T                # [degrees] track angle from the c-axis
     lcmod::T                # [um] model length of an equivalent c-axis parallel rack
@@ -74,8 +74,8 @@ struct ApatiteTrackLengthOriented{T<:AbstractFloat} <: FissionTrackLength{T}
     rmr0::T                 # [unitless] relative resistance to annealing (0=most, 1=least)
     r::Vector{T}            # [unitless] reduced track lengths for each timestep
     pr::Vector{T}           # [unitless] reduced track densities for each timestep
-    agesteps::FloatRange    # [Ma] age in Ma relative to the present
-    tsteps::FloatRange      # [Ma] forward time since crystallization
+    agesteps::V             # [Ma] age in Ma relative to the present
+    tsteps::V               # [Ma] forward time since crystallization
 end
 function ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64; 
         length::Number = NaN, 
@@ -93,7 +93,7 @@ function ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64;
         tsteps = nothing, 
     )
     # Temporal discretization
-    tsteps, agesteps = checkdiscretization(tsteps, agesteps)
+    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
     # Multikinetic fission track parameters
     if isnan(rmr0)
         s = F + Cl + OH
@@ -131,8 +131,8 @@ function ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64;
         T(rmr0),
         r,
         pr,
-        floatrange(agesteps),
-        floatrange(tsteps),
+        agesteps,
+        tsteps,
     )
 end
 
@@ -170,7 +170,7 @@ Temporal discretization follows the age steps specified by `agesteps` (age befor
 and/or `tsteps` (forward time since crystallization), in Ma, where `tsteps` must be sorted 
 in increasing order.
 """
-struct ApatiteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
+struct ApatiteTrackLength{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTrackLength{T}
     length::T               # [um] track length
     offset::T               # [C] temperature offset relative to other samples
     l0::T                   # [um] Initial track length
@@ -178,8 +178,8 @@ struct ApatiteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
     rmr0::T                 # [unitless] relative resistance to annealing (0=most, 1=least)
     r::Vector{T}            # [unitless] reduced track lengths for each timestep
     pr::Vector{T}           # [unitless] reduced track densities for each timestep
-    agesteps::FloatRange    # [Ma] age in Ma relative to the present
-    tsteps::FloatRange      # [Ma] forward time since crystallization
+    agesteps::V             # [Ma] age in Ma relative to the present
+    tsteps::V               # [Ma] forward time since crystallization
 end
 function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64; 
         length::Number = NaN, 
@@ -195,7 +195,7 @@ function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
         tsteps = nothing, 
     )
     # Temporal discretization
-    tsteps, agesteps = checkdiscretization(tsteps, agesteps)
+    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
     # Multikinetic fission track parameters
     if isnan(rmr0)
         s = F + Cl + OH
@@ -231,8 +231,8 @@ function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
         T(rmr0),
         r,
         pr,
-        floatrange(agesteps),
-        floatrange(tsteps),
+        agesteps,
+        tsteps,
     )
 end
 
@@ -255,15 +255,15 @@ Temporal discretization follows the age steps specified by `agesteps` (age befor
 and/or `tsteps` (forward time since crystallization), in Ma, where `tsteps` must be sorted 
 in increasing order.
 """
-struct ZirconTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
+struct ZirconTrackLength{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTrackLength{T}
     length::T               # [um] track length
     offset::T               # [C] temperature offset relative to other samples
     l0::T                   # [um] initial track length
     l0_sigma::T             # [um] initial track length uncertainty
     r::Vector{T}            # [unitless] reduced track lengths for each timestep
     pr::Vector{T}           # [unitless] reduced track densities for each timestep
-    agesteps::FloatRange    # [Ma] age in Ma relative to the present
-    tsteps::FloatRange      # [Ma] forward time since crystallization
+    agesteps::V             # [Ma] age in Ma relative to the present
+    tsteps::V               # [Ma] forward time since crystallization
 end
 function ZirconTrackLength(T::Type{<:AbstractFloat}=Float64; 
         length::Number = NaN, 
@@ -274,7 +274,7 @@ function ZirconTrackLength(T::Type{<:AbstractFloat}=Float64;
         tsteps = nothing,
     )
     # Temporal discretization
-    tsteps, agesteps = checkdiscretization(tsteps, agesteps)
+    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
     # Initial track length and uncertainty
     if isnan(l0) 
         l0 = 11.17
@@ -291,8 +291,8 @@ function ZirconTrackLength(T::Type{<:AbstractFloat}=Float64;
         T(l0_sigma),
         r,
         pr,
-        floatrange(agesteps),
-        floatrange(tsteps),
+        agesteps,
+        tsteps,
     )
 end
 
@@ -315,15 +315,15 @@ Temporal discretization follows the age steps specified by `agesteps` (age befor
 and/or `tsteps` (forward time since crystallization), in Ma, where `tsteps` must be sorted 
 in increasing order.
 """
-struct MonaziteTrackLength{T<:AbstractFloat} <: FissionTrackLength{T}
+struct MonaziteTrackLength{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTrackLength{T}
     length::T               # [um] track length
     offset::T               # [C] temperature offset relative to other samples
     l0::T                   # [um] initial track length
     l0_sigma::T             # [um] initial track length uncertainty
     r::Vector{T}            # [unitless] reduced track lengths for each timestep
     pr::Vector{T}           # [unitless] reduced track densities for each timestep
-    agesteps::FloatRange    # [Ma] age in Ma relative to the present
-    tsteps::FloatRange      # [Ma] forward time since crystallization
+    agesteps::V             # [Ma] age in Ma relative to the present
+    tsteps::V               # [Ma] forward time since crystallization
 end
 function MonaziteTrackLength(T::Type{<:AbstractFloat}=Float64; 
         length::Number = NaN,
@@ -334,7 +334,7 @@ function MonaziteTrackLength(T::Type{<:AbstractFloat}=Float64;
         tsteps = nothing, 
     )
     # Temporal discretization
-    tsteps, agesteps = checkdiscretization(tsteps, agesteps)
+    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
     # Initial track length and uncertainty
     if isnan(l0) 
         l0 = 10.60
@@ -351,8 +351,8 @@ function MonaziteTrackLength(T::Type{<:AbstractFloat}=Float64;
         T(l0_sigma),
         r,
         pr,
-        floatrange(agesteps),
-        floatrange(tsteps),
+        agesteps,
+        tsteps,
     )
 end
 
@@ -375,12 +375,12 @@ Temporal discretization follows the age steps specified by `agesteps` (age befor
 and/or `tsteps` (forward time since crystallization), in Ma, where `tsteps` must be sorted 
 in increasing order.
 """
-struct ZirconFT{T<:AbstractFloat} <: FissionTrackSample{T}
+struct ZirconFT{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTrackSample{T}
     age::T                  # [Ma] fission track age
     age_sigma::T            # [Ma] fission track age uncertainty (one-sigma)
     offset::T               # [C] temperature offset relative to other samples
-    agesteps::FloatRange    # [Ma] age in Ma relative to the present
-    tsteps::FloatRange      # [Ma] forward time since crystallization
+    agesteps::V             # [Ma] age in Ma relative to the present
+    tsteps::V               # [Ma] forward time since crystallization
 end
 function ZirconFT(T::Type{<:AbstractFloat}=Float64; 
         age::Number = NaN,              # [Ma] fission track age
@@ -390,13 +390,13 @@ function ZirconFT(T::Type{<:AbstractFloat}=Float64;
         tsteps = nothing, 
     )
     # Temporal discretization
-    tsteps, agesteps = checkdiscretization(tsteps, agesteps)
+    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
     ZirconFT(
         T(age),
         T(age_sigma),
         T(offset),
-        floatrange(agesteps),
-        floatrange(tsteps),
+        agesteps,
+        tsteps,
     )
 end
 
@@ -418,12 +418,12 @@ Temporal discretization follows the age steps specified by `agesteps` (age befor
 and/or `tsteps` (forward time since crystallization), in Ma, where `tsteps` must be sorted 
 in increasing order.
 """
-struct MonaziteFT{T<:AbstractFloat} <: FissionTrackSample{T}
+struct MonaziteFT{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTrackSample{T}
     age::T                  # [Ma] fission track age
     age_sigma::T            # [Ma] fission track age uncertainty (one-sigma)
     offset::T               # [C] temperature offset relative to other samples
-    agesteps::FloatRange    # [Ma] age in Ma relative to the present
-    tsteps::FloatRange      # [Ma] forward time since crystallization
+    agesteps::V             # [Ma] age in Ma relative to the present
+    tsteps::V               # [Ma] forward time since crystallization
 end
 function MonaziteFT(T::Type{<:AbstractFloat}=Float64; 
         age::Number = NaN,              # [Ma] fission track age
@@ -433,13 +433,13 @@ function MonaziteFT(T::Type{<:AbstractFloat}=Float64;
         tsteps=nothing, 
     )
     # Temporal discretization
-    tsteps, agesteps = checkdiscretization(tsteps, agesteps)
+    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
     MonaziteFT(
         T(age),
         T(age_sigma),
         T(offset),
-        floatrange(agesteps),
-        floatrange(tsteps),
+        agesteps,
+        tsteps,
     )
 end
 
@@ -472,13 +472,13 @@ Temporal discretization follows the age steps specified by `agesteps` (age befor
 and/or `tsteps` (forward time since crystallization), in Ma, where `tsteps` must be sorted 
 in increasing order.
 """
-struct ApatiteFT{T<:AbstractFloat} <: FissionTrackSample{T}
+struct ApatiteFT{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTrackSample{T}
     age::T                  # [Ma] fission track age
     age_sigma::T            # [Ma] fission track age uncertainty (one-sigma)
     offset::T               # [C] temperature offset relative to other samples
     rmr0::T                 # [unitless] relative resistance to annealing (0=most, 1=least)
-    agesteps::FloatRange    # [Ma] age in Ma relative to the present
-    tsteps::FloatRange      # [Ma] forward time since crystallization
+    agesteps::V             # [Ma] age in Ma relative to the present
+    tsteps::V               # [Ma] forward time since crystallization
 end
 function ApatiteFT(T::Type{<:AbstractFloat}=Float64; 
         age::Number = NaN, 
@@ -493,7 +493,7 @@ function ApatiteFT(T::Type{<:AbstractFloat}=Float64;
         tsteps=nothing, 
     )
     # Temporal discretization
-    tsteps, agesteps = checkdiscretization(tsteps, agesteps)
+    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
     # Multikinetic fission track parameters
     if isnan(rmr0)
         s = F + Cl + OH
@@ -512,8 +512,8 @@ function ApatiteFT(T::Type{<:AbstractFloat}=Float64;
         T(age_sigma),
         T(offset),
         T(rmr0),
-        floatrange(agesteps),
-        floatrange(tsteps),
+        agesteps,
+        tsteps,
     )
 end
 
@@ -547,12 +547,12 @@ discretization  follows the age steps specified by `agesteps` (age before presen
 and/or `tsteps` (forward time since crystallization), in Ma, where `tsteps` 
 must be sorted in increasing order.
 """
-struct ZirconHe{T<:AbstractFloat} <: HeliumSample{T}
+struct ZirconHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     age::T                      # [Ma] helium age
     age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
     offset::T                   # [C] temperature offset relative to other samples
-    agesteps::FloatRange        # [Ma] age in Ma relative to the present
-    tsteps::FloatRange          # [Ma] forward time since crystallization
+    agesteps::V                 # [Ma] age in Ma relative to the present
+    tsteps::V                   # [Ma] forward time since crystallization
     rsteps::FloatRange          # [um] radius bin centers
     redges::FloatRange          # [um] radius bin edges
     relvolumes::Vector{T}       # [unitless] fraction of volume in each radial step
@@ -591,8 +591,7 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
     )
 
     # Temporal discretization
-    tsteps, agesteps = checkdiscretization(tsteps, agesteps)
-    tsteps, agesteps = floatrange(tsteps), floatrange(agesteps)
+    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
 
     # Zircon alpha stopping distances for each isotope in each decay chain, from
     # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
@@ -832,12 +831,12 @@ discretization  follows the age steps specified by `agesteps` (age before presen
 and/or `tsteps` (forward time since crystallization), in Ma, where `tsteps` 
 must be sorted in increasing order.
 """
-struct ApatiteHe{T<:AbstractFloat} <: HeliumSample{T}
+struct ApatiteHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     age::T                      # [Ma] helium age
     age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
     offset::T                   # [C] temperature offset relative to other samples
-    agesteps::FloatRange        # [Ma] age in Ma relative to the present
-    tsteps::FloatRange          # [Ma] forward time since crystallization
+    agesteps::V                 # [Ma] age in Ma relative to the present
+    tsteps::V                   # [Ma] forward time since crystallization
     rsteps::FloatRange          # [um] radius bin centers
     redges::FloatRange          # [um] radius bin edges
     relvolumes::Vector{T}       # [unitless] fraction of volume in each radial step
@@ -876,8 +875,7 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
     )
 
     # Temporal discretization
-    tsteps, agesteps = checkdiscretization(tsteps, agesteps)
-    tsteps, agesteps = floatrange(tsteps), floatrange(agesteps)
+    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
 
     # Apatite alpha stopping distances for each isotope in each decay chain, from
     # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
@@ -1119,12 +1117,12 @@ discretization  follows the age steps specified by `agesteps` (age before presen
 and/or `tsteps` (forward time since crystallization), in Ma, where `tsteps` 
 must be sorted in increasing order.
 """
-struct SphericalHe{T<:AbstractFloat} <: HeliumSample{T}
+struct SphericalHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     age::T                      # [Ma] helium age
     age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
     offset::T                   # [C] temperature offset relative to other samples
-    agesteps::FloatRange        # [Ma] age in Ma relative to the present
-    tsteps::FloatRange          # [Ma] forward time since crystallization
+    agesteps::V                 # [Ma] age in Ma relative to the present
+    tsteps::V                   # [Ma] forward time since crystallization
     rsteps::FloatRange          # [um] radius bin centers
     redges::FloatRange          # [um] radius bin edges
     relvolumes::Vector{T}       # [unitless] fraction of volume in each radial step
@@ -1160,8 +1158,7 @@ function SphericalHe(T::Type{<:AbstractFloat}=Float64;
     )
 
     # Temporal discretization
-    tsteps, agesteps = checkdiscretization(tsteps, agesteps)
-    tsteps, agesteps = floatrange(tsteps), floatrange(agesteps)
+    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
 
     # Alpha stopping distances for each isotope in each decay chain, adjusted from those of apatite
     # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
@@ -1384,12 +1381,12 @@ discretization  follows the age steps specified by `agesteps` (age before presen
 and/or `tsteps` (forward time since crystallization), in Ma, where `tsteps` 
 must be sorted in increasing order.
 """
-struct PlanarHe{T<:AbstractFloat} <: HeliumSample{T}
+struct PlanarHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     age::T                      # [Ma] helium age
     age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
     offset::T                   # [C] temperature offset relative to other samples
-    agesteps::FloatRange        # [Ma] age in Ma relative to the present
-    tsteps::FloatRange          # [Ma] forward time since crystallization
+    agesteps::V                 # [Ma] age in Ma relative to the present
+    tsteps::V                   # [Ma] forward time since crystallization
     rsteps::FloatRange          # [um] halfwidth bin centers
     redges::FloatRange          # [um] halfwidth bin edges
     nrsteps::Int                # [n] number of spatial steps, including both implicit points at each side
@@ -1423,8 +1420,7 @@ function PlanarHe(T::Type{<:AbstractFloat}=Float64;
     )
 
     # Temporal discretization
-    tsteps, agesteps = checkdiscretization(tsteps, agesteps)
-    tsteps, agesteps = floatrange(tsteps), floatrange(agesteps)
+    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
 
     # Alpha stopping distances for each isotope in each decay chain, adjusted from those of apatite
     # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
@@ -1635,12 +1631,12 @@ discretization  follows the age steps specified by `agesteps` (age before presen
 and/or `tsteps` (forward time since crystallization), in Ma, where `tsteps` 
 must be sorted in increasing order.
 """
-struct SphericalAr{T<:AbstractFloat} <: ArgonSample{T}
+struct SphericalAr{T<:AbstractFloat, V<:AbstractVector{T}} <: ArgonSample{T}
     age::T                      # [Ma] Ar-40/Ar-39 age
     age_sigma::T                # [Ma] Ar-40/Ar-39 age uncertainty (one-sigma)
     offset::T                   # [C] temperature offset relative to other samples
-    agesteps::FloatRange        # [Ma] age in Ma relative to the present
-    tsteps::FloatRange          # [Ma] forward time since crystallization
+    agesteps::V                 # [Ma] age in Ma relative to the present
+    tsteps::V                   # [Ma] forward time since crystallization
     rsteps::FloatRange          # [um] radius bin centers
     redges::FloatRange          # [um] radius bin edges
     relvolumes::Vector{T}       # [unitless] fraction of volume in each radial step
@@ -1669,8 +1665,7 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
     )
 
     # Temporal discretization
-    tsteps, agesteps = checkdiscretization(tsteps, agesteps)
-    tsteps, agesteps = floatrange(tsteps), floatrange(agesteps)
+    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
 
     # Crystal size and spatial discretization
     rsteps = floatrange(0+dr/2 : dr : r-dr/2)
@@ -1770,12 +1765,12 @@ discretization  follows the age steps specified by `agesteps` (age before presen
 and/or `tsteps` (forward time since crystallization), in Ma, where `tsteps` 
 must be sorted in increasing order.
 """
-struct PlanarAr{T<:AbstractFloat} <: ArgonSample{T}
+struct PlanarAr{T<:AbstractFloat, V<:AbstractVector{T}} <: ArgonSample{T}
     age::T                      # [Ma] Ar-40/Ar-39 age
     age_sigma::T                # [Ma] Ar-40/Ar-39 age uncertainty (one-sigma)
     offset::T                   # [C] temperature offset relative to other samples
-    agesteps::FloatRange        # [Ma] age in Ma relative to the present
-    tsteps::FloatRange          # [Ma] forward time since crystallization
+    agesteps::V                 # [Ma] age in Ma relative to the present
+    tsteps::V                   # [Ma] forward time since crystallization
     rsteps::FloatRange          # [um] halfwidth bin centers
     redges::FloatRange          # [um] halfwidth bin edges
     nrsteps::Int                # [n] number of spatial steps, including both implicit points at each side
@@ -1802,8 +1797,7 @@ function PlanarAr(T::Type{<:AbstractFloat}=Float64;
     )
 
     # Temporal discretization
-    tsteps, agesteps = checkdiscretization(tsteps, agesteps)
-    tsteps, agesteps = floatrange(tsteps), floatrange(agesteps)
+    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
 
     # Crystal size and spatial discretization
     rsteps = floatrange(0+dr/2 : dr : r-dr/2)
@@ -1930,8 +1924,6 @@ end
         model_fraction::Vector{T}           # [unitless] cumulative fraction of parent degasssed
         tsteps_degassing::FloatRange        # [s] time steps of model heating schedule
         Tsteps_degassing::Vector{T}         # [C] temperature steps of model heating schedule
-        agesteps::FloatRange                # [Ma] age in Ma relative to the present
-        tsteps::FloatRange                  # [Ma] forward time since crystallization
     end
     function MultipleDomain(T=Float64, C=PlanarAr;
             age::AbstractVector,
@@ -1951,8 +1943,7 @@ end
             tsteps=nothing,
         )
         # Temporal discretization
-        tsteps, agesteps = checkdiscretization(tsteps, agesteps)
-        agesteps, tsteps = floatrange(agesteps), floatrange(tsteps)
+        tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
         
         # Check input arrays are the right size and ordered properly
         @assert eachindex(age) == eachindex(age_sigma) == eachindex(fraction_experimental) == eachindex(tsteps_experimental) == eachindex(Tsteps_experimental)
@@ -1974,8 +1965,8 @@ end
         volume_fraction ./= nansum(volume_fraction) 
         
         # Allocate domains
-        domains = [C(T; age=nanmean(age), age_sigma=nanstd(age), offset, r, dr, K40, agesteps) for i in eachindex(volume_fraction)]
-        return MultipleDomain{T,C{T}}(
+        domains = [C(T; age=nanmean(age), age_sigma=nanstd(age), offset, r, dr, K40, agesteps, tsteps) for i in eachindex(volume_fraction)]
+        return MultipleDomain(
             T.(age),
             T.(age_sigma),
             T.(fraction_experimental),
@@ -1994,44 +1985,41 @@ end
             model_fraction,
             tsteps_degassing,
             Tsteps_degassing,
-            floatrange(agesteps),
-            floatrange(tsteps),
         )
     end
 
 
-## --- Check validity and consistency of temporal discretization
+## --- Utility functions to get values, uncertainties, etc. from any Chronometer
 
-function checkdiscretization(tsteps, agesteps)
-    isnothing(tsteps) && isnothing(agesteps) && @error "At least one of `tsteps` or `agesteps` is required"
-    isnothing(tsteps) && (tsteps = (maximum(agesteps)+minimum(agesteps)) .- agesteps)
-    isnothing(agesteps) && (agesteps = (maximum(tsteps)+minimum(tsteps)) .- tsteps)
-    @assert issorted(tsteps) "`tsteps` must be in strictly increasing order"
-    @assert tsteps ≈ (maximum(agesteps)+minimum(agesteps)) .- agesteps "`tsteps` and `agesteps must represent the same chronology"
-    return tsteps, agesteps
-end
-
-## --- Utility functions to get values, uncertainties, etc. from any chronometers
-
+# Retrive the nominal value (age, length, etc) of any Chronometer
 value(x::AbsoluteChronometer{T}) where {T} = x.age::T
-stdev(x::AbsoluteChronometer{T}) where {T} = x.age_sigma::T
 value(x::MultipleDomain{T}) where {T} = nanmean(x.age, @.(x.fit/x.age_sigma^2))::T
-stdev(x::MultipleDomain{T}) where {T} = nanstd(x.age, @.(x.fit/x.age_sigma^2))::T
 value(x::FissionTrackLength{T}) where {T} = x.length::T
-stdev(x::FissionTrackLength{T}) where {T} = zero(T)
 value(x::ApatiteTrackLengthOriented{T}) where {T} = x.lcmod::T
-
 function val(x::Chronometer)
     @warn "Thermochron.val has been deprecated in favor of Thermochron.value"
     value(x)
 end
+
+# Retrive the nominal 1-sigma uncertainty (in age, length, etc.) of any Chronometer
+stdev(x::AbsoluteChronometer{T}) where {T} = x.age_sigma::T
+stdev(x::MultipleDomain{T}) where {T} = nanstd(x.age, @.(x.fit/x.age_sigma^2))::T
+stdev(x::FissionTrackLength{T}) where {T} = zero(T)
 function err(x::Chronometer)
     @warn "Thermochron.err has been deprecated in favor of Thermochron.stdev"
     stdev(x)
 end
 
-temperatureoffset(x::Chronometer) = x.offset
+# Retrive the temperature offset of any Chronometer
+temperatureoffset(x::Chronometer{T}) where {T} = x.offset::T
 
+# Retrive the temporal discretization of any Chronometer
+agediscretization(x::Chronometer{T}) where {T} = x.agesteps::AbstractVector{T}
+agediscretization(x::MultipleDomain) = agediscretization(first(x.domains))
+timediscretization(x::Chronometer{T}) where {T} = x.tsteps::AbstractVector{T}
+timediscretization(x::MultipleDomain) = timediscretization(first(x.domains))
+
+# Retrive the eU ("effective uranium") of any Chronometer
 eU(x::Chronometer{T}) where {T<:AbstractFloat} = T(NaN)
 function eU(x::HeliumSample{T}) where {T<:AbstractFloat}
     # Convert from atoms/g to ppm

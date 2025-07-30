@@ -36,10 +36,7 @@
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
         dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10)::T
         dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : dTmax/4)::T
-        agesteps = floatrange(model.agesteps)
-        tsteps = floatrange(model.tsteps)
-        @assert tsteps == reverse(agesteps)
-        @assert issorted(tsteps)
+        agesteps = applyeltype(T, model.agesteps)
         σmodel = T(haskey(model, :σmodel) ? model.σmodel : 1)::T
         σcalc = (haskey(model, :σcalc) ? model.σcalc : fill(σmodel, length(chrons)))::Vector{T}
         μcalc = zeros(T, length(chrons))::Vector{T}
@@ -321,10 +318,7 @@
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
         dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10)::T
         dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : dTmax/4)::T
-        agesteps = floatrange(model.agesteps)
-        tsteps = floatrange(model.tsteps)
-        @assert tsteps == reverse(agesteps)
-        @assert issorted(tsteps)
+        agesteps = applyeltype(T, model.agesteps)
         σmodel = T(haskey(model, :σmodel) ? model.σmodel : 1)::T
         σcalc = (haskey(model, :σcalc) ? model.σcalc : fill(σmodel, length(chrons)))::Vector{T}
         μcalc = zeros(T, length(chrons))::Vector{T}

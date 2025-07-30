@@ -1,4 +1,20 @@
-## --- Parsing imported datasets as Chronometer objects
+## --- Check validity and consistency of temporal discretization
+
+function checkdiscretization(::Type{T}, tsteps, agesteps) where {T<:AbstractFloat}
+    isnothing(tsteps) && isnothing(agesteps) && @error "At least one of `tsteps` or `agesteps` is required"
+    isnothing(tsteps) && (tsteps = ((first(agesteps) - step_at(agesteps,1)/2) .- agesteps))
+    isnothing(agesteps) && (agesteps = (last(tsteps) + step_at(tsteps, lastindex(tsteps))/2) .- tsteps)
+    @assert issorted(tsteps) "`tsteps` must be in strictly increasing order"
+    @assert tsteps ≈ (first(agesteps) - step_at(agesteps,1)/2) .- agesteps "`tsteps` and `agesteps must represent the same chronology"
+    return applyeltype(T, tsteps), applyeltype(T, agesteps)
+end
+
+# Ensure a specific element type
+applyeltype(::Type{T}, x::AbstractArray{T}) where {T} = x
+applyeltype(::Type{T}, x::AbstractArray) where {T} = T.(x)
+applyeltype(::Type{T}, x::OrdinalRange) where {T} = range(T(first(x)), T(last(x)), length(x))
+
+## --- Parse imported datasets as Chronometer objects
 
 """
 ```julia
@@ -12,11 +28,13 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
         zirconvolumeweighting = :cylindrical,
         apatitevolumeweighting = :cylindrical,
     )
+    # Spatial discretization
     dr = haskey(model, :dr) ? model.dr : one(T)
-    agesteps = floatrange(model.agesteps)
-    tsteps = floatrange(model.tsteps)
-    @assert issorted(tsteps) "`tsteps` must be in strictly increasing order"
-    @assert tsteps ≈ (maximum(agesteps)+minimum(agesteps)) .- agesteps "`tsteps` and `agesteps must represent the same chronology"
+
+    # Temporal discretization
+    tsteps = haskey(model, :tsteps) ? model.tsteps : nothing
+    agesteps = haskey(model, :agesteps) ? model.agesteps : nothing
+    tsteps, agesteps = checkdiscretization(T, tsteps, agesteps)
 
     haskey(ds, :mineral) || @error "dataset must contain a column labeled `mineral`"
     mineral = ds.mineral

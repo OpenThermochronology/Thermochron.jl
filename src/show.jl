@@ -40,6 +40,7 @@ end
 
 # Verbose show methods
 printshort(x::AbstractArray) = "[$(first(x)) … $(last(x))]"
+printshort(x::AbstractRange) = "$x"
 function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:MultipleDomain}
     print(io, """$T:
       age               : $(printshort(x.age)) Ma
@@ -48,7 +49,7 @@ function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:MultipleDomain}
       offset            : $(x.offset) C from the surface
       domains           : $(printshort(x.domains))
       volume fraction   : $(printshort(x.volume_fraction))
-      agesteps          : $(x.agesteps) Ma
+      agesteps          : $(printshort(agediscretization(x))) Ma
     """
     )
 end
@@ -72,8 +73,8 @@ function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:HeliumSample}
       U-235     : $(printshort(x.r235U / (6.022E23 / 1E6 / 235))) ppm
       Th-232    : $(printshort(x.r232Th / (6.022E23 / 1E6 / 232))) ppm
       Sm-147    : $(printshort(x.r147Sm / (6.022E23 / 1E6 / 147))) ppm
-      rsteps    : $(x.rsteps) μm
-      agesteps  : $(x.agesteps) Ma
+      rsteps    : $(printshort(x.rsteps)) μm
+      agesteps  : $(printshort(x.agesteps)) Ma
     """
     )
 end
@@ -92,7 +93,7 @@ function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:ApatiteFT}
       age_sigma : $(x.age_sigma) Ma
       offset    : $(x.offset) C from the surface
       rmr0      : $(x.rmr0)
-      agesteps  : $(x.agesteps) Ma
+      agesteps  : $(printshort(x.agesteps)) Ma
     """
     )
 end
@@ -100,7 +101,7 @@ function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:FissionTrackLengt
     print(io, """$T:
       length    : $(x.length) μm
       offset    : $(x.offset) C from the surface
-      agesteps  : $(x.agesteps) Ma
+      agesteps  : $(printshort(x.agesteps)) Ma
     """
     )
 end
@@ -110,7 +111,7 @@ function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:ApatiteTrackLengt
       angle     : $(x.angle) degrees from c-axis
       offset    : $(x.offset) C from the surface
       rmr0      : $(x.rmr0)
-      agesteps  : $(x.agesteps) Ma
+      agesteps  : $(printshort(x.agesteps)) Ma
     """
     )
 end

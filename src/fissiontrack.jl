@@ -400,11 +400,11 @@ which they respetively implement include
 
 """
 function modelage(zircon::ZirconFT{T}, Tsteps::AbstractVector, am::ZirconAnnealingModel{T}) where {T <: AbstractFloat}
-    agesteps = zircon.agesteps::AbstractVector{T}
-    tsteps = zircon.tsteps::AbstractVector{T}
+    agesteps = agediscretization(zircon)
+    tsteps = timediscretization(zircon)
+    ΔT = temperatureoffset(zircon)
     @assert issorted(tsteps)
     @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps)
-    ΔT = zircon.offset::T
     teq = dt = step_at(tsteps, lastindex(tsteps))
     r = reltracklength(teq, Tsteps[end], am)
     ftobs = dt * reltrackdensityzrn(r) * exp(λ238U * agesteps[end])
@@ -417,11 +417,11 @@ function modelage(zircon::ZirconFT{T}, Tsteps::AbstractVector, am::ZirconAnneali
     return newton_ft_age(ftobs)
 end
 function modelage(monazite::MonaziteFT{T}, Tsteps::AbstractVector, am::MonaziteAnnealingModel{T}) where {T <: AbstractFloat}
-    agesteps = monazite.agesteps::AbstractVector{T}
-    tsteps = monazite.tsteps::AbstractVector{T}
+    agesteps = agediscretization(monazite)
+    tsteps = timediscretization(monazite)
+    ΔT = temperatureoffset(monazite)
     @assert issorted(tsteps)
     @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps)
-    ΔT = monazite.offset::T
     teq = dt = step_at(tsteps, lastindex(tsteps))
     r = reltracklength(teq, Tsteps[end], am)
     ftobs = dt * reltrackdensitymnz(r) * exp(λ238U * agesteps[end])
@@ -434,12 +434,12 @@ function modelage(monazite::MonaziteFT{T}, Tsteps::AbstractVector, am::MonaziteA
     return newton_ft_age(ftobs)
 end
 function modelage(apatite::ApatiteFT{T}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}) where {T <: AbstractFloat}
-    agesteps = apatite.agesteps::AbstractVector{T}
-    tsteps = apatite.tsteps::AbstractVector{T}
+    agesteps = agediscretization(apatite)
+    tsteps = timediscretization(apatite)
+    ΔT = temperatureoffset(apatite)
     @assert issorted(tsteps)
     @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps)
     rmr0 = apatite.rmr0::T
-    ΔT = apatite.offset::T
     teq = dt = step_at(tsteps, lastindex(tsteps))
     r = rlr(reltracklength(teq, Tsteps[end], am), rmr0)
     ftobs = dt * reltrackdensityap(r) * exp(λ238U * agesteps[end]) 
@@ -475,9 +475,9 @@ which they respetively implement include
   `Ketcham2007FC`       Fanning Curvilinear apatite model of Ketcham et al. 2007 (doi: 10.2138/am.2007.2281)
 """
 function modellength(track::Union{ApatiteTrackLength{T}, ApatiteTrackLengthOriented{T}}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}) where {T <: AbstractFloat}
-    agesteps = track.agesteps::AbstractVector{T}
-    tsteps = track.tsteps::AbstractVector{T}
-    ΔT = track.offset::T
+    agesteps = agediscretization(track)
+    tsteps = timediscretization(track)
+    ΔT = temperatureoffset(track)
     rmr0 = track.rmr0::T
     r = track.r::Vector{T}
     pr = track.pr::Vector{T}
@@ -485,12 +485,12 @@ function modellength(track::Union{ApatiteTrackLength{T}, ApatiteTrackLengthOrien
     @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps) == eachindex(pr) == eachindex(r)
     teq = dt = step_at(tsteps, lastindex(tsteps))
     r[end] = rlr(reltracklength(teq, Tsteps[end]+ΔT, am), rmr0)
-    pr[end] = reltrackdensityap(r[end]) * exp(λ238U * agesteps[end])
+    pr[end] = reltrackdensityap(r[end]) * exp(λ238U * agesteps[end]) * dt # * dt to account for variable timestep duration when averaging
     @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
         dt = step_at(tsteps, i)
         teq = equivalenttime(teq, Tsteps[i+1]+ΔT, Tsteps[i]+ΔT, am) + dt
         r[i] = rlr(reltracklength(teq, Tsteps[i]+ΔT, am), rmr0)
-        pr[i] = reltrackdensityap(r[i]) * exp(λ238U * agesteps[i])
+        pr[i] = reltrackdensityap(r[i]) * exp(λ238U * agesteps[i]) * dt # * dt to account for variable timestep duration when averaging
     end
     r .*= track.l0 # Convert from reduced length to length
     μ, σ = nanmean(r, pr), nanstd(r, pr)
@@ -498,21 +498,21 @@ function modellength(track::Union{ApatiteTrackLength{T}, ApatiteTrackLengthOrien
     return μ, σ
 end
 function modellength(track::MonaziteTrackLength{T}, Tsteps::AbstractVector, am::MonaziteAnnealingModel{T}) where {T <: AbstractFloat}
-    agesteps = track.agesteps::AbstractVector{T}
-    tsteps = track.tsteps::AbstractVector{T}
-    ΔT = track.offset::T
+    agesteps = agediscretization(track)
+    tsteps = timediscretization(track)
+    ΔT = temperatureoffset(track)
     r = track.r::Vector{T}
     pr = track.pr::Vector{T}
     @assert issorted(tsteps)
     @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps) == eachindex(pr) == eachindex(r)
     teq = dt = step_at(tsteps, lastindex(tsteps))
     r[end] = reltracklength(teq, Tsteps[end]+ΔT, am)
-    pr[end] = reltrackdensitymnz(r[end]) * exp(λ238U * agesteps[end])
+    pr[end] = reltrackdensitymnz(r[end]) * exp(λ238U * agesteps[end]) * dt # * dt to account for variable timestep duration when averaging
     @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
         dt = step_at(tsteps, i)
         teq = equivalenttime(teq, Tsteps[i+1]+ΔT, Tsteps[i]+ΔT, am) + dt
         r[i] = reltracklength(teq, Tsteps[i]+ΔT, am)
-        pr[i] = reltrackdensitymnz(r[i]) * exp(λ238U * agesteps[i])
+        pr[i] = reltrackdensitymnz(r[i]) * exp(λ238U * agesteps[i]) * dt # * dt to account for variable timestep duration when averaging
     end
     r .*= track.l0 # Convert from reduced length to length
     μ, σ = nanmean(r, pr), nanstd(r, pr)
@@ -520,21 +520,21 @@ function modellength(track::MonaziteTrackLength{T}, Tsteps::AbstractVector, am::
     return μ, σ
 end
 function modellength(track::ZirconTrackLength{T}, Tsteps::AbstractVector, am::ZirconAnnealingModel{T}) where {T <: AbstractFloat}
-    agesteps = track.agesteps::AbstractVector{T}
-    tsteps = track.tsteps::AbstractVector{T}
-    ΔT = track.offset::T
+    agesteps = agediscretization(track)
+    tsteps = timediscretization(track)
+    ΔT = temperatureoffset(track)
     r = track.r::Vector{T}
     pr = track.pr::Vector{T}
     @assert issorted(tsteps)
     @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps) == eachindex(pr) == eachindex(r)
     teq = dt = step_at(tsteps, lastindex(tsteps))
     r[end] = reltracklength(teq, Tsteps[end]+ΔT, am)
-    pr[end] = reltrackdensityzrn(r[end]) * exp(λ238U * agesteps[end])
+    pr[end] = reltrackdensityzrn(r[end]) * exp(λ238U * agesteps[end]) * dt # * dt to account for variable timestep duration when averaging
     @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
         dt = step_at(tsteps, i)
         teq = equivalenttime(teq, Tsteps[i+1]+ΔT, Tsteps[i]+ΔT, am) + dt
         r[i] = reltracklength(teq, Tsteps[i]+ΔT, am)
-        pr[i] = reltrackdensityzrn(r[i]) * exp(λ238U * agesteps[i])
+        pr[i] = reltrackdensityzrn(r[i]) * exp(λ238U * agesteps[i]) * dt # * dt to account for variable timestep duration when averaging
     end
     r .*= track.l0 # Convert from reduced length to length
     μ, σ = nanmean(r, pr), nanstd(r, pr)

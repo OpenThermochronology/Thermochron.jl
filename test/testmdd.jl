@@ -18,7 +18,7 @@
         volume_fraction = mdds.volume_fraction[.!isnan.(mdds.volume_fraction)],
         agesteps,
     )
-    @test mdd isa MultipleDomain{Float64, PlanarAr{Float64}}
+    @test mdd isa MultipleDomain{Float64, <:PlanarAr{Float64}}
     show(mdd)
     println()
     display(mdd)
@@ -50,7 +50,7 @@
         volume_fraction = mdds.volume_fraction[.!isnan.(mdds.volume_fraction)],
         agesteps,
     )
-    @test mdd isa MultipleDomain{Float64, SphericalAr{Float64}}
+    @test mdd isa MultipleDomain{Float64, <:SphericalAr{Float64}}
 
     age, fraction = modelage(mdd, Tsteps, dm)
     # println(round.(age, sigdigits=5))

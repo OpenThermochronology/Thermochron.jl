@@ -167,21 +167,21 @@ In-place version of `anneal`
 function anneal!(data::Vector{<:Chronometer{T}}, ::Type{C}, tsteps::AbstractVector{T}, Tsteps::AbstractVector{T}, dm::DiffusivityModel{T}) where {T<:AbstractFloat, C<:HeliumSample}
     @assert eachindex(tsteps) == eachindex(Tsteps)
     if any(x->isa(x, C), data)
-        im = argmax(i->isa(data[i], C) ? length(data[i].tsteps) : 0, eachindex(data))
-        c = data[im]::C
-        first_index = firstindex(Tsteps) + length(tsteps) - length(c.tsteps)
+        im = argmax(i->isa(data[i], C) ? length(timediscretization(data[i])) : 0, eachindex(data))
+        cₘ = data[im]::C
+        first_index = firstindex(Tsteps) + length(tsteps) - length(timediscretization(cₘ))
         if first_index > 1
-            anneal!(c, @views(Tsteps[first_index:end]), dm)
+            anneal!(cₘ, @views(Tsteps[first_index:end]), dm)
         else
-            anneal!(c, Tsteps, dm)
+            anneal!(cₘ, Tsteps, dm)
         end
-        pr = c.pr
-        ntsteps = length(c.tsteps)
+        pr = cₘ.pr
+        ntsteps = length(timediscretization(cₘ))
         @assert ntsteps == length(axes(pr, 1)) == length(axes(pr, 2))
         for i in eachindex(data)
             if i!=im && isa(data[i], C)
                 c = data[i]::C
-                first_index = firstindex(pr) + ntsteps - length(c.tsteps)
+                first_index = firstindex(pr) + ntsteps - length(timediscretization(c))
                 if first_index > 1
                     mul!(c.annealeddamage, @views(pr[first_index:end, first_index:end]), c.alphadamage)
                 else
@@ -205,8 +205,7 @@ end
 function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::AbstractVector, Tsteps::AbstractVector, dm::ZRDAAM{T}) where T <: AbstractFloat
     @assert eachindex(tsteps) == eachindex(Tsteps) == eachindex(teq) == axes(ρᵣ, 1) == axes(ρᵣ,2) == Base.OneTo(length(tsteps))
     ntsteps = length(tsteps)
-    ∅ = zero(T)
-    fill!(teq, ∅)
+    fill!(teq, zero(T))
 
     # First timestep
     dt = step_at(tsteps, 1)
@@ -251,11 +250,10 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::Abstr
 end
 function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::AbstractVector, Tsteps::AbstractVector, dm::RDAAM{T}) where T <: AbstractFloat
 
-    ∅ = zero(T)
     ntsteps = length(tsteps)
     @assert size(ρᵣ) === (ntsteps, ntsteps)
     @assert size(teq) === (ntsteps,)
-    fill!(teq, ∅)
+    fill!(teq, zero(T))
 
     # First timestep
     dt = step_at(tsteps, 1)
@@ -342,7 +340,7 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T})
     Bα = dm.Bα::T                               # [g/alpha] mass of amorphous material produced per alpha decay
     Phi = dm.Phi::T                             # unitless
     R = 0.008314472                             # kJ/(K*mol)
-    ΔT = zircon.offset::T + 273.15              # Conversion from C to K, plus temperature offset from the
+    ΔT = zircon.offset::T + 273.15              # Conversion from C to K, plus temperature offset relative to other samples
 
     # Diffusivities of crystalline and amorphous endmembers
     Dz = zircon.Dz::Vector{T}

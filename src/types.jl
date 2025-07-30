@@ -117,7 +117,7 @@ end
 
 # Define overall TtPath type to contain all parameters needed to construct a t-T path proposal
 struct TtPath{T<:AbstractFloat}
-    agesteps::FloatRange
+    agesteps::Vector{T}
     Tsteps::Vector{T}
     agepoints::Vector{T}
     Tpoints::Vector{T}
@@ -136,7 +136,7 @@ struct TtPath{T<:AbstractFloat}
 end
 function TtPath(agesteps::AbstractArray, constraint::Constraint{T}, boundary::Boundary{T}, detail::DetailInterval{T}, maxpoints::Int) where {T}
     # Discretized temperature
-    agesteps = floatrange(agesteps)
+    agesteps = collect(T, agesteps)
     Tsteps = zeros(T, length(agesteps))
     knot_index = zeros(Int, length(agesteps))
 
