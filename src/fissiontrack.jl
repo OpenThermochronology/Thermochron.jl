@@ -495,6 +495,7 @@ function modellength(track::Union{ApatiteTrackLength{T}, ApatiteTrackLengthOrien
     r .*= track.l0 # Convert from reduced length to length
     μ, σ = nanmean(r, pr), nanstd(r, pr)
     σ = sqrt(σ^2 + track.l0_sigma^2)
+    track.calc .= μ, σ
     return μ, σ
 end
 function modellength(track::MonaziteTrackLength{T}, Tsteps::AbstractVector, am::MonaziteAnnealingModel{T}) where {T <: AbstractFloat}
@@ -517,6 +518,7 @@ function modellength(track::MonaziteTrackLength{T}, Tsteps::AbstractVector, am::
     r .*= track.l0 # Convert from reduced length to length
     μ, σ = nanmean(r, pr), nanstd(r, pr)
     σ = sqrt(σ^2 + track.l0_sigma^2)
+    track.calc .= μ, σ
     return μ, σ
 end
 function modellength(track::ZirconTrackLength{T}, Tsteps::AbstractVector, am::ZirconAnnealingModel{T}) where {T <: AbstractFloat}
@@ -539,6 +541,7 @@ function modellength(track::ZirconTrackLength{T}, Tsteps::AbstractVector, am::Zi
     r .*= track.l0 # Convert from reduced length to length
     μ, σ = nanmean(r, pr), nanstd(r, pr)
     σ = sqrt(σ^2 + track.l0_sigma^2)
+    track.calc .= μ, σ
     return μ, σ
 end
 

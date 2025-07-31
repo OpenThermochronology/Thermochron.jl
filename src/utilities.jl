@@ -798,6 +798,11 @@
             anneal!(chrons, ApatiteHe{T}, tsteps, Tsteps, adm)
         end
 
+        # Flag any fission track lengths for recalculation
+        for i in eachindex(chrons)
+            chrons[i] isa FissionTrackLength && (chrons[i].calc .= NaN)
+        end
+
         # Optionally rescale log likelihoods to avoid one chronometer type from dominating the inversion
         scalegar = rescale ? sqrt(count(x->(isa(x, SphericalAr)||isa(x, PlanarAr)), chrons)) : 1
         scaleghe = rescale ? sqrt(count(x->(isa(x, SphericalHe)||isa(x, PlanarHe)), chrons)) : 1
@@ -814,7 +819,7 @@
 
         # Cycle through each Chronometer, model and calculate log likelihood
         ll = zero(T)
-        for i in eachindex(chrons, μcalc, σcalc)
+        for i in eachindex(chrons, μcalc, σcalc, damodels)
             c, dm = chrons[i], damodels[i]
             first_index = firstindex(Tsteps) + length(tsteps) - length(timediscretization(c))
             if isa(c, SphericalAr) || isa(c, PlanarAr)
@@ -847,22 +852,38 @@
                 ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scaleaft
             elseif isa(c, ZirconTrackLength)
                 c::ZirconTrackLength{T}
-                μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), dm::ZirconAnnealingModel{T})
+                if isnan(first(c.calc))
+                    μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), dm::ZirconAnnealingModel{T})
+                else
+                    μ, σcalc[i] = c.calc
+                end
                 μcalc[i] = draw_from_population(c, σcalc[i])
                 ll += model_ll(c, σcalc[i])/scaleztl
             elseif isa(c, MonaziteTrackLength)
                 c::MonaziteTrackLength{T}
-                μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), dm::MonaziteAnnealingModel{T})
+                if isnan(first(c.calc))
+                    μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), dm::MonaziteAnnealingModel{T})
+                else
+                    μ, σcalc[i] = c.calc
+                end
                 μcalc[i] = draw_from_population(c, σcalc[i])
                 ll += model_ll(c, σcalc[i])/scalemtl
             elseif isa(c, ApatiteTrackLength)
                 c::ApatiteTrackLength{T}
-                μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), dm::ApatiteAnnealingModel{T})
+                if isnan(first(c.calc))
+                    μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), dm::ApatiteAnnealingModel{T})
+                else
+                    μ, σcalc[i] = c.calc
+                end
                 μcalc[i] = draw_from_population(c, σcalc[i])
                 ll += model_ll(c, σcalc[i])/scaleatl
             elseif isa(c, ApatiteTrackLengthOriented)
                 c::ApatiteTrackLengthOriented{T}
-                μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), dm::ApatiteAnnealingModel{T})
+                if isnan(first(c.calc))
+                    μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), dm::ApatiteAnnealingModel{T})
+                else
+                    μ, σcalc[i] = c.calc
+                end
                 μcalc[i] = draw_from_population(c, σcalc[i])
                 ll += model_ll(c, σcalc[i])/scaleato
             elseif isa(c, MultipleDomain)

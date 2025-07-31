@@ -74,6 +74,7 @@ struct ApatiteTrackLengthOriented{T<:AbstractFloat, V<:AbstractVector{T}} <: Fis
     rmr0::T                 # [unitless] relative resistance to annealing (0=most, 1=least)
     r::Vector{T}            # [unitless] reduced track lengths for each timestep
     pr::Vector{T}           # [unitless] reduced track densities for each timestep
+    calc::Vector{T}         # [um] last calculated mean and standard deviation
     agesteps::V             # [Ma] age in Ma relative to the present
     tsteps::V               # [Ma] forward time since crystallization
 end
@@ -91,36 +92,15 @@ function ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64;
         rmr0::Number = NaN,
         agesteps = nothing, 
         tsteps = nothing, 
+        r = zeros(T, size(agesteps)),
+        pr = zeros(T, size(agesteps)),
+        calc = zeros(T, 2),
     )
     # Temporal discretization
     agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
-    # Multikinetic fission track parameters
-    if isnan(rmr0)
-        s = F + Cl + OH
-        rmr0 = if !isnan(s)
-            apatite_rmr0model(F/s*2, Cl/s*2, OH/s*2)
-        elseif !isnan(Cl)
-            apatite_rmr0fromcl(Cl)
-        elseif !isnan(dpar)
-            apatite_rmr0fromdpar(dpar)
-        else
-            0.83
-        end
-    end
-    if isnan(dpar)
-        # Estimate dpar using the relation of Ketcham et al. 1999 (Fig. 7b)
-        dpar = apatite_dparfromrmr0(rmr0)
-    end
-    if isnan(l0) 
-        # Estimate l0 using the relation of Carlson et al. 1999 for c-axis-projected tracks (Equation 2)
-        l0 = apatite_l0modfromdpar(dpar)
-    end
-    if isnan(l0_sigma)
-        # Scatter around the fit of Carlson et al. 1999 for c-axis-projected tracks
-        l0_sigma = 0.1311
-    end
-    r=zeros(T, size(agesteps))
-    pr=zeros(T, size(agesteps))
+    l0, l0_sigma, rmr0 = parseaftparams(;l0, l0_sigma, dpar, F, Cl, OH, rmr0, oriented=true)
+    @assert eachindex(r) == eachindex(pr) == eachindex(agesteps) == eachindex(tsteps)
+    h = hash((ApatiteTrackLengthOriented, offset, agesteps, l0, l0_sigma, rmr0))
     ApatiteTrackLengthOriented(
         T(length),
         T(angle),
@@ -131,6 +111,7 @@ function ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64;
         T(rmr0),
         r,
         pr,
+        calc,
         agesteps,
         tsteps,
     )
@@ -178,8 +159,10 @@ struct ApatiteTrackLength{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTrac
     rmr0::T                 # [unitless] relative resistance to annealing (0=most, 1=least)
     r::Vector{T}            # [unitless] reduced track lengths for each timestep
     pr::Vector{T}           # [unitless] reduced track densities for each timestep
+    calc::Vector{T}         # [um] last calculated mean and standard deviation
     agesteps::V             # [Ma] age in Ma relative to the present
     tsteps::V               # [Ma] forward time since crystallization
+    hash::UInt64            # [unitless] unique ID for linking track lengths with the same offset, agesteps, l0, etc.
 end
 function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64; 
         length::Number = NaN, 
@@ -193,36 +176,16 @@ function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
         rmr0::Number = NaN,
         agesteps = nothing, 
         tsteps = nothing, 
+        r = zeros(T, size(agesteps)),
+        pr = zeros(T, size(agesteps)),
+        calc = zeros(T, 2),
     )
     # Temporal discretization
     agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
     # Multikinetic fission track parameters
-    if isnan(rmr0)
-        s = F + Cl + OH
-        rmr0 = if !isnan(s)
-            apatite_rmr0model(F/s*2, Cl/s*2, OH/s*2)
-        elseif !isnan(Cl)
-            apatite_rmr0fromcl(Cl)
-        elseif !isnan(dpar)
-            apatite_rmr0fromdpar(dpar)
-        else
-            0.83
-        end
-    end
-    if isnan(dpar)
-        # Estimate dpar using the relation of Ketcham et al. 1999 (Fig. 7b)
-        dpar = apatite_dparfromrmr0(rmr0)
-    end
-    if isnan(l0) 
-        # Use the relation of Carlson et al. 1999 for unoriented tracks (equation 1)
-        l0 = apatite_l0fromdpar(dpar)
-    end
-    if isnan(l0_sigma)
-        # Scatter around the fit of Carlson et al. 1999 for unoriented tracks
-        l0_sigma = 0.1367
-    end
-    r=zeros(T, size(agesteps))
-    pr=zeros(T, size(agesteps))
+    l0, l0_sigma, rmr0 = parseaftparams(;l0, l0_sigma, dpar, F, Cl, OH, rmr0, oriented=false)
+    @assert eachindex(r) == eachindex(pr) == eachindex(agesteps) == eachindex(tsteps)
+    h = hash((ApatiteTrackLength, offset, agesteps, l0, l0_sigma, rmr0))
     ApatiteTrackLength(
         T(length),
         T(offset),
@@ -231,11 +194,12 @@ function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
         T(rmr0),
         r,
         pr,
+        calc,
         agesteps,
         tsteps,
+        h,
     )
 end
-
 
 """
 ```julia
@@ -262,8 +226,10 @@ struct ZirconTrackLength{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTrack
     l0_sigma::T             # [um] initial track length uncertainty
     r::Vector{T}            # [unitless] reduced track lengths for each timestep
     pr::Vector{T}           # [unitless] reduced track densities for each timestep
+    calc::Vector{T}         # [um] last calculated mean and standard deviation
     agesteps::V             # [Ma] age in Ma relative to the present
     tsteps::V               # [Ma] forward time since crystallization
+    hash::UInt64            # [unitless] unique ID for linking track lengths with the same offset, agesteps, l0, etc.
 end
 function ZirconTrackLength(T::Type{<:AbstractFloat}=Float64; 
         length::Number = NaN, 
@@ -272,6 +238,9 @@ function ZirconTrackLength(T::Type{<:AbstractFloat}=Float64;
         l0_sigma::Number = 0.051,
         agesteps = nothing, 
         tsteps = nothing,
+        r = zeros(T, size(agesteps)),
+        pr = zeros(T, size(agesteps)),
+        calc = zeros(T, 2),
     )
     # Temporal discretization
     agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
@@ -282,8 +251,8 @@ function ZirconTrackLength(T::Type{<:AbstractFloat}=Float64;
     if isnan(l0_sigma)
         l0_sigma = 0.051
     end
-    r=zeros(T, size(agesteps))
-    pr=zeros(T, size(agesteps))
+    @assert eachindex(r) == eachindex(pr) == eachindex(agesteps) == eachindex(tsteps)
+    h = hash((ZirconTrackLength, offset, agesteps, l0, l0_sigma))
     ZirconTrackLength(
         T(length),
         T(offset),
@@ -291,8 +260,10 @@ function ZirconTrackLength(T::Type{<:AbstractFloat}=Float64;
         T(l0_sigma),
         r,
         pr,
+        calc,
         agesteps,
         tsteps,
+        h,
     )
 end
 
@@ -322,8 +293,10 @@ struct MonaziteTrackLength{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTra
     l0_sigma::T             # [um] initial track length uncertainty
     r::Vector{T}            # [unitless] reduced track lengths for each timestep
     pr::Vector{T}           # [unitless] reduced track densities for each timestep
+    calc::Vector{T}         # [um] last calculated mean and standard deviation
     agesteps::V             # [Ma] age in Ma relative to the present
     tsteps::V               # [Ma] forward time since crystallization
+    hash::UInt64            # [unitless] unique ID for linking track lengths with the same offset, agesteps, l0, etc.
 end
 function MonaziteTrackLength(T::Type{<:AbstractFloat}=Float64; 
         length::Number = NaN,
@@ -332,6 +305,9 @@ function MonaziteTrackLength(T::Type{<:AbstractFloat}=Float64;
         l0_sigma::Number = 0.19,
         agesteps = nothing, 
         tsteps = nothing, 
+        r = zeros(T, size(agesteps)),
+        pr = zeros(T, size(agesteps)),
+        calc = zeros(T, 2),
     )
     # Temporal discretization
     agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
@@ -342,8 +318,8 @@ function MonaziteTrackLength(T::Type{<:AbstractFloat}=Float64;
     if isnan(l0_sigma)
         l0_sigma = 0.19
     end
-    r=zeros(T, size(agesteps))
-    pr=zeros(T, size(agesteps))
+    @assert eachindex(r) == eachindex(pr) == eachindex(agesteps) == eachindex(tsteps)
+    h = hash((MonaziteTrackLength, offset, agesteps, l0, l0_sigma))
     MonaziteTrackLength(
         T(length),
         T(offset),
@@ -351,8 +327,10 @@ function MonaziteTrackLength(T::Type{<:AbstractFloat}=Float64;
         T(l0_sigma),
         r,
         pr,
+        calc,
         agesteps,
         tsteps,
+        h,
     )
 end
 
