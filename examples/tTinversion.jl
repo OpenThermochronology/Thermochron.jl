@@ -42,8 +42,18 @@
 
 ## --- Prepare problem
 
-    dt = 8.0 # [Ma] Model timestep
+    dt = 8.0 # [Ma] Average model timestep
     tinit = ceil(maximum(ds.crystallization_age_Ma)/dt) * dt # [Ma] Model start time
+    
+    # Option A: Linear timesteps
+    agesteps = cntr(tinit:-dt:0)
+
+    # # Option B: Logarithmic timesteps
+    # agesteps = cntr(logrange(tinit+dt, dt, length=Int(tinit÷dt+1)) .- dt)
+
+    # Check the validity of the requested time discretization (correct order, etc.)
+    agesteps, tsteps = checktimediscretization(Float64, agesteps)
+    @info """Preparing model with $(length(agesteps)) $(allequal(diff(agesteps)) ? "linear" : "nonlinear") timesteps with bin centers between $(round(first(agesteps),digits=3)) and $(round(last(agesteps), digits=3)) Ma"""
 
     model = (
         nsteps = 400000,                # [n] How many steps of the Markov chain should we run?
@@ -57,8 +67,8 @@
         dt = dt,                        # [Ma] Model timestep
         tinit = tinit,                  # [Ma] Model start time
         tnow = 0.0,                     # [Ma] Model end time (today)
-        tsteps = cntr(0:dt:tinit),      # [Ma] Forward time discretiziation (from start of model)
-        agesteps = cntr(tinit:-dt:0),   # [Ma] Age discretization (relative to the present)
+        tsteps = tsteps,                # [Ma] Forward time discretiziation (from start of model)
+        agesteps = agesteps,            # [Ma] Age discretization (relative to the present)
         minpoints = 15,                 # [n] Minimum allowed number of model t-T points (nodes)
         maxpoints = 50,                 # [n] Maximum allowed number of model t-T points (nodes)
         dynamicsigma = false,           # Update model uncertainties throughout inversion?

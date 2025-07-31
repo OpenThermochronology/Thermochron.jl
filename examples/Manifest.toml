@@ -1869,9 +1869,11 @@ version = "1.11.0"
 
 [[deps.Thermochron]]
 deps = ["Distributions", "LinearAlgebra", "LogExpFunctions", "LoopVectorization", "LsqFit", "NaNStatistics", "ProgressMeter", "Reexport", "StatGeochemBase", "Statistics"]
-git-tree-sha1 = "e2d61671c624329a57eb4f0eb08b9c77068320ae"
+git-tree-sha1 = "3448bd2b1bcfc3d1a1a872686c78919f1ab9f940"
+repo-rev = "main"
+repo-url = "https://github.com/OpenThermochronology/Thermochron.jl.git"
 uuid = "b9a8379e-ee1a-4388-b7ca-7852af1cef08"
-version = "0.15.8"
+version = "0.16.0"
 weakdeps = ["Plots"]
 
     [deps.Thermochron.extensions]
