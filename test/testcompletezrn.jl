@@ -63,7 +63,7 @@
         Tdist =   [     Uniform(0,50),],  # [C] Temperature distribution
     )
 
-## --- Invert for maximum likelihood t-T path
+## --- Invert for t-T path via MCMC
 
     # Run Markov Chain
     @time "\nCompiling MCMC" MCMC(data, model, boundary, constraint)

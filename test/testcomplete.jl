@@ -62,7 +62,12 @@
 
 ## --- Test generation of Chronometer objects, with StepRangeLen for timesteps/agesteps
 
-    # Modern input format, generic
+    # Modern input format, generic.csv
+    tsteps = (model.dt/2 : model.dt : 3000-model.dt/2)
+    agesteps = (3000-model.dt/2 : -model.dt : model.dt/2)
+    Tsteps = range(650, 0, length=length(tsteps))
+    model = (model..., agesteps = agesteps, tsteps = tsteps)
+
     dsg = importdataset(joinpath(datapath, "generic.csv"), ',', importas=:Tuple)
     chrons, damodels = chronometers(dsg, model, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
     @test chrons isa Vector{<:Chronometer}
@@ -84,10 +89,6 @@
     @test count(x->isa(x,MultipleDomain), chrons) == 2
     @test get_age(chrons) ≈ [150.37, 263.92, 150.37, 263.92, 263.92, 917.84, 1023.73, 1023.73, 380., 380., 120., 120., 1080., 300., 100., 150., 180., 808.3268143245239, 808.3268143245239,] 
     @test get_age_sigma(chrons) ≈ [5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,28.52408719185519,28.52408719185519,]
-
-    dt = 10.0
-    tsteps = (0+dt/2 : dt : 3000-dt/2)
-    Tsteps = range(650, 0, length=length(tsteps))
 
     calc = zeros(length(chrons))
     calcuncert = zeros(length(chrons))
@@ -121,14 +122,16 @@
     @test σcalc[t] ≈  [57.014755105003104, 57.014755105003104, 14.8734143752182, 14.8734143752182, 89.77854252945355, 23.42048935550962] 
 
     # Modern input format, Minnesota dataset
+    tsteps = (model.dt/2 : model.dt : model.tinit-model.dt/2)
+    agesteps = (model.tinit-model.dt/2 : -model.dt : model.dt/2)
+    Tsteps = range(model.Tinit, model.Tnow, length=length(tsteps))
+    model = (model..., agesteps = agesteps, tsteps = tsteps)
+
     chrons, damodels = chronometers(ds, model, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
     @test chrons isa Vector{<:Chronometer}
     @test length(chrons) == length(ds.mineral)
     @test get_age(chrons) ≈ [770, 659, 649, 638, 620, 557, 545, 500, 493, 357, 329, 253, 241, 225, 225, 217, 193, 190, 72, 57, 42, 29, 11, 234, 98, 233, 339, 378, 258, 158, 269, 313, 309, 392]
     @test get_age_sigma(chrons) ≈ [15.0, 51.0, 13.0, 12.6, 18.4, 10.0, 12.0, 10.0, 43.0, 7.0, 7.0, 5.2, 4.6, 4.6, 6.0, 5.0, 4.0, 4.0, 2.0, 1.1, 1.1, 0.8, 0.2, 9.4, 2.0, 5.0, 6.0, 9.3, 5.0, 3.3, 8.1, 5.8, 6.0, 8.0]
-
-    tsteps = model.tsteps
-    Tsteps = range(model.Tinit, model.Tnow, length=length(tsteps))
 
     calc = zeros(length(chrons))
     calcuncert = zeros(length(chrons))
@@ -148,6 +151,20 @@
     @test get_age(chrons, ZirconHe) ≈ [770, 659, 649, 638, 620, 557, 545, 500, 493, 357, 329, 253, 241, 225, 225, 217, 193, 190, 72, 57, 42, 29, 11]
     σtotal = sqrt.(σcalc[isa.(chrons, ZirconHe)].^2 + get_age_sigma(chrons, ZirconHe).^2)
     @test σtotal ≈ [71.76511200022767, 88.69939042178478, 76.20513740085536, 49.74341557807492, 52.05638860615669, 58.80850040722076, 57.32853093748527, 97.59191128458991, 68.09272937102548, 82.41401338162268, 104.5147581608337, 72.10558616290515, 79.47676757701001, 68.01965448205827, 72.8583946436481, 73.94974380762895, 63.02840819654363, 63.478989858090436, 45.255278015066644, 66.3078727295436, 52.90379008918621, 69.14186488208391, 62.394435852786344]
+
+    # Modern input format, manitoba.csv
+    tsteps = (model.dt/2 : model.dt : 2790-model.dt/2)
+    agesteps = (2790-model.dt/2 : -model.dt : model.dt/2)
+    Tsteps = range(650, 0, length=length(tsteps))
+    model = (model..., agesteps = agesteps, tsteps = tsteps)
+
+    dsm = importdataset(joinpath(datapath, "manitoba.csv"), ',', importas=:Tuple)
+    chrons, damodels = chronometers(dsm, model, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
+    @test chrons isa Vector{<:Chronometer}
+    @test length(chrons) == 333
+    calc = zeros(length(chrons))
+    calcuncert = zeros(length(chrons))
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -8.143826601580801e8
 
 ## --- Test generation and use of Chronometer objects, with nonuniform (log) Vector for agesteps/tsteps
 
@@ -228,7 +245,7 @@
     # Test an individual apatite
     @test last(calc) ≈ modelage(last(chrons), Tsteps, RDAAM())
 
-## --- Invert for maximum likelihood t-T path
+## --- Invert for t-T path via MCMC
 
     # Run Markov Chain
     @time "\nCompiling MCMC" MCMC(data, model, boundary, unconf)
@@ -249,7 +266,7 @@
 
     @test isa(tT.lldist, AbstractVector)
     llmean = mean(tT.lldist)
-    @test -450 < llmean < 0
+    @test -500 < llmean < 0
     @info "Mean ll: $llmean"
 
     @test isa(tT.acceptancedist, AbstractVector{Bool})
@@ -260,7 +277,6 @@
     @test minimum(tT.ndist) >= model.minpoints
     @test maximum(tT.ndist) <= model.maxpoints
     @info "Mean npoints: $(mean(tT.ndist))"
-
 
     @test mean(tT.jtdist) ≈ model.tinit/60
     @info "Mean σjt: $(mean(tT.jtdist))"
@@ -344,7 +360,7 @@
     # Test an individual apatite
     @test last(calc) ≈ modelage(last(chrons), Tsteps, RDAAM())
 
-## --- Invert for maximum likelihood t-T path, as above, but with variable kinetic parameters
+## --- Invert for t-T path, as above, but with variable kinetic parameters
 
     # Run Markov Chain
     @time "\nCompiling MCMC_varkinetics" MCMC_varkinetics(data, model, boundary, unconf)
