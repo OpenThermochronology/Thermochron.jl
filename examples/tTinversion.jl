@@ -244,34 +244,66 @@
         end
     end
 
-## -- Plot calculated/observed ages as a function of rmr0 (ApatiteFT)
+## -- Plot calculated/observed ages as a function of rₘᵣ₀ (ApatiteFT)
 
-    t = isa.(chrons, ApatiteFT)
-    if any(t)
-        rmr0 = chrons[t] .|> x->x.rmr0
-        μobs = get_age(chrons[t])
-        σtotal = sqrt.(get_age_sigma(chrons[t]).^2 + model.σcalc[t].^2)
-        h = scatter(rmr0, μobs, yerror=2σtotal,
-            xlabel = "rmr0 [unitless]",
-            ylabel = "Age [Ma]",
-            label = "Data (2σ total)", 
-            framestyle = :box,
-            color = :black,
-            title = "ApatiteFT",
-        )
-        agedist = tT.resultdist[t,:]
-        m = nanmean(agedist, dim=2)
-        l = nanpctile(agedist, 2.5, dim=2)
-        u = nanpctile(agedist, 97.5, dim=2)
-        scatter!(h, rmr0, m, 
-            yerror = (m-l, u-m), 
-            label = "Model (95%CI)", 
-            color = mineralcolors["apatite"], 
-            msc = mineralcolors["apatite"], 
-        )
-        savefig(h, "$(name)_ApatiteFT_predicted.pdf")
-        display(h)
-    end
+t = isa.(chrons, ApatiteFT)
+if any(t)
+    rmr0 = chrons[t] .|> x->x.rmr0
+    μobs = get_age(chrons[t])
+    σtotal = sqrt.(get_age_sigma(chrons[t]).^2 + model.σcalc[t].^2)
+    h = scatter(rmr0, μobs, yerror=2σtotal,
+        xlabel = "rₘᵣ₀ [unitless]", ylabel = "Age [Ma]",
+        label = "Data (2σ total)", framestyle = :box,
+        color = :black, title = "Apatite FT",
+        legend = :topright,
+    )
+    agedist = tT.resultdist[t,:]
+    m = nanmean(agedist, dim=2)
+    l = nanpctile(agedist, 2.5, dim=2)
+    u = nanpctile(agedist, 97.5, dim=2)
+    scatter!(h, rmr0, m, 
+        yerror = (m-l, u-m), 
+        label = "Model (95%CI)", 
+        color = mineralcolors["apatite"], msc = mineralcolors["apatite"]
+    )
+    # --- Weighted Mean Calculations ---
+    weights = 1.0 ./ (get_age_sigma(chrons[t]).^2)
+    wmean_obs = sum(μobs .* weights) / sum(weights)
+    σ_obs = sqrt(1.0 / sum(weights))  # uncertainty of weighted mean
+    
+    # Predicted AFT: 95% CI as RANGE
+    wmean_pred = nanmean(agedist)
+    ci_low = nanpctile(agedist, 2.5)
+    ci_high = nanpctile(agedist, 97.5)  
+
+    # Instead plots predicted AFT ± 95%CI; ; symmetric approximation
+    #wmean_pred = nanmean(agedist)
+    #ci95_halfwidth = (nanpctile(agedist, 97.5) - nanpctile(agedist, 2.5)) / 2
+
+    # --- Annotations ---
+    x_annot = minimum(rmr0) + 0.02 * (maximum(rmr0) - minimum(rmr0))  # 2% from left
+    y_annot = maximum(ylims(h)) * 0.9  # 90% of y-range
+
+    # Observed AFT weighted mean age
+    annotate!(h, x_annot, y_annot, 
+        text("Obs: $(round(wmean_obs, digits=1)) ± $(round(2*σ_obs, digits=1)) Ma (2σ)", 
+             8, :left, :black)
+    )
+    # Predicted AFT age with 95%CI RANGE
+    annotate!(h, x_annot, y_annot * 0.95, 
+    text("Pred: $(round(wmean_pred, digits=1)) Ma (95%CI: $(round(ci_low, digits=1))–$(round(ci_high, digits=1)))", 
+         8, :left, mineralcolors["apatite"])
+    )
+    
+    # Predicted AFT age with ± 95%CI; symmetric approximation
+    #annotate!(h, x_annot, y_annot * 0.95, 
+    #text("Pred: $(round(wmean_pred, digits=1)) ± $(round(ci95_halfwidth, digits=1)) Ma (95% CI)", 
+    #     8, :left, mineralcolors["apatite"])
+    #)
+
+    savefig(h, "$(name)_ApatiteFT_predicted.pdf")
+    display(h)
+end
 
 ## -- Plot calculated and observed ages (most other chronometers)
 
