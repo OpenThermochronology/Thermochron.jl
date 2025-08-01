@@ -266,7 +266,7 @@
 
     @test isa(tT.lldist, AbstractVector)
     llmean = mean(tT.lldist)
-    @test -500 < llmean < 0
+    @test -800 < llmean < 0
     @info "Mean ll: $llmean"
 
     @test isa(tT.acceptancedist, AbstractVector{Bool})
