@@ -484,6 +484,20 @@ using HypothesisTests
     savefig(k, name*"_tT.pdf")
     display(k)
 
+## ---
+
+# Save tTs using JLD2 (compressed)
+    using JLD2
+    @save "$name.jld2" tT kinetics model
+
+## ---
+
+# Then compress from Julia
+    run(`gzip "$name.jld2"`)
+
+# Decompress
+#    run(`gunzip "$name.jld2".gz`)
+
 ## --- Plot a zoomed-in version
 
     # xrange = (0,100)
