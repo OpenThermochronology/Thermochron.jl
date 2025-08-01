@@ -164,28 +164,18 @@
     Mean jT: $(nanmean(view(tT.jTdist, model.burnin:model.nsteps)))
     """
 
-    # # Save tTs using JLD (compressed)
-    # using JLD: jldopen, @write
-    # jldopen("$name.jld", "w", compress=true) do file
-    #     @write file tT
-    #     @write file model
-    # end
+## --- (optional) Save or load full tT results to/from file
+    using JLD2, CodecZlib
 
-    # # Alternatively, save as MAT file
-    # using MAT
-    # matwrite("$name.mat", Dict(
-    #     "tpointdist"=>tT.tpointdist,
-    #     "Tpointdist"=>tT.Tpointdist,
-    #     "ndist"=>tT.ndist,
-    #     "resultdist"=>tT.resultdist,
-    #     "lldist"=>tT.lldist,
-    #     "acceptancedist"=>tT.acceptancedist,
-    #     "model"=>Dict(
-    #         replace.(string.(keys(model)), "σ"=>"sigma", "λ"=>"lambda", "Δ"=>"Delta") .=> values(model)
-    #     )
-    # ), compress=true)
+    # Save tTs using JLD2 (compressed)
+    @save "$name.jld2" {compress=true} tT kinetics model
 
-    # Plot log likelihood distribution
+    # # Load saved tTs
+    # @load "$name.jld2"
+
+
+## ---  Plot log likelihood distribution
+
     h = plot(tT.lldist, xlabel="Step number", ylabel="Log likelihood", label="", framestyle=:box)
     savefig(h, name*"_lldist.pdf")
     display(h)
