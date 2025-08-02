@@ -2,6 +2,9 @@ using Thermochron
 using LinearAlgebra, Statistics
 using Test
 
+const GROUP = get(ENV, "GROUP", "All")
+liveplot = GROUP == "All" || GROUP == "Plot"
+
 @testset "Utilities" begin include("testutilities.jl") end
 @testset "Fission Track" begin include("testfissiontrack.jl") end
 @testset "Generic Helium" begin include("testhelium.jl") end

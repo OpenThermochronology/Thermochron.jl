@@ -67,7 +67,7 @@
 
     # Run Markov Chain
     @time "\nCompiling MCMC" MCMC(data, model, boundary, constraint)
-    @time "\nRunning MCMC" tT = MCMC(data, model, boundary, constraint)
+    @time "\nRunning MCMC" tT = MCMC(data, model, boundary, constraint; liveplot)
 
     @test isa(tT.Tpointdist, AbstractMatrix)
     @test nanmaximum(tT.Tpointdist) <= model.Tinit
@@ -108,7 +108,7 @@
         agemax = 1000, # Oldest end of detail interval
         minpoints = 3, # Minimum number of points in detail interval
     )
-    @time "\nMCMC with Detail interval" tT = MCMC(data, model, boundary, constraint, detail)
+    @time "\nMCMC with Detail interval" tT = MCMC(data, model, boundary, constraint, detail; liveplot)
 
     @test isa(tT.Tpointdist, AbstractMatrix)
     @test nanmaximum(tT.Tpointdist) <= model.Tinit
@@ -147,7 +147,7 @@
     model = (model...,
         dynamicjumping=true
     )
-    @time "\nMCMC with Detail interval & dynamicjumping" tT = MCMC(data, model, boundary, constraint, detail)
+    @time "\nMCMC with Detail interval & dynamicjumping" tT = MCMC(data, model, boundary, constraint, detail; liveplot)
 
     @test isa(tT.Tpointdist, AbstractMatrix)
     @test nanmaximum(tT.Tpointdist) <= model.Tinit

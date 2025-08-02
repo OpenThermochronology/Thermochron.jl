@@ -93,7 +93,6 @@
             h = plot(framestyle=:box,
                 xlabel="Time [Ma]", 
                 ylabel="Temperature [°C]", 
-                title="Paths not recorded during burnin",
                 colorbar_title="Number of paths",
             )
             display(h)
@@ -173,13 +172,12 @@
                 collectto!(Tpbv, view(path.Tpoints, Base.OneTo(npoints)), path.boundary.Tpoints, path.constraint.Tpoints)
                 if mod(n, progress_interval) == 0
                     (A, xc, yc) = image_from_paths!(imgcounts, tpointbuffer, Tpointbuffer; xrange=boundary.agepoints, yrange=boundary.T₀)
-                    heatmap!(h, xc, yc, A, colormap=:viridis, zlims=(0, nanpctile(A,95)), title="Burn-in: $n of $nsteps steps")
+                    heatmap!(h, xc, yc, A, colormap=:viridis, zlims=(0, nanpctile(A,85)), title="Burn-in: $n of $nsteps steps")
                     display(h)
                 end
             end
         end
         finish!(bprogress)
-        liveplot && fill!(imgcounts, 0)
 
         # distributions to populate
         tpointdist = fill(T(NaN), totalpoints, nsteps)
@@ -193,6 +191,14 @@
 
         progress = Progress(nsteps, desc="MCMC collection ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
+        if liveplot # Optionally prepare to plot t-T paths
+            fill!(imgcounts, 0)
+            h = plot(framestyle=:box,
+                xlabel="Time [Ma]", 
+                ylabel="Temperature [°C]", 
+                colorbar_title="Number of paths",
+            )
+        end
         for n = 1:nsteps
             @label crestart
 
@@ -276,7 +282,7 @@
             if liveplot && mod(n, progress_interval) == 0
                 new = (n-progress_interval+1):n
                 (A, xc, yc) = image_from_paths!(imgcounts, tpointdist[:,new], Tpointdist[:,new]; xrange=boundary.agepoints, yrange=boundary.T₀)
-                heatmap!(h, xc, yc, A, colormap=:viridis, zlims=(0, nanpctile(A,95)), title="Collection: $n of $nsteps steps")
+                heatmap!(h, xc, yc, A, colormap=:viridis, zlims=(0, nanpctile(A,85)), title="Collection: $n of $nsteps steps")
                 display(h)
             end
         end
@@ -485,13 +491,12 @@
                 collectto!(Tpbv, view(path.Tpoints, Base.OneTo(npoints)), path.boundary.Tpoints, path.constraint.Tpoints)
                 if mod(n, progress_interval) == 0
                     (A, xc, yc) = image_from_paths!(imgcounts, tpointbuffer, Tpointbuffer; xrange=boundary.agepoints, yrange=boundary.T₀)
-                    heatmap!(h, xc, yc, A, colormap=:viridis, zlims=(0, nanpctile(A,95)), title="Burn-in: $n of $nsteps steps")
+                    heatmap!(h, xc, yc, A, colormap=:viridis, zlims=(0, nanpctile(A,85)), title="Burn-in: $n of $nsteps steps")
                     display(h)
                 end
             end
         end
         finish!(bprogress)
-        liveplot && fill!(imgcounts, 0)
 
         # distributions to populate
         tpointdist = fill(T(NaN), totalpoints, nsteps)
@@ -506,6 +511,14 @@
 
         progress = Progress(nsteps, desc="MCMC collection ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
+        if liveplot # Optionally prepare to plot t-T paths
+            fill!(imgcounts, 0)
+            h = plot(framestyle=:box,
+                xlabel="Time [Ma]", 
+                ylabel="Temperature [°C]", 
+                colorbar_title="Number of paths",
+            )
+        end
         for n = 1:nsteps
             @label crestart
 
@@ -597,7 +610,7 @@
             if liveplot && mod(n, progress_interval) == 0
                 new = (n-progress_interval+1):n
                 (A, xc, yc) = image_from_paths!(imgcounts, tpointdist[:,new], Tpointdist[:,new]; xrange=boundary.agepoints, yrange=boundary.T₀)
-                heatmap!(h, xc, yc, A, colormap=:viridis, zlims=(0, nanpctile(A,95)), title="Collection: $n of $nsteps steps")
+                heatmap!(h, xc, yc, A, colormap=:viridis, zlims=(0, nanpctile(A,85)), title="Collection: $n of $nsteps steps")
                 display(h)
             end
         end

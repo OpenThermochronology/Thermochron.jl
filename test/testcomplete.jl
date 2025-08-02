@@ -249,7 +249,7 @@
 
     # Run Markov Chain
     @time "\nCompiling MCMC" MCMC(data, model, boundary, unconf)
-    @time "\nRunning MCMC" tT = MCMC(data, model, boundary, unconf; liveplot=true)
+    @time "\nRunning MCMC" tT = MCMC(data, model, boundary, unconf; liveplot)
 
     @test isa(tT.Tpointdist, AbstractMatrix)
     @test nanmaximum(tT.Tpointdist) <= model.Tinit
@@ -364,7 +364,7 @@
 
     # Run Markov Chain
     @time "\nCompiling MCMC_varkinetics" MCMC_varkinetics(data, model, boundary, unconf)
-    @time "\nRunning MCMC_varkinetics" tT, kinetics = MCMC_varkinetics(data, model, boundary, unconf; liveplot=true)
+    @time "\nRunning MCMC_varkinetics" tT, kinetics = MCMC_varkinetics(data, model, boundary, unconf; liveplot)
 
     @test isa(tT.Tpointdist, AbstractMatrix)
     @test nanmaximum(tT.Tpointdist) <= model.Tinit
@@ -438,7 +438,7 @@
         agemax = 1000, # Oldest end of detail interval
         minpoints = 3, # Minimum number of points in detail interval
     )
-    @time "\nMCMC with Detail interval" tT = MCMC(data, model, boundary, unconf, detail)
+    @time "\nMCMC with Detail interval" tT = MCMC(data, model, boundary, unconf, detail; liveplot)
 
     @test isa(tT.Tpointdist, AbstractMatrix)
     @test nanmaximum(tT.Tpointdist) <= model.Tinit
@@ -475,7 +475,7 @@
 
 ## --- MCMC_varkinetics with Detail interval
 
-    @time "\nMCMC_varkinetics with Detail interval" tT, kinetics = MCMC_varkinetics(data, model, boundary, unconf, detail)
+    @time "\nMCMC_varkinetics with Detail interval" tT, kinetics = MCMC_varkinetics(data, model, boundary, unconf, detail; liveplot)
 
     @test isa(tT.Tpointdist, AbstractMatrix)
     @test nanmaximum(tT.Tpointdist) <= model.Tinit
@@ -551,7 +551,7 @@
         Tdist =   [   Uniform(0,50),],  # [C] Temperature distribution
     )
 
-    @time "\nMCMC with Detail interval & dynamicjumping" tT = MCMC(data, model, boundary, unconf, detail)
+    @time "\nMCMC with Detail interval & dynamicjumping" tT = MCMC(data, model, boundary, unconf, detail; liveplot)
 
     @test isa(tT.Tpointdist, AbstractMatrix)
     @test nanmaximum(tT.Tpointdist) <= model.Tinit
@@ -588,7 +588,7 @@
 
 ## --- MCMC_varkinetics with Detail interval & dynamicjumping
 
-    @time "\nMCMC_varkinetics with Detail interval & dynamicjumping" tT, kinetics = MCMC_varkinetics(data, model, boundary, unconf, detail)
+    @time "\nMCMC_varkinetics with Detail interval & dynamicjumping" tT, kinetics = MCMC_varkinetics(data, model, boundary, unconf, detail; liveplot)
 
     @test isa(tT.Tpointdist, AbstractMatrix)
     @test nanmaximum(tT.Tpointdist) <= model.Tinit
