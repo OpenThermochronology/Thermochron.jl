@@ -172,7 +172,7 @@
                 collectto!(Tpbv, view(path.Tpoints, Base.OneTo(npoints)), path.boundary.Tpoints, path.constraint.Tpoints)
                 if mod(n, progress_interval) == 0
                     (A, xc, yc) = image_from_paths!(imgcounts, tpointbuffer, Tpointbuffer; xrange=boundary.agepoints, yrange=boundary.T₀)
-                    heatmap!(h, xc, yc, A, colormap=:viridis, zlims=(0, nanpctile(A,85)), title="Burn-in: $n of $nsteps steps")
+                    heatmap!(h, xc, yc, A, colormap=:viridis, clims=(0, nanpctile(A,99.5)), title="Burn-in: $n of $nsteps steps")
                     display(h)
                 end
             end
@@ -282,7 +282,7 @@
             if liveplot && mod(n, progress_interval) == 0
                 new = (n-progress_interval+1):n
                 (A, xc, yc) = image_from_paths!(imgcounts, tpointdist[:,new], Tpointdist[:,new]; xrange=boundary.agepoints, yrange=boundary.T₀)
-                heatmap!(h, xc, yc, A, colormap=:viridis, zlims=(0, nanpctile(A,85)), title="Collection: $n of $nsteps steps")
+                heatmap!(h, xc, yc, A, colormap=:viridis, clims=(0, nanpctile(A,99.5)), title="Collection: $n of $nsteps steps")
                 display(h)
             end
         end
@@ -491,7 +491,7 @@
                 collectto!(Tpbv, view(path.Tpoints, Base.OneTo(npoints)), path.boundary.Tpoints, path.constraint.Tpoints)
                 if mod(n, progress_interval) == 0
                     (A, xc, yc) = image_from_paths!(imgcounts, tpointbuffer, Tpointbuffer; xrange=boundary.agepoints, yrange=boundary.T₀)
-                    heatmap!(h, xc, yc, A, colormap=:viridis, zlims=(0, nanpctile(A,85)), title="Burn-in: $n of $nsteps steps")
+                    heatmap!(h, xc, yc, A, colormap=:viridis, clims=(0, nanpctile(A,99.5)), title="Burn-in: $n of $nsteps steps")
                     display(h)
                 end
             end
@@ -610,7 +610,7 @@
             if liveplot && mod(n, progress_interval) == 0
                 new = (n-progress_interval+1):n
                 (A, xc, yc) = image_from_paths!(imgcounts, tpointdist[:,new], Tpointdist[:,new]; xrange=boundary.agepoints, yrange=boundary.T₀)
-                heatmap!(h, xc, yc, A, colormap=:viridis, zlims=(0, nanpctile(A,85)), title="Collection: $n of $nsteps steps")
+                heatmap!(h, xc, yc, A, colormap=:viridis, clims=(0, nanpctile(A,99.5)), title="Collection: $n of $nsteps steps")
                 display(h)
             end
         end
