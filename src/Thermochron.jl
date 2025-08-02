@@ -7,6 +7,7 @@ module Thermochron
     import StatGeochemBase.image_from_paths
     import StatGeochemBase.image_from_paths!
 
+    using Plots
     using LinearAlgebra
     using LoopVectorization
     using ProgressMeter: Progress, update!, finish!

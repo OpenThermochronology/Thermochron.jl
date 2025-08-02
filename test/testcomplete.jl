@@ -249,7 +249,7 @@
 
     # Run Markov Chain
     @time "\nCompiling MCMC" MCMC(data, model, boundary, unconf)
-    @time "\nRunning MCMC" tT = MCMC(data, model, boundary, unconf)
+    @time "\nRunning MCMC" tT = MCMC(data, model, boundary, unconf; liveplot=true)
 
     @test isa(tT.Tpointdist, AbstractMatrix)
     @test nanmaximum(tT.Tpointdist) <= model.Tinit
@@ -364,7 +364,7 @@
 
     # Run Markov Chain
     @time "\nCompiling MCMC_varkinetics" MCMC_varkinetics(data, model, boundary, unconf)
-    @time "\nRunning MCMC_varkinetics" tT, kinetics = MCMC_varkinetics(data, model, boundary, unconf)
+    @time "\nRunning MCMC_varkinetics" tT, kinetics = MCMC_varkinetics(data, model, boundary, unconf; liveplot=true)
 
     @test isa(tT.Tpointdist, AbstractMatrix)
     @test nanmaximum(tT.Tpointdist) <= model.Tinit

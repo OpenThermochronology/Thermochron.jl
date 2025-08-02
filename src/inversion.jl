@@ -16,11 +16,11 @@
     tT = MCMC(chrons::NamedTuple, model::NamedTuple, constraint::Constraint, boundary::Boundary, [detail::DetailInterval])
     ```
     """
-    function MCMC(dataset::NamedTuple, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where {T <: AbstractFloat}
+    function MCMC(dataset::NamedTuple, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T); kwargs...) where {T <: AbstractFloat}
         chrons, damodels = chronometers(T, dataset, model)
-        MCMC(chrons, damodels, model, boundary, constraint, detail)
+        MCMC(chrons, damodels, model, boundary, constraint, detail; kwargs...)
     end
-    function MCMC(chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
+    function MCMC(chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T); liveplot::Bool=false) where T <: AbstractFloat
         # Process inputs
         burnin = (haskey(model, :burnin) ? model.burnin : 5*10^5)::Int
         nsteps = (haskey(model, :nsteps) ? model.nsteps : 10^6)::Int
@@ -85,8 +85,21 @@
         @assert p_move + p_birth + p_death + p_bounds ≈ 1
         @assert p_birth == p_death
 
-        bprogress = Progress(burnin, dt=1, desc="MCMC burn-in ($(burnin) steps)")
+        # Prepare and run burnin
+        bprogress = Progress(burnin, desc="MCMC burn-in ($(burnin) steps)")
         progress_interval = ceil(Int,sqrt(burnin))
+        if liveplot # Optionally prepare to plot t-T paths live
+            imgcounts = zeros(200, 300)
+            h = plot(framestyle=:box,
+                xlabel="Time [Ma]", 
+                ylabel="Temperature [°C]", 
+                title="Paths not recorded during burnin",
+                colorbar_title="Number of paths",
+            )
+            display(h)
+            tpointbuffer = fill(T(NaN), totalpoints, progress_interval)
+            Tpointbuffer = fill(T(NaN), totalpoints, progress_interval)
+        end
         for n = 1:burnin
             @label brestart
 
@@ -151,8 +164,22 @@
 
             # Update progress meter every `progress_interval` steps
             (mod(n, progress_interval) == 0) && update!(bprogress, n)
+
+            # Optionally update live t-T plot
+            if liveplot
+                tpbv = fill!(view(tpointbuffer, :, 1+mod(n, progress_interval)), NaN)
+                Tpbv = fill!(view(Tpointbuffer, :, 1+mod(n, progress_interval)), NaN)
+                collectto!(tpbv, view(path.agepoints, Base.OneTo(npoints)), path.boundary.agepoints, path.constraint.agepoints)
+                collectto!(Tpbv, view(path.Tpoints, Base.OneTo(npoints)), path.boundary.Tpoints, path.constraint.Tpoints)
+                if mod(n, progress_interval) == 0
+                    (A, xc, yc) = image_from_paths!(imgcounts, tpointbuffer, Tpointbuffer; xrange=boundary.agepoints, yrange=boundary.T₀)
+                    heatmap!(h, xc, yc, A, colormap=:viridis, zlims=(0, nanpctile(A,95)), title="Burn-in: $n of $nsteps steps")
+                    display(h)
+                end
+            end
         end
         finish!(bprogress)
+        liveplot && fill!(imgcounts, 0)
 
         # distributions to populate
         tpointdist = fill(T(NaN), totalpoints, nsteps)
@@ -164,7 +191,7 @@
         ndist = zeros(Int, nsteps)
         acceptancedist = falses(nsteps)
 
-        progress = Progress(nsteps, dt=2, desc="MCMC collection ($(nsteps) steps):")
+        progress = Progress(nsteps, desc="MCMC collection ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
         for n = 1:nsteps
             @label crestart
@@ -244,6 +271,14 @@
 
             # Update progress meter every `progress_interval` steps
             (mod(n, progress_interval) == 0) && update!(progress, n)
+
+            # Optionally update t-T plot
+            if liveplot && mod(n, progress_interval) == 0
+                new = (n-progress_interval+1):n
+                (A, xc, yc) = image_from_paths!(imgcounts, tpointdist[:,new], Tpointdist[:,new]; xrange=boundary.agepoints, yrange=boundary.T₀)
+                heatmap!(h, xc, yc, A, colormap=:viridis, zlims=(0, nanpctile(A,95)), title="Collection: $n of $nsteps steps")
+                display(h)
+            end
         end
         finish!(progress)
 
@@ -280,11 +315,11 @@
     tT, kinetics = MCMC_varkinetics(chrons::NamedTuple, model::NamedTuple, constraint::Constraint, boundary::Boundary, [detail::DetailInterval])
     ```
     """
-    function MCMC_varkinetics(dataset::NamedTuple, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where {T <: AbstractFloat}
+    function MCMC_varkinetics(dataset::NamedTuple, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T); kwargs...) where {T <: AbstractFloat}
         chrons, damodels = chronometers(T, dataset, model)
-        MCMC_varkinetics(chrons, damodels, model, boundary, constraint, detail)
+        MCMC_varkinetics(chrons, damodels, model, boundary, constraint, detail; kwargs...)
     end
-    function MCMC_varkinetics(chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T)) where T <: AbstractFloat
+    function MCMC_varkinetics(chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T); liveplot::Bool=false) where T <: AbstractFloat
         # Process inputs
         burnin = (haskey(model, :burnin) ? model.burnin : 5*10^5)::Int
         nsteps = (haskey(model, :nsteps) ? model.nsteps : 10^6)::Int
@@ -356,8 +391,20 @@
         @assert p_move + p_birth + p_death + p_bounds + p_kinetics ≈ 1
         @assert p_birth == p_death
 
-        bprogress = Progress(burnin, dt=2, desc="MCMC burn-in ($(burnin) steps)")
+        # Prepare and run burnin
+        bprogress = Progress(burnin, desc="MCMC burn-in ($(burnin) steps)")
         progress_interval = ceil(Int,sqrt(burnin))
+        if liveplot # Optionally prepare to plot t-T paths
+            imgcounts = zeros(200, 300)
+            h = plot(framestyle=:box,
+                xlabel="Time [Ma]", 
+                ylabel="Temperature [°C]", 
+                colorbar_title="Number of paths",
+            )
+            display(h)
+            tpointbuffer = fill(T(NaN), totalpoints, progress_interval)
+            Tpointbuffer = fill(T(NaN), totalpoints, progress_interval)
+        end
         for n = 1:burnin
             @label brestart
 
@@ -429,8 +476,22 @@
 
             # Update progress meter every `progress_interval` steps
             (mod(n, progress_interval) == 0) && update!(bprogress, n)
+
+            # Optionally update live t-T plot
+            if liveplot
+                tpbv = fill!(view(tpointbuffer, :, 1+mod(n, progress_interval)), NaN)
+                Tpbv = fill!(view(Tpointbuffer, :, 1+mod(n, progress_interval)), NaN)
+                collectto!(tpbv, view(path.agepoints, Base.OneTo(npoints)), path.boundary.agepoints, path.constraint.agepoints)
+                collectto!(Tpbv, view(path.Tpoints, Base.OneTo(npoints)), path.boundary.Tpoints, path.constraint.Tpoints)
+                if mod(n, progress_interval) == 0
+                    (A, xc, yc) = image_from_paths!(imgcounts, tpointbuffer, Tpointbuffer; xrange=boundary.agepoints, yrange=boundary.T₀)
+                    heatmap!(h, xc, yc, A, colormap=:viridis, zlims=(0, nanpctile(A,95)), title="Burn-in: $n of $nsteps steps")
+                    display(h)
+                end
+            end
         end
         finish!(bprogress)
+        liveplot && fill!(imgcounts, 0)
 
         # distributions to populate
         tpointdist = fill(T(NaN), totalpoints, nsteps)
@@ -443,7 +504,7 @@
         ndist = zeros(Int, nsteps)
         acceptancedist = falses(nsteps)
 
-        progress = Progress(nsteps, dt=1, desc="MCMC collection ($(nsteps) steps):")
+        progress = Progress(nsteps, desc="MCMC collection ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
         for n = 1:nsteps
             @label crestart
@@ -531,6 +592,14 @@
 
             # Update progress meter every `progress_interval` steps
             (mod(n, progress_interval) == 0) && update!(progress, n)
+
+            # Optionally update live t-T plot
+            if liveplot && mod(n, progress_interval) == 0
+                new = (n-progress_interval+1):n
+                (A, xc, yc) = image_from_paths!(imgcounts, tpointdist[:,new], Tpointdist[:,new]; xrange=boundary.agepoints, yrange=boundary.T₀)
+                heatmap!(h, xc, yc, A, colormap=:viridis, zlims=(0, nanpctile(A,95)), title="Collection: $n of $nsteps steps")
+                display(h)
+            end
         end
         finish!(progress)
 
