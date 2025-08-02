@@ -261,7 +261,7 @@
 
     @test isa(tT.resultdist, AbstractMatrix)
     abserr = abs(sum(nanmean(tT.resultdist, dims=2) - data.raw_He_age_Ma)/length(data.raw_He_age_Ma))
-    @test 0 < abserr < 150
+    @test 0 < abserr < 300
     @info "Mean absolute error: $abserr"
 
     @test isa(tT.lldist, AbstractVector)

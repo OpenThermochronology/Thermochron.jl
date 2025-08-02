@@ -90,12 +90,6 @@
         progress_interval = ceil(Int,sqrt(burnin))
         if liveplot # Optionally prepare to plot t-T paths live
             imgcounts = zeros(200, 300)
-            h = plot(framestyle=:box,
-                xlabel="Time [Ma]", 
-                ylabel="Temperature [°C]", 
-                colorbar_title="Number of paths",
-            )
-            display(h)
             tpointbuffer = fill(T(NaN), totalpoints, progress_interval)
             Tpointbuffer = fill(T(NaN), totalpoints, progress_interval)
         end
@@ -172,7 +166,13 @@
                 collectto!(Tpbv, view(path.Tpoints, Base.OneTo(npoints)), path.boundary.Tpoints, path.constraint.Tpoints)
                 if mod(n, progress_interval) == 0
                     (A, xc, yc) = image_from_paths!(imgcounts, tpointbuffer, Tpointbuffer; xrange=boundary.agepoints, yrange=boundary.T₀)
-                    heatmap!(h, xc, yc, A, colormap=:viridis, clims=(0, nanpctile(A,99.5)), title="Burn-in: $n of $nsteps steps")
+                    h = heatmap(xc, yc, A, colormap=:viridis, clims=(0, nanpctile(A,99.5)),
+                        framestyle=:box,
+                        xlabel="Time [Ma]", 
+                        ylabel="Temperature [°C]", 
+                        colorbar_title="Number of paths",
+                         title="Burn-in: $n of $nsteps steps",
+                    )
                     display(h)
                 end
             end
@@ -193,11 +193,6 @@
         progress_interval = ceil(Int,sqrt(nsteps))
         if liveplot # Optionally prepare to plot t-T paths
             fill!(imgcounts, 0)
-            h = plot(framestyle=:box,
-                xlabel="Time [Ma]", 
-                ylabel="Temperature [°C]", 
-                colorbar_title="Number of paths",
-            )
         end
         for n = 1:nsteps
             @label crestart
@@ -282,7 +277,13 @@
             if liveplot && mod(n, progress_interval) == 0
                 new = (n-progress_interval+1):n
                 (A, xc, yc) = image_from_paths!(imgcounts, tpointdist[:,new], Tpointdist[:,new]; xrange=boundary.agepoints, yrange=boundary.T₀)
-                heatmap!(h, xc, yc, A, colormap=:viridis, clims=(0, nanpctile(A,99.5)), title="Collection: $n of $nsteps steps")
+                h = heatmap(xc, yc, A, colormap=:viridis, clims=(0, nanpctile(A,99.5)),
+                    framestyle=:box,
+                    xlabel="Time [Ma]", 
+                    ylabel="Temperature [°C]", 
+                    colorbar_title="Number of paths",
+                    title="Collection: $n of $nsteps steps"
+                )
                 display(h)
             end
         end
@@ -402,12 +403,6 @@
         progress_interval = ceil(Int,sqrt(burnin))
         if liveplot # Optionally prepare to plot t-T paths
             imgcounts = zeros(200, 300)
-            h = plot(framestyle=:box,
-                xlabel="Time [Ma]", 
-                ylabel="Temperature [°C]", 
-                colorbar_title="Number of paths",
-            )
-            display(h)
             tpointbuffer = fill(T(NaN), totalpoints, progress_interval)
             Tpointbuffer = fill(T(NaN), totalpoints, progress_interval)
         end
@@ -491,7 +486,13 @@
                 collectto!(Tpbv, view(path.Tpoints, Base.OneTo(npoints)), path.boundary.Tpoints, path.constraint.Tpoints)
                 if mod(n, progress_interval) == 0
                     (A, xc, yc) = image_from_paths!(imgcounts, tpointbuffer, Tpointbuffer; xrange=boundary.agepoints, yrange=boundary.T₀)
-                    heatmap!(h, xc, yc, A, colormap=:viridis, clims=(0, nanpctile(A,99.5)), title="Burn-in: $n of $nsteps steps")
+                    h = heatmap(xc, yc, A, colormap=:viridis, clims=(0, nanpctile(A,99.5)),
+                        framestyle=:box,
+                        xlabel="Time [Ma]", 
+                        ylabel="Temperature [°C]", 
+                        colorbar_title="Number of paths",
+                        title="Burn-in: $n of $nsteps steps",
+                    )
                     display(h)
                 end
             end
@@ -513,11 +514,6 @@
         progress_interval = ceil(Int,sqrt(nsteps))
         if liveplot # Optionally prepare to plot t-T paths
             fill!(imgcounts, 0)
-            h = plot(framestyle=:box,
-                xlabel="Time [Ma]", 
-                ylabel="Temperature [°C]", 
-                colorbar_title="Number of paths",
-            )
         end
         for n = 1:nsteps
             @label crestart
@@ -610,7 +606,13 @@
             if liveplot && mod(n, progress_interval) == 0
                 new = (n-progress_interval+1):n
                 (A, xc, yc) = image_from_paths!(imgcounts, tpointdist[:,new], Tpointdist[:,new]; xrange=boundary.agepoints, yrange=boundary.T₀)
-                heatmap!(h, xc, yc, A, colormap=:viridis, clims=(0, nanpctile(A,99.5)), title="Collection: $n of $nsteps steps")
+                h = heatmap(xc, yc, A, colormap=:viridis, clims=(0, nanpctile(A,99.5)),
+                    framestyle=:box,
+                    xlabel="Time [Ma]", 
+                    ylabel="Temperature [°C]", 
+                    colorbar_title="Number of paths",
+                    title="Collection: $n of $nsteps steps"
+                )
                 display(h)
             end
         end
