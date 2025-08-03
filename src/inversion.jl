@@ -172,11 +172,12 @@
                         xlabel="Time [Ma]", 
                         ylabel="Temperature [°C]", 
                         colorbar_title="Number of paths",
-                        title="Burn-in: $n of $nsteps steps",
+                        title="Burn-in: $n of $burnin steps",
                     )
-                    l = plot(view(lldistburnin, 1:n),
+                    x = 1:ceil(Int, n/50000):n
+                    l = plot(x, view(lldistburnin, x),
                         framestyle=:box,
-                        xlims=(0,nsteps),
+                        xlims=(0,burnin),
                         xlabel="Step number", 
                         ylabel="Log likelihood", 
                         label="",
@@ -290,7 +291,8 @@
                     colorbar_title="Number of paths",
                     title="Collection: $n of $nsteps steps"
                 )
-                l = plot(view(lldist, 1:n),
+                x = 1:ceil(Int, n/50000):n
+                l = plot(x, view(lldist, x),
                     framestyle=:box,
                     xlims=(0,nsteps),
                     xlabel="Step number", 
@@ -505,11 +507,12 @@
                         xlabel="Time [Ma]", 
                         ylabel="Temperature [°C]", 
                         colorbar_title="Number of paths",
-                        title="Burn-in: $n of $nsteps steps",
+                        title="Burn-in: $n of $burnin steps",
                     )
-                    l = plot(view(lldistburnin, 1:n),
+                    x = 1:ceil(Int, n/50000):n
+                    l = plot(x, view(lldistburnin, x),
                         framestyle=:box,
-                        xlims=(0,nsteps),
+                        xlims=(0,burnin),
                         xlabel="Step number", 
                         ylabel="Log likelihood", 
                         label="",
@@ -632,7 +635,8 @@
                     colorbar_title="Number of paths",
                     title="Collection: $n of $nsteps steps"
                 )
-                l = plot(view(lldist, 1:n),
+                x = 1:ceil(Int, n/50000):n
+                l = plot(x, view(lldist, x),
                     framestyle=:box,
                     xlims=(0,nsteps),
                     xlabel="Step number", 
