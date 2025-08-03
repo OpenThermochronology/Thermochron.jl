@@ -87,11 +87,12 @@
 
         # Prepare and run burnin
         bprogress = Progress(burnin, desc="MCMC burn-in ($(burnin) steps)")
-        progress_interval = ceil(Int,sqrt(burnin))
+        progress_interval = plot_interval = ceil(Int,sqrt(burnin))
         if liveplot # Optionally prepare to plot t-T paths live
             imgcounts = zeros(200, 300)
-            tpointbuffer = fill(T(NaN), totalpoints, progress_interval)
-            Tpointbuffer = fill(T(NaN), totalpoints, progress_interval)
+            tpointbuffer = fill(T(NaN), totalpoints, plot_interval)
+            Tpointbuffer = fill(T(NaN), totalpoints, plot_interval)
+            lldistburnin = fill(T(NaN), burnin)
         end
         for n = 1:burnin
             @label brestart
@@ -160,20 +161,27 @@
 
             # Optionally update live t-T plot
             if liveplot
-                tpbv = fill!(view(tpointbuffer, :, 1+mod(n, progress_interval)), NaN)
-                Tpbv = fill!(view(Tpointbuffer, :, 1+mod(n, progress_interval)), NaN)
-                collectto!(tpbv, view(path.agepoints, Base.OneTo(npoints)), path.boundary.agepoints, path.constraint.agepoints)
-                collectto!(Tpbv, view(path.Tpoints, Base.OneTo(npoints)), path.boundary.Tpoints, path.constraint.Tpoints)
-                if mod(n, progress_interval) == 0
+                nmod = mod(n, plot_interval)
+                collectto!(fill!(view(tpointbuffer, :, 1+nmod), NaN), view(path.agepoints, Base.OneTo(npoints)), path.boundary.agepoints, path.constraint.agepoints)
+                collectto!(fill!(view(Tpointbuffer, :, 1+nmod), NaN), view(path.Tpoints, Base.OneTo(npoints)), path.boundary.Tpoints, path.constraint.Tpoints)
+                lldistburnin[n] = ll
+                if nmod == 0
                     (A, xc, yc) = image_from_paths!(imgcounts, tpointbuffer, Tpointbuffer; xrange=boundary.agepoints, yrange=boundary.T₀)
                     h = heatmap(xc, yc, A, colormap=:viridis, clims=(0, nanpctile(A,99.5)),
                         framestyle=:box,
                         xlabel="Time [Ma]", 
                         ylabel="Temperature [°C]", 
                         colorbar_title="Number of paths",
-                         title="Burn-in: $n of $nsteps steps",
+                        title="Burn-in: $n of $nsteps steps",
                     )
-                    display(h)
+                    l = plot(view(lldistburnin, 1:n),
+                        framestyle=:box,
+                        xlims=(0,nsteps),
+                        xlabel="Step number", 
+                        ylabel="Log likelihood", 
+                        label="",
+                    )
+                    display(plot(h,l, layout=grid(2, 1, heights=[0.7,0.3]), size=(600,650)))
                 end
             end
         end
@@ -190,10 +198,8 @@
         acceptancedist = falses(nsteps)
 
         progress = Progress(nsteps, desc="MCMC collection ($(nsteps) steps):")
-        progress_interval = ceil(Int,sqrt(nsteps))
-        if liveplot # Optionally prepare to plot t-T paths
-            fill!(imgcounts, 0)
-        end
+        progress_interval = plot_interval = ceil(Int,sqrt(nsteps))
+        liveplot && fill!(imgcounts, 0)
         for n = 1:nsteps
             @label crestart
 
@@ -274,8 +280,8 @@
             (mod(n, progress_interval) == 0) && update!(progress, n)
 
             # Optionally update t-T plot
-            if liveplot && mod(n, progress_interval) == 0
-                new = (n-progress_interval+1):n
+            if liveplot && mod(n, plot_interval) == 0
+                new = (n-plot_interval+1):n
                 (A, xc, yc) = image_from_paths!(imgcounts, tpointdist[:,new], Tpointdist[:,new]; xrange=boundary.agepoints, yrange=boundary.T₀)
                 h = heatmap(xc, yc, A, colormap=:viridis, clims=(0, nanpctile(A,99.5)),
                     framestyle=:box,
@@ -284,7 +290,14 @@
                     colorbar_title="Number of paths",
                     title="Collection: $n of $nsteps steps"
                 )
-                display(h)
+                l = plot(view(lldist, 1:n),
+                    framestyle=:box,
+                    xlims=(0,nsteps),
+                    xlabel="Step number", 
+                    ylabel="Log likelihood", 
+                    label="",
+                )
+                display(plot(h,l, layout=grid(2, 1, heights=[0.7,0.3]), size=(600,650)))
             end
         end
         finish!(progress)
@@ -400,11 +413,12 @@
 
         # Prepare and run burnin
         bprogress = Progress(burnin, desc="MCMC burn-in ($(burnin) steps)")
-        progress_interval = ceil(Int,sqrt(burnin))
+        progress_interval = plot_interval = ceil(Int,sqrt(burnin))
         if liveplot # Optionally prepare to plot t-T paths
             imgcounts = zeros(200, 300)
-            tpointbuffer = fill(T(NaN), totalpoints, progress_interval)
-            Tpointbuffer = fill(T(NaN), totalpoints, progress_interval)
+            tpointbuffer = fill(T(NaN), totalpoints, plot_interval)
+            Tpointbuffer = fill(T(NaN), totalpoints, plot_interval)
+            lldistburnin = fill(T(NaN), burnin)
         end
         for n = 1:burnin
             @label brestart
@@ -480,11 +494,11 @@
 
             # Optionally update live t-T plot
             if liveplot
-                tpbv = fill!(view(tpointbuffer, :, 1+mod(n, progress_interval)), NaN)
-                Tpbv = fill!(view(Tpointbuffer, :, 1+mod(n, progress_interval)), NaN)
-                collectto!(tpbv, view(path.agepoints, Base.OneTo(npoints)), path.boundary.agepoints, path.constraint.agepoints)
-                collectto!(Tpbv, view(path.Tpoints, Base.OneTo(npoints)), path.boundary.Tpoints, path.constraint.Tpoints)
-                if mod(n, progress_interval) == 0
+                nmod = mod(n, plot_interval)
+                collectto!(fill!(view(tpointbuffer, :, 1+nmod), NaN), view(path.agepoints, Base.OneTo(npoints)), path.boundary.agepoints, path.constraint.agepoints)
+                collectto!(fill!(view(Tpointbuffer, :, 1+nmod), NaN), view(path.Tpoints, Base.OneTo(npoints)), path.boundary.Tpoints, path.constraint.Tpoints)
+                lldistburnin[n] = ll
+                if nmod == 0
                     (A, xc, yc) = image_from_paths!(imgcounts, tpointbuffer, Tpointbuffer; xrange=boundary.agepoints, yrange=boundary.T₀)
                     h = heatmap(xc, yc, A, colormap=:viridis, clims=(0, nanpctile(A,99.5)),
                         framestyle=:box,
@@ -493,7 +507,14 @@
                         colorbar_title="Number of paths",
                         title="Burn-in: $n of $nsteps steps",
                     )
-                    display(h)
+                    l = plot(view(lldistburnin, 1:n),
+                        framestyle=:box,
+                        xlims=(0,nsteps),
+                        xlabel="Step number", 
+                        ylabel="Log likelihood", 
+                        label="",
+                    )
+                    display(plot(h,l, layout=grid(2, 1, heights=[0.7,0.3]), size=(600,650)))
                 end
             end
         end
@@ -511,10 +532,8 @@
         acceptancedist = falses(nsteps)
 
         progress = Progress(nsteps, desc="MCMC collection ($(nsteps) steps):")
-        progress_interval = ceil(Int,sqrt(nsteps))
-        if liveplot # Optionally prepare to plot t-T paths
-            fill!(imgcounts, 0)
-        end
+        progress_interval = plot_interval = ceil(Int,sqrt(nsteps))
+        liveplot && fill!(imgcounts, 0)
         for n = 1:nsteps
             @label crestart
 
@@ -603,8 +622,8 @@
             (mod(n, progress_interval) == 0) && update!(progress, n)
 
             # Optionally update live t-T plot
-            if liveplot && mod(n, progress_interval) == 0
-                new = (n-progress_interval+1):n
+            if liveplot && mod(n, plot_interval) == 0
+                new = (n-plot_interval+1):n
                 (A, xc, yc) = image_from_paths!(imgcounts, tpointdist[:,new], Tpointdist[:,new]; xrange=boundary.agepoints, yrange=boundary.T₀)
                 h = heatmap(xc, yc, A, colormap=:viridis, clims=(0, nanpctile(A,99.5)),
                     framestyle=:box,
@@ -613,7 +632,14 @@
                     colorbar_title="Number of paths",
                     title="Collection: $n of $nsteps steps"
                 )
-                display(h)
+                l = plot(view(lldist, 1:n),
+                    framestyle=:box,
+                    xlims=(0,nsteps),
+                    xlabel="Step number", 
+                    ylabel="Log likelihood", 
+                    label="",
+                )
+                display(plot(h,l, layout=grid(2, 1, heights=[0.7,0.3]), size=(600,650)))
             end
         end
         finish!(progress)
