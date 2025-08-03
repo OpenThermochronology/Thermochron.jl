@@ -154,8 +154,8 @@
 ## --- Invert for maximum likelihood t-T path
 
     # Run Markov Chain
-    # @time tT = MCMC(chrons, damodels, model, boundary, constraint, detail)
-    @time tT, kinetics = MCMC_varkinetics(chrons, damodels, model, boundary, constraint, detail)
+    # @time tT = MCMC(chrons, damodels, model, boundary, constraint, detail; liveplot=true)
+    @time tT, kinetics = MCMC_varkinetics(chrons, damodels, model, boundary, constraint, detail; liveplot=true)
     @info """tT.tpointdist & tT.Tpointdist collected, size: $(size(tT.Tpointdist))
     Mean log-likelihood: $(nanmean(view(tT.lldist, model.burnin:model.nsteps)))
     Mean acceptance rate: $(nanmean(view(tT.acceptancedist, model.burnin:model.nsteps)))
@@ -328,9 +328,8 @@ end
     end
 
 ## -- Fission track length histograms (apatite, zircon, monazite)
-# Uses HypothesisTests package for testing equivalence of distributions a posteriori (K-S test)
-
-using HypothesisTests
+    # Use HypothesisTests package for testing equivalence of distributions a posteriori (K-S test)
+    using HypothesisTests
 
     C = (ApatiteTrackLengthOriented, ApatiteTrackLength, ZirconTrackLength, MonaziteTrackLength)
     mincolor = ("apatite", "apatite", "zircon", "monazite")

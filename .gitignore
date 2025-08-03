@@ -3,6 +3,7 @@
 *.jl.mem
 /examples/*.pdf
 /examples/*.jld
+/examples/*.jld2
 /examples/*.mat
 /docs/build/
 .DS_Store
