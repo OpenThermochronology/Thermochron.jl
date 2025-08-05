@@ -96,7 +96,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
     zftm = (haskey(model, :zftm) ? model.zftm : Yamada2007PC())::ZirconAnnealingModel{T}
     mftm = (haskey(model, :mftm) ? model.mftm : Jones2021FA())::MonaziteAnnealingModel{T}
     aftm = (haskey(model, :aftm) ? model.aftm : Ketcham2007FC())::ApatiteAnnealingModel{T}
-    uaftm = (haskey(model, :uaftm) ? model.aftm : Ketcham1999FC(:unoriented))::ApatiteAnnealingModel{T}
+    uaftm = (haskey(model, :uaftm) ? model.uaftm : Ketcham1999FC(:unoriented))::ApatiteAnnealingModel{T}
 
     # Dictionaries to store reused `r` and `pr` vectors for fission track length chronometers
     # These will be indexed by hash, such that identical tracks can reuse the same `r` and `pr`
