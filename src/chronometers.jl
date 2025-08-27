@@ -1621,7 +1621,7 @@ struct SphericalAr{T<:AbstractFloat, V<:AbstractVector{T}} <: ArgonSample{T}
     nrsteps::Int                # [n] number of radial steps, including both implicit points at each side
     r40K::Vector{T}             # [atoms/g] radial K-40 concentrations
     argondeposition::Matrix{T}  # [atoms/g] Ar-40 deposition matrix
-    step_parent::Vector{T}
+    step_tracer::Vector{T}
     step_daughter::Vector{T}
     u::Matrix{T}
     β::Vector{T}
@@ -1680,7 +1680,7 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
     De = zeros(T, length(tsteps))
 
     # Allocate arrays to optionaly track parent and daughter concentrations
-    step_parent = zeros(T, length(tsteps))
+    step_tracer = zeros(T, length(tsteps))
     step_daughter = zeros(T, length(tsteps))
 
     # Allocate output matrix for all timesteps
@@ -1711,7 +1711,7 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
         nrsteps,
         r40K,
         argondeposition,
-        step_parent,
+        step_tracer,
         step_daughter,
         u,
         β,
@@ -1754,7 +1754,7 @@ struct PlanarAr{T<:AbstractFloat, V<:AbstractVector{T}} <: ArgonSample{T}
     nrsteps::Int                # [n] number of spatial steps, including both implicit points at each side
     r40K::Vector{T}             # [atoms/g] radial K-40 concentrations
     argondeposition::Matrix{T}  # [atoms/g] Ar-40 deposition matrix
-    step_parent::Vector{T}
+    step_tracer::Vector{T}
     step_daughter::Vector{T}
     u::Matrix{T}
     β::Vector{T}
@@ -1810,7 +1810,7 @@ function PlanarAr(T::Type{<:AbstractFloat}=Float64;
     De = zeros(T, length(tsteps))
 
     # Allocate arrays to optionaly track parent and daughter concentrations
-    step_parent = zeros(T, length(tsteps))
+    step_tracer = zeros(T, length(tsteps))
     step_daughter = zeros(T, length(tsteps))
 
     # Allocate output matrix for all timesteps
@@ -1840,7 +1840,7 @@ function PlanarAr(T::Type{<:AbstractFloat}=Float64;
         nrsteps,
         r40K,
         argondeposition,
-        step_parent,
+        step_tracer,
         step_daughter,
         u,
         β,
@@ -1897,7 +1897,7 @@ end
         domains::Vector{C}                  # Vector of chronometer obects for each domain
         volume_fraction::Vector{T}          # [unitless] fraction of total volume represented by each domain
         model_age::Vector{T}                # [Ma] calculated age at each model degassing step
-        model_parent::Vector{T}             # [atoms/g equivalent] parent tracer degassed
+        model_tracer::Vector{T}             # [atoms/g equivalent] parent tracer degassed
         model_daughter::Vector{T}           # [atoms/g] daughter degassed
         model_fraction::Vector{T}           # [unitless] cumulative fraction of parent degasssed
         tsteps_degassing::FloatRange        # [s] time steps of model heating schedule
@@ -1935,7 +1935,7 @@ end
         tsteps_degassing = floatrange(first(tsteps_experimental), last(tsteps_experimental), length=length(agesteps))
         Tsteps_degassing = linterp1(tsteps_experimental, T.(Tsteps_experimental), tsteps_degassing) 
         model_age = zeros(T, length(tsteps_degassing))
-        model_parent = zeros(T, length(tsteps_degassing))
+        model_tracer = zeros(T, length(tsteps_degassing))
         model_daughter = zeros(T, length(tsteps_degassing))
         model_fraction = zeros(T, length(tsteps_degassing))
 
@@ -1958,7 +1958,7 @@ end
             domains,
             T.(volume_fraction),
             model_age,
-            model_parent,
+            model_tracer,
             model_daughter,
             model_fraction,
             tsteps_degassing,

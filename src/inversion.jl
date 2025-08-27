@@ -366,7 +366,7 @@
         @assert eachindex(σcalc) == eachindex(μcalc) == eachindex(chrons)
         T0annealing = T(haskey(model, :T0annealing) ? model.T0annealing : 1)::T
         λannealing = T(haskey(model, :λannealing) ? model.λannealing : 7/burnin)::T
-        redegasparent = true
+        redegastracer = true # Required when we are co-inverting for diffusion parameters in _varkinetics inversions
 
         # See what minerals we have
         (haszhe = any(x->isa(x, ZirconHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, ZirconHe), chrons)) zircons"
@@ -400,7 +400,7 @@
         initialproposal!(path, npoints)
 
         # Log-likelihood for initial proposal
-        ll = llₚ = model!(μcalc, σcalc, chrons, damodels, path.Tsteps; rescalemdd, rescale, redegasparent) + 
+        ll = llₚ = model!(μcalc, σcalc, chrons, damodels, path.Tsteps; rescalemdd, rescale, redegastracer) + 
             diff_ll(path.Tsteps, dTmax, dTmax_sigma) + kinetic_ll(damodelsₚ, damodels₀) + 
             (simplified ? -log(npoints) : zero(T)) + (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
         
@@ -473,7 +473,7 @@
             end
                
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps; rescalemdd, rescale, redegasparent)
+            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps; rescalemdd, rescale, redegastracer)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             llₚ += kinetic_ll(damodelsₚ, damodels₀)
             simplified && (llₚ += -log(npointsₚ))
@@ -588,7 +588,7 @@
             end
 
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps; rescalemdd, rescale, redegasparent)
+            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps; rescalemdd, rescale, redegastracer)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             llₚ += kinetic_ll(damodelsₚ, damodels₀)
             simplified && (llₚ += -log(npointsₚ))

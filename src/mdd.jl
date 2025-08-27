@@ -28,7 +28,7 @@
     
 ## -- Multiple domain diffusion functions
 
-function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degassing::AbstractVector{T}, dm::Diffusivity{T}; fuse::Bool=true, redegasparent::Bool=false) where T <: AbstractFloat
+function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degassing::AbstractVector{T}, dm::Diffusivity{T}; fuse::Bool=true, redegastracer::Bool=false) where T <: AbstractFloat
 
     # Damage and annealing constants
     D0 = (dm.D0*10000^2)::T                 # cm^2/sec, converted to micron^2/sec  
@@ -48,7 +48,7 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degas
     dr = step(mineral.rsteps)
     nrsteps = mineral.nrsteps::Int
     ntsteps = length(tsteps_degassing)
-    step_parent = @views(mineral.step_parent[1:ntsteps])
+    step_tracer = @views(mineral.step_tracer[1:ntsteps])
     step_daughter = @views(mineral.step_daughter[1:ntsteps])
     @assert eachindex(tsteps_degassing) == eachindex(Tsteps_degassing) == Base.OneTo(ntsteps)
 
@@ -112,7 +112,7 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degas
     fuse && (step_daughter[ntsteps] = max(daughterᵢ₋, zero(T)))
 
     # Now diffuse parent isotope tracer, (as Ar-39), if neccesary
-    if redegasparent || !(0 < sum(step_parent))
+    if redegastracer || !(0 < sum(step_tracer))
 
         # Convert diffusivity from that of Ar-40 to that of Ar-39 given Dₗ/Dₕ ~ (mₕ/mₗ)^β 
         # C.f. Luo et al. 2021 (doi: 10.7185/geochemlet.2128) for He in albite melt
@@ -125,7 +125,7 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degas
         u[1,1] = u[2,1]
         u[end,1] = 0
 
-        parentᵢ₋ = nanmean(@views(u[2:end-1, 1]))
+        tracerᵢ₋ = nanmean(@views(u[2:end-1, 1]))
         @inbounds for i in Base.OneTo(ntsteps-fuse)
             # Duration of current timestep
             dt = step_at(tsteps_degassing, i)
@@ -161,18 +161,18 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degas
             ldiv!(F, y)
             u[:,i+1] = y
 
-            parentᵢ = nanmean(@views(u[2:end-1, i+1]))
-            step_parent[i] = max(parentᵢ₋ - parentᵢ, zero(T))
-            parentᵢ₋ = parentᵢ
+            tracerᵢ = nanmean(@views(u[2:end-1, i+1]))
+            step_tracer[i] = max(tracerᵢ₋ - tracerᵢ, zero(T))
+            tracerᵢ₋ = tracerᵢ
         end
-        # Degas all remaining parent in last step if fuse==true
-        fuse && (step_parent[ntsteps] = max(parentᵢ₋, zero(T)))
+        # Degas all remaining tracer in last step if fuse==true
+        fuse && (step_tracer[ntsteps] = max(tracerᵢ₋, zero(T)))
     end
 
     # Return views of the resulting step ages and degassing fractions
-    return step_parent, step_daughter
+    return step_tracer, step_daughter
 end
-function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_degassing::AbstractVector{T}, dm::Diffusivity{T}; fuse::Bool=true, redegasparent::Bool=false) where T <: AbstractFloat
+function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_degassing::AbstractVector{T}, dm::Diffusivity{T}; fuse::Bool=true, redegastracer::Bool=false) where T <: AbstractFloat
 
     # Damage and annealing constants
     D0 = (dm.D0*10000^2)::T                 # cm^2/sec, converted to micron^2/sec  
@@ -194,7 +194,7 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_de
     nrsteps = mineral.nrsteps::Int
     relvolumes = mineral.relvolumes::Vector{T}
     ntsteps = length(tsteps_degassing)
-    step_parent = @views(mineral.step_parent[1:ntsteps])
+    step_tracer = @views(mineral.step_tracer[1:ntsteps])
     step_daughter = @views(mineral.step_daughter[1:ntsteps])
     @assert eachindex(tsteps_degassing) == eachindex(Tsteps_degassing) == Base.OneTo(ntsteps)
 
@@ -261,7 +261,7 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_de
     fuse && (step_daughter[ntsteps] = max(daughterᵢ₋, zero(T)))
 
     # Now diffuse parent isotope tracer, (as Ar-39), if neccesary
-    if redegasparent || !(0 < sum(step_parent))
+    if redegastracer || !(0 < sum(step_tracer))
         
         # Convert diffusivity from that of Ar-40 to that of Ar-39 given Dₗ/Dₕ ~ (mₕ/mₗ)^β 
         # C.f. Luo et al. 2021 (doi: 10.7185/geochemlet.2128) for He in albite melt
@@ -311,25 +311,25 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_de
             u[:,i+1] = y
         end
 
-        # Calculate parent lost to diffusion at each step
-        parentᵢ₋ = nanmean(@views(u[2:end-1, 1])./=rsteps, relvolumes)
+        # Calculate parent (tracer) lost to diffusion at each step
+        tracerᵢ₋ = nanmean(@views(u[2:end-1, 1])./=rsteps, relvolumes)
         @inbounds for i in Base.OneTo(ntsteps-fuse)
-            parentᵢ = nanmean(@views(u[2:end-1, i+1])./=rsteps, relvolumes)
-            step_parent[i] = max(parentᵢ₋ - parentᵢ, zero(T))
-            parentᵢ₋ = parentᵢ
+            tracerᵢ = nanmean(@views(u[2:end-1, i+1])./=rsteps, relvolumes)
+            step_tracer[i] = max(tracerᵢ₋ - tracerᵢ, zero(T))
+            tracerᵢ₋ = tracerᵢ
         end
-        # Degas all remaining parent in last step if fuse==true
-        fuse && (step_parent[ntsteps] = max(parentᵢ₋, zero(T)))
+        # Degas all remaining tracer in last step if fuse==true
+        fuse && (step_tracer[ntsteps] = max(tracerᵢ₋, zero(T)))
     end
 
     # Return views of the resulting step ages and degassing fractions
-    return step_parent, step_daughter
+    return step_tracer, step_daughter
 end
 
 
-function modelage(mdd::MultipleDomain{T}, Tsteps::AbstractVector, dm::MDDiffusivity{T}; redegasparent::Bool=false) where {T<:AbstractFloat}
+function modelage(mdd::MultipleDomain{T}, Tsteps::AbstractVector, dm::MDDiffusivity{T}; redegastracer::Bool=false) where {T<:AbstractFloat}
     age = fill!(mdd.model_age, zero(T))
-    parent = fill!(mdd.model_parent, zero(T))
+    tracer = fill!(mdd.model_tracer, zero(T))
     daughter = fill!(mdd.model_daughter, zero(T))
     fraction = fill!(mdd.model_fraction, zero(T))
     fuse = mdd.fuse::Bool
@@ -337,16 +337,16 @@ function modelage(mdd::MultipleDomain{T}, Tsteps::AbstractVector, dm::MDDiffusiv
     for i in eachindex(mdd.domains, mdd.volume_fraction)
         domain = mdd.domains[i]
         modelage(domain, Tsteps, dm[i])
-        p, d = degas!(domain, mdd.tsteps_degassing, mdd.Tsteps_degassing, dm[i]; fuse, redegasparent)
-        @. parent += p * mdd.volume_fraction[i]
+        p, d = degas!(domain, mdd.tsteps_degassing, mdd.Tsteps_degassing, dm[i]; fuse, redegastracer)
+        @. tracer += p * mdd.volume_fraction[i]
         @. daughter += d * mdd.volume_fraction[i]
     end
     # Calculate ages for each degassing step
-    for i in eachindex(parent, daughter)
-        age[i] = newton_ar_age(daughter[i], parent[i])
+    for i in eachindex(tracer, daughter)
+        age[i] = newton_ar_age(daughter[i], tracer[i])
     end
-    # Cumulative fraction of parent degassed
-    cumsum!(fraction, parent)
+    # Cumulative fraction of tracer degassed
+    cumsum!(fraction, tracer)
     fraction ./= last(fraction)
 
     return age, fraction

@@ -776,7 +776,7 @@
     end
 
     # Utility function to calculate model ages for all chronometers at once
-    function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, Tsteps::AbstractVector{T}; rescalemdd::Bool=true, rescale::Bool=false, redegasparent::Bool=false) where {T<:AbstractFloat}
+    function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, Tsteps::AbstractVector{T}; rescalemdd::Bool=true, rescale::Bool=false, redegastracer::Bool=false) where {T<:AbstractFloat}
         imax = argmax(i->length(timediscretization(chrons[i])), eachindex(chrons))
         tsteps = timediscretization(chrons[imax])
         @assert issorted(tsteps)
@@ -888,9 +888,9 @@
                 ll += model_ll(c, σcalc[i])/scaleato
             elseif isa(c, MultipleDomain)
                 c::MultipleDomain{T, <:Union{PlanarAr{T}, SphericalAr{T}}}
-                age, fraction = modelage(c, @views(Tsteps[first_index:end]), dm::MDDiffusivity{T}; redegasparent)
+                age, fraction = modelage(c, @views(Tsteps[first_index:end]), dm::MDDiffusivity{T}; redegastracer)
                 issorted(fraction) || @info fraction
-                redegasparent && (ll += degassing_ll(c; rescalemdd)/scalemdd)
+                redegastracer && (ll += degassing_ll(c; rescalemdd)/scalemdd)
                 μcalc[i] = draw_from_population(age, fraction)
                 ll += model_ll(c, σcalc[i]; rescalemdd)/scalemdd
             else
