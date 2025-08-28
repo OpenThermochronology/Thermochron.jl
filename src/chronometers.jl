@@ -550,6 +550,8 @@ struct ZirconHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     A::Tridiagonal{T, Vector{T}}
     F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}}
     y::Vector{T}
+    step_tracer::Vector{T}      # [atoms/g] buffer for degassed He-3 when modelling experimental heating schedule
+    step_daughter::Vector{T}    # [atoms/g] buffer for degassed He-4 when modelling experimental heating schedule
 end
 function ZirconHe(T::Type{<:AbstractFloat}=Float64;
         age::Number = T(NaN),
@@ -753,6 +755,10 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
     # Vector for RHS of Crank-Nicolson equation with regular grid cells
     y = zeros(T, nrsteps)
 
+    # Allocate arrays to optionaly track tracer and daughter concentrations during degassing
+    step_tracer = zeros(T, length(tsteps))
+    step_daughter = zeros(T, length(tsteps))
+
     return ZirconHe(
         T(age),
         T(age_sigma),
@@ -778,6 +784,8 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
         A,
         F,
         y,
+        step_tracer,
+        step_daughter,
     )
 end
 
@@ -834,6 +842,8 @@ struct ApatiteHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     A::Tridiagonal{T, Vector{T}}
     F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}}
     y::Vector{T}
+    step_tracer::Vector{T}      # [atoms/g] buffer for degassed He-3 when modelling experimental heating schedule
+    step_daughter::Vector{T}    # [atoms/g] buffer for degassed He-4 when modelling experimental heating schedule
 end
 function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
         age::Number = T(NaN),
@@ -1037,6 +1047,10 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
     # Vector for RHS of Crank-Nicolson equation with regular grid cells
     y = zeros(T, nrsteps)
 
+    # Allocate arrays to optionaly track tracer and daughter concentrations during degassing
+    step_tracer = zeros(T, length(tsteps))
+    step_daughter = zeros(T, length(tsteps))
+
     return ApatiteHe(
         T(age),
         T(age_sigma),
@@ -1062,6 +1076,8 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
         A,
         F,
         y,
+        step_tracer,
+        step_daughter,
     )
 end
 
@@ -1116,6 +1132,8 @@ struct SphericalHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     A::Tridiagonal{T, Vector{T}}
     F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}}
     y::Vector{T}
+    step_tracer::Vector{T}      # [atoms/g] buffer for degassed He-3 when modelling experimental heating schedule
+    step_daughter::Vector{T}    # [atoms/g] buffer for degassed He-4 when modelling experimental heating schedule
 end
 function SphericalHe(T::Type{<:AbstractFloat}=Float64;
         age::Number = T(NaN),
@@ -1306,6 +1324,10 @@ function SphericalHe(T::Type{<:AbstractFloat}=Float64;
     # Vector for RHS of Crank-Nicolson equation with regular grid cells
     y = zeros(T, nrsteps)
 
+    # Allocate arrays to optionaly track tracer and daughter concentrations during degassing
+    step_tracer = zeros(T, length(tsteps))
+    step_daughter = zeros(T, length(tsteps))
+
     return SphericalHe(
         T(age),
         T(age_sigma),
@@ -1327,6 +1349,8 @@ function SphericalHe(T::Type{<:AbstractFloat}=Float64;
         A,
         F,
         y,
+        step_tracer,
+        step_daughter,
     )
 end
 
@@ -1379,6 +1403,8 @@ struct PlanarHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     A::Tridiagonal{T, Vector{T}}
     F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}}
     y::Vector{T}
+    step_tracer::Vector{T}      # [atoms/g] buffer for degassed He-3 when modelling experimental heating schedule
+    step_daughter::Vector{T}    # [atoms/g] buffer for degassed He-4 when modelling experimental heating schedule
 end
 function PlanarHe(T::Type{<:AbstractFloat}=Float64;
         age::Number = T(NaN),
@@ -1565,6 +1591,10 @@ function PlanarHe(T::Type{<:AbstractFloat}=Float64;
     # Vector for RHS of Crank-Nicolson equation with regular grid cells
     y = zeros(T, nrsteps)
 
+    # Allocate arrays to optionaly track tracer and daughter concentrations during degassing
+    step_tracer = zeros(T, length(tsteps))
+    step_daughter = zeros(T, length(tsteps))
+
     return PlanarHe(
         T(age),
         T(age_sigma),
@@ -1585,6 +1615,8 @@ function PlanarHe(T::Type{<:AbstractFloat}=Float64;
         A,
         F,
         y,
+        step_tracer,
+        step_daughter,
     )
 end
 
@@ -1621,14 +1653,14 @@ struct SphericalAr{T<:AbstractFloat, V<:AbstractVector{T}} <: ArgonSample{T}
     nrsteps::Int                # [n] number of radial steps, including both implicit points at each side
     r40K::Vector{T}             # [atoms/g] radial K-40 concentrations
     argondeposition::Matrix{T}  # [atoms/g] Ar-40 deposition matrix
-    step_tracer::Vector{T}      # [atoms/g] buffer for degassed Ar-39 when modelling experimental heating schedule
-    step_daughter::Vector{T}    # [atoms/g] buffer for degassed Ar-40 when modelling experimental heating schedule
     u::Matrix{T}
     β::Vector{T}
     De::Vector{T}
     A::Tridiagonal{T, Vector{T}}
     F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}}
     y::Vector{T}
+    step_tracer::Vector{T}      # [atoms/g] buffer for degassed Ar-39 when modelling experimental heating schedule
+    step_daughter::Vector{T}    # [atoms/g] buffer for degassed Ar-40 when modelling experimental heating schedule
 end
 function SphericalAr(T::Type{<:AbstractFloat}=Float64;
         age::Number = T(NaN),
@@ -1679,10 +1711,6 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
     # Allocate arrays for diffusivities
     De = zeros(T, length(tsteps))
 
-    # Allocate arrays to optionaly track tracer and daughter concentrations during degassing
-    step_tracer = zeros(T, length(tsteps))
-    step_daughter = zeros(T, length(tsteps))
-
     # Allocate output matrix for all timesteps
     u = zeros(T, nrsteps, length(tsteps)+1)
 
@@ -1699,6 +1727,10 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
     # Vector for RHS of Crank-Nicolson equation with regular grid cells
     y = zeros(T, nrsteps)
 
+    # Allocate arrays to optionaly track tracer and daughter concentrations during degassing
+    step_tracer = zeros(T, length(tsteps))
+    step_daughter = zeros(T, length(tsteps))
+
     return SphericalAr(
         T(age),
         T(age_sigma),
@@ -1711,14 +1743,14 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
         nrsteps,
         r40K,
         argondeposition,
-        step_tracer,
-        step_daughter,
         u,
         β,
         De,
         A,
         F,
         y,
+        step_tracer,
+        step_daughter,
     )
 end
 
@@ -1754,14 +1786,14 @@ struct PlanarAr{T<:AbstractFloat, V<:AbstractVector{T}} <: ArgonSample{T}
     nrsteps::Int                # [n] number of spatial steps, including both implicit points at each side
     r40K::Vector{T}             # [atoms/g] radial K-40 concentrations
     argondeposition::Matrix{T}  # [atoms/g] Ar-40 deposition matrix
-    step_tracer::Vector{T}      # [atoms/g] buffer for degassed Ar-39 when modelling experimental heating schedule
-    step_daughter::Vector{T}    # [atoms/g] buffer for degassed Ar-40 when modelling experimental heating schedule
     u::Matrix{T}
     β::Vector{T}
     De::Vector{T}
     A::Tridiagonal{T, Vector{T}}
     F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}}
     y::Vector{T}
+    step_tracer::Vector{T}      # [atoms/g] buffer for degassed Ar-39 when modelling experimental heating schedule
+    step_daughter::Vector{T}    # [atoms/g] buffer for degassed Ar-40 when modelling experimental heating schedule
 end
 function PlanarAr(T::Type{<:AbstractFloat}=Float64;
         age::Number = T(NaN),
@@ -1809,10 +1841,6 @@ function PlanarAr(T::Type{<:AbstractFloat}=Float64;
     # Allocate arrays for diffusivities
     De = zeros(T, length(tsteps))
 
-    # Allocate arrays to optionaly track tracer and daughter concentrations during degassing
-    step_tracer = zeros(T, length(tsteps))
-    step_daughter = zeros(T, length(tsteps))
-
     # Allocate output matrix for all timesteps
     u = zeros(T, nrsteps, length(tsteps)+1)
 
@@ -1829,6 +1857,10 @@ function PlanarAr(T::Type{<:AbstractFloat}=Float64;
     # Vector for RHS of Crank-Nicolson equation with regular grid cells
     y = zeros(T, nrsteps)
 
+    # Allocate arrays to optionaly track tracer and daughter concentrations during degassing
+    step_tracer = zeros(T, length(tsteps))
+    step_daughter = zeros(T, length(tsteps))
+
     return PlanarAr(
         T(age),
         T(age_sigma),
@@ -1840,14 +1872,14 @@ function PlanarAr(T::Type{<:AbstractFloat}=Float64;
         nrsteps,
         r40K,
         argondeposition,
-        step_tracer,
-        step_daughter,
         u,
         β,
         De,
         A,
         F,
         y,
+        step_tracer,
+        step_daughter,
     )
 end
 
