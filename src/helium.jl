@@ -366,18 +366,6 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T})
     # calculated efficiently for all radii by simple matrix multiplication.
     annealeddamage = zircon.annealeddamage::Matrix{T}
 
-    # Calculate initial alpha damage
-    dt = step_at(tsteps, 1)
-    β = zircon.β::Vector{T}
-    @turbo for k = 1:(nrsteps-2)
-        fₐ = 1-exp(-Bα*annealeddamage[1,k]*Phi)
-        τ = (lint0/(4.2 / ((1-exp(-Bα*annealeddamage[1,k])) * SV) - 2.5))^2
-        De = 1 / ((1-fₐ)^3 / (Dz[1]/τ) + fₐ^3 / DN17[1])
-        β[k+1] = 2 * dr^2 / (De*dt) # Common β factor
-    end
-    β[1] = β[2]
-    β[end] = β[end-1]
-
     # Output matrix for all timesteps
     # u = v*r is the coordinate transform (u-substitution) for the Crank-
     # Nicholson equations where v is the He profile and r is radius
@@ -386,6 +374,9 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T})
     @assert axes(u,1) == 1:nrsteps
     fill!(u, zero(T)) # initial u = v = 0 everywhere
 
+    # Common β factor
+    β = zircon.β::Vector{T}
+
     # Vector for RHS of Crank-Nicolson equation with regular grid cells
     y = zircon.y
 
@@ -393,10 +384,10 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T})
     A = zircon.A        # Tridiagonal matrix
     F = zircon.F        # LU object for in-place lu factorization
 
-    @inbounds for i=2:ntsteps
+    @inbounds for i in Base.OneTo(ntsteps)
         dt = step_at(tsteps, i)
 
-        # Calculate alpha damage
+        # Calculate alpha damage and β factor at each radius at current temperature
         @turbo for k = 1:(nrsteps-2)
             fₐ = 1-exp(-Bα*annealeddamage[i,k]*Phi)
             τ = (lint0/(4.2 / ((1-exp(-Bα*annealeddamage[i,k])) * SV) - 2.5))^2
@@ -429,7 +420,7 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T})
         end
 
         # Invert using tridiagonal matrix algorithm
-        # equivalent to u[:,i] = A\y
+        # equivalent to u[:,i+1] = A\y
         lu!(F, A, allowsingular=true)
         ldiv!(F, y)
         u[:,i+1] = y
@@ -492,18 +483,6 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
     # calculated efficiently for all radii by simple matrix multiplication.
     annealeddamage = apatite.annealeddamage::Matrix{T}
 
-    # Calculate initial alpha damage
-    dt = step_at(tsteps, 1)
-    β = apatite.β::Vector{T}
-    @turbo for k = 1:(nrsteps-2)
-        track_density = annealeddamage[1,k]*damage_conversion # cm/cm3
-        trapDiff = psi*track_density + omega*track_density^3
-        De = DL[1]/(trapDiff*Dtrap[1]+1) # micron^2/Myr
-        β[k+1] = 2 * dr^2 / (De*dt) # Common β factor
-    end
-    β[1] = β[2]
-    β[end] = β[end-1]
-
     # Output matrix for all timesteps
     # u = v*r is the coordinate transform (u-substitution) for the Crank-
     # Nicholson equations where v is the He profile and r is radius
@@ -511,6 +490,9 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
     @assert axes(u,2) == 1:ntsteps+1
     @assert axes(u,1) == 1:nrsteps
     fill!(u, zero(T)) # initial u = v = 0 everywhere
+
+    # Common β factor
+    β = apatite.β::Vector{T}
 
     # Vector for RHS of Crank-Nicolson equation with regular grid cells
     y = apatite.y
@@ -523,7 +505,7 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
         # Duration of current timestep
         dt = step_at(tsteps, i)
 
-        # Calculate alpha damage
+        # Calculate alpha damage and β factor at each radius at current temperature
         @turbo for k = 1:(nrsteps-2)
             track_density = annealeddamage[i,k]*damage_conversion # cm/cm3
             trapDiff = psi*track_density + omega*track_density^3
@@ -556,7 +538,7 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
         end
 
         # Invert using tridiagonal matrix algorithm
-        # equivalent to u[:,i] = A\y
+        # equivalent to u[:,i+1] = A\y
         lu!(F, A, allowsingular=true)
         ldiv!(F, y)
         u[:,i+1] = y
@@ -599,11 +581,6 @@ function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}, dm::Diffus
     ntsteps = length(tsteps)
     alphadeposition = mineral.alphadeposition::Matrix{T}
 
-    # Common β factor is constant across all radii since diffusivity is constant
-    dt = step_at(tsteps, 1)
-    β = mineral.β::Vector{T}
-    fill!(β, 2 * dr^2 / (De[1]*dt))
-
     # Output matrix for all timesteps
     # u = v*r is the coordinate transform (u-substitution) for the Crank-
     # Nicholson equations where v is the He profile and r is radius
@@ -611,6 +588,9 @@ function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}, dm::Diffus
     @assert axes(u,2) == 1:ntsteps+1
     @assert axes(u,1) == 1:nrsteps
     fill!(u, zero(T)) # initial u = v = 0 everywhere
+
+    # Common β factor
+    β = mineral.β::Vector{T}
 
     # Vector for RHS of Crank-Nicolson equation with regular grid cells
     y = mineral.y
@@ -624,6 +604,7 @@ function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}, dm::Diffus
         dt = step_at(tsteps, i)
 
         # Update β for current temperature
+        # Constant across all radii since diffusivity is constant
         fill!(β, 2 * dr^2 / (De[i]*dt))
 
         # Update tridiagonal matrix
@@ -649,7 +630,7 @@ function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}, dm::Diffus
         end
 
         # Invert using tridiagonal matrix algorithm
-        # equivalent to u[:,i] = A\y
+        # equivalent to u[:,i+1] = A\y
         lu!(F, A, allowsingular=true)
         ldiv!(F, y)
         u[:,i+1] = y
@@ -691,16 +672,14 @@ function modelage(mineral::PlanarHe{T}, Tsteps::AbstractVector{T}, dm::Diffusivi
     ntsteps = length(tsteps)
     alphadeposition = mineral.alphadeposition::Matrix{T}
 
-    # Common β factor is constant across all radii since diffusivity is constant
-    dt = step_at(tsteps, 1)
-    β = mineral.β::Vector{T}
-    fill!(β, 2 * dr^2 / (De[1]*dt))
-
     # Output matrix for all timesteps
     u = mineral.u::DenseMatrix{T}
     @assert axes(u,2) == 1:ntsteps+1
     @assert axes(u,1) == 1:nrsteps
     fill!(u, zero(T)) # initial u = 0 everywhere
+
+    # Common β factor
+    β = mineral.β::Vector{T}
 
     # Vector for RHS of Crank-Nicolson equation with regular grid cells
     y = mineral.y
@@ -714,6 +693,7 @@ function modelage(mineral::PlanarHe{T}, Tsteps::AbstractVector{T}, dm::Diffusivi
         dt = step_at(tsteps, i)
 
         # Update β for current temperature
+        # Constant across all radii since diffusivity is constant
         fill!(β, 2 * dr^2 / (De[i]*dt))
 
         # Update tridiagonal matrix
@@ -739,7 +719,7 @@ function modelage(mineral::PlanarHe{T}, Tsteps::AbstractVector{T}, dm::Diffusivi
         end
 
         # Invert using tridiagonal matrix algorithm
-        # equivalent to u[:,i] = A\y
+        # equivalent to u[:,i+1] = A\y
         lu!(F, A, allowsingular=true)
         ldiv!(F, y)
         u[:,i+1] = y
