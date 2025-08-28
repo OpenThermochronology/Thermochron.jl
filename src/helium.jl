@@ -35,7 +35,7 @@ ZRDAAM(
     lint0::T=45920.0            # [nm]
     SV::T=1.669                 # [1/nm]
     Bα::T=5.48E-19              # Amorphous material produced per alpha decay [g/alpha]
-    Phi::T=3.0                  # unitless
+    Phi::T=3.0                  # [unitless]
     beta::T=-0.05721            # Zircon anealing parameter
     C0::T=6.24534               # Zircon anealing parameter
     C1::T=-0.11977              # Zircon anealing parameter
@@ -60,7 +60,7 @@ Base.@kwdef struct ZRDAAM{T<:AbstractFloat} <: ZirconHeliumModel{T}
     lint0::T=45920.0            # [nm]
     SV::T=1.669                 # [1/nm]
     Bα::T=5.48E-19              # Amorphous material produced per alpha decay [g/alpha]
-    Phi::T=3.0                  # unitless
+    Phi::T=3.0                  # [unitless]
     beta::T=-0.05721            # Zircon anealing parameter
     C0::T=6.24534               # Zircon anealing parameter
     C1::T=-0.11977              # Zircon anealing parameter
@@ -331,15 +331,15 @@ end
 function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T}) where T <: AbstractFloat
 
     # Damage and annealing constants
-    DzEa = dm.DzEa::T                           # kJ/mol
-    DzD0 = dm.DzD0*10000^2*SEC_MYR::T           # cm^2/sec, converted to micron^2/Myr  
-    DN17Ea = dm.DN17Ea::T                       # kJ/mol
-    DN17D0 = dm.DN17D0*10000^2*SEC_MYR::T       # cm^2/sec, converted to micron^2/Myr  
-    lint0 = dm.lint0::T                         # nm
-    SV = dm.SV::T                               # 1/nm
+    DzEa = dm.DzEa::T                           # [kJ/mol]
+    DzD0 = dm.DzD0*10000^2*SEC_MYR::T           # [micron^2/Myr], converted from [cm^2/sec]  
+    DN17Ea = dm.DN17Ea::T                       # [kJ/mol]
+    DN17D0 = dm.DN17D0*10000^2*SEC_MYR::T       # [micron^2/Myr], converted from [cm^2/sec]  
+    lint0 = dm.lint0::T                         # [nm]
+    SV = dm.SV::T                               # [1/nm]
     Bα = dm.Bα::T                               # [g/alpha] mass of amorphous material produced per alpha decay
-    Phi = dm.Phi::T                             # unitless
-    R = 0.008314472                             # kJ/(K*mol)
+    Phi = dm.Phi::T                             # [unitless]
+    R = 0.008314472                             # [kJ/(K*mol)]
     ΔT = zircon.offset::T + 273.15              # Conversion from C to K, plus temperature offset relative to other samples
 
     # Diffusivities of crystalline and amorphous endmembers
@@ -347,8 +347,8 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T})
     DN17 = zircon.DN17::Vector{T}
     @assert eachindex(Dz) == eachindex(DN17) == eachindex(Tsteps)
     @turbo for i ∈ eachindex(Dz)
-        Dz[i] = DzD0 * exp(-DzEa / R / (Tsteps[i] + ΔT)) # micron^2/Myr
-        DN17[i] = DN17D0 * exp(-DN17Ea / R / (Tsteps[i] + ΔT)) # micron^2/Myr
+        Dz[i] = DzD0 * exp(-DzEa / R / (Tsteps[i] + ΔT)) # [micron^2/Myr]
+        DN17[i] = DN17D0 * exp(-DN17Ea / R / (Tsteps[i] + ΔT)) # [micron^2/Myr]
     end
 
     # Get time and radius discretization
@@ -391,8 +391,8 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T})
         @turbo for k = 1:(nrsteps-2)
             fₐ = 1-exp(-Bα*annealeddamage[i,k]*Phi)
             τ = (lint0/(4.2 / ((1-exp(-Bα*annealeddamage[i,k])) * SV) - 2.5))^2
-            De = 1 / ((1-fₐ)^3 / (Dz[i]/τ) + fₐ^3 / DN17[i])
-            β[k+1] = 2 * dr^2 / (De*dt) # Common β factor
+            De = 1 / ((1-fₐ)^3 / (Dz[i]/τ) + fₐ^3 / DN17[i]) # [micron^2/Myr]
+            β[k+1] = 2 * dr^2 / (De*dt) # Shifted by 1 because β[1] is implicit point at negative radius
         end
         β[1] = β[2]
         β[end] = β[end-1]
@@ -443,29 +443,29 @@ end
 function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}) where T <: AbstractFloat
 
     # Damage and annealing constants
-    D0L = dm.D0L*10000^2*SEC_MYR::T         # cm^2/sec, converted to micron^2/Myr  
-    EaL = dm.EaL::T                         # kJ/mol
-    EaTrap = dm.EaTrap::T                   # kJ/mol
+    D0L = dm.D0L*10000^2*SEC_MYR::T         # [micron^2/Myr], converted from [cm^2/sec]  
+    EaL = dm.EaL::T                         # [kJ/mol]
+    EaTrap = dm.EaTrap::T                   # [kJ/mol]
     etaq = dm.etaq::T                       # Durango ηq
-    psi = dm.psi::T                         # unitless
-    omega = dm.omega::T                     # unitless
-    rhoap = dm.rhoap::T                     # g/cm^3
-    L = dm.L::T                             # cm
-    lambdaf = dm.lambdaf::T                 # 1/time
-    lambdaD = dm.lambdaD::T                 # 1/time
-    R = 0.008314472                         # kJ/(K*mol)
-    ΔT = apatite.offset::T + 273.15         # Conversion from C to K, plus temperature offset from the
+    psi = dm.psi::T                         # [unitless]
+    omega = dm.omega::T                     # [unitless]
+    rhoap = dm.rhoap::T                     # [g/cm^3]
+    L = dm.L::T                             # [cm]
+    lambdaf = dm.lambdaf::T                 # [1/time]
+    lambdaD = dm.lambdaD::T                 # [1/time]
+    R = 0.008314472                         # [kJ/(K*mol)]
+    ΔT = apatite.offset::T + 273.15         # Conversion from C to K, plus temperature offset relative to other samples
 
     # Conversion factor from alphas/g to track length cm/cm^3
     damage_conversion = rhoap*(lambdaf/lambdaD)*etaq*L
 
-    # Diffusivities of crystalline and amorphous endmembers
+    # Normal and trapping diffusivities at each timestep
     DL = apatite.DL::Vector{T}
     Dtrap = apatite.Dtrap::Vector{T}
     @assert eachindex(DL) == eachindex(Dtrap) == eachindex(Tsteps)
     @turbo for i ∈ eachindex(DL)
-        DL[i] = D0L * exp(-EaL / R / (Tsteps[i] + ΔT)) # micron^2/Myr
-        Dtrap[i] = exp(-EaTrap / R / (Tsteps[i] + ΔT)) # unitless
+        DL[i] = D0L * exp(-EaL / R / (Tsteps[i] + ΔT)) # [micron^2/Myr]
+        Dtrap[i] = exp(-EaTrap / R / (Tsteps[i] + ΔT)) # [unitless]
     end
 
     # Get time and radius discretization
@@ -507,10 +507,10 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
 
         # Calculate alpha damage and β factor at each radius at current temperature
         @turbo for k = 1:(nrsteps-2)
-            track_density = annealeddamage[i,k]*damage_conversion # cm/cm3
+            track_density = annealeddamage[i,k]*damage_conversion # [cm/cm3]
             trapDiff = psi*track_density + omega*track_density^3
-            De = DL[i]/(trapDiff*Dtrap[i]+1) # micron^2/Myr
-            β[k+1] = 2 * dr^2 / (De*dt) # Common β factor
+            De = DL[i]/(trapDiff*Dtrap[i]+1) # [micron^2/Myr]
+            β[k+1] = 2 * dr^2 / (De*dt) # Shifted by 1 because β[1] is implicit point at negative radius
         end
         β[1] = β[2]
         β[end] = β[end-1]
@@ -561,16 +561,16 @@ end
 function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}, dm::Diffusivity{T}) where T <: AbstractFloat
 
     # Damage and annealing constants
-    D0 = dm.D0*10000^2*SEC_MYR::T       # cm^2/sec, converted to micron^2/Myr  
-    Ea = dm.Ea::T                       # kJ/mol
-    R = 0.008314472                     # kJ/(K*mol)
-    ΔT = mineral.offset::T + 273.15     # Conversion from C to K, plus temperature offset from the
+    D0 = dm.D0*10000^2*SEC_MYR::T       # [micron^2/Myr], converted from [cm^2/sec]
+    Ea = dm.Ea::T                       # [kJ/mol]
+    R = 0.008314472                     # [kJ/(K*mol)]
+    ΔT = mineral.offset::T + 273.15     # Conversion from C to K, plus temperature offset relative to other samples
 
     # Diffusivities of crystalline and amorphous endmembers
     De = mineral.De::Vector{T}
     @assert eachindex(De) == eachindex(Tsteps)
     @turbo for i ∈ eachindex(De)
-        De[i] = D0 * exp(-Ea / R / (Tsteps[i] + ΔT)) # micron^2/Myr
+        De[i] = D0 * exp(-Ea / R / (Tsteps[i] + ΔT)) # [micron^2/Myr]
     end
 
     # Get time and radius discretization
@@ -653,16 +653,16 @@ end
 function modelage(mineral::PlanarHe{T}, Tsteps::AbstractVector{T}, dm::Diffusivity{T}) where T <: AbstractFloat
 
     # Damage and annealing constants
-    D0 = dm.D0*10000^2*SEC_MYR::T       # cm^2/sec, converted to micron^2/Myr  
-    Ea = dm.Ea::T                       # kJ/mol
-    R = 0.008314472                     # kJ/(K*mol)
-    ΔT = mineral.offset::T + 273.15     # Conversion from C to K, plus temperature offset from the
+    D0 = dm.D0*10000^2*SEC_MYR::T       # [micron^2/Myr], converted from [cm^2/sec]  
+    Ea = dm.Ea::T                       # [kJ/mol]
+    R = 0.008314472                     # [kJ/(K*mol)]
+    ΔT = mineral.offset::T + 273.15     # Conversion from C to K, plus temperature offset relative to other samples
 
     # Diffusivities of crystalline and amorphous endmembers
     De = mineral.De::Vector{T}
     @assert eachindex(De) == eachindex(Tsteps)
     @turbo for i ∈ eachindex(De)
-        De[i] = D0 * exp(-Ea / R / (Tsteps[i] + ΔT)) # micron^2/Myr
+        De[i] = D0 * exp(-Ea / R / (Tsteps[i] + ΔT)) # [micron^2/Myr]
     end
 
     # Get time and radius discretization

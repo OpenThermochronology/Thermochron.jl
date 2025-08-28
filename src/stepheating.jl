@@ -3,9 +3,9 @@
 function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degassing::AbstractVector{T}, dm::Diffusivity{T}; fuse::Bool=true, redegastracer::Bool=false) where T <: AbstractFloat
 
     # Constants
-    D0 = (dm.D0*10000^2)::T                 # cm^2/sec, converted to micron^2/sec  
-    Ea = dm.Ea::T                           # kJ/mol
-    R = 0.008314472                         # kJ/(K*mol)
+    D0 = (dm.D0*10000^2)::T                 # [micron^2/sec], converted from [cm^2/sec]
+    Ea = dm.Ea::T                           # [kJ/mol]
+    R = 0.008314472                         # [kJ/(K*mol)]
     ΔT = mineral.offset::T + 273.15         # Conversion from C to K, plus temperature offset relative to other samples
 
     # Calculate effective diffusivity at each time step
@@ -13,7 +13,7 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degas
     @assert firstindex(De) == firstindex(Tsteps_degassing)
     @assert lastindex(De) >= lastindex(Tsteps_degassing)
     @turbo for i ∈ eachindex(Tsteps_degassing)
-        De[i] = D0 * exp(-Ea / R / (Tsteps_degassing[i] + ΔT)) # micron^2/sec
+        De[i] = D0 * exp(-Ea / R / (Tsteps_degassing[i] + ΔT)) # [micron^2/sec]
     end
 
     # Get time and radius discretization
@@ -147,9 +147,9 @@ end
 function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_degassing::AbstractVector{T}, dm::Diffusivity{T}; fuse::Bool=true, redegastracer::Bool=false) where T <: AbstractFloat
 
     # Constants
-    D0 = (dm.D0*10000^2)::T                 # cm^2/sec, converted to micron^2/sec  
-    Ea = dm.Ea::T                           # kJ/mol
-    R = 0.008314472                         # kJ/(K*mol)
+    D0 = (dm.D0*10000^2)::T                 # [micron^2/sec], converted from [cm^2/sec]
+    Ea = dm.Ea::T                           # [kJ/mol]
+    R = 0.008314472                         # [kJ/(K*mol)]
     ΔT = mineral.offset::T + 273.15         # Conversion from C to K, plus temperature offset relative to other samples
 
     # Calculate effective diffusivity at each time step
@@ -157,7 +157,7 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_de
     @assert firstindex(De) == firstindex(Tsteps_degassing)
     @assert lastindex(De) >= lastindex(Tsteps_degassing)
     @turbo for i ∈ eachindex(Tsteps_degassing)
-        De[i] = D0 * exp(-Ea / R / (Tsteps_degassing[i] + ΔT)) # micron^2/sec
+        De[i] = D0 * exp(-Ea / R / (Tsteps_degassing[i] + ΔT)) # [micron^2/sec]
     end
 
     # Get time and radius discretization
@@ -301,9 +301,9 @@ end
 function degas!(mineral::PlanarHe{T}, tsteps_degassing::FloatRange, Tsteps_degassing::AbstractVector{T}, dm::Diffusivity{T}; fuse::Bool=true, redegastracer::Bool=false) where T <: AbstractFloat
 
     # Constants
-    D0 = (dm.D0*10000^2)::T                 # cm^2/sec, converted to micron^2/sec  
-    Ea = dm.Ea::T                           # kJ/mol
-    R = 0.008314472                         # kJ/(K*mol)
+    D0 = (dm.D0*10000^2)::T                 # [micron^2/sec], converted from [cm^2/sec]
+    Ea = dm.Ea::T                           # [kJ/mol]
+    R = 0.008314472                         # [kJ/(K*mol)]
     ΔT = mineral.offset::T + 273.15         # Conversion from C to K, plus temperature offset relative to other samples
 
     # Calculate effective diffusivity at each time step
@@ -311,7 +311,7 @@ function degas!(mineral::PlanarHe{T}, tsteps_degassing::FloatRange, Tsteps_degas
     @assert firstindex(De) == firstindex(Tsteps_degassing)
     @assert lastindex(De) >= lastindex(Tsteps_degassing)
     @turbo for i ∈ eachindex(Tsteps_degassing)
-        De[i] = D0 * exp(-Ea / R / (Tsteps_degassing[i] + ΔT)) # micron^2/sec
+        De[i] = D0 * exp(-Ea / R / (Tsteps_degassing[i] + ΔT)) # [micron^2/sec]
     end
 
     # Get time and radius discretization
@@ -446,9 +446,9 @@ end
 function degas!(mineral::SphericalHe{T}, tsteps_degassing::FloatRange, Tsteps_degassing::AbstractVector{T}, dm::Diffusivity{T}; fuse::Bool=true, redegastracer::Bool=false) where T <: AbstractFloat
 
     # Constants
-    D0 = (dm.D0*10000^2)::T                 # cm^2/sec, converted to micron^2/sec  
-    Ea = dm.Ea::T                           # kJ/mol
-    R = 0.008314472                         # kJ/(K*mol)
+    D0 = (dm.D0*10000^2)::T                 # [micron^2/sec], converted from [cm^2/sec]
+    Ea = dm.Ea::T                           # [kJ/mol]
+    R = 0.008314472                         # [kJ/(K*mol)]
     ΔT = mineral.offset::T + 273.15         # Conversion from C to K, plus temperature offset relative to other samples
 
     # Calculate effective diffusivity at each time step
@@ -456,7 +456,7 @@ function degas!(mineral::SphericalHe{T}, tsteps_degassing::FloatRange, Tsteps_de
     @assert firstindex(De) == firstindex(Tsteps_degassing)
     @assert lastindex(De) >= lastindex(Tsteps_degassing)
     @turbo for i ∈ eachindex(Tsteps_degassing)
-        De[i] = D0 * exp(-Ea / R / (Tsteps_degassing[i] + ΔT)) # micron^2/sec
+        De[i] = D0 * exp(-Ea / R / (Tsteps_degassing[i] + ΔT)) # [micron^2/sec]
     end
 
     # Get time and radius discretization
