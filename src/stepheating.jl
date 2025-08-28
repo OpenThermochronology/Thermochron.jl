@@ -1,32 +1,4 @@
-## -- Multiple domain diffusivity
-
-    """
-    ```julia
-    MDDiffusivity(
-        D0::NTuple{N,T}             # [cm^2/sec] Maximum diffusivity
-        D0_logsigma::NTuple{N,T}    # [unitless] log uncertainty (default = 1/2 = a factor of ℯ two-sigma)
-        Ea::T                       # [kJ/mol] Activation energy
-        Ea_logsigma::T              # [unitless] log uncertainty (default = 1/2 = a factor of ℯ two-sigma)
-    )
-    ```
-    Multiple diffusivities for multiple domains
-    """
-    Base.@kwdef struct MDDiffusivity{T<:AbstractFloat, N} <: DiffusivityModel{T}
-        D0::NTuple{N,T}             # [cm^2/sec] Maximum diffusivity
-        D0_logsigma::NTuple{N,T}    # [unitless] log uncertainty
-        Ea::NTuple{N,T}             # [kJ/mol] Activation energy
-        Ea_logsigma::NTuple{N,T}    # [unitless] log uncertainty 
-    end
-    Base.getindex(d::MDDiffusivity{T}, i::Int) where {T} = Diffusivity{T}(d.D0[i], d.D0_logsigma[i], d.Ea[i], d.Ea_logsigma[i])
-
-    # Query MDDiffusivities from a KineticResult
-    function MDDiffusivity(kr::KineticResult)
-        any(x->isa(x, MDDiffusivity), kr) || return nothing
-        ia = findall(x->isa(x, MDDiffusivity), kr[:,1])
-        return collect(kr[ia,:]')
-    end
-    
-## -- Multiple domain diffusion functions
+## -- Functions for modelling experimental degassing schedules
 
 function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degassing::AbstractVector{T}, dm::Diffusivity{T}; fuse::Bool=true, redegastracer::Bool=false) where T <: AbstractFloat
 
@@ -327,6 +299,7 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_de
     return step_tracer, step_daughter
 end
 
+## --- Age and likelihood functions for step heating data
 
 function modelage(mdd::MultipleDomain{T}, Tsteps::AbstractVector, dm::MDDiffusivity{T}; redegastracer::Bool=false) where {T<:AbstractFloat}
     age = fill!(mdd.model_age, zero(T))
