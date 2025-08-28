@@ -8,12 +8,12 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degas
     R = 0.008314472                         # kJ/(K*mol)
     ΔT = mineral.offset::T + 273.15         # Conversion from C to K, plus temperature offset from the
 
-    # Diffusivities of crystalline and amorphous endmembers
+    # Calculate effective diffusivity at each time step
     De = mineral.De::Vector{T}
     @assert firstindex(De) == firstindex(Tsteps_degassing)
     @assert lastindex(De) >= lastindex(Tsteps_degassing)
     @turbo for i ∈ eachindex(Tsteps_degassing)
-        De[i] = D0 * exp(-Ea / R / (Tsteps_degassing[i] + ΔT)) # micron^2/Myr
+        De[i] = D0 * exp(-Ea / R / (Tsteps_degassing[i] + ΔT)) # micron^2/sec
     end
 
     # Get time and radius discretization
@@ -83,7 +83,7 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degas
     # Degas all remaining daughter in last step if fuse==true
     fuse && (step_daughter[ntsteps] = max(daughterᵢ₋, zero(T)))
 
-    # Now diffuse parent isotope tracer, (as Ar-39), if neccesary
+    # Now diffuse parent isotope tracer (as Ar-39), if neccesary
     if redegastracer || !(0 < sum(step_tracer))
 
         # Convert diffusivity from that of Ar-40 to that of Ar-39 given Dₗ/Dₕ ~ (mₕ/mₗ)^β 
@@ -93,7 +93,7 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degas
         
         # Initialize u matrix
         fill!(u, zero(T)) 
-        u[2:end-1,1] = mineral.r40K
+        u[2:end-1,1] = mineral.r40K # Model Ar-39 equal to K-40, such that implied ages are already correct
         u[1,1] = u[2,1]
         u[end,1] = 0
 
@@ -141,7 +141,7 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degas
         fuse && (step_tracer[ntsteps] = max(tracerᵢ₋, zero(T)))
     end
 
-    # Return views of the resulting step ages and degassing fractions
+    # Return views of the resulting tracer and daughter amounts degassed at each step
     return step_tracer, step_daughter
 end
 function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_degassing::AbstractVector{T}, dm::Diffusivity{T}; fuse::Bool=true, redegastracer::Bool=false) where T <: AbstractFloat
@@ -152,17 +152,17 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_de
     R = 0.008314472                         # kJ/(K*mol)
     ΔT = mineral.offset::T + 273.15         # Conversion from C to K, plus temperature offset from the
 
-    # Diffusivities of crystalline and amorphous endmembers
+    # Calculate effective diffusivity at each time step
     De = mineral.De::Vector{T}
     @assert firstindex(De) == firstindex(Tsteps_degassing)
     @assert lastindex(De) >= lastindex(Tsteps_degassing)
     @turbo for i ∈ eachindex(Tsteps_degassing)
-        De[i] = D0 * exp(-Ea / R / (Tsteps_degassing[i] + ΔT)) # micron^2/Myr
+        De[i] = D0 * exp(-Ea / R / (Tsteps_degassing[i] + ΔT)) # micron^2/sec
     end
 
     # Get time and radius discretization
     rsteps = mineral.rsteps
-    dr = step(mineral.rsteps)
+    dr = step(rsteps)
     nrsteps = mineral.nrsteps::Int
     relvolumes = mineral.relvolumes::Vector{T}
     ntsteps = length(tsteps_degassing)
@@ -233,7 +233,7 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_de
     # Degas all remaining daughter in last step if fuse==true
     fuse && (step_daughter[ntsteps] = max(daughterᵢ₋, zero(T)))
 
-    # Now diffuse parent isotope tracer, (as Ar-39), if neccesary
+    # Now diffuse parent isotope tracer (as Ar-39), if neccesary
     if redegastracer || !(0 < sum(step_tracer))
         
         # Convert diffusivity from that of Ar-40 to that of Ar-39 given Dₗ/Dₕ ~ (mₕ/mₗ)^β 
@@ -243,8 +243,8 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_de
 
         # Initialize u matrix
         fill!(u, zero(T)) 
-        u[2:end-1,1] = mineral.r40K 
-        u[2:end-1,1] .*= mineral.rsteps
+        u[2:end-1,1] = mineral.r40K # Model Ar-39 equal to K-40, such that implied ages are already correct
+        u[2:end-1,1] .*= rsteps # U-transform for Crank-Nicholson
         u[1,1] = -u[2,1]
         u[end,1] = 0
 
@@ -295,7 +295,7 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_de
         fuse && (step_tracer[ntsteps] = max(tracerᵢ₋, zero(T)))
     end
 
-    # Return views of the resulting step ages and degassing fractions
+    # Return views of the resulting tracer and daughter amounts degassed at each step
     return step_tracer, step_daughter
 end
 function degas!(mineral::SphericalHe{T}, tsteps_degassing::FloatRange, Tsteps_degassing::AbstractVector{T}, dm::Diffusivity{T}; fuse::Bool=true, redegastracer::Bool=false) where T <: AbstractFloat
@@ -306,17 +306,17 @@ function degas!(mineral::SphericalHe{T}, tsteps_degassing::FloatRange, Tsteps_de
     R = 0.008314472                         # kJ/(K*mol)
     ΔT = mineral.offset::T + 273.15         # Conversion from C to K, plus temperature offset from the
 
-    # Diffusivities of crystalline and amorphous endmembers
+    # Calculate effective diffusivity at each time step
     De = mineral.De::Vector{T}
     @assert firstindex(De) == firstindex(Tsteps_degassing)
     @assert lastindex(De) >= lastindex(Tsteps_degassing)
     @turbo for i ∈ eachindex(Tsteps_degassing)
-        De[i] = D0 * exp(-Ea / R / (Tsteps_degassing[i] + ΔT)) # micron^2/Myr
+        De[i] = D0 * exp(-Ea / R / (Tsteps_degassing[i] + ΔT)) # micron^2/sec
     end
 
     # Get time and radius discretization
     rsteps = mineral.rsteps
-    dr = step(mineral.rsteps)
+    dr = step(rsteps)
     nrsteps = mineral.nrsteps::Int
     relvolumes = mineral.relvolumes::Vector{T}
     ntsteps = length(tsteps_degassing)
@@ -387,7 +387,7 @@ function degas!(mineral::SphericalHe{T}, tsteps_degassing::FloatRange, Tsteps_de
     # Degas all remaining daughter in last step if fuse==true
     fuse && (step_daughter[ntsteps] = max(daughterᵢ₋, zero(T)))
 
-    # Now diffuse isotope tracer, if neccesary
+    # Now diffuse isotope tracer (He-3), if neccesary
     if redegastracer || !(0 < sum(step_tracer))
         
         # Convert diffusivity from that of He-4 to that of He-3 given Dₗ/Dₕ ~ (mₕ/mₗ)^β 
@@ -397,8 +397,8 @@ function degas!(mineral::SphericalHe{T}, tsteps_degassing::FloatRange, Tsteps_de
 
         # Initialize u matrix
         fill!(u, zero(T)) 
-        u[2:end-1,1] = total_daughter # Initialize with tracer equal to total daughter, such that results are normalized to Bulk 4He/3He (i.e., Rstep/Rbulk)
-        u[2:end-1,1] .*= mineral.rsteps # U-transform for Crank-Nicholson
+        u[2:end-1,1] .= total_daughter # Initialize with tracer equal to total daughter, such that results are normalized to Bulk 4He/3He (i.e., Rstep/Rbulk)
+        u[2:end-1,1] .*= rsteps # U-transform for Crank-Nicholson
         u[1,1] = -u[2,1]
         u[end,1] = 0
 
@@ -449,7 +449,7 @@ function degas!(mineral::SphericalHe{T}, tsteps_degassing::FloatRange, Tsteps_de
         fuse && (step_tracer[ntsteps] = max(tracerᵢ₋, zero(T)))
     end
 
-    # Return views of the resulting step values and degassing fractions
+    # Return views of the resulting tracer and daughter amounts degassed at each step
     return step_tracer, step_daughter
 end
 
