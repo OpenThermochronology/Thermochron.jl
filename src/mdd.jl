@@ -205,7 +205,8 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_de
     y = mineral.y
 
     # Output matrix for all timesteps
-    # No coordinate transform required for slab geometry, so here u is the diffusing Ar profile
+    # u = v*r is the coordinate transform (u-substitution) for the Crank-
+    # Nicholson equations where v is the Ar profile and r is radius
     u = mineral.u::DenseMatrix{T}
     fill!(u, zero(T)) 
     u[:,1] = y # Start with final Ar profile from end of last geologic inversion
