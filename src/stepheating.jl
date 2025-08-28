@@ -67,7 +67,7 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degas
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
         @turbo for k = 2:nrsteps-1
             𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
-            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊
+            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊    # No daughter ingrowth on lab timescales
         end
 
         # Invert using tridiagonal matrix algorithm
@@ -124,7 +124,7 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degas
             # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
             @turbo for k = 2:nrsteps-1
                 𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
-                y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊
+                y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊    # No ingrowth or decay of tracer
             end
 
             # Invert using tridiagonal matrix algorithm
@@ -213,7 +213,7 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_de
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
         @turbo for k = 2:nrsteps-1
             𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
-            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊
+            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊    # No daughter ingrowth on lab timescales
         end
 
         # Invert using tridiagonal matrix algorithm
@@ -274,7 +274,7 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_de
             # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
             @turbo for k = 2:nrsteps-1
                 𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
-                y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊
+                y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊    # No ingrowth or decay of tracer
             end
 
             # Invert using tridiagonal matrix algorithm
@@ -366,7 +366,7 @@ function degas!(mineral::PlanarHe{T}, tsteps_degassing::FloatRange, Tsteps_degas
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
         @turbo for k = 2:nrsteps-1
             𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
-            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊
+            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊    # No daughter ingrowth on lab timescales
         end
 
         # Invert using tridiagonal matrix algorithm
@@ -423,7 +423,7 @@ function degas!(mineral::PlanarHe{T}, tsteps_degassing::FloatRange, Tsteps_degas
             # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
             @turbo for k = 2:nrsteps-1
                 𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
-                y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊
+                y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊    # No ingrowth or decay of tracer
             end
 
             # Invert using tridiagonal matrix algorithm
@@ -512,7 +512,7 @@ function degas!(mineral::SphericalHe{T}, tsteps_degassing::FloatRange, Tsteps_de
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
         @turbo for k = 2:nrsteps-1
             𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
-            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊
+            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊    # No daughter ingrowth on lab timescales
         end
 
         # Invert using tridiagonal matrix algorithm
@@ -573,7 +573,7 @@ function degas!(mineral::SphericalHe{T}, tsteps_degassing::FloatRange, Tsteps_de
             # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
             @turbo for k = 2:nrsteps-1
                 𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
-                y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊
+                y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊    # No ingrowth or decay of tracer
             end
 
             # Invert using tridiagonal matrix algorithm
