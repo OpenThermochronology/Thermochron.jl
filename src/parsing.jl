@@ -112,7 +112,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
         sample_agesteps = agesteps[first_index:end]
         mineral = lowercase(string(ds.mineral[i]))
         offset = (haskey(ds, :offset_C) && !isnan(ds.offset_C[i])) ? ds.offset_C[i] : 0
-
+        step_heating_file = haskey(ds, :step_heating_file) ? ds.step_heating_file[i] : haskey(ds, :mdd_file) ? ds.mdd_file[i] : ""
         if mineral == "zircon"
             # Zircon helium
             if haskey(ds, :raw_He_age_Ma) && haskey(ds, :raw_He_age_sigma_Ma) && (0 < ds.raw_He_age_sigma_Ma[i]/ds.raw_He_age_Ma[i])
@@ -382,48 +382,39 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                     push!(damodels, dm)
                 end
             end
-        elseif haskey(ds, :mdd_file) && !isempty(ds.mdd_file[i])
-            mdds = importdataset(ds.mdd_file[i], importas=:Tuple)
-            geometry = haskey(ds, :geometry) ? lowercase(string(ds.geometry[i])) : "spherical"
-            r = (haskey(ds, :halfwidth_um) && !isnan(ds.halfwidth_um[i])) ? ds.halfwidth_um[i] : 100
-            if (geometry == "slab") || (geometry == "planar")
-                c = MultipleDomain(T, PlanarAr;
-                    age = mdds.age_Ma,
-                    age_sigma = mdds.age_sigma_Ma,
-                    fraction_experimental = mdds.fraction_degassed,
-                    tsteps_experimental = issorted(mdds.time_s, lt=<=) ? mdds.time_s : cumsum(mdds.time_s),
-                    Tsteps_experimental = mdds.temperature_C,
-                    fit = mdds.fit,
-                    offset = offset,
-                    r = r,
-                    dr = dr, 
-                    volume_fraction = mdds.volume_fraction[.!isnan.(mdds.volume_fraction)],
-                    K40 = (haskey(ds, :K40_ppm) && !isnan(ds.K40_ppm[i])) ? ds.K40_ppm[i] : 16.34,
-                    agesteps = sample_agesteps,
-                )
+        elseif !isempty(step_heating_file)
+            dds = importdataset(step_heating_file, importas=:Tuple)
+            geometry = haskey(ds, :geometry) ? lowercase(string(ds.geometry[i])) : "unspecified"
+            DomainType = if (geometry == "slab") || (geometry == "planar")
+                PlanarAr
             else
                 (geometry === "spherical") || @warn "Geometry \"$geometry\" not recognized in row $i, defaulting to spherical"
-                c = MultipleDomain(T, SphericalAr;
-                    age = mdds.age_Ma,
-                    age_sigma = mdds.age_sigma_Ma,
-                    fraction_experimental = mdds.fraction_degassed,
-                    tsteps_experimental = issorted(mdds.time_s, lt=<=) ? mdds.time_s : cumsum(mdds.time_s),
-                    Tsteps_experimental = mdds.temperature_C,
-                    fit = mdds.fit,
-                    offset = offset,
-                    r = r,
-                    dr = dr, 
-                    volume_fraction = mdds.volume_fraction[.!isnan.(mdds.volume_fraction)],
+                SphericalAr
+            end
+            r = (haskey(ds, :halfwidth_um) && !isnan(ds.halfwidth_um[i])) ? ds.halfwidth_um[i] : 100
+            fraction_experimental = dds.fraction_degassed
+            fraction_experimental_sigma = haskey(dds, :fraction_experimental_sigma) ? dds.fraction_experimental_sigma : fill(0.01, size(fraction_experimental))
+            c = MultipleDomain(T, DomainType;
+                    age = dds.age_Ma,
+                    age_sigma = dds.age_sigma_Ma,
+                    fraction_experimental,
+                    fraction_experimental_sigma,
+                    tsteps_experimental = issorted(dds.time_s, lt=<=) ? dds.time_s : cumsum(dds.time_s),
+                    Tsteps_experimental = dds.temperature_C,
+                    fit = dds.fit,
+                    offset,
+                    r,
+                    dr, 
+                    volume_fraction = dds.volume_fraction[.!isnan.(dds.volume_fraction)],
                     K40 = (haskey(ds, :K40_ppm) && !isnan(ds.K40_ppm[i])) ? ds.K40_ppm[i] : 16.34,
                     agesteps = sample_agesteps,
-                )
-            end
-            tdomains = .!isnan.(mdds.lnD0_a_2)
+            )
+            tdomains = .!isnan.(dds.lnD0_a_2)
             dm = MDDiffusivity(
-                D0 = (T.(exp.(mdds.lnD0_a_2[tdomains]).*(r/10000)^2)...,),
-                D0_logsigma = (T.(haskey(mdds, :lnD0_a_2_sigma) ? mdds.lnD0_a_2_sigma[tdomains] : fill(log(2)/2, count(tdomains)))...,),
-                Ea = (T.(mdds.Ea_kJ_mol[tdomains])...,),
-                Ea_logsigma = (T.(haskey(mdds, :Ea_logsigma) ? mdds.Ea_logsigma[tdomains] : fill(log(2)/4, count(tdomains)))...,),
+                D0 = (T.(exp.(dds.lnD0_a_2[tdomains]).*(r/10000)^2)...,),
+                D0_logsigma = (T.(haskey(dds, :lnD0_a_2_sigma) ? dds.lnD0_a_2_sigma[tdomains] : fill(log(2)/2, count(tdomains)))...,),
+                Ea = (T.(dds.Ea_kJ_mol[tdomains])...,),
+                Ea_logsigma = (T.(haskey(dds, :Ea_logsigma) ? dds.Ea_logsigma[tdomains] : fill(log(2)/4, count(tdomains)))...,),
             )
             push!(chrons, c)
             push!(damodels, dm)

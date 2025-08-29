@@ -1891,7 +1891,7 @@ end
         age::AbstractVector,                            # [Ma] measured Ar-40/Ar-39 ages at each degassing step
         age_sigma::AbstractVector,                      # [Ma] measured Ar-40/Ar-39 age uncertainties (one-sigma) at each degassing step
         fraction_experimental::AbstractVector,          # [unitless] cumulative fraction of total Ar-39 released each degassing step
-        fraction_experimental_sigma=T(0.01),            # [unitless] uncertainty in degassing fraction
+        fraction_experimental_sigma=fill(T(0.01), size(fraction_experimental)),     # [unitless] uncertainty in degassing fraction
         tsteps_experimental::AbstractVector,            # [s] time steps of experimental heating schedule
         Tsteps_experimental::AbstractVector,            # [C] temperature steps of experimental heating schedule
         fit::AbstractVector,                            # [Bool] Whether or not each degassing step should be used in inversion
@@ -1915,10 +1915,10 @@ end
 
     See also: `MDDiffusivity`, `PlanarAr`, `SphericalAr`, `degas!`
     """
-    struct MultipleDomain{T<:AbstractFloat, C<:Union{SphericalAr{T}, PlanarAr{T}}} <: AbsoluteChronometer{T}
-        age::Vector{T}                          # [Ma] measured Ar-40/Ar-39 ages at each degassing step
-        age_sigma::Vector{T}                    # [Ma] measured Ar-40/Ar-39 age uncertainties (one-sigma) at each degassing step
-        fraction_experimental::Vector{T}        # [unitless] cumulative fraction of total Ar-39 released each degassing step
+    struct MultipleDomain{T<:AbstractFloat, C<:Union{HeliumSample{T}, ArgonSample{T}}} <: AbsoluteChronometer{T}
+        age::Vector{T}                          # [Ma or unitless] measured ages (for Ar-40/Ar-39) or Rstep/Rbulk ratios (for He-4/He-3) at each degassing step
+        age_sigma::Vector{T}                    # [Ma or unitless] measured age (or ratio) uncertainties at each degassing step
+        fraction_experimental::Vector{T}        # [unitless] cumulative fraction of total tracer (Ar-39 or He-3) released each degassing step
         fraction_experimental_sigma::Vector{T}  # [unitless] uncertainty in degassing fraction
         midpoint_experimental::Vector{T}        # [unitless] midpoint of fraction_experimental for each step
         tsteps_experimental::Vector{T}          # [s] time steps of experimental heating schedule
@@ -1939,7 +1939,7 @@ end
             age::AbstractVector,
             age_sigma::AbstractVector,
             fraction_experimental::AbstractVector,
-            fraction_experimental_sigma=T(0.01),
+            fraction_experimental_sigma::AbstractVector=fill(T(0.01), size(fraction_experimental)),
             tsteps_experimental::AbstractVector,
             Tsteps_experimental::AbstractVector,
             fit::AbstractVector,
@@ -1956,16 +1956,13 @@ end
         agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
         
         # Check input arrays are the right size and ordered properly
-        @assert eachindex(age) == eachindex(age_sigma) == eachindex(fraction_experimental) == eachindex(tsteps_experimental) == eachindex(Tsteps_experimental)
+        @assert eachindex(age) == eachindex(age_sigma) == eachindex(fraction_experimental) == eachindex(fraction_experimental_sigma) == eachindex(tsteps_experimental) == eachindex(Tsteps_experimental)
         @assert issorted(tsteps_experimental, lt=<=) "Degassing time steps must be in strictly increasing order"
         @assert all(x->0<=x<=1, fraction_experimental) "All \"fraction degassed\" values must be between 0 and 1"
 
         # Calculate midpoints of `fraction_experimental`
         midpoint_experimental = @. T(fraction_experimental + [0; fraction_experimental[1:end-1]])/2
-        if fraction_experimental_sigma isa Number
-            fraction_experimental_sigma = fill(fraction_experimental_sigma, size(fraction_experimental))
-        end
-        @assert eachindex(fraction_experimental_sigma) == eachindex(fraction_experimental) == eachindex(midpoint_experimental)
+        @assert eachindex(midpoint_experimental) == eachindex(fraction_experimental)
 
         # Interpolate degassing t-T steps to the same resolution as the forward model
         tsteps_degassing = floatrange(first(tsteps_experimental), last(tsteps_experimental), length=length(agesteps))
