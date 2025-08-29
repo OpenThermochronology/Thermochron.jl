@@ -24,21 +24,23 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::AbstractVector{T}, Tstep
     step_daughter = @views(mineral.step_daughter[1:ntsteps])
     @assert eachindex(tsteps_degassing) == eachindex(Tsteps_degassing) == Base.OneTo(ntsteps)
 
+    # Output matrix for all timesteps
+    # No coordinate transform required for slab geometry, so here u is the diffusing Ar profile
+    u = mineral.u::DenseMatrix{T}
+    fill!(u, zero(T)) # Erase previous diffusion profiles
+
     # Common β factor is constant across all radii since diffusivity is constant
     β = mineral.β::Vector{T}
 
     # Vector for RHS of Crank-Nicholson equation with regular grid cells
     y = mineral.y
 
-    # Output matrix for all timesteps
-    # No coordinate transform required for slab geometry, so here u is the diffusing Ar profile
-    u = mineral.u::DenseMatrix{T}
-    fill!(u, zero(T)) 
-    u[:,1] = y # Start with final Ar profile from end of last geologic inversion
-
     # Tridiagonal matrix for LHS of Crank-Nicolson equation with regular grid cells
     A = mineral.A       # Tridiagonal matrix
     F = mineral.F       # LU object for in-place lu factorization
+
+    # Start with final Ar profile from end of last geologic inversion
+    u[:,1] = y
     
     daughterᵢ₋ = nanmean(@views(u[2:end-1, 1]))
     @inbounds for i in Base.OneTo(ntsteps-fuse)
@@ -92,7 +94,7 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::AbstractVector{T}, Tstep
         De .*= (40/39)^0.3
         
         # Initialize u matrix
-        fill!(u, zero(T)) 
+        fill!(u, zero(T)) # Erase previous diffusion profiles
         u[2:end-1,1] = mineral.r40K # Model Ar-39 equal to K-40, such that implied ages are already correct
         u[1,1] = u[2,1]
         u[end,1] = 0
@@ -170,23 +172,25 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::AbstractVector{T}, Ts
     step_daughter = @views(mineral.step_daughter[1:ntsteps])
     @assert eachindex(tsteps_degassing) == eachindex(Tsteps_degassing) == Base.OneTo(ntsteps)
 
+    # Output matrix for all timesteps
+    # u = v*r is the coordinate transform (u-substitution) for the Crank-
+    # Nicholson equations where v is the Ar profile and r is radius
+    u = mineral.u::DenseMatrix{T}
+    fill!(u, zero(T)) # Erase previous diffusion profiles
+
     # Common β factor is constant across all radii since diffusivity is constant
     β = mineral.β::Vector{T}
 
     # Vector for RHS of Crank-Nicholson equation with regular grid cells
     y = mineral.y
 
-    # Output matrix for all timesteps
-    # u = v*r is the coordinate transform (u-substitution) for the Crank-
-    # Nicholson equations where v is the Ar profile and r is radius
-    u = mineral.u::DenseMatrix{T}
-    fill!(u, zero(T)) 
-    u[:,1] = y # Start with final Ar profile from end of last geologic inversion
-
     # Tridiagonal matrix for LHS of Crank-Nicolson equation with regular grid cells
     A = mineral.A       # Tridiagonal matrix
     F = mineral.F       # LU object for in-place lu factorization
     
+    # Start with final Ar profile from end of last geologic inversion
+    u[:,1] = y
+
     @inbounds for i in Base.OneTo(ntsteps-fuse)
         # Duration of current timestep
         dt = step_at(tsteps_degassing, i)
@@ -242,7 +246,7 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::AbstractVector{T}, Ts
         De .*= (40/39)^0.3
 
         # Initialize u matrix
-        fill!(u, zero(T)) 
+        fill!(u, zero(T)) # Erase previous diffusion profiles
         u[2:end-1,1] = mineral.r40K # Model Ar-39 equal to K-40, such that implied ages are already correct
         u[2:end-1,1] .*= rsteps # U-transform for Crank-Nicholson
         u[1,1] = -u[2,1]
@@ -322,21 +326,23 @@ function degas!(mineral::PlanarHe{T}, tsteps_degassing::AbstractVector{T}, Tstep
     step_daughter = @views(mineral.step_daughter[1:ntsteps])
     @assert eachindex(tsteps_degassing) == eachindex(Tsteps_degassing) == Base.OneTo(ntsteps)
 
+    # Output matrix for all timesteps
+    # No coordinate transform required for slab geometry, so here u is the diffusing Ar profile
+    u = mineral.u::DenseMatrix{T}
+    fill!(u, zero(T)) # Erase previous diffusion profiles
+
     # Common β factor
     β = mineral.β::Vector{T}
 
     # Vector for RHS of Crank-Nicholson equation with regular grid cells
     y = mineral.y
 
-    # Output matrix for all timesteps
-    # No coordinate transform required for slab geometry, so here u is the diffusing Ar profile
-    u = mineral.u::DenseMatrix{T}
-    fill!(u, zero(T)) 
-    u[:,1] = y # Start with final Ar profile from end of last geologic inversion
-
     # Tridiagonal matrix for LHS of Crank-Nicolson equation with regular grid cells
     A = mineral.A       # Tridiagonal matrix
     F = mineral.F       # LU object for in-place lu factorization
+
+    # Start with final He profile from end of last geologic inversion
+    u[:,1] = y
     
     total_daughter = daughterᵢ₋ = nanmean(@views(u[2:end-1, 1]))
     @inbounds for i in Base.OneTo(ntsteps-fuse)
@@ -391,7 +397,7 @@ function degas!(mineral::PlanarHe{T}, tsteps_degassing::AbstractVector{T}, Tstep
         De .*= (4/3)^0.3
         
         # Initialize u matrix
-        fill!(u, zero(T)) 
+        fill!(u, zero(T)) # Erase previous diffusion profiles
         u[2:end-1,1] .= total_daughter # Initialize with tracer equal to total daughter, such that results are normalized to Bulk 4He/3He (i.e., Rstep/Rbulk)
         u[1,1] = u[2,1]
         u[end,1] = 0
@@ -469,22 +475,24 @@ function degas!(mineral::SphericalHe{T}, tsteps_degassing::AbstractVector{T}, Ts
     step_daughter = @views(mineral.step_daughter[1:ntsteps])
     @assert eachindex(tsteps_degassing) == eachindex(Tsteps_degassing) == Base.OneTo(ntsteps)
 
+    # Output matrix for all timesteps
+    # u = v*r is the coordinate transform (u-substitution) for the Crank-
+    # Nicholson equations where v is the He profile and r is radius
+    u = mineral.u::DenseMatrix{T}
+    fill!(u, zero(T)) # Erase previous diffusion profiles
+
     # Common β factor is constant across all radii since diffusivity is constant
     β = mineral.β::Vector{T}
 
     # Vector for RHS of Crank-Nicholson equation with regular grid cells
     y = mineral.y
 
-    # Output matrix for all timesteps
-    # u = v*r is the coordinate transform (u-substitution) for the Crank-
-    # Nicholson equations where v is the He profile and r is radius
-    u = mineral.u::DenseMatrix{T}
-    fill!(u, zero(T)) 
-    u[:,1] = y # Start with final (coordinate transform'd) He profile from end of last geologic inversion
-
     # Tridiagonal matrix for LHS of Crank-Nicolson equation with regular grid cells
     A = mineral.A       # Tridiagonal matrix
     F = mineral.F       # LU object for in-place lu factorization
+
+    # Start with final (coordinate transform'd) He profile from end of last geologic inversion
+    u[:,1] = y
     
     @inbounds for i in Base.OneTo(ntsteps-fuse)
         # Duration of current timestep
@@ -541,7 +549,7 @@ function degas!(mineral::SphericalHe{T}, tsteps_degassing::AbstractVector{T}, Ts
         De .*= (4/3)^0.3
 
         # Initialize u matrix
-        fill!(u, zero(T)) 
+        fill!(u, zero(T)) # Erase previous diffusion profiles
         u[2:end-1,1] .= total_daughter # Initialize with tracer equal to total daughter, such that results are normalized to Bulk 4He/3He (i.e., Rstep/Rbulk)
         u[2:end-1,1] .*= rsteps # U-transform for Crank-Nicholson
         u[1,1] = -u[2,1]
@@ -642,7 +650,7 @@ function degas!(mineral::ZirconHe{T}, tsteps_degassing::AbstractVector{T}, Tstep
     u = mineral.u::DenseMatrix{T}
     @assert axes(u,2) == 1:ntsteps+1
     @assert axes(u,1) == 1:nrsteps
-    fill!(u, zero(T)) 
+    fill!(u, zero(T)) # Erase previous diffusion profiles
 
     # Common β factor
     β = mineral.β::Vector{T}
@@ -720,7 +728,7 @@ function degas!(mineral::ZirconHe{T}, tsteps_degassing::AbstractVector{T}, Tstep
         convert4to3 = (4/3)^0.3
         
         # Initialize u matrix
-        fill!(u, zero(T)) 
+        fill!(u, zero(T)) # Erase previous diffusion profiles
         u[2:end-1,1] .= total_daughter # Initialize with tracer equal to total daughter, such that results are normalized to Bulk 4He/3He (i.e., Rstep/Rbulk)
         u[2:end-1,1] .*= rsteps # U-transform for Crank-Nicholson
         u[1,1] = -u[2,1]
@@ -911,7 +919,7 @@ function degas!(mineral::ApatiteHe{T}, tsteps_degassing::AbstractVector{T}, Tste
         convert4to3 = (4/3)^0.3
         
         # Initialize u matrix
-        fill!(u, zero(T)) 
+        fill!(u, zero(T)) # Erase previous diffusion profiles
         u[2:end-1,1] .= total_daughter # Initialize with tracer equal to total daughter, such that results are normalized to Bulk 4He/3He (i.e., Rstep/Rbulk)
         u[2:end-1,1] .*= rsteps # U-transform for Crank-Nicholson
         u[1,1] = -u[2,1]
