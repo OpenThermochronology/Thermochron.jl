@@ -1891,7 +1891,7 @@ end
         age::AbstractVector,                            # [Ma] measured Ar-40/Ar-39 ages at each degassing step
         age_sigma::AbstractVector,                      # [Ma] measured Ar-40/Ar-39 age uncertainties (one-sigma) at each degassing step
         fraction_experimental::AbstractVector,          # [unitless] cumulative fraction of total Ar-39 released each degassing step
-        fraction_experimental_sigma::Number=T(0.01),    # [unitless] uncertainty in degassing fraction
+        fraction_experimental_sigma=T(0.01),            # [unitless] uncertainty in degassing fraction
         tsteps_experimental::AbstractVector,            # [s] time steps of experimental heating schedule
         Tsteps_experimental::AbstractVector,            # [C] temperature steps of experimental heating schedule
         fit::AbstractVector,                            # [Bool] Whether or not each degassing step should be used in inversion
@@ -1916,30 +1916,30 @@ end
     See also: `MDDiffusivity`, `PlanarAr`, `SphericalAr`, `degas!`
     """
     struct MultipleDomain{T<:AbstractFloat, C<:Union{SphericalAr{T}, PlanarAr{T}}} <: AbsoluteChronometer{T}
-        age::Vector{T}                      # [Ma] measured Ar-40/Ar-39 ages at each degassing step
-        age_sigma::Vector{T}                # [Ma] measured Ar-40/Ar-39 age uncertainties (one-sigma) at each degassing step
-        fraction_experimental::Vector{T}    # [unitless] cumulative fraction of total Ar-39 released each degassing step
-        fraction_experimental_sigma::T      # [unitless] uncertainty in degassing fraction
-        midpoint_experimental::Vector{T}    # [unitless] midpoint of fraction_experimental for each step
-        tsteps_experimental::Vector{T}      # [s] time steps of experimental heating schedule
-        Tsteps_experimental::Vector{T}      # [C] temperature steps of experimental heating schedule
-        fit::BitVector                      # [Bool] Whether or not each step should be used in inversion
-        offset::T                           # [C] temperature offset relative to other samples
-        fuse::Bool                          # [Bool] Treat the grain as having fused (released all remaining Ar)
-        domains::Vector{C}                  # Vector of chronometer obects for each domain
-        volume_fraction::Vector{T}          # [unitless] fraction of total volume represented by each domain
-        model_age::Vector{T}                # [Ma] calculated age at each model degassing step
-        model_tracer::Vector{T}             # [atoms/g equivalent] parent tracer degassed
-        model_daughter::Vector{T}           # [atoms/g] daughter degassed
-        model_fraction::Vector{T}           # [unitless] cumulative fraction of parent tracer degasssed
-        tsteps_degassing::FloatRange        # [s] time steps of model heating schedule
-        Tsteps_degassing::Vector{T}         # [C] temperature steps of model heating schedule
+        age::Vector{T}                          # [Ma] measured Ar-40/Ar-39 ages at each degassing step
+        age_sigma::Vector{T}                    # [Ma] measured Ar-40/Ar-39 age uncertainties (one-sigma) at each degassing step
+        fraction_experimental::Vector{T}        # [unitless] cumulative fraction of total Ar-39 released each degassing step
+        fraction_experimental_sigma::Vector{T}  # [unitless] uncertainty in degassing fraction
+        midpoint_experimental::Vector{T}        # [unitless] midpoint of fraction_experimental for each step
+        tsteps_experimental::Vector{T}          # [s] time steps of experimental heating schedule
+        Tsteps_experimental::Vector{T}          # [C] temperature steps of experimental heating schedule
+        fit::BitVector                          # [Bool] Whether or not each step should be used in inversion
+        offset::T                               # [C] temperature offset relative to other samples
+        fuse::Bool                              # [Bool] Treat the grain as having fused (released all remaining Ar)
+        domains::Vector{C}                      # Vector of chronometer obects for each domain
+        volume_fraction::Vector{T}              # [unitless] fraction of total volume represented by each domain
+        model_age::Vector{T}                    # [Ma] calculated age at each model degassing step
+        model_tracer::Vector{T}                 # [atoms/g equivalent] parent tracer degassed
+        model_daughter::Vector{T}               # [atoms/g] daughter degassed
+        model_fraction::Vector{T}               # [unitless] cumulative fraction of parent tracer degasssed
+        tsteps_degassing::FloatRange            # [s] time steps of model heating schedule
+        Tsteps_degassing::Vector{T}             # [C] temperature steps of model heating schedule
     end
     function MultipleDomain(T=Float64, C=PlanarAr;
             age::AbstractVector,
             age_sigma::AbstractVector,
             fraction_experimental::AbstractVector,
-            fraction_experimental_sigma::Number=T(0.01),
+            fraction_experimental_sigma=T(0.01),
             tsteps_experimental::AbstractVector,
             Tsteps_experimental::AbstractVector,
             fit::AbstractVector,
@@ -1962,6 +1962,10 @@ end
 
         # Calculate midpoints of `fraction_experimental`
         midpoint_experimental = @. T(fraction_experimental + [0; fraction_experimental[1:end-1]])/2
+        if fraction_experimental_sigma isa Number
+            fraction_experimental_sigma = fill(fraction_experimental_sigma, size(fraction_experimental))
+        end
+        @assert eachindex(fraction_experimental_sigma) == eachindex(fraction_experimental) == eachindex(midpoint_experimental)
 
         # Interpolate degassing t-T steps to the same resolution as the forward model
         tsteps_degassing = floatrange(first(tsteps_experimental), last(tsteps_experimental), length=length(agesteps))
@@ -1980,7 +1984,7 @@ end
             T.(age),
             T.(age_sigma),
             T.(fraction_experimental),
-            T(fraction_experimental_sigma),
+            T.(fraction_experimental_sigma),
             midpoint_experimental,
             tsteps_experimental,
             Tsteps_experimental,
