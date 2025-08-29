@@ -1,6 +1,6 @@
 ## -- Functions for modelling experimental degassing schedules
 
-function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degassing::AbstractVector{T}, dm::Diffusivity{T}; fuse::Bool=true, redegastracer::Bool=false) where T <: AbstractFloat
+function degas!(mineral::PlanarAr{T}, tsteps_degassing::AbstractVector{T}, Tsteps_degassing::AbstractVector{T}, dm::Diffusivity{T}; fuse::Bool=true, redegastracer::Bool=false) where T <: AbstractFloat
 
     # Constants
     D0 = (dm.D0*10000^2)::T                 # [micron^2/sec], converted from [cm^2/sec]
@@ -71,7 +71,7 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degas
         end
 
         # Invert using tridiagonal matrix algorithm
-        # equivalent to u[:,i] = A\y
+        # equivalent to u[:,i+1] = A\y
         lu!(F, A, allowsingular=true)
         ldiv!(F, y)
         u[:,i+1] = y
@@ -128,7 +128,7 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degas
             end
 
             # Invert using tridiagonal matrix algorithm
-            # equivalent to u[:,i] = A\y
+            # equivalent to u[:,i+1] = A\y
             lu!(F, A, allowsingular=true)
             ldiv!(F, y)
             u[:,i+1] = y
@@ -144,7 +144,7 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::FloatRange, Tsteps_degas
     # Return views of the resulting tracer and daughter amounts degassed at each step
     return step_tracer, step_daughter
 end
-function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_degassing::AbstractVector{T}, dm::Diffusivity{T}; fuse::Bool=true, redegastracer::Bool=false) where T <: AbstractFloat
+function degas!(mineral::SphericalAr{T}, tsteps_degassing::AbstractVector{T}, Tsteps_degassing::AbstractVector{T}, dm::Diffusivity{T}; fuse::Bool=true, redegastracer::Bool=false) where T <: AbstractFloat
 
     # Constants
     D0 = (dm.D0*10000^2)::T                 # [micron^2/sec], converted from [cm^2/sec]
@@ -217,7 +217,7 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_de
         end
 
         # Invert using tridiagonal matrix algorithm
-        # equivalent to u[:,i] = A\y
+        # equivalent to u[:,i+1] = A\y
         lu!(F, A, allowsingular=true)
         ldiv!(F, y)
         u[:,i+1] = y
@@ -278,7 +278,7 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_de
             end
 
             # Invert using tridiagonal matrix algorithm
-            # equivalent to u[:,i] = A\y
+            # equivalent to u[:,i+1] = A\y
             lu!(F, A, allowsingular=true)
             ldiv!(F, y)
             u[:,i+1] = y
@@ -298,7 +298,7 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::FloatRange, Tsteps_de
     # Return views of the resulting tracer and daughter amounts degassed at each step
     return step_tracer, step_daughter
 end
-function degas!(mineral::PlanarHe{T}, tsteps_degassing::FloatRange, Tsteps_degassing::AbstractVector{T}, dm::Diffusivity{T}; fuse::Bool=true, redegastracer::Bool=false) where T <: AbstractFloat
+function degas!(mineral::PlanarHe{T}, tsteps_degassing::AbstractVector{T}, Tsteps_degassing::AbstractVector{T}, dm::Diffusivity{T}; fuse::Bool=true, redegastracer::Bool=false) where T <: AbstractFloat
 
     # Constants
     D0 = (dm.D0*10000^2)::T                 # [micron^2/sec], converted from [cm^2/sec]
@@ -370,7 +370,7 @@ function degas!(mineral::PlanarHe{T}, tsteps_degassing::FloatRange, Tsteps_degas
         end
 
         # Invert using tridiagonal matrix algorithm
-        # equivalent to u[:,i] = A\y
+        # equivalent to u[:,i+1] = A\y
         lu!(F, A, allowsingular=true)
         ldiv!(F, y)
         u[:,i+1] = y
@@ -427,7 +427,7 @@ function degas!(mineral::PlanarHe{T}, tsteps_degassing::FloatRange, Tsteps_degas
             end
 
             # Invert using tridiagonal matrix algorithm
-            # equivalent to u[:,i] = A\y
+            # equivalent to u[:,i+1] = A\y
             lu!(F, A, allowsingular=true)
             ldiv!(F, y)
             u[:,i+1] = y
@@ -443,7 +443,7 @@ function degas!(mineral::PlanarHe{T}, tsteps_degassing::FloatRange, Tsteps_degas
     # Return views of the resulting tracer and daughter amounts degassed at each step
     return step_tracer, step_daughter
 end
-function degas!(mineral::SphericalHe{T}, tsteps_degassing::FloatRange, Tsteps_degassing::AbstractVector{T}, dm::Diffusivity{T}; fuse::Bool=true, redegastracer::Bool=false) where T <: AbstractFloat
+function degas!(mineral::SphericalHe{T}, tsteps_degassing::AbstractVector{T}, Tsteps_degassing::AbstractVector{T}, dm::Diffusivity{T}; fuse::Bool=true, redegastracer::Bool=false) where T <: AbstractFloat
 
     # Constants
     D0 = (dm.D0*10000^2)::T                 # [micron^2/sec], converted from [cm^2/sec]
@@ -516,7 +516,7 @@ function degas!(mineral::SphericalHe{T}, tsteps_degassing::FloatRange, Tsteps_de
         end
 
         # Invert using tridiagonal matrix algorithm
-        # equivalent to u[:,i] = A\y
+        # equivalent to u[:,i+1] = A\y
         lu!(F, A, allowsingular=true)
         ldiv!(F, y)
         u[:,i+1] = y
@@ -577,7 +577,7 @@ function degas!(mineral::SphericalHe{T}, tsteps_degassing::FloatRange, Tsteps_de
             end
 
             # Invert using tridiagonal matrix algorithm
-            # equivalent to u[:,i] = A\y
+            # equivalent to u[:,i+1] = A\y
             lu!(F, A, allowsingular=true)
             ldiv!(F, y)
             u[:,i+1] = y
