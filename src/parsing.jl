@@ -393,7 +393,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
             end
             r = (haskey(ds, :halfwidth_um) && !isnan(ds.halfwidth_um[i])) ? ds.halfwidth_um[i] : 100
             fraction_experimental = dds.fraction_degassed
-            fraction_experimental_sigma = haskey(dds, :fraction_experimental_sigma) ? dds.fraction_experimental_sigma : fill(0.01, size(fraction_experimental))
+            fraction_experimental_sigma = haskey(dds, :fraction_experimental_sigma) ? dds.fraction_experimental_sigma : fill(0.005, size(fraction_experimental))
             c = MultipleDomain(T, DomainType;
                     age = dds.age_Ma,
                     age_sigma = dds.age_sigma_Ma,

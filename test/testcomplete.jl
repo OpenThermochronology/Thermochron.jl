@@ -93,7 +93,7 @@
     calc = zeros(length(chrons))
     calcuncert = zeros(length(chrons))
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -1380.1781583803804
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -1575.7822318068772
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -1424.7667872298298
     @test round.(calc[1:17], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1085.555, 304.6573, 95.84216, 149.8249, 179.703]
     @test calc[18] ≈ 735 atol=75
     @test calc[19] ≈ 755 atol=55
@@ -106,7 +106,7 @@
     damodels[isa.(damodels, Thermochron.ApatiteAnnealingModel)] .= Ketcham1999FC()
     damodels = unionize(damodels)
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -1398.070324343234
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -1593.6743977697306
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -1442.6589531926832
     @test round.(calc[1:17], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1110.379, 304.2772, 95.84216, 149.8249, 179.703]
     @test calc[18] ≈ 735 atol=75
     @test calc[19] ≈ 755 atol=55
@@ -196,7 +196,7 @@
     calc = zeros(length(chrons))
     calcuncert = zeros(length(chrons))
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -1332.6467228319216
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -1510.4251405710104
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -1371.4327804595264
     @test round.(calc[1:17], sigdigits=7) ≈ [97.38443, 192.5678, 106.6764, 195.3374, 191.1125, 865.807, 967.5609, 960.928, 287.2698, 290.2198, 82.29012, 92.46799, 1078.846, 302.8478, 95.39966, 149.9576, 176.8518]
     @test calc[18] ≈ 745 atol=75
     @test calc[19] ≈ 765 atol=55
@@ -209,7 +209,7 @@
     damodels[isa.(damodels, Thermochron.ApatiteAnnealingModel)] .= Ketcham1999FC()
     damodels = unionize(damodels)
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -1343.7270331492523
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -1521.505450888341
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -1382.513090776857
     @test round.(calc[1:17], sigdigits=7) ≈ [97.38443, 192.5678, 106.6764, 195.3374, 191.1125, 865.807, 967.5609, 960.928, 287.2698, 290.2198, 82.29012, 92.46799, 1103.519, 302.1657, 95.39966, 149.9576, 176.8518] 
     @test calc[18] ≈ 745 atol=75
     @test calc[19] ≈ 765 atol=55
@@ -315,7 +315,7 @@
     calc = zeros(length(chrons))
     calcuncert = zeros(length(chrons))
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -1380.1781583803804
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -1575.7822318068772
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -1424.7667872298298
     @test round.(calc[1:17], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1085.555, 304.6573, 95.84216, 149.8249, 179.703]
     @test calc[18] ≈ 735 atol=75
     @test calc[19] ≈ 755 atol=55
@@ -328,7 +328,7 @@
     damodels[isa.(damodels, Thermochron.ApatiteAnnealingModel)] .= Ketcham1999FC()
     damodels = unionize(damodels)
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -1398.070324343234
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -1593.6743977697306
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -1442.6589531926832
     @test round.(calc[1:17], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1110.379, 304.2772, 95.84216, 149.8249, 179.703]
     @test calc[18] ≈ 735 atol=75
     @test calc[19] ≈ 755 atol=55

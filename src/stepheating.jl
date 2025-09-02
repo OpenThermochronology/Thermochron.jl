@@ -1011,7 +1011,7 @@ function modelage(mdd::MultipleDomain{T}, Tsteps::AbstractVector, dm::MDDiffusiv
     return age, fraction
 end
 
-function model_ll(mdd::MultipleDomain{T}, σ::T=zero(T); rescalemdd=true) where {T<:AbstractFloat}
+function model_ll(mdd::MultipleDomain{T}, σ::T=zero(T); rescale=false) where {T<:AbstractFloat}
     ll = zero(T)
     @inbounds for i in eachindex(mdd.age, mdd.age_sigma, mdd.midpoint_experimental, mdd.fit)
         if mdd.fit[i]
@@ -1019,19 +1019,47 @@ function model_ll(mdd::MultipleDomain{T}, σ::T=zero(T); rescalemdd=true) where 
             ll += norm_ll(mdd.age[i], mdd.age_sigma[i], model_ageᵢ, σ)
         end
     end
-    rescalemdd && (ll /= sqrt(count(mdd.fit)))
+    rescale && (ll /= sqrt(count(mdd.fit)))
     return ll
 end
 
-function degassing_ll(mdd::MultipleDomain{T}; rescalemdd=true) where {T<:AbstractFloat}
+function cumulative_fraction_uncertainty(sigma, i::Int)
+    i₋ = firstindex(sigma)
+    i₊ = lastindex(sigma)
+    σ²₋ = sum(abs2, view(sigma, i₋:i))
+    σ²₊ = sum(abs2, view(sigma,(i+1):i₊))
+    σ = sqrt(1/(1/σ²₋ + 1/σ²₊))
+end
+
+function cumulative_degassing_ll(mdd::MultipleDomain{T}; rescale=false) where {T<:AbstractFloat}
     ll = zero(T)
     fit_until = findlast(mdd.fit)
     @inbounds for i in eachindex(mdd.tsteps_experimental, mdd.fraction_experimental, mdd.fraction_experimental_sigma, mdd.fit)
         if i <= fit_until
+            σ = cumulative_fraction_uncertainty(mdd.fraction_experimental_sigma, i)
+            σ ≈ 0 && continue
             model_fractionᵢ = linterp1(mdd.tsteps_degassing, mdd.model_fraction, mdd.tsteps_experimental[i])
-            ll += norm_ll(mdd.fraction_experimental[i], mdd.fraction_experimental_sigma[i], model_fractionᵢ)
+            ll += norm_ll(mdd.fraction_experimental[i], σ, model_fractionᵢ)
         end
     end
-    rescalemdd && (ll /= sqrt(fit_until))
+    rescale && (ll /= sqrt(fit_until))
+    return ll
+end
+
+function stepwise_degassing_ll(mdd::MultipleDomain{T}; rescale=false) where {T<:AbstractFloat}
+    ll = zero(T)
+    last_model_fractionᵢ = zero(T)
+    last_fraction_experimentalᵢ = zero(T)
+    @inbounds for i in eachindex(mdd.tsteps_experimental, mdd.fraction_experimental, mdd.fraction_experimental_sigma, mdd.fit)
+        model_fractionᵢ = linterp1(mdd.tsteps_degassing, mdd.model_fraction, mdd.tsteps_experimental[i])
+        if mdd.fit[i]
+            δmodel = model_fractionᵢ - last_model_fractionᵢ
+            δexperimental = mdd.fraction_experimental[i] - last_fraction_experimentalᵢ
+            ll += norm_ll(δexperimental, mdd.fraction_experimental_sigma[i], δmodel)
+        end
+        last_model_fractionᵢ₋ = model_fractionᵢ
+        last_fraction_experimentalᵢ₋ = mdd.fraction_experimental[i]
+    end
+    rescale && (ll /= sqrt(count(mdd.fit)))
     return ll
 end

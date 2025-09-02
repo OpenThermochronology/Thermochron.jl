@@ -889,10 +889,10 @@
             elseif isa(c, MultipleDomain)
                 c::MultipleDomain{T, <:Union{PlanarAr{T}, SphericalAr{T}}}
                 age, fraction = modelage(c, @views(Tsteps[first_index:end]), dm::MDDiffusivity{T}; redegastracer)
-                issorted(fraction) || @info fraction
-                redegastracer && (ll += degassing_ll(c; rescalemdd)/scalemdd)
+                @assert issorted(fraction) "Degassing fraction is not properly cumulative"
+                redegastracer && (ll += cumulative_degassing_ll(c; rescale=rescalemdd)/scalemdd)
                 μcalc[i] = draw_from_population(age, fraction)
-                ll += model_ll(c, σcalc[i]; rescalemdd)/scalemdd
+                ll += model_ll(c, σcalc[i]; rescale=rescalemdd)/scalemdd
             else
                 # NaN if not calculated
                 μcalc[i] = T(NaN)

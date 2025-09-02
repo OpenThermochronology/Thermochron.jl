@@ -1891,7 +1891,7 @@ end
         age::AbstractVector,                            # [Ma] measured Ar-40/Ar-39 ages at each degassing step
         age_sigma::AbstractVector,                      # [Ma] measured Ar-40/Ar-39 age uncertainties (one-sigma) at each degassing step
         fraction_experimental::AbstractVector,          # [unitless] cumulative fraction of total Ar-39 released each degassing step
-        fraction_experimental_sigma=fill(T(0.01), size(fraction_experimental)),     # [unitless] uncertainty in degassing fraction
+        fraction_experimental_sigma=fill(T(0.005), size(fraction_experimental)),     # [unitless] uncertainty in degassing fraction
         tsteps_experimental::AbstractVector,            # [s] time steps of experimental heating schedule
         Tsteps_experimental::AbstractVector,            # [C] temperature steps of experimental heating schedule
         fit::AbstractVector,                            # [Bool] Whether or not each degassing step should be used in inversion
@@ -1939,7 +1939,7 @@ end
             age::AbstractVector,
             age_sigma::AbstractVector,
             fraction_experimental::AbstractVector,
-            fraction_experimental_sigma::AbstractVector=fill(T(0.01), size(fraction_experimental)),
+            fraction_experimental_sigma::AbstractVector=fill(T(0.005), size(fraction_experimental)),
             tsteps_experimental::AbstractVector,
             Tsteps_experimental::AbstractVector,
             fit::AbstractVector,
