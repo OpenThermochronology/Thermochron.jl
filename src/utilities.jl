@@ -751,6 +751,7 @@
             if updatekinetics[i]
                 dm = damodels[i]
                 dmₚ = movekinetics(dm)
+                # Keep diffusivity models which start identical, identical
                 for j in eachindex(damodels)
                     if updatekinetics[j] && (damodels[j] == dm)
                         damodels[j] = dmₚ

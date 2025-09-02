@@ -167,30 +167,42 @@ In-place version of `anneal`
 function anneal!(data::Vector{<:Chronometer{T}}, ::Type{C}, tsteps::AbstractVector{T}, Tsteps::AbstractVector{T}, dm::DiffusivityModel{T}) where {T<:AbstractFloat, C<:HeliumSample}
     @assert eachindex(tsteps) == eachindex(Tsteps)
     if any(x->isa(x, C), data)
-        im = argmax(i->isa(data[i], C) ? length(timediscretization(data[i])) : 0, eachindex(data))
-        cₘ = data[im]::C
-        first_index = firstindex(Tsteps) + length(tsteps) - length(timediscretization(cₘ))
-        if first_index > 1
-            anneal!(cₘ, @views(Tsteps[first_index:end]), dm)
+        im = argmax(i->diffuseswith(data[i], C) ? length(timediscretization(data[i])) : 0, eachindex(data))
+        first_index = firstindex(Tsteps) + length(tsteps) - length(timediscretization(data[im]))
+        dₘ = if first_index > 1
+            anneal!(data[im], @views(Tsteps[first_index:end]), dm)::C
         else
-            anneal!(cₘ, Tsteps, dm)
+            anneal!(data[im], Tsteps, dm)::C
         end
-        pr = cₘ.pr
-        ntsteps = length(timediscretization(cₘ))
-        @assert ntsteps == length(axes(pr, 1)) == length(axes(pr, 2))
+        pr = dₘ.pr
+        @assert length(timediscretization(dₘ)) == length(axes(pr, 1)) == length(axes(pr, 2))
         for i in eachindex(data)
-            if i!=im && isa(data[i], C)
-                c = data[i]::C
-                first_index = firstindex(pr) + ntsteps - length(timediscretization(c))
-                if first_index > 1
-                    mul!(c.annealeddamage, @views(pr[first_index:end, first_index:end]), c.alphadamage)
-                else
-                    mul!(c.annealeddamage, pr, c.alphadamage)
-                end
+            if i!=im && diffuseswith(data[i], C)
+                anneal!(data[i], Tsteps, pr)
             end
         end
     end
     return data
+end
+function anneal!(mineral::HeliumSample, Tsteps::AbstractVector, pr::AbstractMatrix)
+    ntsteps = length(axes(pr, 1))
+    first_index = firstindex(pr) + ntsteps - length(timediscretization(mineral))
+    if first_index > 1
+        mul!(mineral.annealeddamage, @views(pr[first_index:end, first_index:end]), mineral.alphadamage)
+    else
+        mul!(mineral.annealeddamage, pr, mineral.alphadamage)
+    end
+    return mineral
+end
+anneal!(mineral::SingleDomain, Tsteps::AbstractVector, prdm) = anneal!(mineral.domain, Tsteps, prdm)
+function anneal!(mineral::MultipleDomain, Tsteps::AbstractVector, prdm)
+    c₀ = first(mineral.domains)
+    anneal!(c₀, Tsteps, prdm)
+    pr = c₀.pr
+    for c in Iterators.drop(mineral.domains,1)
+        mul!(c.annealeddamage, pr, c.alphadamage)
+    end
+    return c₀
 end
 function anneal!(mineral::ZirconHe, Tsteps::AbstractVector, dm::ZRDAAM)
     anneal!(mineral.pr, view(mineral.annealeddamage,:,1), mineral.tsteps, Tsteps, dm)
@@ -302,6 +314,10 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::Abstr
 
     return ρᵣ
 end
+
+diffuseswith(x::C1, ::Type{C2}) where {C1, C2} = C1 <: C2
+diffuseswith(x::SingleDomain{<:AbstractFloat, C1}, ::Type{C2}) where {C1, C2} = C1 <: C2
+diffuseswith(x::MultipleDomain{<:AbstractFloat, C1}, ::Type{C2}) where {C1, C2} = C1 <: C2
 
 ## --- Calculate apparent age given a particular t-T path
 """

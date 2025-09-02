@@ -1883,6 +1883,102 @@ function PlanarAr(T::Type{<:AbstractFloat}=Float64;
     )
 end
 
+## --- Single-domain diffusion chronometers (e.g. 4/3 He)
+
+    """
+    ```julia
+    SingleDomain(T=Float64, C=ApatiteHe;
+        step_age::AbstractVector,                       # [Ma] measured Ar-40/Ar-39 ages at each degassing step
+        step_age_sigma::AbstractVector,                 # [Ma] measured Ar-40/Ar-39 age uncertainties (one-sigma) at each degassing step
+        fraction_experimental::AbstractVector,          # [unitless] cumulative fraction of total Ar-39 released each degassing step
+        fraction_experimental_sigma=fill(T(0.005), size(fraction_experimental)),     # [unitless] uncertainty in degassing fraction
+        tsteps_experimental::AbstractVector,            # [s] time steps of experimental heating schedule
+        Tsteps_experimental::AbstractVector,            # [C] temperature steps of experimental heating schedule
+        fit::AbstractVector,                            # [Bool] Whether or not each degassing step should be used in inversion
+        offset::Number = zero(T),                       # [C] temperature offset relative to other samples
+        fuse::Bool = true,                              # [Bool] Treat the grain as having fused (released all remaining Ar)
+        agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
+        kwargs...                                       # Any further keyword arguments are forwarded to the constructor for the domain `C`
+    )
+    ```
+    Construct a `SingleDomain` diffusion chronometer given an observed 
+    experimental release spectrum and degassing schedule, where the  
+    single modelled domain is represented by a Chronometer object 
+    (e.g. `ApatiteHe` for He-4/He-3).
+
+    See also: `degas!`
+    """
+    struct SingleDomain{T<:AbstractFloat, C<:Union{HeliumSample{T}, ArgonSample{T}}} <: AbsoluteChronometer{T}
+        step_age::Vector{T}                          # [Ma or unitless] measured ages (for Ar-40/Ar-39) or Rstep/Rbulk ratios (for He-4/He-3) at each degassing step
+        step_age_sigma::Vector{T}                    # [Ma or unitless] measured age (or ratio) uncertainties (one-sigma) at each degassing step
+        fraction_experimental::Vector{T}        # [unitless] cumulative fraction of total tracer (Ar-39 or He-3) released each degassing step
+        fraction_experimental_sigma::Vector{T}  # [unitless] uncertainty in degassing fraction
+        midpoint_experimental::Vector{T}        # [unitless] midpoint of fraction_experimental for each step
+        tsteps_experimental::Vector{T}          # [s] time steps of experimental heating schedule
+        Tsteps_experimental::Vector{T}          # [C] temperature steps of experimental heating schedule
+        fit::BitVector                          # [Bool] Whether or not each step should be used in inversion
+        offset::T                               # [C] temperature offset relative to other samples
+        fuse::Bool                              # [Bool] Treat the grain as having fused (released all remaining Ar)
+        domain::C                               # Chronometer obect for diffusion domain
+        model_age::Vector{T}                    # [Ma or ratio] calculated age at each model degassing step
+        model_fraction::Vector{T}               # [unitless] cumulative fraction of tracer He-3 degasssed
+        tsteps_degassing::FloatRange            # [s] time steps of model heating schedule
+        Tsteps_degassing::Vector{T}             # [C] temperature steps of model heating schedule
+    end
+    function SingleDomain(T=Float64, C=ApatiteHe;
+            step_age::AbstractVector,
+            step_age_sigma::AbstractVector,
+            fraction_experimental::AbstractVector,
+            fraction_experimental_sigma::AbstractVector=fill(T(0.005), size(fraction_experimental)),
+            tsteps_experimental::AbstractVector,
+            Tsteps_experimental::AbstractVector,
+            fit::AbstractVector,
+            offset::Number = zero(T),
+            fuse::Bool = true,
+            agesteps=nothing,
+            tsteps=nothing,
+            kwargs...
+        )
+        # Temporal discretization
+        agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
+        
+        # Check input arrays are the right size and ordered properly
+        @assert eachindex(step_age) == eachindex(step_age_sigma) == eachindex(fraction_experimental) == eachindex(tsteps_experimental) == eachindex(Tsteps_experimental)
+        @assert issorted(tsteps_experimental, lt=<=) "Degassing time steps must be in strictly increasing order"
+        @assert all(x->0<=x<=1, fraction_experimental) "All \"fraction degassed\" values must be between 0 and 1"
+
+        # Calculate midpoints of `fraction_experimental`
+        midpoint_experimental = @. T(fraction_experimental + [0; fraction_experimental[1:end-1]])/2
+
+        # Interpolate degassing t-T steps to the same resolution as the forward model
+        tsteps_degassing = floatrange(first(tsteps_experimental), last(tsteps_experimental), length=length(agesteps))
+        Tsteps_degassing = linterp1(tsteps_experimental, T.(Tsteps_experimental), tsteps_degassing) 
+        model_age = zeros(T, length(tsteps_degassing))
+        model_tracer = zeros(T, length(tsteps_degassing))
+        model_daughter = zeros(T, length(tsteps_degassing))
+        model_fraction = zeros(T, length(tsteps_degassing))
+        
+        # Allocate domain
+        domain = C(T; offset, agesteps, tsteps, kwargs...)
+        return SingleDomain(
+            T.(step_age),
+            T.(step_age_sigma),
+            T.(fraction_experimental),
+            T.(fraction_experimental_sigma),
+            midpoint_experimental,
+            tsteps_experimental,
+            Tsteps_experimental,
+            Bool.(fit),
+            T(offset),
+            fuse,
+            domain,
+            model_age,
+            model_fraction,
+            tsteps_degassing,
+            Tsteps_degassing,
+        )
+    end
+
 ## --- Multiple domain diffusion chronometers!
 
     """
@@ -1973,7 +2069,10 @@ end
         model_fraction = zeros(T, length(tsteps_degassing))
 
         # Ensure volume fraction sums to one
-        volume_fraction ./= nansum(volume_fraction) 
+        if !(nansum(volume_fraction) ≈ 1)
+            @warn "volume fractions $volume_fraction do not sum to 1"
+            volume_fraction ./= nansum(volume_fraction)
+        end
         
         # Allocate domains
         bulk_age = nanmean(step_age, @.(fit./step_age_sigma^2))
@@ -2006,6 +2105,7 @@ end
 # Retrive the nominal value (age, length, etc) of any Chronometer
 value(x::AbsoluteChronometer{T}) where {T} = x.age::T
 value(x::MultipleDomain{T}) where {T} = nanmean(x.step_age, @.(x.fit/x.step_age_sigma^2))::T
+value(x::SingleDomain{T}) where {T} = value(x.domain)::T
 value(x::FissionTrackLength{T}) where {T} = x.length::T
 value(x::ApatiteTrackLengthOriented{T}) where {T} = x.lcmod::T
 function val(x::Chronometer)
@@ -2016,6 +2116,7 @@ end
 # Retrive the nominal 1-sigma uncertainty (in age, length, etc.) of any Chronometer
 stdev(x::AbsoluteChronometer{T}) where {T} = x.age_sigma::T
 stdev(x::MultipleDomain{T}) where {T} = nanstd(x.step_age, @.(x.fit/x.step_age_sigma^2))::T
+stdev(x::SingleDomain{T}) where {T} = stdev(x.domain)::T
 stdev(x::FissionTrackLength{T}) where {T} = zero(T)
 function err(x::Chronometer)
     @warn "Thermochron.err has been deprecated in favor of Thermochron.stdev"
@@ -2028,8 +2129,10 @@ temperatureoffset(x::Chronometer{T}) where {T} = x.offset::T
 # Retrive the temporal discretization of any Chronometer
 agediscretization(x::Chronometer{T}) where {T} = x.agesteps::AbstractVector{T}
 agediscretization(x::MultipleDomain) = agediscretization(first(x.domains))
+agediscretization(x::SingleDomain) = agediscretization(x.domain)
 timediscretization(x::Chronometer{T}) where {T} = x.tsteps::AbstractVector{T}
 timediscretization(x::MultipleDomain) = timediscretization(first(x.domains))
+timediscretization(x::SingleDomain) = timediscretization(x.domain)
 
 # Retrive the eU ("effective uranium") of any Chronometer
 eU(x::Chronometer{T}) where {T<:AbstractFloat} = T(NaN)

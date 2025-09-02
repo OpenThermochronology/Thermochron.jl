@@ -986,6 +986,39 @@ end
 
 ## --- Age and likelihood functions for step heating data
 
+function modelage(sdd::SingleDomain{T,<:HeliumSample}, Tsteps::AbstractVector, dm::DiffusivityModel{T}; redegastracer::Bool=false) where {T<:AbstractFloat}
+    stepratio = fill!(sdd.model_age, zero(T))
+    fraction = fill!(sdd.model_fraction, zero(T))
+    # Degas
+    age = modelage(sdd.domain, Tsteps, dm)
+    tracer, daughter = degas!(sdd.domain, sdd.tsteps_degassing, sdd.Tsteps_degassing, dm; sdd.fuse, redegastracer)
+    # Calculate Rstep/Rbulk for each degassing step
+    @inbounds for i in eachindex(tracer, daughter)
+        stepratio[i] = daughter[i]/tracer[i]
+    end
+    # Cumulative fraction of tracer degassed
+    cumsum!(fraction, tracer)
+    fraction ./= last(fraction)
+
+    return age, stepratio, fraction
+end
+function modelage(sdd::SingleDomain{T,<:ArgonSample}, Tsteps::AbstractVector, dm::DiffusivityModel{T}; redegastracer::Bool=false) where {T<:AbstractFloat}
+    stepage = fill!(sdd.model_age, zero(T))
+    fraction = fill!(sdd.model_fraction, zero(T))
+    # Degas
+    age = modelage(sdd.domain, Tsteps, dm)
+    tracer, daughter = degas!(sdd.domain, sdd.tsteps_degassing, sdd.Tsteps_degassing, dm; sdd.fuse, redegastracer)
+
+    # Calculate ages for each degassing step
+    for i in eachindex(tracer, daughter)
+        stepage[i] = newton_ar_age(daughter[i], tracer[i])
+    end
+    # Cumulative fraction of tracer degassed
+    cumsum!(fraction, tracer)
+    fraction ./= last(fraction)
+
+    return age, stepage, fraction
+end
 function modelage(mdd::MultipleDomain{T,<:ArgonSample}, Tsteps::AbstractVector, dm::MDDiffusivity{T}; redegastracer::Bool=false) where {T<:AbstractFloat}
     age = fill!(mdd.model_age, zero(T))
     tracer = fill!(mdd.model_tracer, zero(T))
@@ -1011,7 +1044,7 @@ function modelage(mdd::MultipleDomain{T,<:ArgonSample}, Tsteps::AbstractVector, 
     return age, fraction
 end
 
-function model_ll(dd::MultipleDomain{T}, σ::T=zero(T); rescale=false) where {T<:AbstractFloat}
+function model_ll(dd::Union{SingleDomain{T},MultipleDomain{T}}, σ::T=zero(T); rescale=false) where {T<:AbstractFloat}
     ll = zero(T)
     @inbounds for i in eachindex(dd.step_age, dd.step_age_sigma, dd.midpoint_experimental, dd.fit)
         if dd.fit[i]
@@ -1031,7 +1064,7 @@ function cumulative_fraction_uncertainty(sigma, i::Int)
     σ = sqrt(1/(1/σ²₋ + 1/σ²₊))
 end
 
-function cumulative_degassing_ll(dd::MultipleDomain{T}; rescale=false) where {T<:AbstractFloat}
+function cumulative_degassing_ll(dd::Union{SingleDomain{T},MultipleDomain{T}}; rescale=false) where {T<:AbstractFloat}
     ll = zero(T)
     fit_until = findlast(dd.fit)
     @inbounds for i in eachindex(dd.tsteps_experimental, dd.fraction_experimental, dd.fraction_experimental_sigma, dd.fit)
@@ -1046,7 +1079,7 @@ function cumulative_degassing_ll(dd::MultipleDomain{T}; rescale=false) where {T<
     return ll
 end
 
-function stepwise_degassing_ll(dd::MultipleDomain{T}; rescale=false) where {T<:AbstractFloat}
+function stepwise_degassing_ll(dd::Union{SingleDomain{T},MultipleDomain{T}}; rescale=false) where {T<:AbstractFloat}
     ll = zero(T)
     last_model_fractionᵢ = zero(T)
     last_fraction_experimentalᵢ = zero(T)

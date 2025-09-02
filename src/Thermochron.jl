@@ -54,7 +54,7 @@ module Thermochron
     export ZirconHeliumModel, ZRDAAM, ApatiteHeliumModel, RDAAM         # Damage-and-annealing based helium diffusivity model types
 
     include("stepheating.jl")
-    export MultipleDomain                                               # Types for modelling step-heating data, with one or more diffusion domains 
+    export SingleDomain, MultipleDomain                                 # Types for modelling step-heating data, with one or more diffusion domains 
 
     include("fissiontrack.jl")
     export Ketcham1999FC, Ketcham2007FC                                 # Apatite fission track annealing model types

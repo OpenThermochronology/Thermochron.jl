@@ -53,6 +53,28 @@ function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:MultipleDomain}
     """
     )
 end
+function Base.show(io::IO, ::MIME"text/plain", x::C) where {T, C<:SingleDomain{T,<:ArgonSample}}
+    print(io, """$C:
+      step age          : $(printshort(x.step_age)) Ma
+      step age sigma    : $(printshort(x.step_age_sigma)) Ma
+      fraction degassed : $(printshort(x.fraction_experimental))
+      offset            : $(x.offset) C from the surface
+      domain            : $(x.domain)
+      agesteps          : $(printshort(agediscretization(x))) Ma
+    """
+    )
+end
+function Base.show(io::IO, ::MIME"text/plain", x::C) where {T, C<:SingleDomain{T,<:HeliumSample}}
+    print(io, """$C:
+      Rstep/Rbulk       : $(printshort(x.step_age)) Ma
+      Rstep/Rbulk sigma : $(printshort(x.step_age_sigma)) Ma
+      fraction degassed : $(printshort(x.fraction_experimental))
+      offset            : $(x.offset) C from the surface
+      domain            : $(x.domain)
+      agesteps          : $(printshort(agediscretization(x))) Ma
+    """
+    )
+end
 function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:ArgonSample}
     print(io, """$T:
       age       : $(x.age) Ma
