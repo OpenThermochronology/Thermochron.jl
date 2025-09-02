@@ -1888,8 +1888,8 @@ end
     """
     ```julia
     MultipleDomain(T=Float64, C=PlanarAr;
-        age::AbstractVector,                            # [Ma] measured Ar-40/Ar-39 ages at each degassing step
-        age_sigma::AbstractVector,                      # [Ma] measured Ar-40/Ar-39 age uncertainties (one-sigma) at each degassing step
+        step_age::AbstractVector,                       # [Ma] measured Ar-40/Ar-39 ages at each degassing step
+        step_age_sigma::AbstractVector,                 # [Ma] measured Ar-40/Ar-39 age uncertainties (one-sigma) at each degassing step
         fraction_experimental::AbstractVector,          # [unitless] cumulative fraction of total Ar-39 released each degassing step
         fraction_experimental_sigma=fill(T(0.005), size(fraction_experimental)),     # [unitless] uncertainty in degassing fraction
         tsteps_experimental::AbstractVector,            # [s] time steps of experimental heating schedule
@@ -1904,9 +1904,9 @@ end
         agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
     )
     ```
-    Construct a `MultipleDomain` diffusion chronometer given an observed argon
-    release spectrum, degassing schedule, where each domain is represented by a 
-    `PlanarAr` or `SphericalAr` chronometer.
+    Construct a `MultipleDomain` diffusion chronometer given an observed
+    release spectrum and degassing schedule, where each domain is in turn 
+    represented by a Chronometer object (e.g. `PlanarAr`, `SphericalAr`).
 
     Domain diffusivity and volume parameters must be supplied as vectors
     `Ea` [kJ/mol], `lnD0a2` [log(1/s)], and `volume_fraction` [unitless]
@@ -1916,8 +1916,8 @@ end
     See also: `MDDiffusivity`, `PlanarAr`, `SphericalAr`, `degas!`
     """
     struct MultipleDomain{T<:AbstractFloat, C<:Union{HeliumSample{T}, ArgonSample{T}}} <: AbsoluteChronometer{T}
-        age::Vector{T}                          # [Ma or unitless] measured ages (for Ar-40/Ar-39) or Rstep/Rbulk ratios (for He-4/He-3) at each degassing step
-        age_sigma::Vector{T}                    # [Ma or unitless] measured age (or ratio) uncertainties at each degassing step
+        step_age::Vector{T}                     # [Ma or unitless] measured ages (for Ar-40/Ar-39) or Rstep/Rbulk ratios (for He-4/He-3) at each degassing step
+        step_age_sigma::Vector{T}               # [Ma or unitless] measured age (or ratio) uncertainties at each degassing step
         fraction_experimental::Vector{T}        # [unitless] cumulative fraction of total tracer (Ar-39 or He-3) released each degassing step
         fraction_experimental_sigma::Vector{T}  # [unitless] uncertainty in degassing fraction
         midpoint_experimental::Vector{T}        # [unitless] midpoint of fraction_experimental for each step
@@ -1936,8 +1936,8 @@ end
         Tsteps_degassing::Vector{T}             # [C] temperature steps of model heating schedule
     end
     function MultipleDomain(T=Float64, C=PlanarAr;
-            age::AbstractVector,
-            age_sigma::AbstractVector,
+            step_age::AbstractVector,
+            step_age_sigma::AbstractVector,
             fraction_experimental::AbstractVector,
             fraction_experimental_sigma::AbstractVector=fill(T(0.005), size(fraction_experimental)),
             tsteps_experimental::AbstractVector,
@@ -1956,7 +1956,7 @@ end
         agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
         
         # Check input arrays are the right size and ordered properly
-        @assert eachindex(age) == eachindex(age_sigma) == eachindex(fraction_experimental) == eachindex(fraction_experimental_sigma) == eachindex(tsteps_experimental) == eachindex(Tsteps_experimental)
+        @assert eachindex(step_age) == eachindex(step_age_sigma) == eachindex(fraction_experimental) == eachindex(fraction_experimental_sigma) == eachindex(tsteps_experimental) == eachindex(Tsteps_experimental)
         @assert issorted(tsteps_experimental, lt=<=) "Degassing time steps must be in strictly increasing order"
         @assert all(x->0<=x<=1, fraction_experimental) "All \"fraction degassed\" values must be between 0 and 1"
 
@@ -1976,10 +1976,12 @@ end
         volume_fraction ./= nansum(volume_fraction) 
         
         # Allocate domains
-        domains = [C(T; age=nanmean(age), age_sigma=nanstd(age), offset, r, dr, K40, agesteps, tsteps) for i in eachindex(volume_fraction)]
+        bulk_age = nanmean(step_age, @.(fit./step_age_sigma^2))
+        bulk_age_sigma = nanstd(step_age, @.(fit./step_age_sigma^2))
+        domains = [C(T; age=bulk_age, age_sigma=bulk_age_sigma, offset, r, dr, K40, agesteps, tsteps) for i in eachindex(volume_fraction)]
         return MultipleDomain(
-            T.(age),
-            T.(age_sigma),
+            T.(step_age),
+            T.(step_age_sigma),
             T.(fraction_experimental),
             T.(fraction_experimental_sigma),
             midpoint_experimental,
@@ -1999,12 +2001,11 @@ end
         )
     end
 
-
 ## --- Utility functions to get values, uncertainties, etc. from any Chronometer
 
 # Retrive the nominal value (age, length, etc) of any Chronometer
 value(x::AbsoluteChronometer{T}) where {T} = x.age::T
-value(x::MultipleDomain{T}) where {T} = nanmean(x.age, @.(x.fit/x.age_sigma^2))::T
+value(x::MultipleDomain{T}) where {T} = nanmean(x.step_age, @.(x.fit/x.step_age_sigma^2))::T
 value(x::FissionTrackLength{T}) where {T} = x.length::T
 value(x::ApatiteTrackLengthOriented{T}) where {T} = x.lcmod::T
 function val(x::Chronometer)
@@ -2014,7 +2015,7 @@ end
 
 # Retrive the nominal 1-sigma uncertainty (in age, length, etc.) of any Chronometer
 stdev(x::AbsoluteChronometer{T}) where {T} = x.age_sigma::T
-stdev(x::MultipleDomain{T}) where {T} = nanstd(x.age, @.(x.fit/x.age_sigma^2))::T
+stdev(x::MultipleDomain{T}) where {T} = nanstd(x.step_age, @.(x.fit/x.step_age_sigma^2))::T
 stdev(x::FissionTrackLength{T}) where {T} = zero(T)
 function err(x::Chronometer)
     @warn "Thermochron.err has been deprecated in favor of Thermochron.stdev"

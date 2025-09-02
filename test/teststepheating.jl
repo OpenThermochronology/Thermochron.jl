@@ -49,19 +49,19 @@
     @test round.(step_daughter, sigdigits=4) ≈ [0.0, 0.0, 0.0, 16.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 32.0, 0.0, 32.0, 80.0, 192.0, 480.0, 1104.0, 2464.0, 5328.0, 11310.0, 23380.0, 47310.0, 93580.0, 181400.0, 344600.0, 642400.0, 1.176e6, 2.116e6, 3.744e6, 6.52e6, 1.118e7, 1.89e7, 3.15e7, 5.179e7, 8.405e7, 1.347e8, 2.134e8, 3.34e8, 5.172e8, 7.922e8, 1.201e9, 1.803e9, 2.68e9, 3.947e9, 5.763e9, 8.34e9, 1.197e10, 1.704e10, 2.408e10, 3.376e10, 4.698e10, 6.494e10, 8.913e10, 1.215e11, 1.647e11, 2.217e11, 2.966e11, 3.946e11, 5.22e11, 6.866e11, 8.982e11, 1.169e12, 1.513e12, 1.949e12, 2.497e12, 3.184e12, 4.04e12, 5.101e12, 6.41e12, 8.015e12, 9.971e12, 1.234e13, 1.52e13, 1.862e13, 2.268e13, 2.746e13, 3.305e13, 3.954e13, 4.697e13, 5.542e13, 6.493e13, 7.551e13, 8.716e13, 9.988e13, 1.137e14, 1.285e14, 1.444e14, 1.614e14, 1.796e14, 1.991e14, 2.201e14, 2.427e14, 2.671e14, 2.935e14, 3.221e14, 7.627e16]
     @test sum(step_tracer) ≈ sum(step_daughter) ≈ total_daughter ≈ 7.918470224804216e16
 
-## --- Import an MDD dataset
+## --- Import a Multiple Domain Diffusion dataset
 
     datapath = joinpath("..", "examples", "ol13-mdd.csv")
     mdds = importdataset(datapath, importas=:Tuple)
 
     agesteps = 995:-10.:5
     tsteps = reverse(agesteps)
-    Tsteps = [fill(320., 25); fill(130., 75)]    
+    Tsteps = [fill(320., 25); fill(130., 75)]
 
 ## --- Test Multiple Domain Diffusion with with PlanarAr
     mdd = MultipleDomain(Float64, PlanarAr;
-        age = mdds.age_Ma,
-        age_sigma = mdds.age_sigma_Ma,
+        step_age = mdds.age_Ma,
+        step_age_sigma = mdds.age_sigma_Ma,
         fraction_experimental = mdds.fraction_degassed,
         tsteps_experimental = issorted(mdds.time_s, lt=<=) ? mdds.time_s : cumsum(mdds.time_s),
         Tsteps_experimental = mdds.temperature_C,
@@ -92,8 +92,8 @@
 
 ## --- Test Multiple Domain Diffusion with SphericalAr
     mdd = MultipleDomain(Float64, SphericalAr;
-        age = mdds.age_Ma,
-        age_sigma = mdds.age_sigma_Ma,
+        step_age = mdds.age_Ma,
+        step_age_sigma = mdds.age_sigma_Ma,
         fraction_experimental = mdds.fraction_degassed,
         tsteps_experimental = issorted(mdds.time_s, lt=<=) ? mdds.time_s : cumsum(mdds.time_s),
         Tsteps_experimental = mdds.temperature_C,

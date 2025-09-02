@@ -395,8 +395,8 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
             fraction_experimental = dds.fraction_degassed
             fraction_experimental_sigma = haskey(dds, :fraction_experimental_sigma) ? dds.fraction_experimental_sigma : fill(0.005, size(fraction_experimental))
             c = MultipleDomain(T, DomainType;
-                    age = dds.age_Ma,
-                    age_sigma = dds.age_sigma_Ma,
+                    step_age = dds.age_Ma,
+                    step_age_sigma = dds.age_sigma_Ma,
                     fraction_experimental,
                     fraction_experimental_sigma,
                     tsteps_experimental = issorted(dds.time_s, lt=<=) ? dds.time_s : cumsum(dds.time_s),

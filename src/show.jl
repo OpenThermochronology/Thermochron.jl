@@ -43,8 +43,8 @@ printshort(x::AbstractArray) = "[$(first(x)) … $(last(x))]"
 printshort(x::AbstractRange) = "$x"
 function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:MultipleDomain}
     print(io, """$T:
-      age               : $(printshort(x.age)) Ma
-      age sigma         : $(printshort(x.age_sigma)) Ma
+      step age          : $(printshort(x.step_age)) Ma
+      step age sigma    : $(printshort(x.step_age_sigma)) Ma
       fraction degassed : $(printshort(x.fraction_experimental))
       offset            : $(x.offset) C from the surface
       domains           : $(printshort(x.domains))

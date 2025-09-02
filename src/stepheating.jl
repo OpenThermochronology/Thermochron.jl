@@ -986,7 +986,7 @@ end
 
 ## --- Age and likelihood functions for step heating data
 
-function modelage(mdd::MultipleDomain{T}, Tsteps::AbstractVector, dm::MDDiffusivity{T}; redegastracer::Bool=false) where {T<:AbstractFloat}
+function modelage(mdd::MultipleDomain{T,<:ArgonSample}, Tsteps::AbstractVector, dm::MDDiffusivity{T}; redegastracer::Bool=false) where {T<:AbstractFloat}
     age = fill!(mdd.model_age, zero(T))
     tracer = fill!(mdd.model_tracer, zero(T))
     daughter = fill!(mdd.model_daughter, zero(T))
@@ -1011,15 +1011,15 @@ function modelage(mdd::MultipleDomain{T}, Tsteps::AbstractVector, dm::MDDiffusiv
     return age, fraction
 end
 
-function model_ll(mdd::MultipleDomain{T}, σ::T=zero(T); rescale=false) where {T<:AbstractFloat}
+function model_ll(dd::MultipleDomain{T}, σ::T=zero(T); rescale=false) where {T<:AbstractFloat}
     ll = zero(T)
-    @inbounds for i in eachindex(mdd.age, mdd.age_sigma, mdd.midpoint_experimental, mdd.fit)
-        if mdd.fit[i]
-            model_ageᵢ = linterp1(mdd.model_fraction, mdd.model_age, mdd.midpoint_experimental[i])
-            ll += norm_ll(mdd.age[i], mdd.age_sigma[i], model_ageᵢ, σ)
+    @inbounds for i in eachindex(dd.step_age, dd.step_age_sigma, dd.midpoint_experimental, dd.fit)
+        if dd.fit[i]
+            model_ageᵢ = linterp1(dd.model_fraction, dd.model_age, dd.midpoint_experimental[i])
+            ll += norm_ll(dd.step_age[i], dd.step_age_sigma[i], model_ageᵢ, σ)
         end
     end
-    rescale && (ll /= sqrt(count(mdd.fit)))
+    rescale && (ll /= sqrt(count(dd.fit)))
     return ll
 end
 
@@ -1031,35 +1031,37 @@ function cumulative_fraction_uncertainty(sigma, i::Int)
     σ = sqrt(1/(1/σ²₋ + 1/σ²₊))
 end
 
-function cumulative_degassing_ll(mdd::MultipleDomain{T}; rescale=false) where {T<:AbstractFloat}
+function cumulative_degassing_ll(dd::MultipleDomain{T}; rescale=false) where {T<:AbstractFloat}
     ll = zero(T)
-    fit_until = findlast(mdd.fit)
-    @inbounds for i in eachindex(mdd.tsteps_experimental, mdd.fraction_experimental, mdd.fraction_experimental_sigma, mdd.fit)
+    fit_until = findlast(dd.fit)
+    @inbounds for i in eachindex(dd.tsteps_experimental, dd.fraction_experimental, dd.fraction_experimental_sigma, dd.fit)
         if i <= fit_until
-            σ = cumulative_fraction_uncertainty(mdd.fraction_experimental_sigma, i)
+            σ = cumulative_fraction_uncertainty(dd.fraction_experimental_sigma, i)
             σ ≈ 0 && continue
-            model_fractionᵢ = linterp1(mdd.tsteps_degassing, mdd.model_fraction, mdd.tsteps_experimental[i])
-            ll += norm_ll(mdd.fraction_experimental[i], σ, model_fractionᵢ)
+            model_fractionᵢ = linterp1(dd.tsteps_degassing, dd.model_fraction, dd.tsteps_experimental[i])
+            ll += norm_ll(dd.fraction_experimental[i], σ, model_fractionᵢ)
         end
     end
     rescale && (ll /= sqrt(fit_until))
     return ll
 end
 
-function stepwise_degassing_ll(mdd::MultipleDomain{T}; rescale=false) where {T<:AbstractFloat}
+function stepwise_degassing_ll(dd::MultipleDomain{T}; rescale=false) where {T<:AbstractFloat}
     ll = zero(T)
     last_model_fractionᵢ = zero(T)
     last_fraction_experimentalᵢ = zero(T)
-    @inbounds for i in eachindex(mdd.tsteps_experimental, mdd.fraction_experimental, mdd.fraction_experimental_sigma, mdd.fit)
-        model_fractionᵢ = linterp1(mdd.tsteps_degassing, mdd.model_fraction, mdd.tsteps_experimental[i])
-        if mdd.fit[i]
+    @inbounds for i in eachindex(dd.tsteps_experimental, dd.fraction_experimental, dd.fraction_experimental_sigma, dd.fit)
+        model_fractionᵢ = linterp1(dd.tsteps_degassing, dd.model_fraction, dd.tsteps_experimental[i])
+        if dd.fit[i]
             δmodel = model_fractionᵢ - last_model_fractionᵢ
-            δexperimental = mdd.fraction_experimental[i] - last_fraction_experimentalᵢ
-            ll += norm_ll(δexperimental, mdd.fraction_experimental_sigma[i], δmodel)
+            δexperimental = dd.fraction_experimental[i] - last_fraction_experimentalᵢ
+            ll += norm_ll(δexperimental, dd.fraction_experimental_sigma[i], δmodel)
         end
         last_model_fractionᵢ₋ = model_fractionᵢ
-        last_fraction_experimentalᵢ₋ = mdd.fraction_experimental[i]
+        last_fraction_experimentalᵢ₋ = dd.fraction_experimental[i]
     end
-    rescale && (ll /= sqrt(count(mdd.fit)))
+    rescale && (ll /= sqrt(count(dd.fit)))
     return ll
 end
+
+## --- End of File

@@ -40,15 +40,15 @@ module PlotsExt
     end
     Thermochron.errorbox(c::MultipleDomain; kwargs...) = errorbox!(plot(), c; kwargs...)
     function Thermochron.errorbox!(h::Union{Plots.Plot, Plots.Subplot}, c::MultipleDomain; fillalpha=0.5, excludedalpha=0.15, color=:black, kwargs...)
-        errorbox!(h, c.fraction_experimental, c.age, c.fit;
-            yerror = 2*c.age_sigma,
+        errorbox!(h, c.fraction_experimental, c.step_age, c.fit;
+            yerror = 2*c.step_age_sigma,
             label = "Data (2σ analytical)",
             color, 
             fillalpha,
             kwargs...
         )
-        errorbox!(h, c.fraction_experimental, c.age;
-            yerror = 2*c.age_sigma,
+        errorbox!(h, c.fraction_experimental, c.step_age;
+            yerror = 2*c.step_age_sigma,
             label = "Data (excluded)",
             color,
             fillalpha,

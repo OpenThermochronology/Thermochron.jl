@@ -36,7 +36,7 @@ module Thermochron
     
     include("types.jl")
     export Constraint, Unconformity, Boundary, DetailInterval           # Types used as inputs to MCMC functions
-    export Diffusivity                                                  # Type for generic user-specified diffusivities
+    export Diffusivity, MDDiffusivity                                   # Type for generic user-specified diffusivities
     
     include("chronometers.jl")
     export Chronometer, AbsoluteChronometer                             # Abstract types
@@ -51,10 +51,10 @@ module Thermochron
 
     include("argon.jl")
     include("helium.jl")
-    export ZirconHeliumModel, ZRDAAM, ApatiteHeliumModel, RDAAM          # Damage-and-annealing based helium diffusivity model types
+    export ZirconHeliumModel, ZRDAAM, ApatiteHeliumModel, RDAAM         # Damage-and-annealing based helium diffusivity model types
 
     include("stepheating.jl")
-    export MultipleDomain, MDDiffusivity                                # Multiple-domain diffusion model and diffusivity types
+    export MultipleDomain                                               # Types for modelling step-heating data, with one or more diffusion domains 
 
     include("fissiontrack.jl")
     export Ketcham1999FC, Ketcham2007FC                                 # Apatite fission track annealing model types
