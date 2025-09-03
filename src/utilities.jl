@@ -791,12 +791,12 @@
         # Pre-anneal ZRDAAM samples, if any
         if any(x->isa(x, ZRDAAM), damodels)
             zdm = (damodels[findfirst(x->isa(x, ZRDAAM), damodels)])::ZRDAAM{T}
-            anneal!(chrons, ZirconHe{T}, tsteps, Tsteps, zdm)
+            anneal!(chrons, ZirconHe, tsteps, Tsteps, zdm)
         end
         # Pre-anneal RDAAM samples, if any
         if any(x->isa(x, RDAAM), damodels)
             adm = (damodels[findfirst(x->isa(x, RDAAM), damodels)])::RDAAM{T}
-            anneal!(chrons, ApatiteHe{T}, tsteps, Tsteps, adm)
+            anneal!(chrons, ApatiteHe, tsteps, Tsteps, adm)
         end
 
         # Flag any fission track lengths for recalculation
@@ -816,6 +816,7 @@
         scalemtl = rescale ? sqrt(count(x->isa(x, MonaziteTrackLength), chrons)) : 1
         scaleatl = rescale ? sqrt(count(x->isa(x, ApatiteTrackLength), chrons)) : 1
         scaleato = rescale ? sqrt(count(x->isa(x, ApatiteTrackLengthOriented), chrons)) : 1
+        scalesdd = rescale ? sqrt(count(x->isa(x, SingleDomain), chrons)) : 1
         scalemdd = rescale ? sqrt(count(x->isa(x, MultipleDomain), chrons)) : 1
 
         # Cycle through each Chronometer, model and calculate log likelihood
@@ -823,38 +824,39 @@
         for i in eachindex(chrons, μcalc, σcalc, damodels)
             c, dm = chrons[i], damodels[i]
             first_index = firstindex(Tsteps) + length(tsteps) - length(timediscretization(c))
+            Tstepsᵢ = @views(Tsteps[first_index:end])
             if isa(c, SphericalAr) || isa(c, PlanarAr)
                 c::Union{SphericalAr{T}, PlanarAr{T}}
-                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), dm::Diffusivity{T})
+                μcalc[i] = modelage(c, Tstepsᵢ, dm::Diffusivity{T})
                 ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scalegar
             elseif isa(c, SphericalHe) || isa(c, PlanarHe)
                 c::Union{SphericalHe{T}, PlanarHe{T}}
-                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), dm::Diffusivity{T})
+                μcalc[i] = modelage(c, Tstepsᵢ, dm::Diffusivity{T})
                 ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scaleghe
             elseif isa(c, ZirconHe)
                 c::ZirconHe{T}
-                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), dm::ZirconHeliumModel{T})
+                μcalc[i] = modelage(c, Tstepsᵢ, dm::ZirconHeliumModel{T})
                 ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scalezhe
             elseif isa(c, ApatiteHe)
                 c::ApatiteHe{T}
-                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), dm::ApatiteHeliumModel{T})
+                μcalc[i] = modelage(c, Tstepsᵢ, dm::ApatiteHeliumModel{T})
                 ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scaleahe
             elseif isa(c, ZirconFT)
                 c::ZirconFT{T}
-                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), dm::ZirconAnnealingModel{T})
+                μcalc[i] = modelage(c, Tstepsᵢ, dm::ZirconAnnealingModel{T})
                 ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scalezft
             elseif isa(c, MonaziteFT)
                 c::MonaziteFT{T}
-                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), dm::MonaziteAnnealingModel{T})
+                μcalc[i] = modelage(c, Tstepsᵢ, dm::MonaziteAnnealingModel{T})
                 ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scalemft
             elseif isa(c, ApatiteFT)
                 c::ApatiteFT{T}
-                μcalc[i] = modelage(c, @views(Tsteps[first_index:end]), dm::ApatiteAnnealingModel{T})
+                μcalc[i] = modelage(c, Tstepsᵢ, dm::ApatiteAnnealingModel{T})
                 ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scaleaft
             elseif isa(c, ZirconTrackLength)
                 c::ZirconTrackLength{T}
                 if isnan(first(c.calc))
-                    μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), dm::ZirconAnnealingModel{T})
+                    μ, σcalc[i] = modellength(c, Tstepsᵢ, dm::ZirconAnnealingModel{T})
                 else
                     μ, σcalc[i] = c.calc
                 end
@@ -863,7 +865,7 @@
             elseif isa(c, MonaziteTrackLength)
                 c::MonaziteTrackLength{T}
                 if isnan(first(c.calc))
-                    μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), dm::MonaziteAnnealingModel{T})
+                    μ, σcalc[i] = modellength(c, Tstepsᵢ, dm::MonaziteAnnealingModel{T})
                 else
                     μ, σcalc[i] = c.calc
                 end
@@ -872,7 +874,7 @@
             elseif isa(c, ApatiteTrackLength)
                 c::ApatiteTrackLength{T}
                 if isnan(first(c.calc))
-                    μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), dm::ApatiteAnnealingModel{T})
+                    μ, σcalc[i] = modellength(c, Tstepsᵢ, dm::ApatiteAnnealingModel{T})
                 else
                     μ, σcalc[i] = c.calc
                 end
@@ -881,18 +883,25 @@
             elseif isa(c, ApatiteTrackLengthOriented)
                 c::ApatiteTrackLengthOriented{T}
                 if isnan(first(c.calc))
-                    μ, σcalc[i] = modellength(c, @views(Tsteps[first_index:end]), dm::ApatiteAnnealingModel{T})
+                    μ, σcalc[i] = modellength(c, Tstepsᵢ, dm::ApatiteAnnealingModel{T})
                 else
                     μ, σcalc[i] = c.calc
                 end
                 μcalc[i] = draw_from_population(c, σcalc[i])
                 ll += model_ll(c, σcalc[i])/scaleato
+            elseif isa(c, SingleDomain)
+                c::SingleDomain{T, <:Union{ArgonSample{T}, HeliumSample{T}}}
+                age, stepage, fraction = modelage(c, Tstepsᵢ, dm::DiffusivityModel{T}; redegastracer)
+                @assert issorted(fraction) "Degassing fraction is not properly cumulative"
+                redegastracer && (ll += cumulative_degassing_ll(c)/scalesdd)
+                μcalc[i] = draw_from_population(stepage, fraction)
+                ll += model_ll(c, σcalc[i])/scalesdd
             elseif isa(c, MultipleDomain)
                 c::MultipleDomain{T, <:Union{PlanarAr{T}, SphericalAr{T}}}
-                age, fraction = modelage(c, @views(Tsteps[first_index:end]), dm::MDDiffusivity{T}; redegastracer)
+                stepage, fraction = modelage(c, Tstepsᵢ, dm::MDDiffusivity{T}; redegastracer)
                 @assert issorted(fraction) "Degassing fraction is not properly cumulative"
                 redegastracer && (ll += cumulative_degassing_ll(c; rescale=rescalemdd)/scalemdd)
-                μcalc[i] = draw_from_population(age, fraction)
+                μcalc[i] = draw_from_population(stepage, fraction)
                 ll += model_ll(c, σcalc[i]; rescale=rescalemdd)/scalemdd
             else
                 # NaN if not calculated

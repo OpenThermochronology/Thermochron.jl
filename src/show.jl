@@ -5,6 +5,14 @@ function Base.show(io::IO, x::T) where {T<:MultipleDomain}
     c = Base.typename(typeof(first(x.domains))).wrapper
     print(io, "$t($n $c)")
 end
+function Base.show(io::IO, x::T) where {T<:SingleDomain}
+    t = Base.typename(T).wrapper
+    σ = round(x.domain.age_sigma, sigdigits=2)
+    d = log10(x.domain.age)-log10(x.domain.age_sigma)
+    μ = round(x.domain.age, sigdigits=2+floor(Int, d*!isnan(d)))
+    c = Base.typename(typeof(x.domain)).wrapper
+    print(io, "$t($c($(μ)±$(σ) Ma))")
+end
 function Base.show(io::IO, x::T) where {T<:ArgonSample}
     t = Base.typename(T).wrapper
     σ = round(x.age_sigma, sigdigits=2)

@@ -23,10 +23,10 @@ applyeltype(::Type{T}, x::OrdinalRange) where {T} = range(T(first(x)), T(last(x)
 function parseaftparams(;
         l0::Number = NaN,
         l0_sigma::Number = NaN,
-        dpar::Number = NaN, 
-        F::Number = NaN, 
-        Cl::Number = NaN, 
-        OH::Number = NaN, 
+        dpar::Number = NaN,
+        F::Number = NaN,
+        Cl::Number = NaN,
+        OH::Number = NaN,
         rmr0::Number = NaN,
         oriented::Bool = false,
     )
@@ -46,7 +46,7 @@ function parseaftparams(;
         # Estimate dpar using the relation of Ketcham et al. 1999 (Fig. 7b)
         dpar = apatite_dparfromrmr0(rmr0)
     end
-    if isnan(l0) 
+    if isnan(l0)
         # Use the relation of Carlson et al. 1999 for c-axis-projected vs unoriented tracks (equation 1)
         l0 = oriented ? apatite_l0modfromdpar(dpar) : apatite_l0fromdpar(dpar)
     end
@@ -81,7 +81,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
 
     haskey(ds, :mineral) || @error "dataset must contain a column labeled `mineral`"
     mineral = ds.mineral
-    crystage = if haskey(ds, :crystallization_age_Ma)        
+    crystage = if haskey(ds, :crystallization_age_Ma)
         ds.crystallization_age_Ma
     elseif haskey(ds, :crystAge) # Legacy option
         ds.crystAge
@@ -112,17 +112,19 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
         sample_agesteps = agesteps[first_index:end]
         mineral = lowercase(string(ds.mineral[i]))
         offset = (haskey(ds, :offset_C) && !isnan(ds.offset_C[i])) ? ds.offset_C[i] : 0
-        step_heating_file = haskey(ds, :step_heating_file) ? ds.step_heating_file[i] : haskey(ds, :mdd_file) ? ds.mdd_file[i] : ""
-        if mineral == "zircon"
+        He_step_heating_file = haskey(ds, :He_step_heating_file) ? ds.He_step_heating_file[i] : ""
+        Ar_step_heating_file = haskey(ds, :Ar_step_heating_file) ? ds.Ar_step_heating_file[i] : haskey(ds, :mdd_file) ? ds.mdd_file[i] : ""
+
+        if mineral === "zircon"
             # Zircon helium
             if haskey(ds, :raw_He_age_Ma) && haskey(ds, :raw_He_age_sigma_Ma) && (0 < ds.raw_He_age_sigma_Ma[i]/ds.raw_He_age_Ma[i])
                 # Modern format
                 c = ZirconHe(T;
-                    age = ds.raw_He_age_Ma[i], 
-                    age_sigma = ds.raw_He_age_sigma_Ma[i], 
+                    age = ds.raw_He_age_Ma[i],
+                    age_sigma = ds.raw_He_age_sigma_Ma[i],
                     offset = offset,
-                    r = ds.halfwidth_um[i], 
-                    dr = dr, 
+                    r = ds.halfwidth_um[i],
+                    dr = dr,
                     U238 = (haskey(ds, :U238_ppm) && !isnan(ds.U238_ppm[i])) ? ds.U238_ppm[i] : 0,
                     Th232 = (haskey(ds, :Th232_ppm) && !isnan(ds.Th232_ppm[i])) ? ds.Th232_ppm[i] : 0,
                     Sm147 = (haskey(ds, :Sm147_ppm) && !isnan(ds.Sm147_ppm[i])) ? ds.Sm147_ppm[i] : 0,
@@ -138,8 +140,8 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
             # Zircon fission track
             if haskey(ds, :FT_age_Ma) && haskey(ds, :FT_age_sigma_Ma) &&  (0 < ds.FT_age_sigma_Ma[i]/ds.FT_age_Ma[i])
                 c = ZirconFT(T;
-                    age = ds.FT_age_Ma[i], 
-                    age_sigma = ds.FT_age_sigma_Ma[i], 
+                    age = ds.FT_age_Ma[i],
+                    age_sigma = ds.FT_age_sigma_Ma[i],
                     offset = offset,
                     agesteps = sample_agesteps,
                 )
@@ -155,7 +157,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                 haskey(prdict, h) || (prdict[h] = zeros(T, lastindex(agesteps)-first_index+1))
                 haskey(calcdict, h) || (calcdict[h] = zeros(T, 2))
                 c = ZirconTrackLength(T;
-                    length = ds.track_length_um[i], 
+                    length = ds.track_length_um[i],
                     offset = offset,
                     l0 = l0,
                     l0_sigma = l0_sigma,
@@ -167,13 +169,12 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                 push!(chrons, c)
                 push!(damodels, zftm)
             end
-
-        elseif mineral == "monazite"
+        elseif mineral === "monazite"
             # Monazite fission track
             if haskey(ds, :FT_age_Ma) && haskey(ds, :FT_age_sigma_Ma) && (0 < ds.FT_age_sigma_Ma[i]/ds.FT_age_Ma[i])
                 c = MonaziteFT(T;
-                    age = ds.FT_age_Ma[i], 
-                    age_sigma = ds.FT_age_sigma_Ma[i], 
+                    age = ds.FT_age_Ma[i],
+                    age_sigma = ds.FT_age_sigma_Ma[i],
                     offset = offset,
                     agesteps = sample_agesteps,
                 )
@@ -189,7 +190,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                 haskey(prdict, h) || (prdict[h] = zeros(T, lastindex(agesteps)-first_index+1))
                 haskey(calcdict, h) || (calcdict[h] = zeros(T, 2))
                 c = MonaziteTrackLength(T;
-                    length = ds.track_length_um[i], 
+                    length = ds.track_length_um[i],
                     offset = offset,
                     l0 = l0,
                     l0_sigma = l0_sigma,
@@ -201,17 +202,16 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                 push!(chrons, c)
                 push!(damodels, mftm)
             end
-            
-        elseif mineral == "apatite"
+        elseif mineral === "apatite"
             # Apatite helium
             if haskey(ds, :raw_He_age_Ma) && haskey(ds, :raw_He_age_sigma_Ma) && (0 < ds.raw_He_age_sigma_Ma[i]/ds.raw_He_age_Ma[i])
                 # Modern format
                 c = ApatiteHe(T;
-                    age = ds.raw_He_age_Ma[i], 
-                    age_sigma = ds.raw_He_age_sigma_Ma[i], 
+                    age = ds.raw_He_age_Ma[i],
+                    age_sigma = ds.raw_He_age_sigma_Ma[i],
                     offset = offset,
-                    r = ds.halfwidth_um[i], 
-                    dr = dr, 
+                    r = ds.halfwidth_um[i],
+                    dr = dr,
                     U238 = (haskey(ds, :U238_ppm) && !isnan(ds.U238_ppm[i])) ? ds.U238_ppm[i] : 0,
                     Th232 = (haskey(ds, :Th232_ppm) && !isnan(ds.Th232_ppm[i])) ? ds.Th232_ppm[i] : 0,
                     Sm147 = (haskey(ds, :Sm147_ppm) && !isnan(ds.Sm147_ppm[i])) ? ds.Sm147_ppm[i] : 0,
@@ -227,8 +227,8 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
             # Apatite fission track
             if haskey(ds, :FT_age_Ma) && haskey(ds, :FT_age_sigma_Ma) && (0 < ds.FT_age_sigma_Ma[i]/ds.FT_age_Ma[i])
                 c = ApatiteFT(T;
-                    age = ds.FT_age_Ma[i], 
-                    age_sigma = ds.FT_age_sigma_Ma[i], 
+                    age = ds.FT_age_Ma[i],
+                    age_sigma = ds.FT_age_sigma_Ma[i],
                     offset = offset,
                     dpar = haskey(ds, :dpar_um) ? ds.dpar_um[i] : NaN,
                     F = haskey(ds, :F_apfu) ? ds.F_apfu[i] : NaN,
@@ -256,7 +256,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                     haskey(prdict, h) || (prdict[h] = zeros(T, lastindex(agesteps)-first_index+1))
                     haskey(calcdict, h) || (calcdict[h] = zeros(T, 2))
                     c = ApatiteTrackLengthOriented(T;
-                        length = ds.track_length_um[i], 
+                        length = ds.track_length_um[i],
                         angle = ds.track_angle_degrees[i],
                         offset, l0, l0_sigma, dpar, F, Cl, OH, rmr0,
                         agesteps = sample_agesteps,
@@ -273,7 +273,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                     haskey(prdict, h) || (prdict[h] = zeros(T, lastindex(agesteps)-first_index+1))
                     haskey(calcdict, h) || (calcdict[h] = zeros(T, 2))
                     c = ApatiteTrackLength(T;
-                        length = ds.track_length_um[i], 
+                        length = ds.track_length_um[i],
                         offset, l0, l0_sigma, dpar, F, Cl, OH, rmr0,
                         agesteps = sample_agesteps,
                         r = rdict[h],
@@ -284,140 +284,186 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                     push!(damodels, uaftm)
                 end
             end
-        elseif haskey(ds, :D0_cm_2_s) && haskey(ds, :Ea_kJ_mol) && (0 < ds.D0_cm_2_s[i]) && (0 < ds.Ea_kJ_mol[i])
-            geometry = haskey(ds, :geometry) ? lowercase(string(ds.geometry[i])) : "spherical"
-            if (geometry == "slab") || (geometry == "planar")
-                # Planar slab helium
-                if haskey(ds, :raw_He_age_Ma) && haskey(ds, :raw_He_age_sigma_Ma) && (0 < ds.raw_He_age_sigma_Ma[i]/ds.raw_He_age_Ma[i])
-                    c = PlanarHe(T;
-                        age = ds.raw_He_age_Ma[i], 
-                        age_sigma = ds.raw_He_age_sigma_Ma[i], 
-                        offset = offset,
-                        stoppingpower = alphastoppingpower(ds.mineral[i]),
-                        r = ds.halfwidth_um[i], 
-                        dr = dr, 
-                        U238 = (haskey(ds, :U238_ppm) && !isnan(ds.U238_ppm[i])) ? ds.U238_ppm[i] : 0,
-                        Th232 = (haskey(ds, :Th232_ppm) && !isnan(ds.Th232_ppm[i])) ? ds.Th232_ppm[i] : 0,
-                        Sm147 = (haskey(ds, :Sm147_ppm) && !isnan(ds.Sm147_ppm[i])) ? ds.Sm147_ppm[i] : 0,
-                        U238_matrix = (haskey(ds, :U238_matrix_ppm) && !isnan(ds.U238_matrix_ppm[i])) ? ds.U238_matrix_ppm[i] : 0,
-                        Th232_matrix = (haskey(ds, :Th232_matrix_ppm) && !isnan(ds.Th232_matrix_ppm[i])) ? ds.Th232_matrix_ppm[i] : 0,
-                        Sm147_matrix = (haskey(ds, :Sm147_matrix_ppm) && !isnan(ds.Sm147_matrix_ppm[i])) ? ds.Sm147_matrix_ppm[i] : 0,
-                        agesteps = sample_agesteps,
-                    )
-                    dm = Diffusivity(
-                        D0 = T(ds.D0_cm_2_s[i]),
-                        D0_logsigma = T((haskey(ds, :D0_logsigma) && !isnan(ds.D0_logsigma[i])) ? ds.D0_logsigma[i] : log(2)/2),
-                        Ea = T(ds.Ea_kJ_mol[i]),
-                        Ea_logsigma = T((haskey(ds, :Ea_logsigma) && !isnan(ds.Ea_logsigma[i])) ? ds.Ea_logsigma[i] : log(2)/4),
-                    )
-                    push!(chrons, c)
-                    push!(damodels, dm)
+        end
+        if haskey(ds, :D0_cm_2_s) && haskey(ds, :Ea_kJ_mol) && (0 < ds.D0_cm_2_s[i]) && (0 < ds.Ea_kJ_mol[i])
+            geometry = haskey(ds, :geometry) ? lowercase(string(ds.geometry[i])) : ""
+            dm = Diffusivity(
+                D0 = T(ds.D0_cm_2_s[i]),
+                D0_logsigma = T((haskey(ds, :D0_logsigma) && !isnan(ds.D0_logsigma[i])) ? ds.D0_logsigma[i] : log(2)/2),
+                Ea = T(ds.Ea_kJ_mol[i]),
+                Ea_logsigma = T((haskey(ds, :Ea_logsigma) && !isnan(ds.Ea_logsigma[i])) ? ds.Ea_logsigma[i] : log(2)/4),
+            )
+            if haskey(ds, :raw_He_age_Ma) && haskey(ds, :raw_He_age_sigma_Ma) && (0 < ds.raw_He_age_sigma_Ma[i]/ds.raw_He_age_Ma[i])
+                DomainType = if (geometry == "slab") || (geometry == "planar")
+                    PlanarHe
+                elseif (geometry === "spherical")
+                    SphericalHe
+                else
+                    @warn "Geometry \"$geometry\" not recognized in row $i, defaulting to spherical"
+                    SphericalHe
+                end
+                c = DomainType(T;
+                    age = ds.raw_He_age_Ma[i],
+                    age_sigma = ds.raw_He_age_sigma_Ma[i],
+                    offset = offset,
+                    stoppingpower = alphastoppingpower(ds.mineral[i]),
+                    r = ds.halfwidth_um[i],
+                    dr = dr,
+                    U238 = (haskey(ds, :U238_ppm) && !isnan(ds.U238_ppm[i])) ? ds.U238_ppm[i] : 0,
+                    Th232 = (haskey(ds, :Th232_ppm) && !isnan(ds.Th232_ppm[i])) ? ds.Th232_ppm[i] : 0,
+                    Sm147 = (haskey(ds, :Sm147_ppm) && !isnan(ds.Sm147_ppm[i])) ? ds.Sm147_ppm[i] : 0,
+                    U238_matrix = (haskey(ds, :U238_matrix_ppm) && !isnan(ds.U238_matrix_ppm[i])) ? ds.U238_matrix_ppm[i] : 0,
+                    Th232_matrix = (haskey(ds, :Th232_matrix_ppm) && !isnan(ds.Th232_matrix_ppm[i])) ? ds.Th232_matrix_ppm[i] : 0,
+                    Sm147_matrix = (haskey(ds, :Sm147_matrix_ppm) && !isnan(ds.Sm147_matrix_ppm[i])) ? ds.Sm147_matrix_ppm[i] : 0,
+                    agesteps = sample_agesteps,
+                )
+                push!(chrons, c)
+                push!(damodels, dm)
+            elseif haskey(ds, :raw_Ar_age_Ma) && haskey(ds, :raw_Ar_age_sigma_Ma) && (0 < ds.raw_Ar_age_sigma_Ma[i]/ds.raw_Ar_age_Ma[i])
+                DomainType = if (geometry == "slab") || (geometry == "planar")
+                    PlanarAr
+                elseif (geometry === "spherical")
+                    SphericalAr
+                else
+                    @warn "Geometry \"$geometry\" not recognized in row $i, defaulting to spherical"
+                    SphericalAr
                 end
                 # Planar slab argon
-                if haskey(ds, :raw_Ar_age_Ma) && haskey(ds, :raw_Ar_age_sigma_Ma) && (0 < ds.raw_Ar_age_sigma_Ma[i]/ds.raw_Ar_age_Ma[i])
-                    c = PlanarAr(T;
-                        age = ds.raw_Ar_age_Ma[i], 
-                        age_sigma = ds.raw_Ar_age_sigma_Ma[i], 
-                        offset = offset,
-                        r = ds.halfwidth_um[i], 
-                        dr = dr, 
-                        K40 = (haskey(ds, :K40_ppm) && !isnan(ds.K40_ppm[i])) ? ds.K40_ppm[i] : 16.34,
-                        agesteps = sample_agesteps,
-                    )
-                    dm = Diffusivity(
-                        D0 = T(ds.D0_cm_2_s[i]),
-                        D0_logsigma = T((haskey(ds, :D0_logsigma) && !isnan(ds.D0_logsigma[i])) ? ds.D0_logsigma[i] : log(2)/2),
-                        Ea = T(ds.Ea_kJ_mol[i]),
-                        Ea_logsigma = T((haskey(ds, :Ea_logsigma) && !isnan(ds.Ea_logsigma[i])) ? ds.Ea_logsigma[i] : log(2)/4),
-                    )
-                    push!(chrons, c)
-                    push!(damodels, dm)
-                end
-            else
-                (geometry === "sphere") || (geometry === "spherical") || @warn "Geometry \"$geometry\" not recognized in row $i, defaulting to spherical"
-                # Spherical helium
-                if haskey(ds, :raw_He_age_Ma) && haskey(ds, :raw_He_age_sigma_Ma) && (0 < ds.raw_He_age_sigma_Ma[i]/ds.raw_He_age_Ma[i])
-                    c = SphericalHe(T;
-                        age = ds.raw_He_age_Ma[i], 
-                        age_sigma = ds.raw_He_age_sigma_Ma[i], 
-                        offset = offset,
-                        stoppingpower = alphastoppingpower(ds.mineral[i]),
-                        r = ds.halfwidth_um[i], 
-                        dr = dr, 
-                        U238 = (haskey(ds, :U238_ppm) && !isnan(ds.U238_ppm[i])) ? ds.U238_ppm[i] : 0,
-                        Th232 = (haskey(ds, :Th232_ppm) && !isnan(ds.Th232_ppm[i])) ? ds.Th232_ppm[i] : 0,
-                        Sm147 = (haskey(ds, :Sm147_ppm) && !isnan(ds.Sm147_ppm[i])) ? ds.Sm147_ppm[i] : 0,
-                        U238_matrix = (haskey(ds, :U238_matrix_ppm) && !isnan(ds.U238_matrix_ppm[i])) ? ds.U238_matrix_ppm[i] : 0,
-                        Th232_matrix = (haskey(ds, :Th232_matrix_ppm) && !isnan(ds.Th232_matrix_ppm[i])) ? ds.Th232_matrix_ppm[i] : 0,
-                        Sm147_matrix = (haskey(ds, :Sm147_matrix_ppm) && !isnan(ds.Sm147_matrix_ppm[i])) ? ds.Sm147_matrix_ppm[i] : 0,
-                        agesteps = sample_agesteps,
-                    )
-                    dm = Diffusivity(
-                        D0 = T(ds.D0_cm_2_s[i]),
-                        D0_logsigma = T((haskey(ds, :D0_logsigma) && !isnan(ds.D0_logsigma[i])) ? ds.D0_logsigma[i] : log(2)/2),
-                        Ea = T(ds.Ea_kJ_mol[i]),
-                        Ea_logsigma = T((haskey(ds, :Ea_logsigma) && !isnan(ds.Ea_logsigma[i])) ? ds.Ea_logsigma[i] : log(2)/4),
-                    )
-                    push!(chrons, c)
-                    push!(damodels, dm)
-                end
-                # Spherical argon
-                if haskey(ds, :raw_Ar_age_Ma) && haskey(ds, :raw_Ar_age_sigma_Ma) && (0 < ds.raw_Ar_age_sigma_Ma[i]/ds.raw_Ar_age_Ma[i])
-                    c = SphericalAr(T;
-                        age = ds.raw_Ar_age_Ma[i], 
-                        age_sigma = ds.raw_Ar_age_sigma_Ma[i], 
-                        offset = offset,
-                        r = ds.halfwidth_um[i], 
-                        dr = dr, 
-                        K40 = (haskey(ds, :K40_ppm) && !isnan(ds.K40_ppm[i])) ? ds.K40_ppm[i] : 16.34,
-                        agesteps = sample_agesteps,
-                    )
-                    dm = Diffusivity(
-                        D0 = T(ds.D0_cm_2_s[i]),
-                        D0_logsigma = T((haskey(ds, :D0_logsigma) && !isnan(ds.D0_logsigma[i])) ? ds.D0_logsigma[i] : log(2)/2),
-                        Ea = T(ds.Ea_kJ_mol[i]),
-                        Ea_logsigma = T((haskey(ds, :Ea_logsigma) && !isnan(ds.Ea_logsigma[i])) ? ds.Ea_logsigma[i] : log(2)/4),
-                    )
-                    push!(chrons, c)
-                    push!(damodels, dm)
-                end
+                c = DomainType(T;
+                    age = ds.raw_Ar_age_Ma[i],
+                    age_sigma = ds.raw_Ar_age_sigma_Ma[i],
+                    offset = offset,
+                    r = ds.halfwidth_um[i],
+                    dr = dr,
+                    K40 = (haskey(ds, :K40_ppm) && !isnan(ds.K40_ppm[i])) ? ds.K40_ppm[i] : 16.34,
+                    agesteps = sample_agesteps,
+                )
+                push!(chrons, c)
+                push!(damodels, dm)
             end
-        elseif !isempty(step_heating_file)
-            dds = importdataset(step_heating_file, importas=:Tuple)
-            geometry = haskey(ds, :geometry) ? lowercase(string(ds.geometry[i])) : "unspecified"
+        end
+        if !isempty(Ar_step_heating_file)
+            dds = importdataset(Ar_step_heating_file, importas=:Tuple)
+            geometry = haskey(ds, :geometry) ? lowercase(string(ds.geometry[i])) : ""
             DomainType = if (geometry == "slab") || (geometry == "planar")
                 PlanarAr
+            elseif (geometry === "spherical")
+                SphericalAr
             else
-                (geometry === "spherical") || @warn "Geometry \"$geometry\" not recognized in row $i, defaulting to spherical"
+                @warn "Geometry \"$geometry\" not recognized in row $i, defaulting to spherical"
                 SphericalAr
             end
             r = (haskey(ds, :halfwidth_um) && !isnan(ds.halfwidth_um[i])) ? ds.halfwidth_um[i] : 100
             fraction_experimental = dds.fraction_degassed
             fraction_experimental_sigma = haskey(dds, :fraction_experimental_sigma) ? dds.fraction_experimental_sigma : fill(0.005, size(fraction_experimental))
-            c = MultipleDomain(T, DomainType;
+            tsteps_experimental = issorted(dds.time_s, lt=<=) ? dds.time_s : cumsum(dds.time_s)
+            if haskey(dds, :lnD0_a_2) && count(!isnan, dds.lnD0_a_2) > 0
+                c = MultipleDomain(T, DomainType;
+                        step_age = dds.age_Ma,
+                        step_age_sigma = dds.age_sigma_Ma,
+                        fraction_experimental,
+                        fraction_experimental_sigma,
+                        tsteps_experimental,
+                        Tsteps_experimental = dds.temperature_C,
+                        fit = dds.fit,
+                        offset,
+                        r,
+                        dr,
+                        volume_fraction = dds.volume_fraction[.!isnan.(dds.volume_fraction)],
+                        K40 = (haskey(ds, :K40_ppm) && !isnan(ds.K40_ppm[i])) ? ds.K40_ppm[i] : 16.34,
+                        agesteps = sample_agesteps,
+                )
+                tdomains = .!isnan.(dds.lnD0_a_2)
+                dm = MDDiffusivity(
+                    D0 = (T.(exp.(dds.lnD0_a_2[tdomains]).*(r/10000)^2)...,),
+                    D0_logsigma = (T.(haskey(dds, :lnD0_a_2_sigma) ? dds.lnD0_a_2_sigma[tdomains] : fill(log(2)/2, count(tdomains)))...,),
+                    Ea = (T.(dds.Ea_kJ_mol[tdomains])...,),
+                    Ea_logsigma = (T.(haskey(dds, :Ea_logsigma) ? dds.Ea_logsigma[tdomains] : fill(log(2)/4, count(tdomains)))...,),
+                )
+                push!(chrons, c)
+                push!(damodels, dm)
+            elseif haskey(ds, :D0_cm_2_s) && haskey(ds, :Ea_kJ_mol)
+                c = SingleDomain(T, DomainType;
                     step_age = dds.age_Ma,
                     step_age_sigma = dds.age_sigma_Ma,
                     fraction_experimental,
                     fraction_experimental_sigma,
-                    tsteps_experimental = issorted(dds.time_s, lt=<=) ? dds.time_s : cumsum(dds.time_s),
+                    tsteps_experimental,
                     Tsteps_experimental = dds.temperature_C,
                     fit = dds.fit,
                     offset,
                     r,
-                    dr, 
-                    volume_fraction = dds.volume_fraction[.!isnan.(dds.volume_fraction)],
+                    dr,
                     K40 = (haskey(ds, :K40_ppm) && !isnan(ds.K40_ppm[i])) ? ds.K40_ppm[i] : 16.34,
                     agesteps = sample_agesteps,
-            )
-            tdomains = .!isnan.(dds.lnD0_a_2)
-            dm = MDDiffusivity(
-                D0 = (T.(exp.(dds.lnD0_a_2[tdomains]).*(r/10000)^2)...,),
-                D0_logsigma = (T.(haskey(dds, :lnD0_a_2_sigma) ? dds.lnD0_a_2_sigma[tdomains] : fill(log(2)/2, count(tdomains)))...,),
-                Ea = (T.(dds.Ea_kJ_mol[tdomains])...,),
-                Ea_logsigma = (T.(haskey(dds, :Ea_logsigma) ? dds.Ea_logsigma[tdomains] : fill(log(2)/4, count(tdomains)))...,),
-            )
-            push!(chrons, c)
-            push!(damodels, dm)
+                )
+                dm = Diffusivity(
+                    D0 = T(ds.D0_cm_2_s[i]),
+                    D0_logsigma = T((haskey(ds, :D0_logsigma) && !isnan(ds.D0_logsigma[i])) ? ds.D0_logsigma[i] : log(2)/2),
+                    Ea = T(ds.Ea_kJ_mol[i]),
+                    Ea_logsigma = T((haskey(ds, :Ea_logsigma) && !isnan(ds.Ea_logsigma[i])) ? ds.Ea_logsigma[i] : log(2)/4),
+                )
+                push!(chrons, c)
+                push!(damodels, dm)
+            end
+        end
+        if !isempty(He_step_heating_file)
+            dds = importdataset(He_step_heating_file, importas=:Tuple)
+            geometry = haskey(ds, :geometry) ? lowercase(string(ds.geometry[i])) : ""
+            DomainType = if mineral === "apatite"
+                ApatiteHe
+            elseif mineral === "zircon"
+                ZirconHe
+            elseif (geometry === "slab") || (geometry === "planar")
+                PlanarHe
+            elseif (geometry === "spherical")
+                SphericalHe
+            else
+                @warn "Geometry \"$geometry\" not recognized in row $i, defaulting to spherical"
+                SphericalHe
+            end
+            r = (haskey(ds, :halfwidth_um) && !isnan(ds.halfwidth_um[i])) ? ds.halfwidth_um[i] : 100
+            Rstep = dds.He_4_He_3
+            Rstep_sigma = dds.He_4_He_3_sigma
+            Rbulk = nanmean(dds.He_4_He_3, dds.He_3)
+            fraction_experimental = cumsum(dds.He_3)./sum(dds.He_3)
+            fraction_experimental_sigma = haskey(dds, :He_3_sigma) ? dds.He_3_sigma./sum(dds.He_3) : fill(0.005, size(fraction_experimental))
+            tsteps_experimental = issorted(dds.time_s, lt=<=) ? dds.time_s : cumsum(dds.time_s)
+            if haskey(dds, :lnD0_a_2) && count(!isnan, dds.lnD0_a_2) > 0
+                @warn "Multiple domain He not implemented, skipping"
+            else
+                c = SingleDomain(Float64, DomainType;
+                    step_age = Rstep./Rbulk,
+                    step_age_sigma = Rstep_sigma./Rbulk,
+                    fraction_experimental,
+                    fraction_experimental_sigma,
+                    tsteps_experimental,
+                    Tsteps_experimental = dds.temperature_C,
+                    fit = dds.fit,
+                    agesteps,
+                    r,
+                    dr,
+                    age = ds.raw_He_age_Ma[i],
+                    age_sigma = ds.raw_He_age_sigma_Ma[i],
+                    U238 = ds.U238_ppm[i],
+                    Th232 = ds.Th232_ppm[i],
+                    Sm147 = ds.Sm147_ppm[i],
+                )
+                dm = if mineral === "apatite"
+                    adm
+                elseif mineral === "zircon"
+                    zdm
+                else # Custom diffusivity
+                    Diffusivity(
+                        D0 = T(ds.D0_cm_2_s[i]),
+                        D0_logsigma = T((haskey(ds, :D0_logsigma) && !isnan(ds.D0_logsigma[i])) ? ds.D0_logsigma[i] : log(2)/2),
+                        Ea = T(ds.Ea_kJ_mol[i]),
+                        Ea_logsigma = T((haskey(ds, :Ea_logsigma) && !isnan(ds.Ea_logsigma[i])) ? ds.Ea_logsigma[i] : log(2)/4),
+                    )
+                end
+                push!(chrons, c)
+                push!(damodels, dm)
+            end
         end
     end
 
@@ -429,8 +475,8 @@ end
 
 """
 ```julia
-function empiricaluncertainty!(σcalc, chrons, C::Type{<:HeliumSample}; 
-    fraction::Number = 1/sqrt(2), 
+function empiricaluncertainty!(σcalc, chrons, C::Type{<:HeliumSample};
+    fraction::Number = 1/sqrt(2),
     sigma_eU::Number = (C<:ZirconHe) ? 100.0 : (C<:ApatiteHe) ? 10.0 : 25.0,
     sigma_offset::Number = 10.0,
 )
@@ -445,8 +491,8 @@ is interpreted as external uncertainty which should be reflected in `σcalc`.
 Similarity in eU and offset is assessed on the basis of Gaussian kernels with
 bandwidth equal to `sigma_eU` for eU and `sigma_offset` for temperature offset.
 """
-function empiricaluncertainty!(σcalc::AbstractVector{T}, chrons::AbstractArray{<:Chronometer{T}}, ::Type{C}; 
-        fraction::Number = 1/sqrt(2), 
+function empiricaluncertainty!(σcalc::AbstractVector{T}, chrons::AbstractArray{<:Chronometer{T}}, ::Type{C};
+        fraction::Number = 1/sqrt(2),
         sigma_eU::Number = (C<:ZirconHe) ? 100.0 : (C<:ApatiteHe) ? 10.0 : 25.0,
         sigma_offset::Number = 10.0,
     ) where {T<:AbstractFloat, C<:HeliumSample}

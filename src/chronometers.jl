@@ -1996,8 +1996,8 @@ end
         volume_fraction::AbstractVector,                # [unitless] fraction of total volume represented by each domain
         r::Number = 100,                                # [um] nominal model domain radius (spherical) or half-width (planar)
         dr::Number = one(T),                            # [um] nominal model domain radius step
-        K40::Number = 16.34,                            # [ppm] mineral K-40 concentration
         agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
+        kwargs...                                       # Any further keyword arguments are forwarded to the constructor for the domain `C`
     )
     ```
     Construct a `MultipleDomain` diffusion chronometer given an observed
@@ -2044,9 +2044,9 @@ end
             volume_fraction::AbstractVector,
             r::Number = 100,
             dr::Number = one(T),
-            K40::Number = 16.34, 
             agesteps=nothing,
             tsteps=nothing,
+            kwargs...
         )
         # Temporal discretization
         agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
@@ -2077,7 +2077,7 @@ end
         # Allocate domains
         bulk_age = nanmean(step_age, @.(fit./step_age_sigma^2))
         bulk_age_sigma = nanstd(step_age, @.(fit./step_age_sigma^2))
-        domains = [C(T; age=bulk_age, age_sigma=bulk_age_sigma, offset, r, dr, K40, agesteps, tsteps) for i in eachindex(volume_fraction)]
+        domains = [C(T; age=bulk_age, age_sigma=bulk_age_sigma, offset, r, dr, agesteps, tsteps, kwargs...) for i in eachindex(volume_fraction)]
         return MultipleDomain(
             T.(step_age),
             T.(step_age_sigma),
@@ -2104,8 +2104,7 @@ end
 
 # Retrive the nominal value (age, length, etc) of any Chronometer
 value(x::AbsoluteChronometer{T}) where {T} = x.age::T
-value(x::MultipleDomain{T}) where {T} = nanmean(x.step_age, @.(x.fit/x.step_age_sigma^2))::T
-value(x::SingleDomain{T}) where {T} = value(x.domain)::T
+value(x::Union{SingleDomain{T}, MultipleDomain{T}}) where {T} = nanmean(x.step_age, @.(x.fit/x.step_age_sigma^2))::T
 value(x::FissionTrackLength{T}) where {T} = x.length::T
 value(x::ApatiteTrackLengthOriented{T}) where {T} = x.lcmod::T
 function val(x::Chronometer)
@@ -2115,8 +2114,7 @@ end
 
 # Retrive the nominal 1-sigma uncertainty (in age, length, etc.) of any Chronometer
 stdev(x::AbsoluteChronometer{T}) where {T} = x.age_sigma::T
-stdev(x::MultipleDomain{T}) where {T} = nanstd(x.step_age, @.(x.fit/x.step_age_sigma^2))::T
-stdev(x::SingleDomain{T}) where {T} = stdev(x.domain)::T
+stdev(x::Union{SingleDomain{T}, MultipleDomain{T}}) where {T} = nanstd(x.step_age, @.(x.fit/x.step_age_sigma^2))::T
 stdev(x::FissionTrackLength{T}) where {T} = zero(T)
 function err(x::Chronometer)
     @warn "Thermochron.err has been deprecated in favor of Thermochron.stdev"

@@ -71,14 +71,14 @@
     dsg = importdataset(joinpath(datapath, "generic.csv"), ',', importas=:Tuple)
     chrons, damodels = chronometers(dsg, model, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
     @test chrons isa Vector{<:Chronometer}
-    @test length(chrons) == 25
+    @test length(chrons) == 27
     const FloatRange = typeof(1.0:1.0:10.0)
     @test count(x->isa(x,SphericalHe{Float64, FloatRange}), chrons) == 4
     @test count(x->isa(x,PlanarHe{Float64, FloatRange}), chrons) == 1
     @test count(x->isa(x,SphericalAr{Float64, FloatRange}), chrons) == 2
     @test count(x->isa(x,PlanarAr{Float64, FloatRange}), chrons) == 1
     @test count(x->isa(x,ZirconHe{Float64, FloatRange}), chrons) == 3
-    @test count(x->isa(x,ApatiteHe{Float64, FloatRange}), chrons) == 3
+    @test count(x->isa(x,ApatiteHe{Float64, FloatRange}), chrons) == 4
     @test count(x->isa(x,ZirconFT{Float64, FloatRange}), chrons) == 1
     @test count(x->isa(x,MonaziteFT{Float64, FloatRange}), chrons) == 1
     @test count(x->isa(x,ApatiteFT{Float64, FloatRange}), chrons) == 1
@@ -86,40 +86,41 @@
     @test count(x->isa(x,MonaziteTrackLength{Float64, FloatRange}), chrons) == 1
     @test count(x->isa(x,ApatiteTrackLength{Float64, FloatRange}), chrons) == 1
     @test count(x->isa(x,ApatiteTrackLengthOriented{Float64, FloatRange}), chrons) == 3
+    @test count(x->isa(x,SingleDomain), chrons) == 1
     @test count(x->isa(x,MultipleDomain), chrons) == 2
-    @test get_age(chrons) ≈ [150.37, 263.92, 150.37, 263.92, 263.92, 917.84, 1023.73, 1023.73, 380., 380., 120., 120., 1080., 300., 100., 150., 180., 808.3268143245239, 808.3268143245239,] 
-    @test get_age_sigma(chrons) ≈ [5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,28.52408719185519,28.52408719185519,]
+    @test get_age(chrons) ≈ [150.37, 263.92, 150.37, 263.92, 263.92, 917.84, 1023.73, 1023.73, 380., 380., 120., 120., 1080., 300., 100., 150., 180., 4.1, 0.9194109843673132, 808.3268143245239, 808.3268143245239,] 
+    @test get_age_sigma(chrons) ≈ [5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,0.53,0.20877153500779683,28.52408719185519,28.52408719185519,]
 
     calc = zeros(length(chrons))
     calcuncert = zeros(length(chrons))
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -1380.1781583803804
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -1424.7667872298298
-    @test round.(calc[1:17], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1085.555, 304.6573, 95.84216, 149.8249, 179.703]
-    @test calc[18] ≈ 735 atol=75
-    @test calc[19] ≈ 755 atol=55
-    @test round.(calc[20:end], sigdigits=3) ≈ [9, 14.3, 14.3, 14.3, 14.3, 7] atol = 10
-    @test calcuncert[1:19] ≈ zeros(19)
-    @test calcuncert[20:end] ≈ [1.7578982633970572, 1.1785910438098226, 1.1389520917140208, 1.2018361658877996, 1.1302107318562702, 0.6070538659171328]
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -6068.158355913231
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -7370.123575463205
+    @test round.(calc[1:18], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1085.555, 304.6573, 95.84216, 149.8249, 179.703, 55.42763]
+    @test calc[20] ≈ 735 atol=75
+    @test calc[21] ≈ 755 atol=55
+    @test round.(calc[22:end], sigdigits=3) ≈ [9, 14.3, 14.3, 14.3, 14.3, 7] atol = 10
+    @test calcuncert[1:21] ≈ zeros(21)
+    @test calcuncert[22:end] ≈ [1.7578982633970572, 1.1785910438098226, 1.1389520917140208, 1.2018361658877996, 1.1302107318562702, 0.6070538659171328]
 
     damodels = Thermochron.Model[damodels...,]
     damodels[isa.(damodels, Thermochron.ZirconAnnealingModel)] .= Guenthner2013FC()
     damodels[isa.(damodels, Thermochron.ApatiteAnnealingModel)] .= Ketcham1999FC()
     damodels = unionize(damodels)
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -1398.070324343234
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -1442.6589531926832
-    @test round.(calc[1:17], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1110.379, 304.2772, 95.84216, 149.8249, 179.703]
-    @test calc[18] ≈ 735 atol=75
-    @test calc[19] ≈ 755 atol=55
-    @test round.(calc[20:end], sigdigits=3) ≈ [9, 14.3, 14.3, 14.3, 14.3, 7] atol = 10
-    @test calcuncert[1:19] ≈ zeros(19)
-    @test calcuncert[20:end] ≈ [1.8368172844202661, 1.1896389981502726, 1.1448424397109467, 1.2154485905638788, 1.1896389981502726, 0.6070538659171328]
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -6086.0505218760845
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -7388.015741426058
+    @test round.(calc[1:18], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1110.379, 304.2772, 95.84216, 149.8249, 179.703, 55.42763]
+    @test calc[20] ≈ 735 atol=75
+    @test calc[21] ≈ 755 atol=55
+    @test round.(calc[22:end], sigdigits=3) ≈ [9, 14.3, 14.3, 14.3, 14.3, 7] atol = 10
+    @test calcuncert[1:21] ≈ zeros(21)
+    @test calcuncert[22:end] ≈ [1.8368172844202661, 1.1896389981502726, 1.1448424397109467, 1.2154485905638788, 1.1896389981502726, 0.6070538659171328]
 
     # Test empirical uncertainty estimation
     σcalc = zeros(length(chrons))
     empiricaluncertainty!(σcalc, chrons, ZirconHe, sigma_offset=15)
     empiricaluncertainty!(σcalc, chrons, ApatiteHe, sigma_offset=15)
     t = isa.(chrons, ZirconHe) .| isa.(chrons, ApatiteHe)
-    @test σcalc[t] ≈  [57.014755105003104, 57.014755105003104, 14.8734143752182, 14.8734143752182, 89.77854252945355, 23.42048935550962] 
+    @test σcalc[t] ≈ [57.014755105003104, 57.014755105003104, 14.022789552152355, 14.022789552152355, 89.77854252945355, 22.081049122650942, 18.76032805406918]
 
     # Modern input format, Minnesota dataset
     tsteps = (model.dt/2 : model.dt : model.tinit-model.dt/2)
@@ -175,13 +176,13 @@
 
     chrons, damodels = chronometers(dsg, model, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
     @test chrons isa Vector{<:Chronometer}
-    @test length(chrons) == 25
+    @test length(chrons) == 27
     @test count(x->isa(x,SphericalHe{Float64, Vector{Float64}}), chrons) == 4
     @test count(x->isa(x,PlanarHe{Float64, Vector{Float64}}), chrons) == 1
     @test count(x->isa(x,SphericalAr{Float64, Vector{Float64}}), chrons) == 2
     @test count(x->isa(x,PlanarAr{Float64, Vector{Float64}}), chrons) == 1
     @test count(x->isa(x,ZirconHe{Float64, Vector{Float64}}), chrons) == 3
-    @test count(x->isa(x,ApatiteHe{Float64, Vector{Float64}}), chrons) == 3
+    @test count(x->isa(x,ApatiteHe{Float64, Vector{Float64}}), chrons) == 4
     @test count(x->isa(x,ZirconFT{Float64, Vector{Float64}}), chrons) == 1
     @test count(x->isa(x,MonaziteFT{Float64, Vector{Float64}}), chrons) == 1
     @test count(x->isa(x,ApatiteFT{Float64, Vector{Float64}}), chrons) == 1
@@ -189,33 +190,34 @@
     @test count(x->isa(x,MonaziteTrackLength{Float64, Vector{Float64}}), chrons) == 1
     @test count(x->isa(x,ApatiteTrackLength{Float64, Vector{Float64}}), chrons) == 1
     @test count(x->isa(x,ApatiteTrackLengthOriented{Float64, Vector{Float64}}), chrons) == 3
+    @test count(x->isa(x,SingleDomain), chrons) == 1
     @test count(x->isa(x,MultipleDomain), chrons) == 2
-    @test get_age(chrons) ≈ [150.37, 263.92, 150.37, 263.92, 263.92, 917.84, 1023.73, 1023.73, 380., 380., 120., 120., 1080., 300., 100., 150., 180., 808.3268143245239, 808.3268143245239,] 
-    @test get_age_sigma(chrons) ≈ [5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,28.52408719185519,28.52408719185519,]
+    @test get_age(chrons) ≈ [150.37, 263.92, 150.37, 263.92, 263.92, 917.84, 1023.73, 1023.73, 380., 380., 120., 120., 1080., 300., 100., 150., 180., 4.1, 0.9194109843673132, 808.3268143245239, 808.3268143245239,] 
+    @test get_age_sigma(chrons) ≈ [5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,0.53,0.20877153500779683,28.52408719185519,28.52408719185519,]
 
     calc = zeros(length(chrons))
     calcuncert = zeros(length(chrons))
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -1332.6467228319216
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -1371.4327804595264
-    @test round.(calc[1:17], sigdigits=7) ≈ [97.38443, 192.5678, 106.6764, 195.3374, 191.1125, 865.807, 967.5609, 960.928, 287.2698, 290.2198, 82.29012, 92.46799, 1078.846, 302.8478, 95.39966, 149.9576, 176.8518]
-    @test calc[18] ≈ 745 atol=75
-    @test calc[19] ≈ 765 atol=55
-    @test round.(calc[20:end], sigdigits=3) ≈ [9, 14.3, 14.3, 14.3, 14.3, 7] atol = 10
-    @test calcuncert[1:19] ≈ zeros(19)
-    @test calcuncert[20:end] ≈ [1.7573177921647993, 1.1845573491521355, 1.1457607696410228, 1.2049589019595262, 1.1414549313278457, 0.6188094901594741]
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -5475.053908024113
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -6771.329893627367 
+    @test round.(calc[1:18], sigdigits=7) ≈ [97.38443, 192.5678, 106.6764, 195.3374, 191.1125, 865.807, 967.5609, 960.928, 287.2698, 290.2198, 82.29012, 92.46799, 1078.846, 302.8478, 95.39966, 149.9576, 176.8518, 52.34804]
+    @test calc[20] ≈ 745 atol=75
+    @test calc[21] ≈ 765 atol=55
+    @test round.(calc[22:end], sigdigits=3) ≈ [9, 14.3, 14.3, 14.3, 14.3, 7] atol = 10
+    @test calcuncert[1:21] ≈ zeros(21)
+    @test calcuncert[22:end] ≈ [1.7573177921647993, 1.1845573491521355, 1.1457607696410228, 1.2049589019595262, 1.1414549313278457, 0.6188094901594741]
 
     damodels = Thermochron.Model[damodels...,]
     damodels[isa.(damodels, Thermochron.ZirconAnnealingModel)] .= Guenthner2013FC()
     damodels[isa.(damodels, Thermochron.ApatiteAnnealingModel)] .= Ketcham1999FC()
     damodels = unionize(damodels)
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -1343.7270331492523
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -1382.513090776857
-    @test round.(calc[1:17], sigdigits=7) ≈ [97.38443, 192.5678, 106.6764, 195.3374, 191.1125, 865.807, 967.5609, 960.928, 287.2698, 290.2198, 82.29012, 92.46799, 1103.519, 302.1657, 95.39966, 149.9576, 176.8518] 
-    @test calc[18] ≈ 745 atol=75
-    @test calc[19] ≈ 765 atol=55
-    @test round.(calc[20:end], sigdigits=3) ≈ [9, 14.3, 14.3, 14.3, 14.3, 7] atol = 10
-    @test calcuncert[1:19] ≈ zeros(19)
-    @test calcuncert[20:end] ≈ [1.8360236234430574, 1.1942271553159216, 1.149391800085125, 1.2195745732151688, 1.1942271553159216, 0.6188094901594741]
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -5486.134218341443
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -6782.410203944696
+    @test round.(calc[1:18], sigdigits=7) ≈ [97.38443, 192.5678, 106.6764, 195.3374, 191.1125, 865.807, 967.5609, 960.928, 287.2698, 290.2198, 82.29012, 92.46799, 1103.519, 302.1657, 95.39966, 149.9576, 176.8518, 52.34804] 
+    @test calc[20] ≈ 745 atol=75
+    @test calc[21] ≈ 765 atol=55
+    @test round.(calc[22:end], sigdigits=3) ≈ [9, 14.3, 14.3, 14.3, 14.3, 7] atol = 10
+    @test calcuncert[1:21] ≈ zeros(21)
+    @test calcuncert[22:end] ≈ [1.8360236234430574, 1.1942271553159216, 1.149391800085125, 1.2195745732151688, 1.1942271553159216, 0.6188094901594741]
 
 
     # Modern input format, Minnesota dataset
@@ -293,13 +295,13 @@
 
     chrons, damodels = chronometers(dsg, model, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
     @test chrons isa Vector{<:Chronometer}
-    @test length(chrons) == 25
+    @test length(chrons) == 27
     @test count(x->isa(x,SphericalHe{Float64, Vector{Float64}}), chrons) == 4
     @test count(x->isa(x,PlanarHe{Float64, Vector{Float64}}), chrons) == 1
     @test count(x->isa(x,SphericalAr{Float64, Vector{Float64}}), chrons) == 2
     @test count(x->isa(x,PlanarAr{Float64, Vector{Float64}}), chrons) == 1
     @test count(x->isa(x,ZirconHe{Float64, Vector{Float64}}), chrons) == 3
-    @test count(x->isa(x,ApatiteHe{Float64, Vector{Float64}}), chrons) == 3
+    @test count(x->isa(x,ApatiteHe{Float64, Vector{Float64}}), chrons) == 4
     @test count(x->isa(x,ZirconFT{Float64, Vector{Float64}}), chrons) == 1
     @test count(x->isa(x,MonaziteFT{Float64, Vector{Float64}}), chrons) == 1
     @test count(x->isa(x,ApatiteFT{Float64, Vector{Float64}}), chrons) == 1
@@ -307,34 +309,34 @@
     @test count(x->isa(x,MonaziteTrackLength{Float64, Vector{Float64}}), chrons) == 1
     @test count(x->isa(x,ApatiteTrackLength{Float64, Vector{Float64}}), chrons) == 1
     @test count(x->isa(x,ApatiteTrackLengthOriented{Float64, Vector{Float64}}), chrons) == 3
+    @test count(x->isa(x,SingleDomain), chrons) == 1
     @test count(x->isa(x,MultipleDomain), chrons) == 2
-    @test get_age(chrons) ≈ [150.37, 263.92, 150.37, 263.92, 263.92, 917.84, 1023.73, 1023.73, 380., 380., 120., 120., 1080., 300., 100., 150., 180., 808.3268143245239, 808.3268143245239,] 
-    @test get_age_sigma(chrons) ≈ [5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,28.52408719185519,28.52408719185519,]
-
+    @test get_age(chrons) ≈ [150.37, 263.92, 150.37, 263.92, 263.92, 917.84, 1023.73, 1023.73, 380., 380., 120., 120., 1080., 300., 100., 150., 180., 4.1, 0.9194109843673132, 808.3268143245239, 808.3268143245239,] 
+    @test get_age_sigma(chrons) ≈ [5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,0.53,0.20877153500779683,28.52408719185519,28.52408719185519,]
 
     calc = zeros(length(chrons))
     calcuncert = zeros(length(chrons))
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -1380.1781583803804
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -1424.7667872298298
-    @test round.(calc[1:17], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1085.555, 304.6573, 95.84216, 149.8249, 179.703]
-    @test calc[18] ≈ 735 atol=75
-    @test calc[19] ≈ 755 atol=55
-    @test round.(calc[20:end], sigdigits=3) ≈ [9, 14.3, 14.3, 14.3, 14.3, 7] atol = 10
-    @test calcuncert[1:19] ≈ zeros(19)
-    @test calcuncert[20:end] ≈ [1.7578982633970572, 1.1785910438098226, 1.1389520917140208, 1.2018361658877996, 1.1302107318562702, 0.6070538659171328]
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -6068.158355913231
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -7370.123575463205
+    @test round.(calc[1:18], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1085.555, 304.6573, 95.84216, 149.8249, 179.703, 55.42763]
+    @test calc[20] ≈ 735 atol=75
+    @test calc[21] ≈ 755 atol=55
+    @test round.(calc[22:end], sigdigits=3) ≈ [9, 14.3, 14.3, 14.3, 14.3, 7] atol = 10
+    @test calcuncert[1:21] ≈ zeros(21)
+    @test calcuncert[22:end] ≈ [1.7578982633970572, 1.1785910438098226, 1.1389520917140208, 1.2018361658877996, 1.1302107318562702, 0.6070538659171328]
 
     damodels = Thermochron.Model[damodels...,]
     damodels[isa.(damodels, Thermochron.ZirconAnnealingModel)] .= Guenthner2013FC()
     damodels[isa.(damodels, Thermochron.ApatiteAnnealingModel)] .= Ketcham1999FC()
     damodels = unionize(damodels)
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -1398.070324343234
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -1442.6589531926832
-    @test round.(calc[1:17], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1110.379, 304.2772, 95.84216, 149.8249, 179.703]
-    @test calc[18] ≈ 735 atol=75
-    @test calc[19] ≈ 755 atol=55
-    @test round.(calc[20:end], sigdigits=3) ≈ [9, 14.3, 14.3, 14.3, 14.3, 7] atol = 10
-    @test calcuncert[1:19] ≈ zeros(19)
-    @test calcuncert[20:end] ≈ [1.8368172844202661, 1.1896389981502726, 1.1448424397109467, 1.2154485905638788, 1.1896389981502726, 0.6070538659171328]
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -6086.0505218760845
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -7388.015741426058
+    @test round.(calc[1:18], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1110.379, 304.2772, 95.84216, 149.8249, 179.703, 55.42763]
+    @test calc[20] ≈ 735 atol=75
+    @test calc[21] ≈ 755 atol=55
+    @test round.(calc[22:end], sigdigits=3) ≈ [9, 14.3, 14.3, 14.3, 14.3, 7] atol = 10
+    @test calcuncert[1:21] ≈ zeros(21)
+    @test calcuncert[22:end] ≈ [1.8368172844202661, 1.1896389981502726, 1.1448424397109467, 1.2154485905638788, 1.1896389981502726, 0.6070538659171328]
 
     # Modern input format, Minnesota dataset
     tsteps = collect(model.dt/2 : model.dt : model.tinit-model.dt/2)
