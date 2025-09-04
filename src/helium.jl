@@ -167,7 +167,7 @@ In-place version of `anneal`
 function anneal!(data::Vector{<:Chronometer{T}}, ::Type{C}, tsteps::AbstractVector{T}, Tsteps::AbstractVector{T}, dm::DiffusivityModel{T}) where {T<:AbstractFloat, C<:HeliumSample}
     @assert eachindex(tsteps) == eachindex(Tsteps)
     if any(x->isa(x, C), data)
-        im = argmax(i->is_or_includes(data[i], C) ? length(timediscretization(data[i])) : 0, eachindex(data))
+        im = argmax(i->(eltype(data[i]) <: C) ? length(timediscretization(data[i])) : 0, eachindex(data))
         first_index = firstindex(Tsteps) + length(tsteps) - length(timediscretization(data[im]))
         dₘ = if first_index > 1
             anneal!(data[im], @views(Tsteps[first_index:end]), dm)::C
@@ -177,7 +177,7 @@ function anneal!(data::Vector{<:Chronometer{T}}, ::Type{C}, tsteps::AbstractVect
         pr = dₘ.pr
         @assert length(timediscretization(dₘ)) == length(axes(pr, 1)) == length(axes(pr, 2))
         for i in eachindex(data)
-            if i!=im && is_or_includes(data[i], C)
+            if i!=im && eltype(data[i]) <: C
                 anneal!(data[i], Tsteps, pr)
             end
         end
@@ -314,10 +314,6 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::Abstr
 
     return ρᵣ
 end
-
-is_or_includes(x::C1, ::Type{C2}) where {C1, C2} = C1 <: C2
-is_or_includes(x::SingleDomain{<:AbstractFloat, C1}, ::Type{C2}) where {C1, C2} = C1 <: C2
-is_or_includes(x::MultipleDomain{<:AbstractFloat, C1}, ::Type{C2}) where {C1, C2} = C1 <: C2
 
 ## --- Calculate apparent age given a particular t-T path
 """

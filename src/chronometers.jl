@@ -2100,7 +2100,12 @@ end
         )
     end
 
-## --- Utility functions to get values, uncertainties, etc. from any Chronometer
+## --- Functions on Chronometers which require types to have been defined
+
+# Implement eltype methods to deal with chronometers which are wrapper types
+Base.eltype(x::Chronometer) = typeof(x)
+Base.eltype(x::MultipleDomain{T,C}) where {T,C} = C
+Base.eltype(x::SingleDomain{T,C}) where {T,C} = C
 
 # Retrive the nominal value (age, length, etc) of any Chronometer
 value(x::AbsoluteChronometer{T}) where {T} = x.age::T
