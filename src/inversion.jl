@@ -60,6 +60,8 @@
         (any(x->isa(x, MonaziteTrackLength), chrons)) && @info "Inverting for track lengths of $(count(x->isa(x, MonaziteTrackLength), chrons)) monazite fission tracks"
         (any(x->isa(x, SphericalAr), chrons)) && @info "Inverting for Ar ages of $(count(x->isa(x, SphericalAr), chrons)) generic spherical Ar chronometers"
         (any(x->isa(x, PlanarAr), chrons)) && @info "Inverting for Ar ages of $(count(x->isa(x, PlanarAr), chrons)) generic planar slab Ar chronometers"
+        (any(x->isa(x, SingleDomain{<:AbstractFloat, <:HeliumSample}), chrons)) && @info "Inverting for ages of $(count(x->isa(x, SingleDomain{<:AbstractFloat, <:HeliumSample}), chrons)) step heating He-4/He-3 chronometers"
+        (any(x->isa(x, SingleDomain{<:AbstractFloat, <:ArgonSample}), chrons)) && @info "Inverting for ages of $(count(x->isa(x, SingleDomain{<:AbstractFloat, <:ArgonSample}), chrons)) step heating Ar-40/Ar-39 chronometers"
         (any(x->isa(x, MultipleDomain), chrons)) && @info "Inverting for ages of $(count(x->isa(x, MultipleDomain), chrons)) multiple domain diffusion chronometers"
 
         # Struct to hold t-T path proposals and related variables
@@ -382,6 +384,8 @@
         (any(x->isa(x, MonaziteTrackLength), chrons)) && @info "Inverting for track lengths of $(count(x->isa(x, MonaziteTrackLength), chrons)) monazite fission tracks"
         (any(x->isa(x, SphericalAr), chrons)) && @info "Inverting for Ar ages of $(count(x->isa(x, SphericalAr), chrons)) generic spherical Ar chronometers"
         (any(x->isa(x, PlanarAr), chrons)) && @info "Inverting for Ar ages of $(count(x->isa(x, PlanarAr), chrons)) generic planar slab Ar chronometers"
+        (any(x->isa(x, SingleDomain{<:AbstractFloat, <:HeliumSample}), chrons)) && @info "Inverting for ages of $(count(x->isa(x, SingleDomain{<:AbstractFloat, <:HeliumSample}), chrons)) step heating He-4/He-3 chronometers"
+        (any(x->isa(x, SingleDomain{<:AbstractFloat, <:ArgonSample}), chrons)) && @info "Inverting for ages of $(count(x->isa(x, SingleDomain{<:AbstractFloat, <:ArgonSample}), chrons)) step heating Ar-40/Ar-39 chronometers"
         (any(x->isa(x, MultipleDomain), chrons)) && @info "Inverting for ages of $(count(x->isa(x, MultipleDomain), chrons)) multiple domain diffusion chronometers"
 
         # Struct to hold t-T path proposals and related variables

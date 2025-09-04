@@ -426,8 +426,10 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
             Rstep = dds.He_4_He_3
             Rstep_sigma = dds.He_4_He_3_sigma
             Rbulk = nanmean(dds.He_4_He_3, dds.He_3)
-            fraction_experimental = cumsum(dds.He_3)./sum(dds.He_3)
-            fraction_experimental_sigma = haskey(dds, :He_3_sigma) ? dds.He_3_sigma./sum(dds.He_3) : fill(0.005, size(fraction_experimental))
+            fraction_experimental = cumsum(dds.He_3)
+            total_He_3 = last(fraction_experimental)
+            fraction_experimental ./= total_He_3 # Rescale from 0-1
+            fraction_experimental_sigma = haskey(dds, :He_3_sigma) ? dds.He_3_sigma./total_He_3 : fill(0.005, size(fraction_experimental))
             tsteps_experimental = issorted(dds.time_s, lt=<=) ? dds.time_s : cumsum(dds.time_s)
             if haskey(dds, :lnD0_a_2) && count(!isnan, dds.lnD0_a_2) > 0
                 @warn "Multiple domain He not implemented, skipping"
