@@ -31,24 +31,31 @@
     name = "Manitoba"
     ds = importdataset("manitoba.csv", ',', importas=:Tuple)
 
-    # # Literature samples from Guenthner et al. 2013 (AJS), Minnesota
+    # # Literature samples from Guenthner 2013 (doi: 10.2475/03.2013.01), Minnesota
     # # (23 ZirconHe, 11 ApatiteHe)
     # name = "Minnesota"
     # ds = importdataset("minnesota.csv", ',', importas=:Tuple)
 
-    # # OL13 multiple domain diffusion example
+    # # Literature samples from Valla et al. 2011 (doi: 10.1038/NGEO1242), Visp, Switzerland
+    # # (23 ApatiteHe, 4 He-4/He-3)
+    # name = "VIS"
+    # ds = importdataset("vis.csv", ',', importas=:Tuple)
+
+    # Literature sample from McDannell et al. 2018 (doi: 10.1016/j.epsl.2018.03.012), Quebec
     # name = "OL13"
     # ds = importdataset("ol13.csv", ',', importas=:Tuple)
 
 ## --- Prepare problem
 
-    dt = 8.0 # [Ma] Average model timestep
-    tinit = ceil(maximum(ds.crystallization_age_Ma)/dt) * dt # [Ma] Model start time
-    
     # Option A: Linear timesteps
+    dt = 8 # [Ma] Average model timestep (smaller is slower but more accurate)
+    tinit = ceil(maximum(ds.crystallization_age_Ma)/dt) * dt # [Ma] Model start time
     agesteps = cntr(tinit:-dt:0)
 
     # # Option B: Logarithmic timesteps
+    # detail = 300 # Approximate number of model timesteps (more is slower but more accurate)
+    # dt = maximum(ds.crystallization_age_Ma)/detail # [Ma] Average model timestep
+    # tinit = maximum(ds.crystallization_age_Ma) # [Ma] Model start time
     # agesteps = cntr(logrange(tinit+dt, dt, length=Int(tinit÷dt+1)) .- dt)
 
     # Check the validity of the requested time discretization (correct order, etc.)
@@ -126,7 +133,7 @@
     # uncertainty. Here we specify a default minimum uncertainty representing the average expected 
     # misfit between model and data, which may optionally be resampled during inversion.
     model = (;model...,
-        σcalc = fill(25., length(chrons)),     # [Ma] model uncertainty
+        σcalc = 0.025*Thermochron.value.(chrons),     # [Ma] model uncertainty (2.5%)
     )
 
 ## --- Age uncertainty resampling: estimate expected misfit (σcalc) from excess dispersion of the data itself
@@ -228,6 +235,7 @@
             im = findfirst(x->isa(x, D), damodels)
             if !isnothing(id) && !isnothing(im)
                 hdm = plot(damodels[im], kinetics.dmdist[id,:])
+                plot!(hdm[1], title="$D kinetics")
                 savefig(hdm, "$(name)_$(D)_kinetics.pdf")
                 display(hdm)
             end
@@ -442,33 +450,38 @@ end
         end
     end
 
-## --- Plot calculated and observed MDD age spectra
+## --- Plot calculated and observed step heating age spectra
 
-    for i in eachindex(chrons)
-        c = chrons[i]
-        if c isa MultipleDomain  
-            agedist = tT.resultdist[i,:]
-            modelage = sort(agedist)
-            modelfraction = range(0, 1, length(modelage))
-            h = plot(modelfraction, modelage,
-                seriestype = :line,
-                color = :powderblue,
-                framestyle = :box,
-                legend = :topleft,
-                xlabel = "Fraction released",
-                ylabel = "Age [Ma]",
-                label = "",
-            )
-            errorbox!(h, c, color=:black)
-            t = minimum(c.fraction_experimental[c.fit]) .<= modelfraction .<= maximum(c.fraction_experimental[c.fit])
-            plot!(h, modelfraction[t], modelage[t],
-                seriestype=:line,
-                color = :mediumblue,
-                lw = 2,
-                label = "Model (average)",
-            )
-            savefig(h, "$(name)_$(ds.grain_name[i])_predicted.pdf")
-            display(h)
+    for C in (SingleDomain, MultipleDomain)
+        for i in eachindex(chrons)
+            c = chrons[i]
+            if c isa C  
+                agedist = tT.resultdist[i,:]
+                modelage = sort(agedist)
+                modelfraction = range(0, 1, length(modelage))
+                h = plot(modelfraction, modelage,
+                    seriestype = :line,
+                    color = :powderblue,
+                    framestyle = :box,
+                    legend = :topleft,
+                    title = "$C{$(Base.typename(eltype(c)).wrapper)} Step Heating",
+                    xlabel = "Fraction released",
+                    ylabel = (eltype(c) <: Thermochron.HeliumSample) ? "Rstep/Rbulk" : "Age [Ma]",
+                    label = "",
+                )
+                errorbox!(h, c, color=:black)
+                fmin = (findfirst(c.fit) > 1) ? c.fraction_experimental[findfirst(c.fit)-1] : 0
+                fmax = c.fraction_experimental[findlast(c.fit)]
+                t = fmin .<= modelfraction .<= fmax
+                plot!(h, modelfraction[t], modelage[t],
+                    seriestype = :line,
+                    color = :mediumblue,
+                    lw = 2,
+                    label = "Model (average)",
+                )
+                savefig(h, "$(name)_$(ds.grain_name[i])_predicted.pdf")
+                display(h)
+            end
         end
     end
 
@@ -494,36 +507,36 @@ end
 
     # Plot image with colorscale in first subplot
     A = imsc(tTimage, ylcn, 0, nanpctile(tTimage[:],98.5))
-    plot!(k[1], xlabel="Time (Ma)", ylabel="Temperature (°C)", yticks=model.Tnow:50:model.Tinit, xticks=model.tnow:500:model.tinit, yminorticks=5, xminorticks=5, tick_dir=:out, framestyle=:box)
+    plot!(k[1], xlabel="Time (Ma)", ylabel="Temperature (°C)", tick_dir=:out, framestyle=:box)
     plot!(k[1], xc, yc, A, yflip=true, xflip=true, legend=false, aspectratio=model.tinit/model.Tinit/1.5, xlims=(0,model.tinit), ylims=(model.Tnow,model.Tinit))
     plot!(k[1], constraint) # Add constraint boxes
 
     # Add colorbar in second subplot
     cb = imsc(repeat(0:100, 1, 10), ylcn, 0, 100)
-    plot!(k[2], 0:0.01:0.1, 0:0.01:1, cb, ylims=(0,1), xticks=false, framestyle=:box, yflip=false)
+    plot!(k[2], 0:0.01:0.1, 0:0.01:1, cb, ylims=(0,1), xticks=false, tick_dir=:out, framestyle=:box, yflip=false, ylabel="Relative path density", guide_position=:right)
 
     savefig(k, name*"_tT.pdf")
     display(k)
 
 ## --- Plot a zoomed-in version
 
-    # xrange = (0,100)
-    # yrange=(-10,60)
-    # @time (tTimageZoom, xcZoom, ycZoom) = image_from_paths!(tT; xresolution=1800, yresolution=1200, xrange, yrange)
+    xrange = (0,100)
+    yrange=(0,50)
+    @time (tTimageZoom, xcZoom, ycZoom) = image_from_paths!(tT; xresolution=1800, yresolution=1200, xrange, yrange)
 
-    # # Prepare axes
-    # k = plot(layout = grid(1,2, widths=[0.94, 0.06]), framestyle=:box)
+    # Prepare axes
+    k = plot(layout = grid(1,2, widths=[0.94, 0.06]), framestyle=:box)
 
-    # # Plot image with colorscale in first subplot
-    # A = imsc(tTimageZoom, ylcn, 0, nanpctile(tTimage[:],98.5))
-    # plot!(k[1], xlabel="Time (Ma)", ylabel="Temperature (°C)", tick_dir=:out, framestyle=:box)
-    # plot!(k[1], xcZoom, ycZoom, A, yflip=true, xflip=true, legend=false, xlims=xrange, ylims=yrange)
+    # Plot image with colorscale in first subplot
+    A = imsc(tTimageZoom, ylcn, 0, nanpctile(tTimage[:],98.5))
+    plot!(k[1], xlabel="Time (Ma)", ylabel="Temperature (°C)", tick_dir=:out, framestyle=:box)
+    plot!(k[1], xcZoom, ycZoom, A, yflip=true, xflip=true, legend=false, xlims=xrange, ylims=yrange)
 
-    # # Add colorbar in second subplot
-    # cb = imsc(repeat(0:100, 1, 10), ylcn, 0, 100)
-    # plot!(k[2], 0:0.01:0.1, 0:0.01:1, cb, ylims=(0,1), xticks=false, framestyle=:box, yflip=false)
+    # Add colorbar in second subplot
+    cb = imsc(repeat(0:100, 1, 10), ylcn, 0, 100)
+    plot!(k[2], 0:0.01:0.1, 0:0.01:1, cb, ylims=(0,1), xticks=false, tick_dir=:out, framestyle=:box, yflip=false,  ylabel="Relative path density", guide_position=:right)
 
-    # savefig(k, name*"_tT.pdf")
-    # display(k)
+    savefig(k, name*"_tT.pdf")
+    display(k)
 
 ## --- End of File
