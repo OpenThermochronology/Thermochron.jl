@@ -777,7 +777,7 @@
     end
 
     # Utility function to calculate model ages for all chronometers at once
-    function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, Tsteps::AbstractVector{T}; rescalemdd::Bool=true, rescale::Bool=false, redegastracer::Bool=false) where {T<:AbstractFloat}
+    function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, Tsteps::AbstractVector{T}; rescalestepheating::Bool=true, rescale::Bool=false, redegastracer::Bool=false) where {T<:AbstractFloat}
         imax = argmax(i->length(timediscretization(chrons[i])), eachindex(chrons))
         tsteps = timediscretization(chrons[imax])
         @assert issorted(tsteps)
@@ -860,7 +860,7 @@
                 else
                     μ, σcalc[i] = c.calc
                 end
-                μcalc[i] = draw_from_population(c, σcalc[i])
+                μcalc[i] = max(draw_from_population(c, σcalc[i]), zero(T)) # Draw from dist, but cannot be negative
                 ll += model_ll(c, σcalc[i])/scaleztl
             elseif isa(c, MonaziteTrackLength)
                 c::MonaziteTrackLength{T}
@@ -869,7 +869,7 @@
                 else
                     μ, σcalc[i] = c.calc
                 end
-                μcalc[i] = draw_from_population(c, σcalc[i])
+                μcalc[i] = max(draw_from_population(c, σcalc[i]), zero(T)) # Draw from dist, but cannot be negative
                 ll += model_ll(c, σcalc[i])/scalemtl
             elseif isa(c, ApatiteTrackLength)
                 c::ApatiteTrackLength{T}
@@ -878,7 +878,7 @@
                 else
                     μ, σcalc[i] = c.calc
                 end
-                μcalc[i] = draw_from_population(c, σcalc[i])
+                μcalc[i] = max(draw_from_population(c, σcalc[i]), zero(T)) # Draw from dist, but cannot be negative
                 ll += model_ll(c, σcalc[i])/scaleatl
             elseif isa(c, ApatiteTrackLengthOriented)
                 c::ApatiteTrackLengthOriented{T}
@@ -887,22 +887,22 @@
                 else
                     μ, σcalc[i] = c.calc
                 end
-                μcalc[i] = draw_from_population(c, σcalc[i])
+                μcalc[i] = max(draw_from_population(c, σcalc[i]), zero(T)) # Draw from dist, but cannot be negative
                 ll += model_ll(c, σcalc[i])/scaleato
             elseif isa(c, SingleDomain)
                 c::SingleDomain{T, <:Union{ArgonSample{T}, HeliumSample{T}}}
                 age, stepage, fraction = modelage(c, Tstepsᵢ, dm::DiffusivityModel{T}; redegastracer)
                 @assert issorted(fraction) "Degassing fraction is not properly cumulative"
-                redegastracer && (ll += cumulative_degassing_ll(c)/scalesdd)
+                redegastracer && (ll += cumulative_degassing_ll(c; rescale=rescalestepheating)/scalesdd)
                 μcalc[i] = draw_from_population(stepage, fraction)
-                ll += model_ll(c, σcalc[i])/scalesdd
+                ll += model_ll(c, σcalc[i]; rescale=rescalestepheating)/scalesdd
             elseif isa(c, MultipleDomain)
                 c::MultipleDomain{T, <:Union{PlanarAr{T}, SphericalAr{T}}}
                 stepage, fraction = modelage(c, Tstepsᵢ, dm::MDDiffusivity{T}; redegastracer)
                 @assert issorted(fraction) "Degassing fraction is not properly cumulative"
-                redegastracer && (ll += cumulative_degassing_ll(c; rescale=rescalemdd)/scalemdd)
+                redegastracer && (ll += cumulative_degassing_ll(c; rescale=rescalestepheating)/scalemdd)
                 μcalc[i] = draw_from_population(stepage, fraction)
-                ll += model_ll(c, σcalc[i]; rescale=rescalemdd)/scalemdd
+                ll += model_ll(c, σcalc[i]; rescale=rescalestepheating)/scalemdd
             else
                 # NaN if not calculated
                 μcalc[i] = T(NaN)
