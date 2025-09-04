@@ -51,8 +51,7 @@ module PlotsExt
             yerror = 2*c.step_age_sigma,
             label = "Data (excluded)",
             color,
-            fillalpha,
-            alpha = excludedalpha,
+            fillalpha = excludedalpha,
             kwargs...
         )
     end
