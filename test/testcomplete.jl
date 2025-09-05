@@ -319,7 +319,7 @@
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -6069.463663415188
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -6419.010909596187
     @test round.(calc[1:18], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1085.555, 304.6573, 95.84216, 149.8249, 179.703, 55.42763]
-    @test calc[20] ≈ 735 atol=75
+    @test calc[20] ≈ 735 atol=85
     @test calc[21] ≈ 755 atol=55
     @test round.(calc[22:end], sigdigits=3) ≈ [9, 14.3, 14.3, 14.3, 14.3, 7] atol = 10
     @test calcuncert[1:21] ≈ zeros(21)

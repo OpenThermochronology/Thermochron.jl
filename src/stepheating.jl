@@ -6,7 +6,7 @@ function degas!(mineral::PlanarAr{T}, tsteps_degassing::AbstractVector{T}, Tstep
     D0 = (dm.D0*10000^2)::T                 # [micron^2/sec], converted from [cm^2/sec]
     Ea = dm.Ea::T                           # [kJ/mol]
     R = 0.008314472                         # [kJ/(K*mol)]
-    ΔT = mineral.offset::T + 273.15         # Conversion from C to K, plus temperature offset relative to other samples
+    ΔT = T(273.15)                          # Conversion from C to K
 
     # Calculate effective diffusivity at each time step
     De = mineral.De::Vector{T}
@@ -152,7 +152,7 @@ function degas!(mineral::SphericalAr{T}, tsteps_degassing::AbstractVector{T}, Ts
     D0 = (dm.D0*10000^2)::T                 # [micron^2/sec], converted from [cm^2/sec]
     Ea = dm.Ea::T                           # [kJ/mol]
     R = 0.008314472                         # [kJ/(K*mol)]
-    ΔT = mineral.offset::T + 273.15         # Conversion from C to K, plus temperature offset relative to other samples
+    ΔT = T(273.15)                          # Conversion from C to K
 
     # Calculate effective diffusivity at each time step
     De = mineral.De::Vector{T}
@@ -308,7 +308,7 @@ function degas!(mineral::PlanarHe{T}, tsteps_degassing::AbstractVector{T}, Tstep
     D0 = (dm.D0*10000^2)::T                 # [micron^2/sec], converted from [cm^2/sec]
     Ea = dm.Ea::T                           # [kJ/mol]
     R = 0.008314472                         # [kJ/(K*mol)]
-    ΔT = mineral.offset::T + 273.15         # Conversion from C to K, plus temperature offset relative to other samples
+    ΔT = T(273.15)                          # Conversion from C to K
 
     # Calculate effective diffusivity at each time step
     De = mineral.De::Vector{T}
@@ -455,7 +455,7 @@ function degas!(mineral::SphericalHe{T}, tsteps_degassing::AbstractVector{T}, Ts
     D0 = (dm.D0*10000^2)::T                 # [micron^2/sec], converted from [cm^2/sec]
     Ea = dm.Ea::T                           # [kJ/mol]
     R = 0.008314472                         # [kJ/(K*mol)]
-    ΔT = mineral.offset::T + 273.15         # Conversion from C to K, plus temperature offset relative to other samples
+    ΔT = T(273.15)                          # Conversion from C to K
 
     # Calculate effective diffusivity at each time step
     De = mineral.De::Vector{T}
@@ -617,7 +617,7 @@ function degas!(mineral::ZirconHe{T}, tsteps_degassing::AbstractVector{T}, Tstep
     Bα = dm.Bα::T                               # [g/alpha] mass of amorphous material produced per alpha decay
     Phi = dm.Phi::T                             # [unitless]
     R = 0.008314472                             # [kJ/(K*mol)]
-    ΔT = mineral.offset::T + 273.15             # Conversion from C to K, plus temperature offset relative to other samples
+    ΔT = T(273.15)                              # Conversion from C to K
 
     # Diffusivities of crystalline and amorphous endmembers at each timestep
     Dz = mineral.Dz::Vector{T}
@@ -805,7 +805,7 @@ function degas!(mineral::ApatiteHe{T}, tsteps_degassing::AbstractVector{T}, Tste
     lambdaf = dm.lambdaf::T                 # [1/time]
     lambdaD = dm.lambdaD::T                 # [1/time]
     R = 0.008314472                         # [kJ/(K*mol)]
-    ΔT = mineral.offset::T + 273.15         # Conversion from C to K, plus temperature offset relative to other samples
+    ΔT = T(273.15)                          # Conversion from C to K
 
     # Conversion factor from alphas/g to track length cm/cm^3
     damage_conversion = rhoap*(lambdaf/lambdaD)*etaq*L
