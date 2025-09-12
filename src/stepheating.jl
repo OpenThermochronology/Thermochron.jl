@@ -637,7 +637,6 @@ function degas!(mineral::ZirconHe{T}, tsteps_degassing::AbstractVector{T}, Tstep
     step_tracer = @views(mineral.step_tracer[1:ntsteps])
     step_daughter = @views(mineral.step_daughter[1:ntsteps])
     @assert eachindex(tsteps_degassing) == eachindex(Tsteps_degassing) == Base.OneTo(ntsteps)
-    alphadeposition = mineral.alphadeposition::Matrix{T}
 
     # The annealed damage matrix
     # We will use the last timestep of the geological annealed damage matrix,
@@ -828,7 +827,6 @@ function degas!(mineral::ApatiteHe{T}, tsteps_degassing::AbstractVector{T}, Tste
     step_tracer = @views(mineral.step_tracer[1:ntsteps])
     step_daughter = @views(mineral.step_daughter[1:ntsteps])
     @assert eachindex(tsteps_degassing) == eachindex(Tsteps_degassing) == Base.OneTo(ntsteps)
-    alphadeposition = mineral.alphadeposition::Matrix{T}
 
     # The annealed damage matrix
     # We will use the last timestep of the geological annealed damage matrix,
