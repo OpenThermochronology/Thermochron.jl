@@ -414,22 +414,20 @@
         end
         return ll
     end
-    function kinetic_ll(damodelsₚ::Vector{<:Model{T}}, damodels::Vector{<:Model{T}}) where {T}
+    function kinetic_ll(damodelsₚ::Vector{<:Model{T}}, damodels::Vector{<:Model{T}}, updatekinetics::BitVector) where {T}
+        fill!(updatekinetics, true)
         ll = zero(T)
-        addzdm = addadm = true
+        # Count each unique kinetic model exactly once towards the kinetic log likelihood
         for i in eachindex(damodelsₚ, damodels)
-            dm = damodels[i]
-            dmₚ = damodelsₚ[i]
-            if addzdm && dm isa ZRDAAM
-                ll += kinetic_ll(dmₚ::ZRDAAM{T}, dm::ZRDAAM{T})
-                addzdm = false
-            elseif addadm && dm isa RDAAM
-                ll += kinetic_ll(dmₚ::RDAAM{T}, dm::RDAAM{T})
-                addadm = false
-            elseif dm isa MDDiffusivity
-                ll += kinetic_ll(dmₚ::MDDiffusivity{T}, dm::MDDiffusivity{T})
-            elseif dm isa Diffusivity
-                ll += kinetic_ll(dmₚ::Diffusivity{T}, dm::Diffusivity{T})
+            if updatekinetics[i]
+                dm = damodels[i]
+                dmₚ = damodelsₚ[i]
+                ll += kinetic_ll(dmₚ, dm)
+                for j in eachindex(damodelsₚ, damodels)
+                    if updatekinetics[j] && (damodels[j] == dm) && (damodelsₚ[i] == dmₚ)
+                        updatekinetics[j] = false
+                    end
+                end
             end
         end
         return ll

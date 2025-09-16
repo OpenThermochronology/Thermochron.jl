@@ -405,7 +405,7 @@
 
         # Log-likelihood for initial proposal
         ll = llₚ = model!(μcalc, σcalc, chrons, damodels, path.Tsteps; rescalestepheating, rescale, redegastracer) + 
-            diff_ll(path.Tsteps, dTmax, dTmax_sigma) + kinetic_ll(damodelsₚ, damodels₀) + 
+            diff_ll(path.Tsteps, dTmax, dTmax_sigma) + kinetic_ll(damodelsₚ, damodels₀, updatekinetics) + 
             (simplified ? -log(npoints) : zero(T)) + (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
         
         # Proposal probabilities (must sum to 1)
@@ -479,7 +479,7 @@
             # Calculate model ages for each grain, log likelihood of proposal
             llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps; rescalestepheating, rescale, redegastracer)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
-            llₚ += kinetic_ll(damodelsₚ, damodels₀)
+            llₚ += kinetic_ll(damodelsₚ, damodels₀, updatekinetics)
             simplified && (llₚ += -log(npointsₚ))
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
@@ -594,7 +594,7 @@
             # Calculate model ages for each grain, log likelihood of proposal
             llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps; rescalestepheating, rescale, redegastracer)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
-            llₚ += kinetic_ll(damodelsₚ, damodels₀)
+            llₚ += kinetic_ll(damodelsₚ, damodels₀, updatekinetics)
             simplified && (llₚ += -log(npointsₚ))
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
