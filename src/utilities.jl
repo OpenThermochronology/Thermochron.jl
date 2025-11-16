@@ -414,6 +414,10 @@
         end
         return ll
     end
+    function kinetic_ll(dmₚ::AnnealingModel{T}, dm::AnnealingModel{T}) where {T<:AbstractFloat}
+        @assert dmₚ == dm
+        return zero(T)
+    end
     function kinetic_ll(damodelsₚ::Vector{<:Model{T}}, damodels::Vector{<:Model{T}}, updatekinetics::BitVector) where {T}
         fill!(updatekinetics, true)
         ll = zero(T)
@@ -909,7 +913,7 @@
             
         return ll
     end
-    
+
 ## --- Ensure non-allocation of linear algebra
 function lu!(A::Tridiagonal{T,V}, pivot::Union{RowMaximum,NoPivot} = RowMaximum();
         check::Bool = true, allowsingular::Bool = false) where {T,V}
