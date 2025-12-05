@@ -189,14 +189,14 @@
 
 ## --- Plot distribution of number of model t-T points (nodes)
 
-    h = plot(tT.ndist, label="", framestyle=:box)
+    h = plot(tT.ndist, label="", framestyle=:box, lc=:purple)
     plot!(xlabel="Step number", ylabel="Number of model t-T nodes", ylims=(0,last(ylims())))
     savefig(h, name*"_ndist.pdf")
     display(h)
 
 ## --- Plot moving average of acceptance distribution
 
-    h = plot(movmean(tT.acceptancedist,100), label="", framestyle=:box)
+    h = plot(movmean(tT.acceptancedist,100), label="", framestyle=:box, lc=:limegreen)
     plot!(xlabel="Step number", ylabel="Acceptance probability (mean of 100)", ylims=(0,1))
     savefig(h, name*"_acceptance.pdf")
     display(h)
