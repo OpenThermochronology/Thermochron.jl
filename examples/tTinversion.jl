@@ -415,7 +415,7 @@ end
                 ylabel = "Probability density",
                 label = "Data (N=$(count(ts)))", 
                 framestyle = :box,
-                legend = :topleft,
+                legend = :bottomleft,
                 grid = false,
                 color = :black,
                 alpha = 0.75,
@@ -509,7 +509,7 @@ end
     A = imsc(tTimage, ylcn, 0, nanpctile(tTimage[:],98.5))
     plot!(k[1], xlabel="Time (Ma)", ylabel="Temperature (°C)", tick_dir=:out, framestyle=:box)
     plot!(k[1], xc, yc, A, yflip=true, xflip=true, legend=false, aspectratio=model.tinit/model.Tinit/1.5, xlims=(0,model.tinit), ylims=(model.Tnow,model.Tinit))
-    plot!(k[1], constraint) # Add constraint boxes
+    plot!(k[1], constraint, lw=1) # Add constraint boxes
 
     # Add colorbar in second subplot
     cb = imsc(repeat(0:100, 1, 10), ylcn, 0, 100)
