@@ -189,14 +189,14 @@
 
 ## --- Plot distribution of number of model t-T points (nodes)
 
-    h = plot(tT.ndist, label="", framestyle=:box)
+    h = plot(tT.ndist, label="", framestyle=:box, lc=:purple)
     plot!(xlabel="Step number", ylabel="Number of model t-T nodes", ylims=(0,last(ylims())))
     savefig(h, name*"_ndist.pdf")
     display(h)
 
 ## --- Plot moving average of acceptance distribution
 
-    h = plot(movmean(tT.acceptancedist,100), label="", framestyle=:box)
+    h = plot(movmean(tT.acceptancedist,100), label="", framestyle=:box, lc=:limegreen)
     plot!(xlabel="Step number", ylabel="Acceptance probability (mean of 100)", ylims=(0,1))
     savefig(h, name*"_acceptance.pdf")
     display(h)
@@ -211,7 +211,8 @@
             σtotal = sqrt.(get_age_sigma(chrons[t]).^2 + model.σcalc[t].^2)
             h = ageeuplot(chrons[t], yerror=2σtotal,
                 label="Data (2σ total)", 
-                color = :black, 
+                color = :black,
+                linecolor = :black,
                 title = "$(C[i])",
             )
             agedist = tT.resultdist[t,:]
@@ -317,6 +318,7 @@ end
                 ylabel = "Age [Ma]",
                 label = "Data (2σ total)", 
                 framestyle = :box,
+                marker = :circle,
                 color = :black,
                 title = "$(C[i])",
             )
@@ -415,7 +417,7 @@ end
                 ylabel = "Probability density",
                 label = "Data (N=$(count(ts)))", 
                 framestyle = :box,
-                legend = :topleft,
+                legend = :bottomleft,
                 grid = false,
                 color = :black,
                 alpha = 0.75,
@@ -509,7 +511,7 @@ end
     A = imsc(tTimage, ylcn, 0, nanpctile(tTimage[:],98.5))
     plot!(k[1], xlabel="Time (Ma)", ylabel="Temperature (°C)", tick_dir=:out, framestyle=:box)
     plot!(k[1], xc, yc, A, yflip=true, xflip=true, legend=false, aspectratio=model.tinit/model.Tinit/1.5, xlims=(0,model.tinit), ylims=(model.Tnow,model.Tinit))
-    plot!(k[1], constraint) # Add constraint boxes
+    plot!(k[1], constraint, lw=1) # Add constraint boxes
 
     # Add colorbar in second subplot
     cb = imsc(repeat(0:100, 1, 10), ylcn, 0, 100)
