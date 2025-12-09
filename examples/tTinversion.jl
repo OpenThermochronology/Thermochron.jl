@@ -318,6 +318,7 @@ end
                 ylabel = "Age [Ma]",
                 label = "Data (2σ total)", 
                 framestyle = :box,
+                marker = :circle,
                 color = :black,
                 title = "$(C[i])",
             )
