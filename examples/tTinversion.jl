@@ -145,6 +145,7 @@
         empiricaluncertainty!(model.σcalc, chrons, ApatiteHe, sigma_eU=10, sigma_offset=10)
         σtotal = sqrt.(get_age_sigma(chrons[tap]).^2 + model.σcalc[tap].^2)
         ageeuplot!(h, chrons[tap], yerror=2*σtotal, label="Empirical uncertainty")
+        savefig(h, name*"_ap-empirical.pdf")
         display(h)
     end
 
@@ -155,6 +156,7 @@
         empiricaluncertainty!(model.σcalc, chrons, ZirconHe, sigma_eU=100, sigma_offset=10)
         σtotal = sqrt.(get_age_sigma(chrons[tzr]).^2 + model.σcalc[tzr].^2)
         ageeuplot!(h, chrons[tzr], yerror=2*σtotal, label="Empirical uncertainty")
+        savefig(h, name*"_zir-empirical.pdf")
         display(h)
     end
 
