@@ -211,7 +211,8 @@
             σtotal = sqrt.(get_age_sigma(chrons[t]).^2 + model.σcalc[t].^2)
             h = ageeuplot(chrons[t], yerror=2σtotal,
                 label="Data (2σ total)", 
-                color = :black, 
+                color = :black,
+                linecolor = :black,
                 title = "$(C[i])",
             )
             agedist = tT.resultdist[t,:]
