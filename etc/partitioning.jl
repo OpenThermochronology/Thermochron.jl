@@ -28,7 +28,7 @@ h = plot(framestyle=:box,
     yscale=:log10, 
     ylims=(10^-6, 10^-4),
 )
-scatter!(h, ds.T_C[t], K_Ar_itm[t], label="Ar", zcolor=ds.duration_h[t])
+scatter!(h, ds.T_C[t], K_Ar_itm[t], label="Observed Kⁱₑ Ar", zcolor=ds.duration_h[t], colorbar_title="Experiment duration [hr]")
 
 using LsqFit
 f(x, c) = @. c[1] * exp(-c[2]/(R*(x+273.15)))
@@ -62,7 +62,7 @@ h = plot(framestyle=:box,
     yscale=:log10, 
     ylims=(10^-6, 10^-4),
 )
-scatter!(ds.T_C[t], K_He_itm[t], label="He", zcolor=ds.duration_h[t])
+scatter!(ds.T_C[t], K_He_itm[t], label="Observed Kⁱₑ He", zcolor=ds.duration_h[t], colorbar_title="Experiment duration [hr]")
 
 using LsqFit
 f(x, c) = @. c[1] * exp(-c[2]/(R*(x+273.15)))
