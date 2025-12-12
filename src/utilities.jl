@@ -779,7 +779,7 @@
     end
 
     # Utility function to calculate model ages for all chronometers at once
-    function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, Tsteps::AbstractVector{T}; rescalestepheating::Bool=true, rescale::Bool=false, redegastracer::Bool=false) where {T<:AbstractFloat}
+    function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, Tsteps::AbstractVector{T}; rescalestepheating::Bool=true, rescale::Bool=false, redegastracer::Bool=false, partitiondaughter::Bool=false) where {T<:AbstractFloat}
         imax = argmax(i->length(timediscretization(chrons[i])), eachindex(chrons))
         tsteps = timediscretization(chrons[imax])
         @assert issorted(tsteps)
@@ -829,19 +829,19 @@
             Tstepsᵢ = @views(Tsteps[first_index:end])
             if isa(c, SphericalAr) || isa(c, PlanarAr)
                 c::Union{SphericalAr{T}, PlanarAr{T}}
-                μcalc[i] = modelage(c, Tstepsᵢ, dm::Diffusivity{T})
+                μcalc[i] = modelage(c, Tstepsᵢ, dm::Diffusivity{T}; partitiondaughter)
                 ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scalegar
             elseif isa(c, SphericalHe) || isa(c, PlanarHe)
                 c::Union{SphericalHe{T}, PlanarHe{T}}
-                μcalc[i] = modelage(c, Tstepsᵢ, dm::Diffusivity{T})
+                μcalc[i] = modelage(c, Tstepsᵢ, dm::Diffusivity{T}; partitiondaughter)
                 ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scaleghe
             elseif isa(c, ZirconHe)
                 c::ZirconHe{T}
-                μcalc[i] = modelage(c, Tstepsᵢ, dm::ZirconHeliumModel{T})
+                μcalc[i] = modelage(c, Tstepsᵢ, dm::ZirconHeliumModel{T}; partitiondaughter)
                 ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scalezhe
             elseif isa(c, ApatiteHe)
                 c::ApatiteHe{T}
-                μcalc[i] = modelage(c, Tstepsᵢ, dm::ApatiteHeliumModel{T})
+                μcalc[i] = modelage(c, Tstepsᵢ, dm::ApatiteHeliumModel{T}; partitiondaughter)
                 ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scaleahe
             elseif isa(c, ZirconFT)
                 c::ZirconFT{T}
@@ -893,14 +893,14 @@
                 ll += model_ll(c, σcalc[i])/scaleato
             elseif isa(c, SingleDomain)
                 c::SingleDomain{T, <:Union{ArgonSample{T}, HeliumSample{T}}}
-                age, stepage, fraction = modelage(c, Tstepsᵢ, dm::DiffusivityModel{T}; redegastracer)
+                age, stepage, fraction = modelage(c, Tstepsᵢ, dm::DiffusivityModel{T}; redegastracer, partitiondaughter)
                 @assert issorted(fraction) "Degassing fraction is not properly cumulative"
                 redegastracer && (ll += cumulative_degassing_ll(c; rescale=rescalestepheating)/scalesdd)
                 μcalc[i] = draw_from_population(stepage, fraction)
                 ll += model_ll(c, σcalc[i]; rescale=rescalestepheating)/scalesdd
             elseif isa(c, MultipleDomain)
                 c::MultipleDomain{T, <:Union{PlanarAr{T}, SphericalAr{T}}}
-                stepage, fraction = modelage(c, Tstepsᵢ, dm::MDDiffusivity{T}; redegastracer)
+                stepage, fraction = modelage(c, Tstepsᵢ, dm::MDDiffusivity{T}; redegastracer, partitiondaughter)
                 @assert issorted(fraction) "Degassing fraction is not properly cumulative"
                 redegastracer && (ll += cumulative_degassing_ll(c; rescale=rescalestepheating)/scalemdd)
                 μcalc[i] = draw_from_population(stepage, fraction)
@@ -913,6 +913,32 @@
             
         return ll
     end
+
+## --- Noble Gas Partitioning
+
+    function phi_boundary(grainsize_mm::Number; r_boundary=2e-9)
+        r = grainsize_mm/1000
+        v = r^3
+        vb = (r+r_boundary)^3
+        return (vb-v)/vb
+    end
+
+    function fraction_internal_Ar(T, grainsize_mm; K0=9.955215569888633e-5, Ea=26.86885827027531)
+        ϕ = phi_boundary(grainsize_mm)
+        Kd = K0 * exp(-Ea/(0.008314472*T))
+        Ar_boundary = ϕ
+        Ar_internal = (1 - ϕ) * Kd
+        return Ar_internal/(Ar_internal+Ar_boundary)
+    end
+
+    function fraction_internal_He(T, grainsize_mm; K0=0.00011279064713681025, Ea=26.72957128643152)
+        ϕ = phi_boundary(grainsize_mm)
+        Kd = K0 * exp(-Ea/(0.008314472*T))
+        He_boundary = ϕ
+        He_internal = (1 - ϕ) * Kd
+        return He_internal/(He_internal+He_boundary)
+    end
+
 
 ## --- Ensure non-allocation of linear algebra
 function lu!(A::Tridiagonal{T,V}, pivot::Union{RowMaximum,NoPivot} = RowMaximum();

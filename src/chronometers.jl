@@ -511,6 +511,7 @@ ZirconHe(T=Float64;
     U238_matrix::Number = zero(T),          # [ppm] matrix U-238 concentration
     Th232_matrix::Number = zero(T),         # [ppm] matrix Th-232 concentration
     Sm147_matrix::Number = zero(T),         # [ppm] matrix Sm-147 concentration
+    grainsize_matrix::Number = one(T),      # [mm] average grain size of matrix rock
     volumeweighting::Symbol=:cylindrical,   # (:spherical, :cylindrical, or :planar) relative volume proportions of each radial model shell, for averaging purposes
     agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
 )
@@ -539,7 +540,9 @@ struct ZirconHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     r235U::Vector{T}            # [atoms/g] radial U-235 concentrations
     r232Th::Vector{T}           # [atoms/g] radial Th-232 concentrations
     r147Sm::Vector{T}           # [atoms/g] radial Sm-147 concentrations
-    alphadeposition::Matrix{T}  # [atoms/g] alpha deposition matrix
+    bulkgrainsize::T            # [mm] average grain size of the whole-rock matrix
+    bulkalphadeposition::Vector{T}  # [atoms/g] alpha (helium) production outside grain
+    alphadeposition::Matrix{T}  # [atoms/g] alpha (helium) deposition matrix within grain
     alphadamage::Matrix{T}      # [decays/g] initial damage matrix
     pr::Matrix{T}               # [unitless] reduced damage density matrix
     annealeddamage::Matrix{T}   # [decays/g] annealed damage matrix
@@ -565,6 +568,7 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
         U238_matrix::Number = zero(T), 
         Th232_matrix::Number = zero(T), 
         Sm147_matrix::Number = zero(T), 
+        grainsize_matrix::Number = one(T),
         volumeweighting::Symbol=:cylindrical,
         agesteps = nothing,
         tsteps = nothing,
@@ -706,6 +710,8 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
     # Calculate corrected alpha deposition and recoil damage each time step for each radius
     decay = zeros(T, length(tsteps))
     # Allocate deposition and damage arrays
+    bulkgrainsize = T(grainsize_matrix)
+    bulkalphadeposition = zeros(T, length(tsteps))
     alphadeposition = zeros(T, length(tsteps), nrsteps-2)
     alphadamage = zeros(T, length(tsteps), nrsteps-2)
     pr = zeros(T, length(tsteps), length(tsteps))
@@ -716,18 +722,22 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
 
     # U-238
     @. decay = exp(λ238U*leftedges) - exp(λ238U*rightedges)
+    mul!(bulkalphadeposition, decay, o238U, 8, one(T))
     mul!(alphadeposition, decay, r238UHe', one(T), one(T))
     mul!(alphadamage, decay, r238Udam', one(T), one(T))
     # U-235
     @. decay = exp(λ235U*leftedges) - exp(λ235U*rightedges)
+    mul!(bulkalphadeposition, decay, o235U, 7, one(T))
     mul!(alphadeposition, decay, r235UHe', one(T), one(T))
     mul!(alphadamage, decay, r235Udam', one(T), one(T))
     # Th-232
     @. decay = exp(λ232Th*leftedges) - exp(λ232Th*rightedges)
+    mul!(bulkalphadeposition, decay, o232Th, 6, one(T))
     mul!(alphadeposition, decay, r232ThHe', one(T), one(T))
     mul!(alphadamage, decay, r232Thdam', one(T), one(T))
     # Sm-147
     @. decay = exp(λ147Sm*leftedges) - exp(λ147Sm*rightedges)
+    mul!(bulkalphadeposition, decay, o147Sm, one(T), one(T))
     mul!(alphadeposition, decay, r147SmHe', one(T), one(T))
     mul!(alphadamage, decay, r147Smdam', one(T), one(T))
 
@@ -773,6 +783,8 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
         r235U,
         r232Th,
         r147Sm,
+        bulkgrainsize,
+        bulkalphadeposition,
         alphadeposition,
         alphadamage,
         pr,
@@ -804,6 +816,7 @@ ApatiteHe(T=Float64;
     U238_matrix::Number = zero(T),          # [ppm] matrix U-238 concentration
     Th232_matrix::Number = zero(T),         # [ppm] matrix Th-232 concentration
     Sm147_matrix::Number = zero(T),         # [ppm] matrix Sm-147 concentration
+    grainsize_matrix::Number = one(T),      # [mm] average grain size of matrix rock
     volumeweighting::Symbol=:cylindrical,   # (:spherical, :cylindrical, or :planar) relative volume proportions of each radial model shell, for averaging purposes    agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
 )
 ```
@@ -831,7 +844,9 @@ struct ApatiteHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     r235U::Vector{T}            # [atoms/g] radial U-235 concentrations
     r232Th::Vector{T}           # [atoms/g] radial Th-232 concentrations
     r147Sm::Vector{T}           # [atoms/g] radial Sm-147 concentrations
-    alphadeposition::Matrix{T}  # [atoms/g] alpha deposition matrix
+    bulkgrainsize::T            # [mm] average grain size of the whole-rock matrix
+    bulkalphadeposition::Vector{T}  # [atoms/g] alpha (helium) production outside grain
+    alphadeposition::Matrix{T}  # [atoms/g] alpha (helium) deposition matrix within grain
     alphadamage::Matrix{T}      # [decays/g] initial damage matrix
     pr::Matrix{T}               # [unitless] reduced damage density matrix
     annealeddamage::Matrix{T}   # [decays/g] annealed damage matrix
@@ -857,6 +872,7 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
         U238_matrix::Number = zero(T), 
         Th232_matrix::Number = zero(T), 
         Sm147_matrix::Number = zero(T), 
+        grainsize_matrix::Number = one(T),
         volumeweighting::Symbol = :cylindrical,
         agesteps = nothing,
         tsteps = nothing,
@@ -998,28 +1014,34 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
     # Calculate corrected alpha deposition and recoil damage each time step for each radius
     decay = zeros(T, length(tsteps))
     # Allocate deposition and damage arrays
+    bulkgrainsize = T(grainsize_matrix)
+    bulkalphadeposition = zeros(T, length(tsteps))
     alphadeposition = zeros(T, length(tsteps), nrsteps-2)
     alphadamage = zeros(T, length(tsteps), nrsteps-2)
     pr = zeros(T, length(tsteps), length(tsteps))
 
-    # Calculate bin edges given agesteps
+    # Calculate bin edges given agesteps, assuming step boundaries are halfway between steps
     agebinedges = [agesteps[1]-step_at(agesteps, 1)/2; cntr(agesteps); agesteps[end]+step_at(agesteps, lastindex(agesteps))/2]
     leftedges, rightedges = agebinedges[1:end-1], agebinedges[2:end]
 
     # U-238
     @. decay = exp(λ238U*leftedges) - exp(λ238U*rightedges)
+    mul!(bulkalphadeposition, decay, o238U, 8, one(T))
     mul!(alphadeposition, decay, r238UHe', one(T), one(T))
     mul!(alphadamage, decay, r238Udam', one(T), one(T))
     # U-235
     @. decay = exp(λ235U*leftedges) - exp(λ235U*rightedges)
+    mul!(bulkalphadeposition, decay, o235U, 7, one(T))
     mul!(alphadeposition, decay, r235UHe', one(T), one(T))
     mul!(alphadamage, decay, r235Udam', one(T), one(T))
     # Th-232
     @. decay = exp(λ232Th*leftedges) - exp(λ232Th*rightedges)
+    mul!(bulkalphadeposition, decay, o232Th, 6, one(T))
     mul!(alphadeposition, decay, r232ThHe', one(T), one(T))
     mul!(alphadamage, decay, r232Thdam', one(T), one(T))
     # Sm-147
     @. decay = exp(λ147Sm*leftedges) - exp(λ147Sm*rightedges)
+    mul!(bulkalphadeposition, decay, o147Sm, one(T), one(T))
     mul!(alphadeposition, decay, r147SmHe', one(T), one(T))
     mul!(alphadamage, decay, r147Smdam', one(T), one(T))
 
@@ -1065,6 +1087,8 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
         r235U,
         r232Th,
         r147Sm,
+        bulkgrainsize,
+        bulkalphadeposition,
         alphadeposition,
         alphadamage,
         pr,
@@ -1097,6 +1121,7 @@ SphericalHe(T=Float64;
     U238_matrix::Number = zero(T),          # [ppm] matrix U-238 concentration
     Th232_matrix::Number = zero(T),         # [ppm] matrix Th-232 concentration
     Sm147_matrix::Number = zero(T),         # [ppm] matrix Sm-147 concentration
+    grainsize_matrix::Number = one(T),      # [mm] average grain size of matrix rock
     agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
 )
 ```
@@ -1125,7 +1150,9 @@ struct SphericalHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     r235U::Vector{T}            # [atoms/g] radial U-235 concentrations
     r232Th::Vector{T}           # [atoms/g] radial Th-232 concentrations
     r147Sm::Vector{T}           # [atoms/g] radial Sm-147 concentrations
-    alphadeposition::Matrix{T}  # [atoms/g] alpha deposition matrix
+    bulkgrainsize::T            # [mm] average grain size of the whole-rock matrix
+    bulkalphadeposition::Vector{T}  # [atoms/g] alpha (helium) production outside grain
+    alphadeposition::Matrix{T}  # [atoms/g] alpha (helium) deposition matrix within grain
     u::Matrix{T}
     β::Vector{T}
     De::Vector{T}
@@ -1148,6 +1175,7 @@ function SphericalHe(T::Type{<:AbstractFloat}=Float64;
         U238_matrix::Number = zero(T), 
         Th232_matrix::Number = zero(T), 
         Sm147_matrix::Number = zero(T), 
+        grainsize_matrix::Number = one(T),
         volumeweighting::Symbol = :spherical,
         agesteps = nothing,
         tsteps = nothing,
@@ -1283,6 +1311,8 @@ function SphericalHe(T::Type{<:AbstractFloat}=Float64;
     # Calculate corrected alpha deposition and recoil damage each time step for each radius
     decay = zeros(T, length(tsteps))
     # Allocate deposition arrays
+    bulkgrainsize = T(grainsize_matrix)
+    bulkalphadeposition = zeros(T, length(tsteps))
     alphadeposition = zeros(T, length(tsteps), nrsteps-2)
 
     # Calculate bin edges given agesteps, assuming step boundaries are halfway between steps
@@ -1291,15 +1321,19 @@ function SphericalHe(T::Type{<:AbstractFloat}=Float64;
 
     # U-238
     @. decay = exp(λ238U*leftedges) - exp(λ238U*rightedges)
+    mul!(bulkalphadeposition, decay, o238U, 8, one(T))
     mul!(alphadeposition, decay, r238UHe', one(T), one(T))
     # U-235
     @. decay = exp(λ235U*leftedges) - exp(λ235U*rightedges)
+    mul!(bulkalphadeposition, decay, o235U, 7, one(T))
     mul!(alphadeposition, decay, r235UHe', one(T), one(T))
     # Th-232
     @. decay = exp(λ232Th*leftedges) - exp(λ232Th*rightedges)
+    mul!(bulkalphadeposition, decay, o232Th, 6, one(T))
     mul!(alphadeposition, decay, r232ThHe', one(T), one(T))
     # Sm-147
     @. decay = exp(λ147Sm*leftedges) - exp(λ147Sm*rightedges)
+    mul!(bulkalphadeposition, decay, o147Sm, one(T), one(T))
     mul!(alphadeposition, decay, r147SmHe', one(T), one(T))
 
     # Allocate additional variables that will be needed for Crank-Nicolson
@@ -1342,6 +1376,8 @@ function SphericalHe(T::Type{<:AbstractFloat}=Float64;
         r235U,
         r232Th,
         r147Sm,
+        bulkgrainsize,
+        bulkalphadeposition,
         alphadeposition,
         u,
         β,
@@ -1369,6 +1405,7 @@ PlanarHe(T=Float64;
     U238_matrix::Number = zero(T),          # [ppm] matrix U-238 concentration
     Th232_matrix::Number = zero(T),         # [ppm] matrix Th-232 concentration
     Sm147_matrix::Number = zero(T),         # [ppm] matrix Sm-147 concentration
+    grainsize_matrix::Number = one(T),      # [mm] average grain size of matrix rock
     agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
 )
 ```
@@ -1396,7 +1433,9 @@ struct PlanarHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     r235U::Vector{T}            # [atoms/g] radial U-235 concentrations
     r232Th::Vector{T}           # [atoms/g] radial Th-232 concentrations
     r147Sm::Vector{T}           # [atoms/g] radial Sm-147 concentrations
-    alphadeposition::Matrix{T}  # [atoms/g] alpha deposition matrix
+    bulkgrainsize::T            # [mm] average grain size of the whole-rock matrix
+    bulkalphadeposition::Vector{T}  # [atoms/g] alpha (helium) production outside grain
+    alphadeposition::Matrix{T}  # [atoms/g] alpha (helium) deposition matrix within grain
     u::Matrix{T}
     β::Vector{T}
     De::Vector{T}
@@ -1419,6 +1458,7 @@ function PlanarHe(T::Type{<:AbstractFloat}=Float64;
         U238_matrix::Number = zero(T), 
         Th232_matrix::Number = zero(T), 
         Sm147_matrix::Number = zero(T), 
+        grainsize_matrix::Number = one(T),
         agesteps = nothing,
         tsteps = nothing,
     )
@@ -1550,6 +1590,8 @@ function PlanarHe(T::Type{<:AbstractFloat}=Float64;
     # Calculate corrected alpha deposition and recoil damage each time step for each halfwidth
     decay = zeros(T, length(tsteps))
     # Allocate deposition arrays
+    bulkgrainsize = T(grainsize_matrix)
+    bulkalphadeposition = zeros(T, length(tsteps))
     alphadeposition = zeros(T, length(tsteps), nrsteps-2)
 
     # Calculate bin edges given agesteps, assuming step boundaries are halfway between steps
@@ -1558,15 +1600,19 @@ function PlanarHe(T::Type{<:AbstractFloat}=Float64;
 
     # U-238
     @. decay = exp(λ238U*leftedges) - exp(λ238U*rightedges)
+    mul!(bulkalphadeposition, decay, o238U, 8, one(T))
     mul!(alphadeposition, decay, r238UHe', one(T), one(T))
     # U-235
     @. decay = exp(λ235U*leftedges) - exp(λ235U*rightedges)
+    mul!(bulkalphadeposition, decay, o235U, 7, one(T))
     mul!(alphadeposition, decay, r235UHe', one(T), one(T))
     # Th-232
     @. decay = exp(λ232Th*leftedges) - exp(λ232Th*rightedges)
+    mul!(bulkalphadeposition, decay, o232Th, 6, one(T))
     mul!(alphadeposition, decay, r232ThHe', one(T), one(T))
     # Sm-147
     @. decay = exp(λ147Sm*leftedges) - exp(λ147Sm*rightedges)
+    mul!(bulkalphadeposition, decay, o147Sm, one(T), one(T))
     mul!(alphadeposition, decay, r147SmHe', one(T), one(T))
 
     # Allocate additional variables that will be needed for Crank-Nicolson
@@ -1608,6 +1654,8 @@ function PlanarHe(T::Type{<:AbstractFloat}=Float64;
         r235U,
         r232Th,
         r147Sm,
+        bulkgrainsize,
+        bulkalphadeposition,
         alphadeposition,
         u,
         β,
@@ -1628,7 +1676,9 @@ SphericalAr(T=Float64;
     offset::Number = zero(T),               # [C] temperature offset relative to other samples
     r::Number,                              # [um] equivalent spherical radius 
     dr::Number = one(T),                    # [um] radial step size
-    K40::Number=16.34,                      # [ppm] mineral K-40 concentration
+    K40::Number = 16.34,                    # [ppm] mineral K-40 concentration
+    K40_matrix::Number = zero(T)            # [ppm] matrix K-40 concentration
+    grainsize_matrix::Number = one(T),      # [mm] average grain size of matrix rock
     agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
 )
 ```
@@ -1652,6 +1702,8 @@ struct SphericalAr{T<:AbstractFloat, V<:AbstractVector{T}} <: ArgonSample{T}
     relvolumes::Vector{T}       # [unitless] fraction of volume in each radial step
     nrsteps::Int                # [n] number of radial steps, including both implicit points at each side
     r40K::Vector{T}             # [atoms/g] radial K-40 concentrations
+    bulkgrainsize::T            # [mm] average grain size of the whole-rock matrix
+    bulkargondeposition::Vector{T} # [atoms/g] Ar-40 production outside grain
     argondeposition::Matrix{T}  # [atoms/g] Ar-40 deposition matrix
     u::Matrix{T}
     β::Vector{T}
@@ -1669,6 +1721,8 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
         r::Number, 
         dr::Number = one(T), 
         K40::Number = 16.34, 
+        K40_matrix::Number = zero(T),
+        grainsize_matrix::Number = one(T),
         volumeweighting::Symbol = :spherical,
         agesteps = nothing,
         tsteps = nothing,
@@ -1689,12 +1743,18 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
 
     # Convert to atoms per gram
     r40K .*= 6.022E23 / 1E6 / 39.96399848
+
     # The proportion of that which will decay to Ar
     r40KAr = r40K .* BR40K
+
+    # Outside (bulk/matrix) HPE concentrations, in atoms per gram
+    o40K = K40_matrix * 6.022E23 / 1E6 / 39.96399848
 
     # Calculate corrected argon deposition and recoil damage each time step for each radius
     decay = zeros(T, length(tsteps))
     # Allocate deposition arrays
+    bulkgrainsize = T(grainsize_matrix)
+    bulkargondeposition = zeros(T, length(tsteps))
     argondeposition = zeros(T, length(tsteps), nrsteps-2)
 
     # Calculate bin edges given agesteps, assuming step boundaries are halfway between steps
@@ -1703,6 +1763,7 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
 
     # K-40
     @. decay = exp(λ40K*leftedges) - exp(λ40K*rightedges)
+    mul!(bulkargondeposition, decay, o40K, BR40K, one(T))
     mul!(argondeposition, decay, r40KAr', one(T), one(T))
 
     # Allocate additional variables that will be needed for Crank-Nicolson
@@ -1742,6 +1803,8 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
         relvolumes,
         nrsteps,
         r40K,
+        bulkgrainsize,
+        bulkargondeposition,
         argondeposition,
         u,
         β,
@@ -1762,7 +1825,9 @@ PlanarAr(T=Float64;
     offset::Number = zero(T),               # [C] temperature offset relative to other samples
     r::Number,                              # [um] planar half-width
     dr::Number = one(T),                    # [um] radial step size
-    K40::Number=16.34,                      # [ppm] mineral K-40 concentration
+    K40::Number = 16.34,                    # [ppm] mineral K-40 concentration
+    K40_matrix::Number = zero(T)            # [ppm] matrix K-40 concentration
+    grainsize_matrix::Number = one(T),      # [mm] average grain size of matrix rock
     agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
 )
 ```
@@ -1785,6 +1850,8 @@ struct PlanarAr{T<:AbstractFloat, V<:AbstractVector{T}} <: ArgonSample{T}
     redges::FloatRange          # [um] halfwidth bin edges
     nrsteps::Int                # [n] number of spatial steps, including both implicit points at each side
     r40K::Vector{T}             # [atoms/g] radial K-40 concentrations
+    bulkgrainsize::T            # [mm] average grain size of the whole-rock matrix
+    bulkargondeposition::Vector{T} # [atoms/g] Ar-40 production outside grain
     argondeposition::Matrix{T}  # [atoms/g] Ar-40 deposition matrix
     u::Matrix{T}
     β::Vector{T}
@@ -1802,6 +1869,8 @@ function PlanarAr(T::Type{<:AbstractFloat}=Float64;
         r::Number, 
         dr::Number = one(T), 
         K40::Number = 16.34, 
+        K40_matrix::Number = zero(T),
+        grainsize_matrix::Number = one(T),
         agesteps = nothing,
         tsteps = nothing,
     )
@@ -1819,20 +1888,27 @@ function PlanarAr(T::Type{<:AbstractFloat}=Float64;
 
     # Convert to atoms per gram
     r40K .*= 6.022E23 / 1E6 / 39.96399848
+
     # The proportion of that which will decay to Ar
     r40KAr = r40K .* BR40K
+
+    # Outside (bulk/matrix) HPE concentrations, in atoms per gram
+    o40K = K40_matrix * 6.022E23 / 1E6 / 39.96399848
 
     # Calculate corrected argon deposition each time step for each radius
     decay = zeros(T, length(tsteps))
     # Allocate deposition arrays
+    bulkgrainsize = T(grainsize_matrix)
+    bulkargondeposition = zeros(T, length(tsteps))
     argondeposition = zeros(T, length(tsteps), nrsteps-2)
 
-    # Calculate bin edges given agesteps
+    # Calculate bin edges given agesteps, assuming step boundaries are halfway between steps
     agebinedges = [agesteps[1]-step_at(agesteps, 1)/2; cntr(agesteps); agesteps[end]+step_at(agesteps, lastindex(agesteps))/2]
     leftedges, rightedges = agebinedges[1:end-1], agebinedges[2:end]
 
     # K-40
     @. decay = exp(λ40K*leftedges) - exp(λ40K*rightedges)
+    mul!(bulkargondeposition, decay, o40K, BR40K, one(T))
     mul!(argondeposition, decay, r40KAr', one(T), one(T))
 
     # Allocate additional variables that will be needed for Crank-Nicolson
@@ -1871,6 +1947,8 @@ function PlanarAr(T::Type{<:AbstractFloat}=Float64;
         redges,
         nrsteps,
         r40K,
+        bulkgrainsize,
+        bulkargondeposition,
         argondeposition,
         u,
         β,
@@ -2069,7 +2147,7 @@ end
         model_fraction = zeros(T, length(tsteps_degassing))
 
         # Ensure volume fraction sums to one
-        if !(nansum(volume_fraction) ≈ 1)
+        if !isapprox(nansum(volume_fraction), 1, atol=0.01)
             @warn "volume fractions $volume_fraction do not sum to 1"
             volume_fraction ./= nansum(volume_fraction)
         end

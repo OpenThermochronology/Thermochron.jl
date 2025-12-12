@@ -131,6 +131,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                     U238_matrix = (haskey(ds, :U238_matrix_ppm) && !isnan(ds.U238_matrix_ppm[i])) ? ds.U238_matrix_ppm[i] : 0,
                     Th232_matrix = (haskey(ds, :Th232_matrix_ppm) && !isnan(ds.Th232_matrix_ppm[i])) ? ds.Th232_matrix_ppm[i] : 0,
                     Sm147_matrix = (haskey(ds, :Sm147_matrix_ppm) && !isnan(ds.Sm147_matrix_ppm[i])) ? ds.Sm147_matrix_ppm[i] : 0,
+                    grainsize_matrix = (haskey(ds, :grainsize_matrix_mm) && !isnan(ds.grainsize_matrix_mm[i])) ? ds.grainsize_matrix_mm[i] : 1,
                     agesteps = sample_agesteps,
                     volumeweighting = zirconvolumeweighting,
                 )
@@ -218,6 +219,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                     U238_matrix = (haskey(ds, :U238_matrix_ppm) && !isnan(ds.U238_matrix_ppm[i])) ? ds.U238_matrix_ppm[i] : 0,
                     Th232_matrix = (haskey(ds, :Th232_matrix_ppm) && !isnan(ds.Th232_matrix_ppm[i])) ? ds.Th232_matrix_ppm[i] : 0,
                     Sm147_matrix = (haskey(ds, :Sm147_matrix_ppm) && !isnan(ds.Sm147_matrix_ppm[i])) ? ds.Sm147_matrix_ppm[i] : 0,
+                    grainsize_matrix = (haskey(ds, :grainsize_matrix_mm) && !isnan(ds.grainsize_matrix_mm[i])) ? ds.grainsize_matrix_mm[i] : 1,
                     agesteps = sample_agesteps,
                     volumeweighting = apatitevolumeweighting,
                 )
@@ -315,6 +317,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                     U238_matrix = (haskey(ds, :U238_matrix_ppm) && !isnan(ds.U238_matrix_ppm[i])) ? ds.U238_matrix_ppm[i] : 0,
                     Th232_matrix = (haskey(ds, :Th232_matrix_ppm) && !isnan(ds.Th232_matrix_ppm[i])) ? ds.Th232_matrix_ppm[i] : 0,
                     Sm147_matrix = (haskey(ds, :Sm147_matrix_ppm) && !isnan(ds.Sm147_matrix_ppm[i])) ? ds.Sm147_matrix_ppm[i] : 0,
+                    grainsize_matrix = (haskey(ds, :grainsize_matrix_mm) && !isnan(ds.grainsize_matrix_mm[i])) ? ds.grainsize_matrix_mm[i] : 1,
                     agesteps = sample_agesteps,
                 )
                 push!(chrons, c)
@@ -336,13 +339,15 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                     r = ds.halfwidth_um[i],
                     dr = dr,
                     K40 = (haskey(ds, :K40_ppm) && !isnan(ds.K40_ppm[i])) ? ds.K40_ppm[i] : 16.34,
+                    K40_matrix = (haskey(ds, :K40_matrix_ppm) && !isnan(ds.K40_matrix_ppm[i])) ? ds.K40_matrix_ppm[i] : 0,
+                    grainsize_matrix = (haskey(ds, :grainsize_matrix_mm) && !isnan(ds.grainsize_matrix_mm[i])) ? ds.grainsize_matrix_mm[i] : 1,
                     agesteps = sample_agesteps,
                 )
                 push!(chrons, c)
                 push!(damodels, dm)
             end
         end
-        if !isempty(Ar_step_heating_file)
+        if !isempty(Ar_step_heating_file) && Ar_step_heating_file==Ar_step_heating_file
             dds = importdataset(Ar_step_heating_file, importas=:Tuple)
             geometry = haskey(ds, :geometry) ? lowercase(string(ds.geometry[i])) : ""
             DomainType = if (geometry == "slab") || (geometry == "planar")
@@ -371,6 +376,8 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                         dr,
                         volume_fraction = dds.volume_fraction[.!isnan.(dds.volume_fraction)],
                         K40 = (haskey(ds, :K40_ppm) && !isnan(ds.K40_ppm[i])) ? ds.K40_ppm[i] : 16.34,
+                        K40_matrix = (haskey(ds, :K40_matrix_ppm) && !isnan(ds.K40_matrix_ppm[i])) ? ds.K40_matrix_ppm[i] : 0,
+                        grainsize_matrix = (haskey(ds, :grainsize_matrix_mm) && !isnan(ds.grainsize_matrix_mm[i])) ? ds.grainsize_matrix_mm[i] : 1,
                         agesteps = sample_agesteps,
                 )
                 tdomains = .!isnan.(dds.lnD0_a_2)
@@ -395,6 +402,8 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                     r,
                     dr,
                     K40 = (haskey(ds, :K40_ppm) && !isnan(ds.K40_ppm[i])) ? ds.K40_ppm[i] : 16.34,
+                    K40_matrix = (haskey(ds, :K40_matrix_ppm) && !isnan(ds.K40_matrix_ppm[i])) ? ds.K40_matrix_ppm[i] : 0,
+                    grainsize_matrix = (haskey(ds, :grainsize_matrix_mm) && !isnan(ds.grainsize_matrix_mm[i])) ? ds.grainsize_matrix_mm[i] : 1,
                     agesteps = sample_agesteps,
                 )
                 dm = Diffusivity(
@@ -407,7 +416,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                 push!(damodels, dm)
             end
         end
-        if !isempty(He_step_heating_file)
+        if !isempty(He_step_heating_file) && He_step_heating_file==He_step_heating_file
             dds = importdataset(He_step_heating_file, importas=:Tuple)
             geometry = haskey(ds, :geometry) ? lowercase(string(ds.geometry[i])) : ""
             DomainType = if mineral === "apatite"
