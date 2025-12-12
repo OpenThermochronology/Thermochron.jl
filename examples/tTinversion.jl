@@ -245,6 +245,60 @@
         end
     end
 
+## --- Plot ZHe age vs grain size colored by eU
+
+    tzr = isa.(chrons, ZirconHe)
+    if count(tzr) > 1
+        # Get grain sizes (halfwidth in μm)
+        grain_sizes = [c.rsteps[end] for c in chrons[tzr]] # Extract radius (halfwidth)
+        
+        # Get observed ages and uncertainties
+        observed_ages = Thermochron.value.(chrons[tzr])
+        σtotal = sqrt.(get_age_sigma(chrons[tzr]).^2 + model.σcalc[tzr].^2)
+        
+        # Get eU values for color scaling
+        eU_vals = eU.(chrons[tzr])
+        
+        # Create scatter plot with color by eU
+        h = scatter(grain_sizes, observed_ages,
+            yerror = 2*σtotal,
+            xlabel = "ESR [μm]",
+            ylabel = "Age [Ma]",
+            title = "ZirconHe: Age vs Grain Size",
+            label = "Data (2σ total)",
+            marker_z = eU_vals,
+            color = :viridis,
+            colorbar_title = "eU [ppm]",
+            framestyle = :box,
+            legend = :best,
+            markersize = 5,
+            markerstrokewidth = 1,
+            markerstrokecolor = :black,
+            grid = true,
+        )
+        
+        # Optionally add model predictions
+        agedist = tT.resultdist[tzr, :]
+        m = nanmean(agedist, dims=2)
+        l = nanpctile(agedist, 2.5, dims=2)
+        u = nanpctile(agedist, 97.5, dims=2)
+        
+        scatter!(h, grain_sizes, vec(m),
+            yerror = (vec(m) .- vec(l), vec(u) .- vec(m)),
+            label = "Model (95%CI)",
+            color=:blue,
+            markersize = 5,
+            markershape = :circle,
+            markerstrokewidth = 1,
+            markerstrokecolor = :blue,
+            alpha = 0.5,
+            colorbar = true,
+        )
+        
+        savefig(h, "$(name)_ZirconHe_Age-GrainSize-eU.pdf")
+        display(h)
+    end
+
 ## -- Plot calculated/observed ages as a function of rₘᵣ₀ (ApatiteFT)
 
 t = isa.(chrons, ApatiteFT)
