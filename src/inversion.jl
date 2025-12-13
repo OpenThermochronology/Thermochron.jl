@@ -31,7 +31,6 @@
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
         rescalestepheating = (haskey(model, :rescalestepheating) ? model.rescalestepheating : true)::Bool
         rescale = (haskey(model, :rescale) ? model.rescale : false)::Bool
-        simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
         dynamicsigma = (haskey(model, :dynamicsigma) ? model.dynamicsigma : false)::Bool
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
         partitiondaughter = (haskey(model, :partitiondaughter) ? model.partitiondaughter : false)::Bool
@@ -77,8 +76,8 @@
         initialproposal!(path, npoints) 
 
         # Log-likelihood for initial proposal
-        ll = llₚ = model!(μcalc, σcalc, chrons, damodels, path.Tsteps; rescalestepheating, rescale, partitiondaughter) + diff_ll(path.Tsteps, dTmax, dTmax_sigma) + 
-            (simplified ? -log(npoints) : zero(T))  + (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
+        ll = llₚ = model!(μcalc, σcalc, chrons, damodels, path.Tsteps; rescalestepheating, rescale, partitiondaughter) + 
+            diff_ll(path.Tsteps, dTmax, dTmax_sigma) + (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
 
         # Proposal probabilities (must sum to 1)
         p_move = 0.64
@@ -145,7 +144,6 @@
             # Calculate model ages for each grain, log likelihood of proposal
             llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps; rescalestepheating, rescale, partitiondaughter)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
-            simplified && (llₚ += -log(npointsₚ))
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
             # Accept or reject proposal based on likelihood
@@ -252,7 +250,6 @@
             # Calculate model ages for each grain, log likelihood of proposal
             llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps; rescalestepheating, rescale, partitiondaughter)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
-            simplified && (llₚ += -log(npointsₚ))
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
             # Accept or reject proposal based on likelihood
@@ -355,7 +352,6 @@
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
         rescalestepheating = (haskey(model, :rescalestepheating) ? model.rescalestepheating : true)::Bool
         rescale = (haskey(model, :rescale) ? model.rescale : false)::Bool
-        simplified = (haskey(model, :simplified) ? model.simplified : false)::Bool
         dynamicsigma = (haskey(model, :dynamicsigma) ? model.dynamicsigma : false)::Bool
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
         partitiondaughter = (haskey(model, :partitiondaughter) ? model.partitiondaughter : false)::Bool
@@ -407,8 +403,7 @@
 
         # Log-likelihood for initial proposal
         ll = llₚ = model!(μcalc, σcalc, chrons, damodels, path.Tsteps; rescalestepheating, rescale, partitiondaughter, redegastracer) + 
-            diff_ll(path.Tsteps, dTmax, dTmax_sigma) + kinetic_ll(damodelsₚ, damodels₀, updatekinetics) + 
-            (simplified ? -log(npoints) : zero(T)) + (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
+            diff_ll(path.Tsteps, dTmax, dTmax_sigma) + kinetic_ll(damodelsₚ, damodels₀, updatekinetics) + (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
         
         # Proposal probabilities (must sum to 1)
         p_move = 0.6
@@ -482,7 +477,6 @@
             llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps; rescalestepheating, rescale, partitiondaughter, redegastracer)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             llₚ += kinetic_ll(damodelsₚ, damodels₀, updatekinetics)
-            simplified && (llₚ += -log(npointsₚ))
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
             # Accept or reject proposal based on likelihood
@@ -597,7 +591,6 @@
             llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps; rescalestepheating, rescale, partitiondaughter, redegastracer)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             llₚ += kinetic_ll(damodelsₚ, damodels₀, updatekinetics)
-            simplified && (llₚ += -log(npointsₚ))
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
             # Accept or reject proposal based on likelihood
