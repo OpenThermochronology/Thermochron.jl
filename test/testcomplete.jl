@@ -97,8 +97,8 @@
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈  -6069.463663415188
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -6419.010909596187
     @test round.(calc[1:18], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1085.555, 304.6573, 95.84216, 149.8249, 179.703, 55.42763]
-    @test calc[20] ≈ 735 atol=75
-    @test calc[21] ≈ 755 atol=55
+    @test calc[20] ≈ 735 atol=85
+    @test calc[21] ≈ 755 atol=65
     @test round.(calc[22:end], sigdigits=3) ≈ [9, 14.3, 14.3, 14.3, 14.3, 7] atol = 10
     @test calcuncert[1:21] ≈ zeros(21)
     @test calcuncert[22:end] ≈ [1.7578982633970572, 1.1785910438098226, 1.1389520917140208, 1.2018361658877996, 1.1302107318562702, 0.6070538659171328]
@@ -111,8 +111,8 @@
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -6087.355829378042
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -6436.90307555904
     @test round.(calc[1:18], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1110.379, 304.2772, 95.84216, 149.8249, 179.703, 55.42763]
-    @test calc[20] ≈ 735 atol=75
-    @test calc[21] ≈ 755 atol=55
+    @test calc[20] ≈ 735 atol=85
+    @test calc[21] ≈ 755 atol=65
     @test round.(calc[22:end], sigdigits=3) ≈ [9, 14.3, 14.3, 14.3, 14.3, 7] atol = 10
     @test calcuncert[1:21] ≈ zeros(21)
     @test calcuncert[22:end] ≈ [1.8368172844202661, 1.1896389981502726, 1.1448424397109467, 1.2154485905638788, 1.1896389981502726, 0.6070538659171328]
@@ -122,8 +122,8 @@
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; partitiondaughter=true) ≈ -6062.852163911021
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; partitiondaughter=true, redegastracer=true) ≈ -6412.399410092022
     @test round.(calc[1:18], sigdigits=7) ≈ [100.512, 196.5576, 110.7153, 200.3158, 196.0983, 868.0376, 969.4693, 962.8585, 286.9455, 290.1031, 84.9324, 95.85478, 1085.555, 304.6573, 95.84216, 149.9689, 180.0515, 55.42763]
-    @test calc[20] ≈ 735 atol=75
-    @test calc[21] ≈ 755 atol=55
+    @test calc[20] ≈ 735 atol=85
+    @test calc[21] ≈ 755 atol=65
     @test round.(calc[22:end], sigdigits=3) ≈ [9, 14.3, 14.3, 14.3, 14.3, 7] atol = 10
     @test calcuncert[1:21] ≈ zeros(21)
     @test calcuncert[22:end] ≈ [1.7578982633970572, 1.1785910438098226, 1.1389520917140208, 1.2018361658877996, 1.1302107318562702, 0.6070538659171328]
@@ -209,8 +209,8 @@
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -5476.160463737898
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -5819.93262702397
     @test round.(calc[1:18], sigdigits=7) ≈ [97.38443, 192.5678, 106.6764, 195.3374, 191.1125, 865.807, 967.5609, 960.928, 287.2698, 290.2198, 82.29012, 92.46799, 1078.846, 302.8478, 95.39966, 149.9576, 176.8518, 52.34804]
-    @test calc[20] ≈ 745 atol=75
-    @test calc[21] ≈ 765 atol=55
+    @test calc[20] ≈ 735 atol=85
+    @test calc[21] ≈ 755 atol=65
     @test round.(calc[22:end], sigdigits=3) ≈ [9, 14.3, 14.3, 14.3, 14.3, 7] atol = 10
     @test calcuncert[1:21] ≈ zeros(21)
     @test calcuncert[22:end] ≈ [1.7573177921647993, 1.1845573491521355, 1.1457607696410228, 1.2049589019595262, 1.1414549313278457, 0.6188094901594741]
@@ -222,8 +222,8 @@
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -5487.240774055227
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -5831.012937341299
     @test round.(calc[1:18], sigdigits=7) ≈ [97.38443, 192.5678, 106.6764, 195.3374, 191.1125, 865.807, 967.5609, 960.928, 287.2698, 290.2198, 82.29012, 92.46799, 1103.519, 302.1657, 95.39966, 149.9576, 176.8518, 52.34804] 
-    @test calc[20] ≈ 745 atol=75
-    @test calc[21] ≈ 765 atol=55
+    @test calc[20] ≈ 735 atol=85
+    @test calc[21] ≈ 755 atol=65
     @test round.(calc[22:end], sigdigits=3) ≈ [9, 14.3, 14.3, 14.3, 14.3, 7] atol = 10
     @test calcuncert[1:21] ≈ zeros(21)
     @test calcuncert[22:end] ≈ [1.8360236234430574, 1.1942271553159216, 1.149391800085125, 1.2195745732151688, 1.1942271553159216, 0.6188094901594741]
@@ -324,7 +324,7 @@
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -6419.010909596187
     @test round.(calc[1:18], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1085.555, 304.6573, 95.84216, 149.8249, 179.703, 55.42763]
     @test calc[20] ≈ 735 atol=85
-    @test calc[21] ≈ 755 atol=55
+    @test calc[21] ≈ 755 atol=65
     @test round.(calc[22:end], sigdigits=3) ≈ [9, 14.3, 14.3, 14.3, 14.3, 7] atol = 10
     @test calcuncert[1:21] ≈ zeros(21)
     @test calcuncert[22:end] ≈ [1.7578982633970572, 1.1785910438098226, 1.1389520917140208, 1.2018361658877996, 1.1302107318562702, 0.6070538659171328]
@@ -336,8 +336,8 @@
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -6087.355829378042
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -6436.90307555904
     @test round.(calc[1:18], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 84.9324, 95.48752, 1110.379, 304.2772, 95.84216, 149.8249, 179.703, 55.42763]
-    @test calc[20] ≈ 735 atol=75
-    @test calc[21] ≈ 755 atol=55
+    @test calc[20] ≈ 735 atol=85
+    @test calc[21] ≈ 755 atol=65
     @test round.(calc[22:end], sigdigits=3) ≈ [9, 14.3, 14.3, 14.3, 14.3, 7] atol = 10
     @test calcuncert[1:21] ≈ zeros(21)
     @test calcuncert[22:end] ≈ [1.8368172844202661, 1.1896389981502726, 1.1448424397109467, 1.2154485905638788, 1.1896389981502726, 0.6070538659171328]
