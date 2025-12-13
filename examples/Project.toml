@@ -1,7 +1,9 @@
 [deps]
+CodecZlib = "944b1d66-785c-5afd-91f1-9de20f533193"
 GR = "28b8d3ca-fb5f-59d9-8090-bfdbd6d07a71"
 HypothesisTests = "09f84164-cd44-5f33-b23f-e6b0d136a0d5"
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
+JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 StatGeochemBase = "61e559cd-58b4-4257-8528-26bb26ff2b9a"
