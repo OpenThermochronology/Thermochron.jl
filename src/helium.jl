@@ -340,7 +340,7 @@ function modelage(mineral::ApatiteHe, Tsteps::AbstractVector, ρᵣ::AbstractMat
     mul!(mineral.annealeddamage, ρᵣ, mineral.alphadamage)
     modelage(mineral, Tsteps, dm)
 end
-function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T}) where T <: AbstractFloat
+function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T}; partitiondaughter::Bool=false) where T <: AbstractFloat
 
     # Damage and annealing constants
     DzEa = dm.DzEa::T                           # [kJ/mol]
@@ -370,7 +370,14 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T})
     tsteps = zircon.tsteps
     ntsteps = length(tsteps)
     @assert eachindex(tsteps) == eachindex(Tsteps) == Base.OneTo(ntsteps)
+    
+    # Variables related to He deposition
+    bulkalpha = zero(T)
+    bulkradius = last(rsteps) + step(rsteps)
+    bulkgrainsize = zircon.bulkgrainsize::T
+    bulkalphadeposition = zircon.bulkalphadeposition::Vector{T}
     alphadeposition = zircon.alphadeposition::Matrix{T}
+    @assert eachindex(bulkalphadeposition) == axes(alphadeposition, 1) == Base.OneTo(ntsteps)
 
     # The annealed damage matrix is the summation of the ρᵣ for each
     # previous timestep multiplied by the the alpha dose at each
@@ -424,6 +431,13 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T})
         A.d[nrsteps] = 1
         y[nrsteps] = u[nrsteps,i]
 
+        if partitiondaughter
+            # Increment He concentration outside grain
+            bulkalpha += bulkalphadeposition[i]
+            # Set external boundary condition given He partitioning between grain and intragranular medium
+            y[nrsteps] = bulkradius * bulkalpha * fraction_internal_He(Tsteps[i]+ΔT, bulkgrainsize)
+        end
+
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
         @turbo for k = 2:nrsteps-1
@@ -452,7 +466,7 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T})
     # Numerically solve for raw helium age of the grain (i.e, as measured)
     return newton_he_age(μHe, μ238U, μ235U, μ232Th, μ147Sm)
 end
-function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}) where T <: AbstractFloat
+function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}; partitiondaughter::Bool=false) where T <: AbstractFloat
 
     # Damage and annealing constants
     D0L = dm.D0L*10000^2*SEC_MYR::T         # [micron^2/Myr], converted from [cm^2/sec]  
@@ -487,7 +501,14 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
     tsteps = apatite.tsteps
     ntsteps = length(tsteps)
     @assert eachindex(tsteps) == eachindex(Tsteps) == Base.OneTo(ntsteps)
+    
+    # Variables related to He deposition
+    bulkalpha = zero(T)
+    bulkradius = last(rsteps) + step(rsteps)
+    bulkgrainsize = apatite.bulkgrainsize::T
+    bulkalphadeposition = apatite.bulkalphadeposition::Vector{T}
     alphadeposition = apatite.alphadeposition::Matrix{T}
+    @assert eachindex(bulkalphadeposition) == axes(alphadeposition, 1) == Base.OneTo(ntsteps)
 
     # The annealed damage matrix is the summation of the ρᵣ for each
     # previous timestep multiplied by the the alpha dose at each
@@ -542,6 +563,13 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
         A.d[nrsteps] = 1
         y[nrsteps] = u[nrsteps,i]
 
+        if partitiondaughter
+            # Increment He concentration outside grain
+            bulkalpha += bulkalphadeposition[i]
+            # Set external boundary condition given He partitioning between grain and intragranular medium
+            y[nrsteps] = bulkradius * bulkalpha * fraction_internal_He(Tsteps[i]+ΔT, bulkgrainsize)
+        end
+
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
         @turbo for k = 2:nrsteps-1
@@ -570,7 +598,7 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
     # Numerically solve for raw helium age of the grain (i.e, as measured)
     return newton_he_age(μHe, μ238U, μ235U, μ232Th, μ147Sm)
 end
-function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}, dm::Diffusivity{T}) where T <: AbstractFloat
+function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}, dm::Diffusivity{T}; partitiondaughter::Bool=false) where T <: AbstractFloat
 
     # Damage and annealing constants
     D0 = dm.D0*10000^2*SEC_MYR::T       # [micron^2/Myr], converted from [cm^2/sec]
@@ -591,7 +619,15 @@ function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}, dm::Diffus
     nrsteps = mineral.nrsteps
     tsteps = mineral.tsteps
     ntsteps = length(tsteps)
+    @assert eachindex(tsteps) == eachindex(Tsteps) == Base.OneTo(ntsteps)
+    
+    # Variables related to He deposition
+    bulkalpha = zero(T)
+    bulkradius = last(rsteps) + step(rsteps)
+    bulkgrainsize = mineral.bulkgrainsize::T
+    bulkalphadeposition = mineral.bulkalphadeposition::Vector{T}
     alphadeposition = mineral.alphadeposition::Matrix{T}
+    @assert eachindex(bulkalphadeposition) == axes(alphadeposition, 1) == Base.OneTo(ntsteps)
 
     # Output matrix for all timesteps
     # u = v*r is the coordinate transform (u-substitution) for the Crank-
@@ -634,6 +670,13 @@ function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}, dm::Diffus
         A.d[nrsteps] = 1
         y[nrsteps] = u[nrsteps,i]
 
+        if partitiondaughter
+            # Increment He concentration outside grain
+            bulkalpha += bulkalphadeposition[i]
+            # Set external boundary condition given He partitioning between grain and intragranular medium
+            y[nrsteps] = bulkradius * bulkalpha * fraction_internal_He(Tsteps[i]+ΔT, bulkgrainsize)
+        end
+
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
         @turbo for k = 2:nrsteps-1
@@ -662,7 +705,7 @@ function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}, dm::Diffus
     # Numerically solve for raw helium age of the grain (i.e, as measured)
     return newton_he_age(μHe, μ238U, μ235U, μ232Th, μ147Sm)
 end
-function modelage(mineral::PlanarHe{T}, Tsteps::AbstractVector{T}, dm::Diffusivity{T}) where T <: AbstractFloat
+function modelage(mineral::PlanarHe{T}, Tsteps::AbstractVector{T}, dm::Diffusivity{T}; partitiondaughter::Bool=false) where T <: AbstractFloat
 
     # Damage and annealing constants
     D0 = dm.D0*10000^2*SEC_MYR::T       # [micron^2/Myr], converted from [cm^2/sec]  
@@ -682,7 +725,14 @@ function modelage(mineral::PlanarHe{T}, Tsteps::AbstractVector{T}, dm::Diffusivi
     nrsteps = mineral.nrsteps
     tsteps = mineral.tsteps
     ntsteps = length(tsteps)
+    @assert eachindex(tsteps) == eachindex(Tsteps) == Base.OneTo(ntsteps)
+    
+    # Variables related to He deposition
+    bulkalpha = zero(T)
+    bulkgrainsize = mineral.bulkgrainsize::T
+    bulkalphadeposition = mineral.bulkalphadeposition::Vector{T}
     alphadeposition = mineral.alphadeposition::Matrix{T}
+    @assert eachindex(bulkalphadeposition) == axes(alphadeposition, 1) == Base.OneTo(ntsteps)
 
     # Output matrix for all timesteps
     u = mineral.u::DenseMatrix{T}
@@ -722,6 +772,13 @@ function modelage(mineral::PlanarHe{T}, Tsteps::AbstractVector{T}, dm::Diffusivi
         A.dl[nrsteps-1] = 0
         A.d[nrsteps] = 1
         y[nrsteps] = u[nrsteps,i]
+
+        if partitiondaughter
+            # Increment He concentration outside grain
+            bulkalpha += bulkalphadeposition[i]
+            # Set external boundary condition given He partitioning between grain and intragranular medium
+            y[nrsteps] = bulkalpha * fraction_internal_He(Tsteps[i]+ΔT, bulkgrainsize)
+        end
 
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11

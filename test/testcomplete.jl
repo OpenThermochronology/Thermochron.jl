@@ -60,7 +60,7 @@
     # Default: No unconformity is imposed
     unconf = Constraint()
 
-## --- Test generation of Chronometer objects, with StepRangeLen for timesteps/agesteps
+## --- Test generation and modelling of Chronometer objects, with StepRangeLen for timesteps/agesteps
 
     # Modern input format, generic.csv
     tsteps = (model.dt/2 : model.dt : 3000-model.dt/2)
@@ -91,6 +91,7 @@
     @test get_age(chrons) ≈ [150.37, 263.92, 150.37, 263.92, 263.92, 917.84, 1023.73, 1023.73, 380., 380., 120., 120., 1080., 300., 100., 150., 180., 4.1, 0.9194109843673132, 808.3268143245239, 808.3268143245239,] 
     @test get_age_sigma(chrons) ≈ [5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,0.53,0.20877153500779683,28.52408719185519,28.52408719185519,]
 
+    # Test model calculations
     calc = zeros(length(chrons))
     calcuncert = zeros(length(chrons))
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈  -6069.463663415188
@@ -102,6 +103,7 @@
     @test calcuncert[1:21] ≈ zeros(21)
     @test calcuncert[22:end] ≈ [1.7578982633970572, 1.1785910438098226, 1.1389520917140208, 1.2018361658877996, 1.1302107318562702, 0.6070538659171328]
 
+    # Test again after swapping out annealing models
     damodels = Thermochron.Model[damodels...,]
     damodels[isa.(damodels, Thermochron.ZirconAnnealingModel)] .= Guenthner2013FC()
     damodels[isa.(damodels, Thermochron.ApatiteAnnealingModel)] .= Ketcham1999FC()
@@ -115,6 +117,17 @@
     @test calcuncert[1:21] ≈ zeros(21)
     @test calcuncert[22:end] ≈ [1.8368172844202661, 1.1896389981502726, 1.1448424397109467, 1.2154485905638788, 1.1896389981502726, 0.6070538659171328]
 
+    # Test again with partitiondaughter=true
+    chrons, damodels = chronometers(dsg, model, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; partitiondaughter=true) ≈ -6062.852163911021
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; partitiondaughter=true, redegastracer=true) ≈ -6412.399410092022
+    @test round.(calc[1:18], sigdigits=7) ≈ [100.512, 196.5576, 110.7153, 200.3158, 196.0983, 868.0376, 969.4693, 962.8585, 286.9455, 290.1031, 84.9324, 95.85478, 1085.555, 304.6573, 95.84216, 149.9689, 180.0515, 55.42763]
+    @test calc[20] ≈ 735 atol=75
+    @test calc[21] ≈ 755 atol=55
+    @test round.(calc[22:end], sigdigits=3) ≈ [9, 14.3, 14.3, 14.3, 14.3, 7] atol = 10
+    @test calcuncert[1:21] ≈ zeros(21)
+    @test calcuncert[22:end] ≈ [1.7578982633970572, 1.1785910438098226, 1.1389520917140208, 1.2018361658877996, 1.1302107318562702, 0.6070538659171328]
+
     # Test empirical uncertainty estimation
     σcalc = zeros(length(chrons))
     empiricaluncertainty!(σcalc, chrons, ZirconHe, sigma_offset=15)
@@ -122,7 +135,7 @@
     t = isa.(chrons, ZirconHe) .| isa.(chrons, ApatiteHe)
     @test σcalc[t] ≈ [57.014755105003104, 57.014755105003104, 14.022789552152355, 14.022789552152355, 89.77854252945355, 22.081049122650942, 18.76032805406918]
 
-    # Modern input format, Minnesota dataset
+    # Test again with Minnesota dataset
     tsteps = (model.dt/2 : model.dt : model.tinit-model.dt/2)
     agesteps = (model.tinit-model.dt/2 : -model.dt : model.dt/2)
     Tsteps = range(model.Tinit, model.Tnow, length=length(tsteps))
@@ -139,11 +152,7 @@
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -16667.28440196102
     @test round.(calc, sigdigits=5) ≈ [1125.8, 1123.3, 954.89, 1046.3, 1010.6, 1146.5, 956.84, 871.49, 984.5, 706.49, 574.3, 139.5, 319.64, 62.847, 183.99, 329.73, 1.712, 3.6475, 0.00037435, 16.555, 0.0041183, 33.839, 1.2216, 122.78, 244.29, 234.62, 196.31, 180.09, 206.59, 177.52, 220.8, 261.59, 258.45, 284.49]
     @test calcuncert ≈ zeros(length(chrons))
-    # println(round.(calc, sigdigits=5))
-
-    # Test an individual zircon
     @test first(calc) ≈ modelage(first(chrons), Tsteps, ZRDAAM())
-    # Test an individual apatite
     @test last(calc) ≈ modelage(last(chrons), Tsteps, RDAAM())
 
     # Test empirical uncertainty estimation
@@ -153,7 +162,7 @@
     σtotal = sqrt.(σcalc[isa.(chrons, ZirconHe)].^2 + get_age_sigma(chrons, ZirconHe).^2)
     @test σtotal ≈ [71.76511200022767, 88.69939042178478, 76.20513740085536, 49.74341557807492, 52.05638860615669, 58.80850040722076, 57.32853093748527, 97.59191128458991, 68.09272937102548, 82.41401338162268, 104.5147581608337, 72.10558616290515, 79.47676757701001, 68.01965448205827, 72.8583946436481, 73.94974380762895, 63.02840819654363, 63.478989858090436, 45.255278015066644, 66.3078727295436, 52.90379008918621, 69.14186488208391, 62.394435852786344]
 
-    # Modern input format, manitoba.csv
+    # Test again with Manitoba dataset
     tsteps = (model.dt/2 : model.dt : 2790-model.dt/2)
     agesteps = (2790-model.dt/2 : -model.dt : model.dt/2)
     Tsteps = range(650, 0, length=length(tsteps))
@@ -167,7 +176,7 @@
     calcuncert = zeros(length(chrons))
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -8.16619017168542e8
 
-## --- Test generation and use of Chronometer objects, with nonuniform (log) Vector for agesteps/tsteps
+## --- Test generation and modelling of Chronometer objects, with nonuniform (log-spaced) Vector for agesteps/tsteps
 
     agesteps = cntr(logrange(3000+10, 10, length=Int(3000/10)) .- 10)
     tsteps = (first(agesteps) - Thermochron.step_at(agesteps,1)/2) .- agesteps
@@ -219,8 +228,7 @@
     @test calcuncert[1:21] ≈ zeros(21)
     @test calcuncert[22:end] ≈ [1.8360236234430574, 1.1942271553159216, 1.149391800085125, 1.2195745732151688, 1.1942271553159216, 0.6188094901594741]
 
-
-    # Modern input format, Minnesota dataset
+    # Test again with Minnesota dataset
     agesteps = cntr(logrange(tinit+10, 10, length=Int(tinit/10)) .- 10)
     tsteps = (first(agesteps) - Thermochron.step_at(agesteps,1)/2) .- agesteps
     Tsteps = agesteps * (model.Tinit-model.Tnow)/length(tsteps) .+ model.Tnow
@@ -240,11 +248,7 @@
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -16548.981327141428
     @test round.(calc, sigdigits=5) ≈ [1124.5, 1120.2, 951.61, 1046.8, 1010.9, 1146.0, 958.95, 872.19, 986.33, 708.15, 579.2, 144.31, 324.63, 64.507, 189.0, 336.73, 2.0527, 4.3125, 0.00035165, 18.467, 0.0052616, 36.526, 1.332, 120.34, 240.5, 231.07, 193.23, 177.04, 203.34, 174.56, 217.32, 258.08, 254.92, 280.92]
     @test calcuncert ≈ zeros(length(chrons))
-    # println(round.(calc, sigdigits=5))
-
-    # Test an individual zircon
     @test first(calc) ≈ modelage(first(chrons), Tsteps, ZRDAAM())
-    # Test an individual apatite
     @test last(calc) ≈ modelage(last(chrons), Tsteps, RDAAM())
 
 ## --- Invert for t-T path via MCMC
@@ -355,11 +359,7 @@
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -16667.28440196102
     @test round.(calc, sigdigits=5) ≈ [1125.8, 1123.3, 954.89, 1046.3, 1010.6, 1146.5, 956.84, 871.49, 984.5, 706.49, 574.3, 139.5, 319.64, 62.847, 183.99, 329.73, 1.712, 3.6475, 0.00037435, 16.555, 0.0041183, 33.839, 1.2216, 122.78, 244.29, 234.62, 196.31, 180.09, 206.59, 177.52, 220.8, 261.59, 258.45, 284.49]
     @test calcuncert ≈ zeros(length(chrons))
-    # println(round.(calc, sigdigits=5))
-
-    # Test an individual zircon
     @test first(calc) ≈ modelage(first(chrons), Tsteps, ZRDAAM())
-    # Test an individual apatite
     @test last(calc) ≈ modelage(last(chrons), Tsteps, RDAAM())
 
 ## --- Invert for t-T path, as above, but with variable kinetic parameters
@@ -544,9 +544,10 @@
     @test 0 < rminmean < 1
     @info "Mean zircon rmin: $rminmean"
 
-    ## --- Add dynamic jumping and a constraint box
+    ## --- Add dynamic jumping, IGB partitioning, and a constraint box
     model = (model...,
-        dynamicjumping=true
+        dynamicjumping=true,
+        partitiondaughter=true,
     )
     unconf = Constraint(
         agedist = [Uniform(500,580),],  # [Ma] Age distribution

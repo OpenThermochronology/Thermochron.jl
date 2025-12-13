@@ -30,7 +30,7 @@ at spatial resolution `mineral.dr`.
 Spherical implementation based on the the Crank-Nicolson solution for diffusion out of a
 spherical mineral crystal in Ketcham, 2005 (doi: 10.2138/rmg.2005.58.11).
 """
-function modelage(mineral::SphericalAr{T}, Tsteps::AbstractVector{T}, dm::Diffusivity{T}) where T <: AbstractFloat
+function modelage(mineral::SphericalAr{T}, Tsteps::AbstractVector{T}, dm::Diffusivity{T}; partitiondaughter::Bool=false) where T <: AbstractFloat
 
     # Damage and annealing constants
     D0 = dm.D0*10000^2*SEC_MYR::T       # cm^2/sec, converted to micron^2/Myr  
@@ -52,7 +52,14 @@ function modelage(mineral::SphericalAr{T}, Tsteps::AbstractVector{T}, dm::Diffus
     tsteps = mineral.tsteps
     ntsteps = length(tsteps)
     @assert eachindex(tsteps) == eachindex(Tsteps) == Base.OneTo(ntsteps)
+
+    # Variables related to Ar deposition
+    bulkargon = zero(T)
+    bulkradius = last(rsteps) + step(rsteps)
+    bulkgrainsize = mineral.bulkgrainsize::T
+    bulkargondeposition = mineral.bulkargondeposition::Vector{T}
     argondeposition = mineral.argondeposition::Matrix{T}
+    @assert eachindex(bulkargondeposition) == axes(argondeposition,1) == Base.OneTo(ntsteps)
 
     # Common β factor is constant across all radii since diffusivity is constant
     β = mineral.β::Vector{T}
@@ -94,6 +101,13 @@ function modelage(mineral::SphericalAr{T}, Tsteps::AbstractVector{T}, dm::Diffus
         A.d[nrsteps] = 1
         y[nrsteps] = u[nrsteps,i]
 
+        if partitiondaughter
+            # Increment Ar concentration outside grain
+            bulkargon += bulkargondeposition[i]
+            # Set external boundary condition given Ar partitioning between grain and intragranular medium
+            y[nrsteps] = bulkradius * bulkargon * fraction_internal_Ar(Tsteps[i]+ΔT, bulkgrainsize)
+        end
+
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
         @turbo for k = 2:nrsteps-1
@@ -117,7 +131,7 @@ function modelage(mineral::SphericalAr{T}, Tsteps::AbstractVector{T}, dm::Diffus
     # Numerically solve for raw Ar age of the grain (i.e., as measured)
     return newton_ar_age(μAr, μ40K)
 end
-function modelage(mineral::PlanarAr{T}, Tsteps::AbstractVector{T}, dm::Diffusivity{T}) where T <: AbstractFloat
+function modelage(mineral::PlanarAr{T}, Tsteps::AbstractVector{T}, dm::Diffusivity{T}; partitiondaughter::Bool=false) where T <: AbstractFloat
 
     # Damage and annealing constants
     D0 = dm.D0*10000^2*SEC_MYR::T       # cm^2/sec, converted to micron^2/Myr  
@@ -138,7 +152,13 @@ function modelage(mineral::PlanarAr{T}, Tsteps::AbstractVector{T}, dm::Diffusivi
     tsteps = mineral.tsteps
     ntsteps = length(tsteps)
     @assert eachindex(tsteps) == eachindex(Tsteps) == Base.OneTo(ntsteps)
+
+    # Variables related to Ar deposition
+    bulkargon = zero(T)
+    bulkgrainsize = mineral.bulkgrainsize::T
+    bulkargondeposition = mineral.bulkargondeposition::Vector{T}
     argondeposition = mineral.argondeposition::Matrix{T}
+    @assert eachindex(bulkargondeposition) == axes(argondeposition,1) == Base.OneTo(ntsteps)
 
     # Common β factor is constant across all radii since diffusivity is constant
     β = mineral.β::Vector{T}
@@ -177,6 +197,13 @@ function modelage(mineral::PlanarAr{T}, Tsteps::AbstractVector{T}, dm::Diffusivi
         A.dl[nrsteps-1] = 0
         A.d[nrsteps] = 1
         y[nrsteps] = u[nrsteps,i]
+
+        if partitiondaughter
+            # Increment Ar concentration outside grain
+            bulkargon += bulkargondeposition[i]
+            # Set external boundary condition given Ar partitioning between grain and intragranular medium
+            y[nrsteps] = bulkargon * fraction_internal_Ar(Tsteps[i] + ΔT, bulkgrainsize)
+        end
 
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
