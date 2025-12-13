@@ -78,7 +78,6 @@
         agesteps = agesteps,            # [Ma] Age discretization (relative to the present)
         minpoints = 15,                 # [n] Minimum allowed number of model t-T points (nodes)
         maxpoints = 50,                 # [n] Maximum allowed number of model t-T points (nodes)
-        dynamicsigma = false,           # Update model uncertainties throughout inversion?
         dynamicjumping = true,          # Update the t and T jumping (proposal) distributions based on previously accepted jumps
         # Damage and annealing models for diffusivity (specify custom kinetics if desired)
         adm = RDAAM(),                  # Flowers et al. 2009 (doi: 10.1016/j.gca.2009.01.015) apatite diffusivity model
@@ -556,7 +555,7 @@ end
 
 ## --- Create image of paths
 
-    @time (tTimage, xc, yc) = image_from_paths!(tT; xresolution=1800, yresolution=1200, xrange=boundary.agepoints, yrange=boundary.T₀)
+    @time (tTimage, xc, yc) = image_from_paths!(tT; xresolution=1800, yresolution=1200, method=:nearest, xrange=boundary.agepoints, yrange=boundary.T₀)
 
 ## --- Plot image with 'ylcn' custom colorscale
  
@@ -576,25 +575,25 @@ end
     savefig(k, name*"_tT.pdf")
     display(k)
 
-## --- Plot a zoomed-in version
+## --- (Optional) Plot a zoomed-in version
 
-    xrange = (0,100)
-    yrange=(0,50)
-    @time (tTimageZoom, xcZoom, ycZoom) = image_from_paths!(tT; xresolution=1800, yresolution=1200, xrange, yrange)
+    # xrange = (0, 200)
+    # yrange=(0, 100)
+    # @time (tTimageZoom, xcZoom, ycZoom) = image_from_paths!(tT; xresolution=1800, yresolution=1200, method=:nearest, xrange, yrange)
 
-    # Prepare axes
-    k = plot(layout = grid(1,2, widths=[0.94, 0.06]), framestyle=:box)
+    # # Prepare axes
+    # k = plot(layout = grid(1,2, widths=[0.94, 0.06]), framestyle=:box)
 
-    # Plot image with colorscale in first subplot
-    A = imsc(tTimageZoom, ylcn, 0, nanpctile(tTimage[:],98.5))
-    plot!(k[1], xlabel="Time (Ma)", ylabel="Temperature (°C)", tick_dir=:out, framestyle=:box)
-    plot!(k[1], xcZoom, ycZoom, A, yflip=true, xflip=true, legend=false, xlims=xrange, ylims=yrange)
+    # # Plot image with colorscale in first subplot
+    # A = imsc(tTimageZoom, ylcn, 0, nanpctile(tTimage[:],98.5))
+    # plot!(k[1], xlabel="Time (Ma)", ylabel="Temperature (°C)", tick_dir=:out, framestyle=:box)
+    # plot!(k[1], xcZoom, ycZoom, A, yflip=true, xflip=true, legend=false, xlims=xrange, ylims=yrange)
 
-    # Add colorbar in second subplot
-    cb = imsc(repeat(0:100, 1, 10), ylcn, 0, 100)
-    plot!(k[2], 0:0.01:0.1, 0:0.01:1, cb, ylims=(0,1), xticks=false, tick_dir=:out, framestyle=:box, yflip=false,  ylabel="Relative path density", guide_position=:right)
+    # # Add colorbar in second subplot
+    # cb = imsc(repeat(0:100, 1, 10), ylcn, 0, 100)
+    # plot!(k[2], 0:0.01:0.1, 0:0.01:1, cb, ylims=(0,1), xticks=false, tick_dir=:out, framestyle=:box, yflip=false,  ylabel="Relative path density", guide_position=:right)
 
-    savefig(k, name*"_tT.pdf")
-    display(k)
+    # savefig(k, name*"_tT_inset.pdf")
+    # display(k)
 
 ## --- End of File
