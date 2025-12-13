@@ -691,14 +691,16 @@
             yresolution::Int = 1200, 
             xrange = nanextrema(tT.tpointdist), 
             yrange = nanextrema(tT.Tpointdist), 
+            kwargs...,
         )
-        image_from_paths(tT.tpointdist, tT.Tpointdist; xresolution, yresolution, xrange, yrange)
+        image_from_paths(tT.tpointdist, tT.Tpointdist; xresolution, yresolution, xrange, yrange, kwargs...)
     end
     function image_from_paths!(tT::TTResult;
             xresolution::Int = 1800, 
             yresolution::Int = 1200, 
             xrange = nanextrema(tT.tpointdist), 
             yrange = nanextrema(tT.Tpointdist), 
+            kwargs...,
         )
-        image_from_paths!(tT.tpointdist, tT.Tpointdist; xresolution, yresolution, xrange, yrange)
+        image_from_paths!(tT.tpointdist, tT.Tpointdist; xresolution, yresolution, xrange, yrange, kwargs...)
     end
