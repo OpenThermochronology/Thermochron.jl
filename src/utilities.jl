@@ -1,6 +1,12 @@
 ## ---  Various useful internal utility functions
 
-    # Get local step size for an AbstractVector
+    # This is not public API and so may be liable to change in future Julia versions
+    # but can seemingly mean a factor of two in performance over using `step` function 
+    # according to benchmarks based on use of `step_at` in this package
+    @inline step_fast(x::StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}) = x.step.hi + x.step.lo 
+    @inline step_fast(x::StepRangeLen) = step(x) # All other StepRangeLen
+
+    # Get local step size for an AbstractVector at a given index
     function step_at(x::AbstractVector{T}, i::Integer) where {T<:Number}
         length(x) > 1 || return zero(T)
         f,l = firstindex(x), lastindex(x)
@@ -16,12 +22,8 @@
             (x[l] - x[l-1])
         end
     end
-    # Step size is constant for many ranges
-    @inline step_at(x::OrdinalRange, i::Integer) = step(x)
-    # This is not public API and so may be liable to change in future Julia versions
-    # but can seemingly mean a factor of two in performance over using `step` function 
-    # according to benchmarks based on use of `step_at` in this package
-    @inline step_at(x::StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, i::Integer) = x.step.hi + x.step.lo 
+    @inline step_at(x::OrdinalRange, ::Integer) = step(x)
+    @inline step_at(x::StepRangeLen, ::Integer) = step_fast(x)
 
     function leftbound_at(x::AbstractVector{T}, i::Integer) where {T<:Number}
         Tf = float(T)
