@@ -5,6 +5,7 @@
     # according to benchmarks based on use of `step_at` in this package
     @inline step_fast(x::StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}) = x.step.hi + x.step.lo 
     @inline step_fast(x::StepRangeLen) = step(x) # All other StepRangeLen
+    @inline step_fast(x::OrdinalRange) = step(x)
 
     # Get local step size for an AbstractVector at a given index
     function step_at(x::AbstractVector{T}, i::Integer) where {T<:Number}
@@ -22,8 +23,7 @@
             (x[l] - x[l-1])
         end
     end
-    @inline step_at(x::OrdinalRange, ::Integer) = step(x)
-    @inline step_at(x::StepRangeLen, ::Integer) = step_fast(x)
+    @inline step_at(x::Union{OrdinalRange, StepRangeLen}, ::Integer) = step_fast(x)
 
     function leftbound_at(x::AbstractVector{T}, i::Integer) where {T<:Number}
         Tf = float(T)
@@ -565,8 +565,8 @@
         tmin, tmax = textrema(path.boundary)
         Tmin, Tmax = Textrema(path.boundary)
 
-        # Pick an age uniformly within the boundaries
-        path.agepointsₚ[k] = rand(Uniform(tmin, tmax))
+        # Pick an age uniformly from the model age domain
+        path.agepointsₚ[k] = rand(path.agesteps)
 
         # Find the closest existing points (if any)
         ages = view(path.agepointsₚ, Base.OneTo(k-1))
@@ -644,12 +644,11 @@
         randomize!(path.boundary)
         randomize!(path.constraint, path.boundary)
         collectaccepted!(path, 0)
-        agemin, agemax = textrema(path.boundary) 
         for i in eachindex(path.agepoints, path.Tpoints)
             if (i-firstindex(path.agepoints)) < path.detail.minpoints
-                path.agepoints[i] = rand(Uniform(path.detail.agemin, path.detail.agemax))
+                path.agepoints[i] = rand(Uniform(path.detail.agemin, path.detail.agemax)) # Uniformly from the detail interval
             else
-                path.agepoints[i] = rand(Uniform(agemin, agemax))
+                path.agepoints[i] = rand(path.agesteps) # Uniformly from the model age domain
             end
             path.Tpoints[i] = linterp1(reverse(path.agesteps), path.Tsteps, first(path.agesteps)-path.agepoints[i])
         end
