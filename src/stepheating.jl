@@ -392,7 +392,7 @@ function degas_initialized!(mineral::ApatiteHe{T}, step_diffusant::AbstractVecto
     return total_diffusant
 end
 
-# Initialize and degas daughter isotopes
+## --- Initialize and degas daughter isotopes
 function degas_daughter!(mineral::Union{HeliumSample{T}, ArgonSample{T}}, tsteps_degassing, Tsteps_degassing, dm; fuse::Bool=true) where {T}
     # Erase previous diffusion profiles
     u = fill!(mineral.u, zero(T))
@@ -402,7 +402,31 @@ function degas_daughter!(mineral::Union{HeliumSample{T}, ArgonSample{T}}, tsteps
     return degas_initialized!(mineral, mineral.step_daughter, tsteps_degassing, Tsteps_degassing, dm; fuse)
 end
 
-# Initialize and degas tracer isotopes
+## --- Initialize and degas tracer isotopes
+function degas_tracer!(mdd::MultipleDomain{T}, dm::MDDiffusivity{T}) where {T<:AbstractFloat}
+    fraction = fill!(mdd.model_fraction, zero(T))
+    tracer = fill!(mdd.model_tracer, zero(T))
+    # Degas
+    for i in eachindex(mdd.domains, mdd.volume_fraction)
+        domain = mdd.domains[i]
+        degas_tracer!(domain, one(T), mdd.tsteps_degassing, mdd.Tsteps_degassing, dm; fuse=mdd.fuse)
+        @. tracer += domain.step_tracer * mdd.volume_fraction[i]
+    end
+    # Cumulative fraction of tracer degassed
+    cumsum!(fraction, tracer)
+    fraction ./= last(fraction)
+
+    return fraction
+end
+function degas_tracer!(sdd::SingleDomain{T}, dm::DiffusivityModel{T}) where {T<:AbstractFloat}
+    fraction = fill!(sdd.model_fraction, zero(T))
+    # Degas
+    degas_tracer!(sdd.domain, one(T), sdd.tsteps_degassing, sdd.Tsteps_degassing, dm; fuse=sdd.fuse)
+    # Cumulative fraction of tracer degassed
+    cumsum!(fraction, sdd.domain.step_tracer)
+    fraction ./= last(fraction)
+    return fraction
+end
 function degas_tracer!(mineral::Union{PlanarAr{T}, PlanarHe{T}}, initial_tracer, tsteps_degassing, Tsteps_degassing, dm; fuse::Bool=true)  where {T}
     # Erase previous diffusion profiles
     u = fill!(mineral.u, zero(T))
@@ -427,7 +451,8 @@ end
 tracerdiffusivityratio(x::ArgonSample{T}) where {T} = T((40/39)^0.3)
 tracerdiffusivityratio(x::HeliumSample{T}) where {T} = T((4/3)^0.3)
 
-# Top-level degassing functions
+
+## ---  Combined daughter+tracer degassing functions
 function degas!(mineral::HeliumSample, tsteps_degassing, Tsteps_degassing, dm; fuse=true, redegastracer=false)
     total_daughter = degas_daughter!(mineral, tsteps_degassing, Tsteps_degassing, dm; fuse)
     # Now diffuse parent isotope tracer (He-3), if neccesary
