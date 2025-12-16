@@ -284,7 +284,9 @@
     end
 
     # Utility functions for checking the nummber of distinct t-T nodes in a given time interval
-    function pointsininterval(points::DenseArray, npoints::Int, lower::Number, upper::Number)
+    function pointsininterval(points::AbstractArray, npoints::Int, lower::Number, upper::Number)
+        @assert firstindex(points) == 1
+        @assert npoints <= lastindex(points)
         n = 0
         @inbounds for i = 1:npoints
             if  lower < points[i] <= upper
@@ -293,7 +295,9 @@
         end
         return n
     end
-    function pointsininterval(points::DenseArray, npoints::Int, lower::Number, upper::Number, nodes::DenseArray)
+    function pointsininterval(points::AbstractArray, npoints::Int, lower::Number, upper::Number, nodes::AbstractArray)
+        @assert firstindex(points) == 1
+        @assert npoints <= lastindex(points)
         n = 0
         @inbounds for n in eachindex(nodes)
             if lower < nodes[n] <= upper
