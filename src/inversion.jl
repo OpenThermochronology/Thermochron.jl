@@ -1,6 +1,11 @@
     """
     ```julia
-    MCMC(chrons::Vector{<:Chronometer}, model::NamedTuple, npoints::Int, path.agepoints::Vector, path.Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval])
+    MCMC(chrons::Vector{<:Chronometer}, model::NamedTuple, npoints::Int, path.agepoints::Vector, path.Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval];
+        liveplot::Bool=false, 
+        maxplots::Int=256, 
+        maxplotsburnin::Int=maxplots÷2, 
+        maxplotscollection::Int=maxplots÷2
+    )
     ```
     Markov chain Monte Carlo time-Temperature inversion of the thermochronometric chrons 
     specified as a vector `chrons` of `Chronometer` objects (`ZirconHe`, `ApatiteHe`, 
@@ -20,7 +25,12 @@
         chrons, damodels = chronometers(T, dataset, model)
         MCMC(chrons, damodels, model, boundary, constraint, detail; kwargs...)
     end
-    function MCMC(chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T); liveplot::Bool=false) where T <: AbstractFloat
+    function MCMC(chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T); 
+            liveplot::Bool=false, 
+            maxplots::Int=256, 
+            maxplotsburnin::Int=maxplots÷2, 
+            maxplotscollection::Int=maxplots÷2
+        ) where T <: AbstractFloat
         # Process inputs
         burnin = (haskey(model, :burnin) ? model.burnin : 5*10^5)::Int
         nsteps = (haskey(model, :nsteps) ? model.nsteps : 10^6)::Int
@@ -89,7 +99,8 @@
 
         # Prepare and run burnin
         bprogress = Progress(burnin, desc="MCMC burn-in ($(burnin) steps)")
-        progress_interval = plot_interval = ceil(Int,sqrt(burnin))
+        progress_interval = ceil(Int,sqrt(burnin))
+        plot_interval = max(progress_interval, ceil(Int, burnin/maxplotsburnin)) # Cap number of plots
         if liveplot # Optionally prepare to plot t-T paths live
             imgcounts = zeros(200, 300)
             tpointbuffer = fill(T(NaN), totalpoints, plot_interval)
@@ -200,7 +211,8 @@
         acceptancedist = falses(nsteps)
 
         progress = Progress(nsteps, desc="MCMC collection ($(nsteps) steps):")
-        progress_interval = plot_interval = ceil(Int,sqrt(nsteps))
+        progress_interval = ceil(Int,sqrt(nsteps))
+        plot_interval = max(progress_interval, ceil(Int, nsteps/maxplotscollection)) # Cap number of plots
         liveplot && fill!(imgcounts, 0)
         for n = 1:nsteps
             @label crestart
@@ -320,7 +332,12 @@
 
     """
     ```julia
-    MCMC_varkinetics(chrons::Vector{<:Chronometer}, model::NamedTuple, npoints::Int, path.agepoints::Vector, path.Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval])
+    MCMC_varkinetics(chrons::Vector{<:Chronometer}, model::NamedTuple, npoints::Int, path.agepoints::Vector, path.Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval];
+        liveplot::Bool=false, 
+        maxplots::Int=256, 
+        maxplotsburnin::Int=maxplots÷2, 
+        maxplotscollection::Int=maxplots÷2
+    )
     ```
     Markov chain Monte Carlo time-Temperature inversion of the thermochronometric chrons 
     specified as a vector `chrons` of `Chronometer` objects (`ZirconHe`, `ApatiteHe`, 
@@ -341,7 +358,12 @@
         chrons, damodels = chronometers(T, dataset, model)
         MCMC_varkinetics(chrons, damodels, model, boundary, constraint, detail; kwargs...)
     end
-    function MCMC_varkinetics(chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T); liveplot::Bool=false) where T <: AbstractFloat
+    function MCMC_varkinetics(chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T); 
+            liveplot::Bool=false, 
+            maxplots::Int=512, 
+            maxplotsburnin::Int=maxplots÷2, 
+            maxplotscollection::Int=maxplots÷2
+        ) where T <: AbstractFloat
         # Process inputs
         burnin = (haskey(model, :burnin) ? model.burnin : 5*10^5)::Int
         nsteps = (haskey(model, :nsteps) ? model.nsteps : 10^6)::Int
@@ -416,7 +438,8 @@
 
         # Prepare and run burnin
         bprogress = Progress(burnin, desc="MCMC burn-in ($(burnin) steps)")
-        progress_interval = plot_interval = ceil(Int,sqrt(burnin))
+        progress_interval = ceil(Int,sqrt(burnin))
+        plot_interval = max(progress_interval, ceil(Int, burnin/maxplotsburnin)) # Cap number of plots
         if liveplot # Optionally prepare to plot t-T paths
             imgcounts = zeros(200, 300)
             tpointbuffer = fill(T(NaN), totalpoints, plot_interval)
@@ -535,7 +558,8 @@
         acceptancedist = falses(nsteps)
 
         progress = Progress(nsteps, desc="MCMC collection ($(nsteps) steps):")
-        progress_interval = plot_interval = ceil(Int,sqrt(nsteps))
+        progress_interval = ceil(Int,sqrt(nsteps))
+        plot_interval = max(progress_interval, ceil(Int, nsteps/maxplotscollection)) # Cap number of plots
         liveplot && fill!(imgcounts, 0)
         for n = 1:nsteps
             @label crestart
