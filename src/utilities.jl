@@ -376,7 +376,7 @@
         return δₘ
     end
 
-    function diff_ll(x::AbstractArray{T}, μ::Number, σ::Number) where {T<:Number}
+    function diff_ll(x::AbstractArray{T}, μ::Number, σ::Number; maxsigma::Number=6) where {T<:Number}
         i₀ = firstindex(x)
         d = Normal(μ, σ)
         ll = zero(float(T))
@@ -386,6 +386,10 @@
                 δᵢ = x[i] - last
                 if δᵢ > 0
                     ll += logccdf(d, δᵢ)
+                    if δᵢ > (μ + maxsigma*σ)
+                        # Firm cap at some number standard deviations above the mean
+                        ll -= maxintfloat(T)
+                    end
                 end
                 last = x[i]
             end
