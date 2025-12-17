@@ -577,8 +577,8 @@ function stepwise_degassing_ll(dd::Union{SingleDomain{T},MultipleDomain{T}}; res
             δexperimental = dd.fraction_experimental[i] - last_fraction_experimentalᵢ
             ll += norm_ll(δexperimental, dd.fraction_experimental_sigma[i], δmodel)
         end
-        last_model_fractionᵢ₋ = model_fractionᵢ
-        last_fraction_experimentalᵢ₋ = dd.fraction_experimental[i]
+        last_model_fractionᵢ = model_fractionᵢ
+        last_fraction_experimentalᵢ = dd.fraction_experimental[i]
     end
     rescale && (ll /= sqrt(count(dd.fit)))
     return ll
