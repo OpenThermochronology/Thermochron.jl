@@ -122,17 +122,17 @@
             # Adjust the proposal
             if r < p_move
                 # Move one t-T point
-                movepoint!(path, k)
+                movepoint!(path, k, npointsₚ)
 
             elseif (r < p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point
                 k = npointsₚ = npoints + 1
-                addpoint!(path, k)
+                addpoint!(path, k, npointsₚ)
 
             elseif (r < p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
-                npointsₚ = npoints - 1
-                replacepoint!(path, k, npoints)
+                replacepoint!(path, k, npointsₚ)
+                npointsₚ -= 1
 
             elseif (r < p_move+p_birth+p_death+p_bounds)
                 # Move the temperatures of the starting and ending boundaries
@@ -229,17 +229,17 @@
             # Adjust the proposal
             if r < p_move
                 # Move one t-T point
-                movepoint!(path, k)
+                movepoint!(path, k, npointsₚ)
 
             elseif (r < p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point
                 k = npointsₚ = npoints + 1
-                addpoint!(path, k)
+                addpoint!(path, k, npointsₚ)
 
             elseif (r < p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
-                npointsₚ = npoints - 1
-                replacepoint!(path, k, npoints)
+                replacepoint!(path, k, npointsₚ)
+                npointsₚ -= 1
 
             elseif (r < p_move+p_birth+p_death+p_bounds)
                 # Move the temperatures of the starting and ending boundaries
@@ -462,17 +462,17 @@
             # Adjust the proposal
             if r < p_move
                 # Move one t-T point
-                movepoint!(path, k)
+                movepoint!(path, k, npointsₚ)
 
             elseif (r < p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point
                 k = npointsₚ = npoints + 1
-                addpoint!(path, k)
+                addpoint!(path, k, npointsₚ)
 
             elseif (r < p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
-                npointsₚ = npoints - 1
-                replacepoint!(path, k, npoints)
+                replacepoint!(path, k, npointsₚ)
+                npointsₚ -= 1
 
             elseif (r < p_move+p_birth+p_death+p_bounds)
                 # Move the temperatures of the starting and ending boundaries
@@ -577,17 +577,17 @@
             # Adjust the proposal
             if r < p_move
                 # Move one t-T point
-                movepoint!(path, k)
+                movepoint!(path, k, npointsₚ)
 
             elseif (r < p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point
                 k = npointsₚ = npoints + 1
-                addpoint!(path, k)
+                addpoint!(path, k, npointsₚ)
 
             elseif (r < p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
-                npointsₚ = npoints - 1
-                replacepoint!(path, k, npoints)
+                replacepoint!(path, k, npointsₚ)
+                npointsₚ -= 1
 
             elseif (r < p_move+p_birth+p_death+p_bounds)
                 # Move the temperatures of the starting and ending boundaries
@@ -656,7 +656,9 @@
                     xlabel="Time [Ma]", 
                     ylabel="Temperature [°C]", 
                     colorbar_title="Number of paths",
-                    title="Collection: $n of $nsteps steps"
+                    title="Collection: $n of $nsteps steps",
+                    minorticks=true,
+                    tickdir=:out,
                 )
                 x = 1:ceil(Int, n/50000):n
                 l = plot(x, view(lldist, x),

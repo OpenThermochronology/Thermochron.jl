@@ -22,6 +22,11 @@
     @test Thermochron.isdistinct(collect(1:10), 5, 0.5, 10)
     @test !Thermochron.isdistinct(collect(1:10), 5, 1.5, 10)
 
+    @test Thermochron.isdistinct(1:10, 5, 1:10)
+    @test !Thermochron.isdistinct(1:10, 5, 1:2:20)
+    @test Thermochron.isdistinct(collect(1:10), 5, 1:10, 10)
+    @test !Thermochron.isdistinct(collect(1:10), 5, 1:2:20, 10)
+
 ## --- Test geometry utility functions
 
     # Intersection of two spheres

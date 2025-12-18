@@ -283,7 +283,7 @@
         return view(buffer, firstindex(buffer):i₀-1)
     end
 
-    # Utility functions for checking the nummber of distinct t-T nodes in a given time interval
+    # Utility functions for checking the number of distinct t-T nodes in a given time interval
     function pointsininterval(points::AbstractArray, npoints::Int, lower::Number, upper::Number)
         @assert firstindex(points) == 1
         @assert npoints <= lastindex(points)
@@ -299,11 +299,12 @@
         @assert firstindex(points) == 1
         @assert npoints <= lastindex(points)
         n = 0
-        @inbounds for n in eachindex(nodes)
-            if lower < nodes[n] <= upper
-                for i in 1:npoints
-                    l, u = minmax(leftbound_at(nodes, n), rightbound_at(nodes, n))
-                    if max(lower,l) <= points[i] < min(upper, u)
+        @inbounds for j in eachindex(nodes)
+            if lower < nodes[j] <= upper
+                for k in 1:npoints
+                    l, u = minmax(leftbound_at(nodes, j), rightbound_at(nodes, j))
+                    if max(lower,l) <= points[k] < min(upper, u)
+                        # Only one point per interval can count towards total
                         n += 1
                         break
                     end
@@ -318,10 +319,30 @@
 
     # Check if point k is distinct from other points in list within ± δ
     function isdistinct(points::AbstractArray, k::Int, δ::Number, npoints::Int=length(points))
-        @assert npoints <= length(points)
-        I = firstindex(points):firstindex(points)+npoints-1
-        @inbounds for i in I
+        @assert k ∈ eachindex(points)
+        notused = max(length(points)-npoints, 0)
+        @inbounds for i in Iterators.drop(reverse(eachindex(points)), notused)
             if i!=k && abs(points[i] - points[k]) <= δ
+                return false
+            end
+        end
+        return true
+    end
+    function isdistinct(points::AbstractArray, k::Int, nodes::AbstractArray, npoints::Int=length(points); kwargs...)
+        length(points) > 1 || return false
+        i = searchsortedfirst(nodes, points[k]; kwargs...)
+        i₋,i₊ = firstindex(nodes), lastindex(nodes)
+        if i₋ < i <= i₊
+            l, u = nodes[i-1], nodes[i]
+        elseif i <= i₋
+            l, u = typemin(nodes[i₋]), nodes[i₋]
+        else
+            l, u = nodes[i₊], typemax(nodes[i₊])
+        end
+        @assert k ∈ eachindex(points)
+        notused = max(length(points)-npoints, 0)
+        @inbounds for i in Iterators.drop(reverse(eachindex(points)), notused)
+            if (i != k) && (l < points[i] <= u)
                 return false
             end
         end
@@ -550,7 +571,7 @@
     end
 
     # Move a t-T point and apply boundary conditions
-    function movepoint!(path::TtPath{T}, k::Int) where {T}
+    function movepoint!(path::TtPath{T}, k::Int, npoints::Int) where {T}
         # Move the age of one model point
         path.agepointsₚ[k] += rand(Normal{T}(zero(T), path.σⱼtₚ[k]))
 
@@ -563,11 +584,17 @@
         # Apply Temperature boundary conditions
         path.Tpointsₚ[k] = boundtemp(path.Tpointsₚ[k], path.boundary)
 
+        # Ensure uniqueness
+        while !isdistinct(path.agepointsₚ, k, path.agesteps, npoints; rev=true)
+            path.agepointsₚ[k] += rand(Normal{T}(zero(T), path.σⱼtₚ[k]))
+            path.agepointsₚ[k] = boundtime(path.agepointsₚ[k], path.boundary)
+        end
+
         return path
     end
 
     # Add a t-T point
-    function addpoint!(path::TtPath{T}, k::Int) where {T}
+    function addpoint!(path::TtPath{T}, k::Int, npoints::Int) where {T}
         @assert eachindex(path.agepointsₚ) == eachindex(path.Tpointsₚ) == eachindex(path.σⱼtₚ) == eachindex(path.σⱼTₚ)
 
         tmin, tmax = textrema(path.boundary)
@@ -603,7 +630,7 @@
         path.σⱼTₚ[k] = f*σⱼT₊ + (1-f)*σⱼT₋
 
         # Move the point from the interpolated value
-        return movepoint!(path, k)
+        return movepoint!(path, k, npoints)
     end
 
     function replacepoint!(path::TtPath{T}, k::Int, n::Int) where {T}
