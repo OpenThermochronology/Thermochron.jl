@@ -162,4 +162,52 @@
 
     @test Thermochron.model_ll(zircon,Tsteps,dm) ≈ -2.63425941730323
 
+## --- Check ZRDAAM effective closure temperatures
+
+    # Standard ZRDAAM annealing model
+    dm = ZRDAAM()
+
+    rate = 0.1 # C/Ma
+    agesteps = (400:-1:0.)./rate
+    Tsteps = collect(agesteps .* rate)
+    # Zircons with varying eU
+    zr10 = ZirconHe(;r=60, dr=1, U238=10, Th232=0, agesteps)
+    zr100 = ZirconHe(;r=60, dr=1, U238=100, Th232=0, agesteps)
+    zr1000 = ZirconHe(;r=60, dr=1, U238=1000, Th232=0, agesteps)
+    anneal!(zr10, Tsteps, dm)
+    @test modelage(zr10, Tsteps, dm)*rate ≈ 117 atol=1
+    anneal!(zr100, Tsteps, dm)
+    @test modelage(zr100, Tsteps, dm)*rate ≈ 136 atol=1
+    anneal!(zr1000, Tsteps, dm)
+    @test modelage(zr1000, Tsteps, dm)*rate ≈ 0.00087 atol=0.01
+
+    rate = 1.0 # C/Ma
+    agesteps = (400:-1:0.)./rate
+    Tsteps = collect(agesteps .* rate)
+    # Zircons with varying eU
+    zr10 = ZirconHe(;r=60, dr=1, U238=10, Th232=0, agesteps)
+    zr100 = ZirconHe(;r=60, dr=1, U238=100, Th232=0, agesteps)
+    zr1000 = ZirconHe(;r=60, dr=1, U238=1000, Th232=0, agesteps)
+    anneal!(zr10, Tsteps, dm)
+    @test modelage(zr10, Tsteps, dm)*rate ≈ 100 atol=1
+    anneal!(zr100, Tsteps, dm)
+    @test modelage(zr100, Tsteps, dm)*rate ≈ 127 atol=1
+    anneal!(zr1000, Tsteps, dm)
+    @test modelage(zr1000, Tsteps, dm)*rate ≈ 150 atol=1
+
+    rate = 10.0 # C/Ma
+    agesteps = (400:-1:0.)./rate
+    Tsteps = collect(agesteps .* rate)
+    # Zircons with varying eU
+    zr10 = ZirconHe(;r=60, dr=1, U238=10, Th232=0, agesteps)
+    zr100 = ZirconHe(;r=60, dr=1, U238=100, Th232=0, agesteps)
+    zr1000 = ZirconHe(;r=60, dr=1, U238=1000, Th232=0, agesteps)
+    ap250 = ApatiteHe(;age=75, age_sigma=5, r=60, dr=1, U238=250, Th232=0, agesteps)
+    anneal!(zr10, Tsteps, dm)
+    @test modelage(zr10, Tsteps, dm)*rate ≈ 89 atol=1
+    anneal!(zr100, Tsteps, dm)
+    @test modelage(zr100, Tsteps, dm)*rate ≈ 115 atol=1
+    anneal!(zr1000, Tsteps, dm)
+    @test modelage(zr1000, Tsteps, dm)*rate ≈ 145 atol=1
+
 ## --- End of file
