@@ -491,7 +491,7 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
     @assert eachindex(DL) == eachindex(Dtrap) == eachindex(Tsteps)
     @turbo for i ∈ eachindex(DL)
         DL[i] = D0L * exp(-EaL / R / (Tsteps[i] + ΔT)) # [micron^2/Myr]
-        Dtrap[i] = exp(-EaTrap / R / (Tsteps[i] + ΔT)) # [unitless]
+        Dtrap[i] = exp( EaTrap / R / (Tsteps[i] + ΔT)) # [unitless]
     end
 
     # Get time and radius discretization

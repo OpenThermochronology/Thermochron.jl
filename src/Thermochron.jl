@@ -60,7 +60,7 @@ module Thermochron
     export Ketcham1999FC, Ketcham2007FC                                 # Apatite fission track annealing model types
     export Yamada2007PC, Guenthner2013FC                                # Zircon fission track annealing models
     export Jones2021FA                                                  # Other mineral annealing models
-    export modelage, modellength                                        # Functions
+    export modelage, modellength, anneal!                               # Functions
 
     include("utilities.jl")
     include("inversion.jl")

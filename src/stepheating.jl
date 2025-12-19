@@ -303,7 +303,7 @@ function degas_initialized!(mineral::ApatiteHe{T}, step_diffusant::AbstractVecto
     @assert eachindex(DL) == eachindex(Dtrap) == eachindex(Tsteps_degassing)
     @turbo for i ∈ eachindex(DL)
         DL[i] = D0L * exp(-EaL / R / (Tsteps_degassing[i] + ΔT)) # [micron^2/Myr]
-        Dtrap[i] = exp(-EaTrap / R / (Tsteps_degassing[i] + ΔT)) # [unitless]
+        Dtrap[i] = exp( EaTrap / R / (Tsteps_degassing[i] + ΔT)) # [unitless]
     end
 
     # Get time and radius discretization

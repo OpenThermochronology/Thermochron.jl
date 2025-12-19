@@ -80,9 +80,9 @@
     pr, Teq = Thermochron.anneal(tsteps, Tsteps, dm)
     modelage(apatite,Tsteps,pr,dm) # to not time compilation
     @time "Running modelage" age = modelage(apatite,Tsteps,pr,dm)
-    @test age ≈ 86.56961680431533 
+    @test age ≈ 203.42367713504134
     for _ in 1:4 # Re-run to ensure internal state does not change
-        @test modelage(apatite,Tsteps,pr,dm) ≈ 86.56961680431533 
+        @test modelage(apatite,Tsteps,pr,dm) ≈ 203.42367713504134
     end
 
     crystalradius = 35.
@@ -90,7 +90,7 @@
     Th = 35.1
     apatite = ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps), volumeweighting=:spherical)
     for _ in 1:4 # Re-run to ensure internal state does not change
-        @test modelage(apatite,Tsteps,pr,dm) ≈ 106.07135444971297
+        @test modelage(apatite,Tsteps,pr,dm) ≈ 238.17143431655836
     end
 
     crystalradius = 135.
@@ -98,7 +98,7 @@
     Th = 117.1
     apatite = ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps), volumeweighting=:spherical)
     for _ in 1:4 # Re-run to ensure internal state does not change
-        @test modelage(apatite,Tsteps,pr,dm) ≈ 222.0762023094609
+        @test modelage(apatite,Tsteps,pr,dm) ≈ 357.12024274070734
     end
 
     crystalradius = 135.
@@ -106,7 +106,7 @@
     Th = 40.0
     apatite = ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps), volumeweighting=:spherical)
     for _ in 1:4 # Re-run to ensure internal state does not change
-        @test modelage(apatite,Tsteps,pr,dm) ≈ 221.98170127381994
+        @test modelage(apatite,Tsteps,pr,dm) ≈ 356.7536971988364
     end
 
 ## --- As above but with Sm as well
@@ -115,12 +115,68 @@
     U = 110.7
     Th = 35.1
     Sm = 38.13
-    apatite = ApatiteHe(age=100, age_sigma=5, r=crystalradius,dr=dr,U238=U,Th232=Th,Sm147=Sm, agesteps=reverse(tsteps), volumeweighting=:spherical)
+    apatite = ApatiteHe(age=240, age_sigma=5, r=crystalradius,dr=dr,U238=U,Th232=Th,Sm147=Sm, agesteps=reverse(tsteps), volumeweighting=:spherical)
     @test apatite.r147Sm ≈ fill(1.56203306122449e17, 35)
-    @test modelage(apatite,Tsteps,pr,dm) ≈ 106.19413225855304
+    @test modelage(apatite,Tsteps,pr,dm) ≈ 238.4490428757609
 
 ## --- Test log likelihood
 
-    @test Thermochron.model_ll(apatite,Tsteps,dm) ≈ -3.295721934367721
+    @test Thermochron.model_ll(apatite,Tsteps,dm) ≈ -2.576485805663333
+
+## --- Check RDAAM effective closure temperatures
+
+    # Standard RDAAM annealing model
+    dm = RDAAM()
+
+    rate = 0.1 # C/Ma
+    agesteps = (120:-0.3:0.)./rate
+    Tsteps = collect(agesteps .* rate)
+    # Apatites with varying eU
+    ap4 = ApatiteHe(;age=75, age_sigma=5, r=60, dr=1, U238=4, Th232=0, agesteps)
+    ap28 = ApatiteHe(;age=75, age_sigma=5, r=60, dr=1, U238=28, Th232=0, agesteps)
+    ap150 = ApatiteHe(;age=75, age_sigma=5, r=60, dr=1, U238=150, Th232=0, agesteps)
+    ap250 = ApatiteHe(;age=75, age_sigma=5, r=60, dr=1, U238=250, Th232=0, agesteps)
+    anneal!(ap4, Tsteps, dm)
+    @test modelage(ap4, Tsteps, dm)*rate ≈ 55 atol=1
+    anneal!(ap28, Tsteps, dm)
+    @test modelage(ap28, Tsteps, dm)*rate ≈ 68 atol=1
+    anneal!(ap150, Tsteps, dm)
+    @test modelage(ap150, Tsteps, dm)*rate ≈ 76 atol=1
+    anneal!(ap250, Tsteps, dm)
+    @test modelage(ap250, Tsteps, dm)*rate ≈ 79 atol=1
+
+    rate = 1.0 # C/Ma
+    agesteps = (120:-0.3:0.)./rate
+    Tsteps = collect(agesteps .* rate)
+    # Apatites with varying eU
+    ap4 = ApatiteHe(;age=75, age_sigma=5, r=60, dr=1, U238=4, Th232=0, agesteps)
+    ap28 = ApatiteHe(;age=75, age_sigma=5, r=60, dr=1, U238=28, Th232=0, agesteps)
+    ap150 = ApatiteHe(;age=75, age_sigma=5, r=60, dr=1, U238=150, Th232=0, agesteps)
+    ap250 = ApatiteHe(;age=75, age_sigma=5, r=60, dr=1, U238=250, Th232=0, agesteps)
+    anneal!(ap4, Tsteps, dm)
+    @test modelage(ap4, Tsteps, dm)*rate ≈ 48 atol=1
+    anneal!(ap28, Tsteps, dm)
+    @test modelage(ap28, Tsteps, dm)*rate ≈ 64 atol=1
+    anneal!(ap150, Tsteps, dm)
+    @test modelage(ap150, Tsteps, dm)*rate ≈ 76 atol=1
+    anneal!(ap250, Tsteps, dm)
+    @test modelage(ap250, Tsteps, dm)*rate ≈ 79 atol=1
+
+    rate = 10.0 # C/Ma
+    agesteps = (120:-0.3:0.)./rate
+    Tsteps = collect(agesteps .* rate)
+    # Apatites with varying eU
+    ap4 = ApatiteHe(;age=75, age_sigma=5, r=60, dr=1, U238=4, Th232=0, agesteps)
+    ap28 = ApatiteHe(;age=75, age_sigma=5, r=60, dr=1, U238=28, Th232=0, agesteps)
+    ap150 = ApatiteHe(;age=75, age_sigma=5, r=60, dr=1, U238=150, Th232=0, agesteps)
+    ap250 = ApatiteHe(;age=75, age_sigma=5, r=60, dr=1, U238=250, Th232=0, agesteps)
+    anneal!(ap4, Tsteps, dm)
+    @test modelage(ap4, Tsteps, dm)*rate ≈ 53 atol=1
+    anneal!(ap28, Tsteps, dm)
+    @test modelage(ap28, Tsteps, dm)*rate ≈ 58 atol=1
+    anneal!(ap150, Tsteps, dm)
+    @test modelage(ap150, Tsteps, dm)*rate ≈ 72 atol=1
+    anneal!(ap250, Tsteps, dm)
+    @test modelage(ap250, Tsteps, dm)*rate ≈ 76 atol=1
 
 ## --- End of file
