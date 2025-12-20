@@ -22,8 +22,9 @@ abstract type AbsoluteChronometer{T} <:Chronometer{T} end
 # Abstract subtypes for different categories of chronometers
 abstract type FissionTrackLength{T} <: Chronometer{T} end
 abstract type FissionTrackSample{T} <: AbsoluteChronometer{T} end
-abstract type HeliumSample{T} <: AbsoluteChronometer{T} end
-abstract type ArgonSample{T} <: AbsoluteChronometer{T} end
+abstract type NobleGasSample{T} <: AbsoluteChronometer{T} end
+abstract type HeliumSample{T} <: NobleGasSample{T} end
+abstract type ArgonSample{T} <: NobleGasSample{T} end
 
 
 ## --- Fission track length types
