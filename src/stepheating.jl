@@ -118,13 +118,8 @@ function updatebeta!(β::Vector{T}, mineral::NobleGasSample{T}, dm::Diffusivity{
     return β
 end
 
-function degas_initialized!(mineral::PlanarNobleGas{T}, step_diffusant::AbstractVector{T}, tsteps_degassing::AbstractVector{T}, Tsteps_degassing::AbstractVector{T}, dm::Diffusivity{T}; fuse::Bool=true, diffusivityratio=one(T), setting::Symbol=:laboratory) where {T}
+function crank_nicolson!(mineral::PlanarNobleGas{T}, tsteps_degassing::AbstractVector{T}, Tsteps_degassing::AbstractVector{T}, dm::Diffusivity{T}; fuse::Bool=true, diffusivityratio=one(T), setting::Symbol=:laboratory) where {T}
     @assert setting===:laboratory || setting===:geological
-
-    # Check time and radius discretization
-    nrsteps = mineral.nrsteps::Int
-    ntsteps = length(tsteps_degassing)
-    @assert eachindex(step_diffusant) == eachindex(tsteps_degassing) == eachindex(Tsteps_degassing) == Base.OneTo(ntsteps)
 
     # Temperature offset
     if setting===:laboratory
@@ -132,6 +127,11 @@ function degas_initialized!(mineral::PlanarNobleGas{T}, step_diffusant::Abstract
     else
         ΔT = T(273.15) + mineral.offset             # Conversion from C to K
     end
+
+    # Check time and radius discretization
+    nrsteps = mineral.nrsteps::Int
+    ntsteps = length(tsteps_degassing)
+    @assert eachindex(tsteps_degassing) == eachindex(Tsteps_degassing) == Base.OneTo(ntsteps)
 
     # Output matrix for all timesteps
     # u = v*r is the coordinate transform (u-substitution) for the Crank-
@@ -150,7 +150,6 @@ function degas_initialized!(mineral::PlanarNobleGas{T}, step_diffusant::Abstract
     A = mineral.A       # Tridiagonal matrix
     F = mineral.F       # LU object for in-place lu factorization
 
-    total_diffusant = diffusantᵢ₋ = nanmean(@views(u[2:end-1, 1]))
     @inbounds for i in Base.OneTo(ntsteps-fuse)
         # Duration of current timestep
         dt = step_at(tsteps_degassing, i)
@@ -185,26 +184,12 @@ function degas_initialized!(mineral::PlanarNobleGas{T}, step_diffusant::Abstract
         lu!(F, A, allowsingular=true)
         ldiv!(F, y)
         u[:,i+1] = y
-
-        diffusantᵢ = nanmean(@views(u[2:end-1, i+1]))
-        step_diffusant[i] = max(diffusantᵢ₋ - diffusantᵢ, zero(T))
-        diffusantᵢ₋ = diffusantᵢ
     end
-    # Degas all remaining diffusant in last step if fuse==true
-    fuse && (step_diffusant[ntsteps] = max(diffusantᵢ₋, zero(T)))
 
-    return total_diffusant
+    return mineral
 end
-function degas_initialized!(mineral::SphericalNobleGas{T}, step_diffusant::AbstractVector{T}, tsteps_degassing::AbstractVector{T}, Tsteps_degassing::AbstractVector{T}, dm::DiffusivityModel{T}; fuse::Bool=true, diffusivityratio::Number=one(T), setting::Symbol=:laboratory) where {T}
+function crank_nicolson!(mineral::SphericalNobleGas{T}, tsteps_degassing::AbstractVector{T}, Tsteps_degassing::AbstractVector{T}, dm::DiffusivityModel{T}; fuse::Bool=true, diffusivityratio::Number=one(T), setting::Symbol=:laboratory) where {T}
     @assert setting===:laboratory || setting===:geological
-
-    # Check time and radius discretization
-    nrsteps = mineral.nrsteps::Int
-    rsteps = mineral.rsteps::AbstractVector{T}
-    ntsteps = length(tsteps_degassing)
-    @assert eachindex(step_diffusant) == eachindex(tsteps_degassing) == eachindex(Tsteps_degassing) == Base.OneTo(ntsteps)
-    relvolumes = mineral.relvolumes::Vector{T}
-    @assert eachindex(relvolumes) == Base.OneTo(nrsteps-2)
 
     # Temperature offset
     if setting===:laboratory
@@ -212,6 +197,11 @@ function degas_initialized!(mineral::SphericalNobleGas{T}, step_diffusant::Abstr
     else
         ΔT = T(273.15) + mineral.offset             # Conversion from C to K
     end
+
+    # Check time and radius discretization
+    nrsteps = mineral.nrsteps::Int
+    ntsteps = length(tsteps_degassing)
+    @assert eachindex(tsteps_degassing) == eachindex(Tsteps_degassing) == Base.OneTo(ntsteps)
 
     # Output matrix for all timesteps
     # u = v*r is the coordinate transform (u-substitution) for the Crank-
@@ -266,6 +256,49 @@ function degas_initialized!(mineral::SphericalNobleGas{T}, step_diffusant::Abstr
         u[:,i+1] = y
     end
 
+    return mineral
+end
+
+function diffusant_lost!(step_diffusant::AbstractVector{T}, mineral::PlanarNobleGas{T}; fuse::Bool=true) where {T}
+    # Check time and radius discretization
+    ntsteps = length(step_diffusant)
+    @assert eachindex(step_diffusant) == Base.OneTo(ntsteps)
+
+    # Output matrix for all timesteps
+    # u = v*r is the coordinate transform (u-substitution) for the Crank-
+    # Nicholson equations where v is the Ar profile and r is radius
+    u = mineral.u::DenseMatrix{T}
+    @assert axes(u,2) == Base.OneTo(ntsteps+1)
+    @assert axes(u,1) == Base.OneTo(mineral.nrsteps)
+
+    # Calculate diffusant lost to diffusion at each step
+    total_diffusant = diffusantᵢ₋ = nanmean(@views(u[2:end-1, 1]))
+    @inbounds for i in Base.OneTo(ntsteps-fuse)
+        diffusantᵢ = nanmean(@views(u[2:end-1, i+1]))
+        step_diffusant[i] = max(diffusantᵢ₋ - diffusantᵢ, zero(T))
+        diffusantᵢ₋ = diffusantᵢ
+    end
+    # Degas all remaining diffusant in last step if fuse==true
+    fuse && (step_diffusant[ntsteps] = max(diffusantᵢ₋, zero(T)))
+
+    return total_diffusant
+end
+function diffusant_lost!(step_diffusant::AbstractVector{T}, mineral::SphericalNobleGas{T}; fuse::Bool=true) where {T}
+    # Check time and radius discretization
+    ntsteps = length(step_diffusant)
+    @assert eachindex(step_diffusant) == Base.OneTo(ntsteps)
+    nrsteps = mineral.nrsteps::Int
+    rsteps = mineral.rsteps::AbstractVector{T}
+    relvolumes = mineral.relvolumes::Vector{T}
+    @assert eachindex(relvolumes) == eachindex(rsteps) == Base.OneTo(nrsteps-2)
+
+    # Output matrix for all timesteps
+    # u = v*r is the coordinate transform (u-substitution) for the Crank-
+    # Nicholson equations where v is the Ar profile and r is radius
+    u = mineral.u::DenseMatrix{T}
+    @assert axes(u,2) == Base.OneTo(ntsteps+1)
+    @assert axes(u,1) == Base.OneTo(nrsteps)
+
     # Calculate diffusant lost to diffusion at each step
     total_diffusant = diffusantᵢ₋ = nanmean(@views(u[2:end-1, 1])./=rsteps, relvolumes)
     @inbounds for i in Base.OneTo(ntsteps-fuse)
@@ -280,13 +313,15 @@ function degas_initialized!(mineral::SphericalNobleGas{T}, step_diffusant::Abstr
 end
 
 ## --- Initialize and degas daughter isotopes
-function degas_daughter!(mineral::Union{HeliumSample{T}, ArgonSample{T}}, tsteps_degassing, Tsteps_degassing, dm; fuse::Bool=true) where {T}
+
+function degas_daughter!(mineral::NobleGasSample{T}, tsteps_degassing, Tsteps_degassing, dm; fuse::Bool=true) where {T}
     # Erase previous diffusion profiles
     u = fill!(mineral.u, zero(T))
     u[:,1] .= mineral.y # Initialize with final profile from prevous (geologic) inversion
     # u[end,1] = zero(T) # Zero concentration at outer boundary, since we degas in a vacuum
     # Degas and return total daughter
-    return degas_initialized!(mineral, mineral.step_daughter, tsteps_degassing, Tsteps_degassing, dm; fuse)
+    crank_nicolson!(mineral, tsteps_degassing, Tsteps_degassing, dm; fuse)
+    return diffusant_lost!(mineral.step_daughter, mineral; fuse)
 end
 
 ## --- Initialize and degas tracer isotopes
@@ -321,7 +356,8 @@ function degas_tracer!(mineral::PlanarNobleGas{T}, initial_tracer, tsteps_degass
     u[end,1] = zero(T) # Zero concentration at outer boundary, since we degas in a vacuum
     # Degas and return total tracer
     diffusivityratio = tracerdiffusivityratio(mineral)
-    return degas_initialized!(mineral, mineral.step_tracer, tsteps_degassing, Tsteps_degassing, dm; fuse, diffusivityratio)
+    crank_nicolson!(mineral, tsteps_degassing, Tsteps_degassing, dm; fuse, diffusivityratio)
+    return diffusant_lost!(mineral.step_tracer, mineral; fuse)
 end
 function degas_tracer!(mineral::SphericalNobleGas{T}, initial_tracer, tsteps_degassing, Tsteps_degassing, dm; fuse::Bool=true)  where {T}
     # Erase previous diffusion profiles
@@ -332,7 +368,8 @@ function degas_tracer!(mineral::SphericalNobleGas{T}, initial_tracer, tsteps_deg
     u[end,1] = zero(T) # Zero concentration at outer boundary, since we degas in a vacuum
     # Degas and return total tracer
     diffusivityratio = tracerdiffusivityratio(mineral)
-    return degas_initialized!(mineral, mineral.step_tracer, tsteps_degassing, Tsteps_degassing, dm; fuse, diffusivityratio)
+    crank_nicolson!(mineral, tsteps_degassing, Tsteps_degassing, dm; fuse, diffusivityratio)
+    return diffusant_lost!(mineral.step_tracer, mineral; fuse)
 end
 tracerdiffusivityratio(x::ArgonSample{T}) where {T} = T((40/39)^0.3)
 tracerdiffusivityratio(x::HeliumSample{T}) where {T} = T((4/3)^0.3)
