@@ -372,11 +372,11 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T};
     @assert eachindex(tsteps) == eachindex(Tsteps) == Base.OneTo(ntsteps)
     
     # Variables related to He deposition
-    bulkalpha = zero(T)
+    bulkdaughter = zero(T)
     bulkradius = last(rsteps) + step(rsteps)
-    bulkalphadeposition = zircon.bulkalphadeposition::Vector{T}
-    alphadeposition = zircon.alphadeposition::Matrix{T}
-    @assert eachindex(bulkalphadeposition) == axes(alphadeposition, 1) == Base.OneTo(ntsteps)
+    bulkdeposition = zircon.bulkdeposition::Vector{T}
+    deposition = zircon.deposition::Matrix{T}
+    @assert eachindex(bulkdeposition) == axes(deposition, 1) == Base.OneTo(ntsteps)
 
     # The annealed damage matrix is the summation of the ρᵣ for each
     # previous timestep multiplied by the the alpha dose at each
@@ -432,16 +432,16 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T};
 
         if partitiondaughter
             # Increment He concentration outside grain
-            bulkalpha += bulkalphadeposition[i]
+            bulkdaughter += bulkdeposition[i]
             # Set external boundary condition given He partitioning between grain and intragranular medium
-            y[nrsteps] = bulkradius * bulkalpha * fraction_internal(Tsteps[i]+ΔT, zircon)
+            y[nrsteps] = bulkradius * bulkdaughter * fraction_internal(Tsteps[i]+ΔT, zircon)
         end
 
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
         @turbo for k = 2:nrsteps-1
             𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
-            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - alphadeposition[i, k-1]*rsteps[k-1]*β[k]
+            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - deposition[i, k-1]*rsteps[k-1]*β[k]
         end
 
         # Invert using tridiagonal matrix algorithm
@@ -502,11 +502,11 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
     @assert eachindex(tsteps) == eachindex(Tsteps) == Base.OneTo(ntsteps)
     
     # Variables related to He deposition
-    bulkalpha = zero(T)
+    bulkdaughter = zero(T)
     bulkradius = last(rsteps) + step(rsteps)
-    bulkalphadeposition = apatite.bulkalphadeposition::Vector{T}
-    alphadeposition = apatite.alphadeposition::Matrix{T}
-    @assert eachindex(bulkalphadeposition) == axes(alphadeposition, 1) == Base.OneTo(ntsteps)
+    bulkdeposition = apatite.bulkdeposition::Vector{T}
+    deposition = apatite.deposition::Matrix{T}
+    @assert eachindex(bulkdeposition) == axes(deposition, 1) == Base.OneTo(ntsteps)
 
     # The annealed damage matrix is the summation of the ρᵣ for each
     # previous timestep multiplied by the the alpha dose at each
@@ -563,16 +563,16 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
 
         if partitiondaughter
             # Increment He concentration outside grain
-            bulkalpha += bulkalphadeposition[i]
+            bulkdaughter += bulkdeposition[i]
             # Set external boundary condition given He partitioning between grain and intragranular medium
-            y[nrsteps] = bulkradius * bulkalpha * fraction_internal(Tsteps[i]+ΔT, apatite)
+            y[nrsteps] = bulkradius * bulkdaughter * fraction_internal(Tsteps[i]+ΔT, apatite)
         end
 
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
         @turbo for k = 2:nrsteps-1
             𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
-            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - alphadeposition[i, k-1]*rsteps[k-1]*β[k]
+            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - deposition[i, k-1]*rsteps[k-1]*β[k]
         end
 
         # Invert using tridiagonal matrix algorithm
@@ -620,11 +620,11 @@ function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}, dm::Diffus
     @assert eachindex(tsteps) == eachindex(Tsteps) == Base.OneTo(ntsteps)
     
     # Variables related to He deposition
-    bulkalpha = zero(T)
+    bulkdaughter = zero(T)
     bulkradius = last(rsteps) + step(rsteps)
-    bulkalphadeposition = mineral.bulkalphadeposition::Vector{T}
-    alphadeposition = mineral.alphadeposition::Matrix{T}
-    @assert eachindex(bulkalphadeposition) == axes(alphadeposition, 1) == Base.OneTo(ntsteps)
+    bulkdeposition = mineral.bulkdeposition::Vector{T}
+    deposition = mineral.deposition::Matrix{T}
+    @assert eachindex(bulkdeposition) == axes(deposition, 1) == Base.OneTo(ntsteps)
 
     # Output matrix for all timesteps
     # u = v*r is the coordinate transform (u-substitution) for the Crank-
@@ -669,16 +669,16 @@ function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}, dm::Diffus
 
         if partitiondaughter
             # Increment He concentration outside grain
-            bulkalpha += bulkalphadeposition[i]
+            bulkdaughter += bulkdeposition[i]
             # Set external boundary condition given He partitioning between grain and intragranular medium
-            y[nrsteps] = bulkradius * bulkalpha * fraction_internal(Tsteps[i]+ΔT, mineral)
+            y[nrsteps] = bulkradius * bulkdaughter * fraction_internal(Tsteps[i]+ΔT, mineral)
         end
 
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
         @turbo for k = 2:nrsteps-1
             𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
-            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - alphadeposition[i, k-1]*rsteps[k-1]*β[k]
+            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - deposition[i, k-1]*rsteps[k-1]*β[k]
         end
 
         # Invert using tridiagonal matrix algorithm
@@ -725,10 +725,10 @@ function modelage(mineral::PlanarHe{T}, Tsteps::AbstractVector{T}, dm::Diffusivi
     @assert eachindex(tsteps) == eachindex(Tsteps) == Base.OneTo(ntsteps)
     
     # Variables related to He deposition
-    bulkalpha = zero(T)
-    bulkalphadeposition = mineral.bulkalphadeposition::Vector{T}
-    alphadeposition = mineral.alphadeposition::Matrix{T}
-    @assert eachindex(bulkalphadeposition) == axes(alphadeposition, 1) == Base.OneTo(ntsteps)
+    bulkdaughter = zero(T)
+    bulkdeposition = mineral.bulkdeposition::Vector{T}
+    deposition = mineral.deposition::Matrix{T}
+    @assert eachindex(bulkdeposition) == axes(deposition, 1) == Base.OneTo(ntsteps)
 
     # Output matrix for all timesteps
     u = mineral.u::DenseMatrix{T}
@@ -771,16 +771,16 @@ function modelage(mineral::PlanarHe{T}, Tsteps::AbstractVector{T}, dm::Diffusivi
 
         if partitiondaughter
             # Increment He concentration outside grain
-            bulkalpha += bulkalphadeposition[i]
+            bulkdaughter += bulkdeposition[i]
             # Set external boundary condition given He partitioning between grain and intragranular medium
-            y[nrsteps] = bulkalpha * fraction_interna(Tsteps[i]+ΔT, mineral)
+            y[nrsteps] = bulkdaughter * fraction_internal(Tsteps[i]+ΔT, mineral)
         end
 
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
         @turbo for k = 2:nrsteps-1
             𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
-            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - alphadeposition[i, k-1]*β[k]
+            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - deposition[i, k-1]*β[k]
         end
 
         # Invert using tridiagonal matrix algorithm

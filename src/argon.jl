@@ -54,11 +54,11 @@ function modelage(mineral::SphericalAr{T}, Tsteps::AbstractVector{T}, dm::Diffus
     @assert eachindex(tsteps) == eachindex(Tsteps) == Base.OneTo(ntsteps)
 
     # Variables related to Ar deposition
-    bulkargon = zero(T)
+    bulkdaughter = zero(T)
     bulkradius = last(rsteps) + step(rsteps)
-    bulkargondeposition = mineral.bulkargondeposition::Vector{T}
-    argondeposition = mineral.argondeposition::Matrix{T}
-    @assert eachindex(bulkargondeposition) == axes(argondeposition,1) == Base.OneTo(ntsteps)
+    bulkdeposition = mineral.bulkdeposition::Vector{T}
+    deposition = mineral.deposition::Matrix{T}
+    @assert eachindex(bulkdeposition) == axes(deposition,1) == Base.OneTo(ntsteps)
 
     # Common β factor is constant across all radii since diffusivity is constant
     β = mineral.β::Vector{T}
@@ -102,16 +102,16 @@ function modelage(mineral::SphericalAr{T}, Tsteps::AbstractVector{T}, dm::Diffus
 
         if partitiondaughter
             # Increment Ar concentration outside grain
-            bulkargon += bulkargondeposition[i]
+            bulkdaughter += bulkdeposition[i]
             # Set external boundary condition given Ar partitioning between grain and intragranular medium
-            y[nrsteps] = bulkradius * bulkargon * fraction_internal(Tsteps[i]+ΔT, mineral)
+            y[nrsteps] = bulkradius * bulkdaughter * fraction_internal(Tsteps[i]+ΔT, mineral)
         end
 
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
         @turbo for k = 2:nrsteps-1
             𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
-            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - argondeposition[i, k-1]*rsteps[k-1]*β[k]
+            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - deposition[i, k-1]*rsteps[k-1]*β[k]
         end
 
         # Invert using tridiagonal matrix algorithm
@@ -153,10 +153,10 @@ function modelage(mineral::PlanarAr{T}, Tsteps::AbstractVector{T}, dm::Diffusivi
     @assert eachindex(tsteps) == eachindex(Tsteps) == Base.OneTo(ntsteps)
 
     # Variables related to Ar deposition
-    bulkargon = zero(T)
-    bulkargondeposition = mineral.bulkargondeposition::Vector{T}
-    argondeposition = mineral.argondeposition::Matrix{T}
-    @assert eachindex(bulkargondeposition) == axes(argondeposition,1) == Base.OneTo(ntsteps)
+    bulkdaughter = zero(T)
+    bulkdeposition = mineral.bulkdeposition::Vector{T}
+    deposition = mineral.deposition::Matrix{T}
+    @assert eachindex(bulkdeposition) == axes(deposition,1) == Base.OneTo(ntsteps)
 
     # Common β factor is constant across all radii since diffusivity is constant
     β = mineral.β::Vector{T}
@@ -198,16 +198,16 @@ function modelage(mineral::PlanarAr{T}, Tsteps::AbstractVector{T}, dm::Diffusivi
 
         if partitiondaughter
             # Increment Ar concentration outside grain
-            bulkargon += bulkargondeposition[i]
+            bulkdaughter += bulkdeposition[i]
             # Set external boundary condition given Ar partitioning between grain and intragranular medium
-            y[nrsteps] = bulkargon * fraction_internal(Tsteps[i] + ΔT, mineral)
+            y[nrsteps] = bulkdaughter * fraction_internal(Tsteps[i] + ΔT, mineral)
         end
 
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham, 2005 https://doi.org/10.2138/rmg.2005.58.11
         @turbo for k = 2:nrsteps-1
             𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
-            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - argondeposition[i, k-1]*β[k]
+            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - deposition[i, k-1]*β[k]
         end
 
         # Invert using tridiagonal matrix algorithm
