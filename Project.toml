@@ -1,6 +1,6 @@
 name = "Thermochron"
 uuid = "b9a8379e-ee1a-4388-b7ca-7852af1cef08"
-version = "0.16.7"
+version = "0.16.8"
 authors = ["C. Brenhin Keller and collaborators"]
 
 [deps]
