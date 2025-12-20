@@ -45,12 +45,15 @@ module Thermochron
     export SphericalHe, PlanarHe, ZirconHe, ApatiteHe                   # Concrete U-Th/He types
     export SphericalAr, PlanarAr                                        # Concrete K/Ar types
     export get_age, get_age_sigma, empiricaluncertainty!, eU            # Functions
-        
+    const PlanarNobleGas{T} = Union{PlanarHe{T}, PlanarAr{T}}
+    const SphericalNobleGas{T} = Union{ZirconHe{T},ApatiteHe{T},SphericalHe{T},SphericalAr{T}}
+
     include("parsing.jl")
     export chronometers, checktimediscretization                        # Parse datasets into Chronometer objects
 
     include("argon.jl")
     include("helium.jl")
+    include("diffusion.jl")
     export ZirconHeliumModel, ZRDAAM, ApatiteHeliumModel, RDAAM         # Damage-and-annealing based helium diffusivity model types
 
     include("stepheating.jl")
