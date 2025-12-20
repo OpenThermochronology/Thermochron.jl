@@ -374,7 +374,6 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T};
     # Variables related to He deposition
     bulkalpha = zero(T)
     bulkradius = last(rsteps) + step(rsteps)
-    bulkgrainsize = zircon.bulkgrainsize::T
     bulkalphadeposition = zircon.bulkalphadeposition::Vector{T}
     alphadeposition = zircon.alphadeposition::Matrix{T}
     @assert eachindex(bulkalphadeposition) == axes(alphadeposition, 1) == Base.OneTo(ntsteps)
@@ -435,7 +434,7 @@ function modelage(zircon::ZirconHe{T}, Tsteps::AbstractVector{T}, dm::ZRDAAM{T};
             # Increment He concentration outside grain
             bulkalpha += bulkalphadeposition[i]
             # Set external boundary condition given He partitioning between grain and intragranular medium
-            y[nrsteps] = bulkradius * bulkalpha * fraction_internal_He(Tsteps[i]+ΔT, bulkgrainsize)
+            y[nrsteps] = bulkradius * bulkalpha * fraction_internal(Tsteps[i]+ΔT, zircon)
         end
 
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
@@ -505,7 +504,6 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
     # Variables related to He deposition
     bulkalpha = zero(T)
     bulkradius = last(rsteps) + step(rsteps)
-    bulkgrainsize = apatite.bulkgrainsize::T
     bulkalphadeposition = apatite.bulkalphadeposition::Vector{T}
     alphadeposition = apatite.alphadeposition::Matrix{T}
     @assert eachindex(bulkalphadeposition) == axes(alphadeposition, 1) == Base.OneTo(ntsteps)
@@ -567,7 +565,7 @@ function modelage(apatite::ApatiteHe{T}, Tsteps::AbstractVector{T}, dm::RDAAM{T}
             # Increment He concentration outside grain
             bulkalpha += bulkalphadeposition[i]
             # Set external boundary condition given He partitioning between grain and intragranular medium
-            y[nrsteps] = bulkradius * bulkalpha * fraction_internal_He(Tsteps[i]+ΔT, bulkgrainsize)
+            y[nrsteps] = bulkradius * bulkalpha * fraction_internal(Tsteps[i]+ΔT, apatite)
         end
 
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
@@ -624,7 +622,6 @@ function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}, dm::Diffus
     # Variables related to He deposition
     bulkalpha = zero(T)
     bulkradius = last(rsteps) + step(rsteps)
-    bulkgrainsize = mineral.bulkgrainsize::T
     bulkalphadeposition = mineral.bulkalphadeposition::Vector{T}
     alphadeposition = mineral.alphadeposition::Matrix{T}
     @assert eachindex(bulkalphadeposition) == axes(alphadeposition, 1) == Base.OneTo(ntsteps)
@@ -674,7 +671,7 @@ function modelage(mineral::SphericalHe{T}, Tsteps::AbstractVector{T}, dm::Diffus
             # Increment He concentration outside grain
             bulkalpha += bulkalphadeposition[i]
             # Set external boundary condition given He partitioning between grain and intragranular medium
-            y[nrsteps] = bulkradius * bulkalpha * fraction_internal_He(Tsteps[i]+ΔT, bulkgrainsize)
+            y[nrsteps] = bulkradius * bulkalpha * fraction_internal(Tsteps[i]+ΔT, mineral)
         end
 
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
@@ -729,7 +726,6 @@ function modelage(mineral::PlanarHe{T}, Tsteps::AbstractVector{T}, dm::Diffusivi
     
     # Variables related to He deposition
     bulkalpha = zero(T)
-    bulkgrainsize = mineral.bulkgrainsize::T
     bulkalphadeposition = mineral.bulkalphadeposition::Vector{T}
     alphadeposition = mineral.alphadeposition::Matrix{T}
     @assert eachindex(bulkalphadeposition) == axes(alphadeposition, 1) == Base.OneTo(ntsteps)
@@ -777,7 +773,7 @@ function modelage(mineral::PlanarHe{T}, Tsteps::AbstractVector{T}, dm::Diffusivi
             # Increment He concentration outside grain
             bulkalpha += bulkalphadeposition[i]
             # Set external boundary condition given He partitioning between grain and intragranular medium
-            y[nrsteps] = bulkalpha * fraction_internal_He(Tsteps[i]+ΔT, bulkgrainsize)
+            y[nrsteps] = bulkalpha * fraction_interna(Tsteps[i]+ΔT, mineral)
         end
 
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.

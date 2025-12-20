@@ -56,7 +56,6 @@ function modelage(mineral::SphericalAr{T}, Tsteps::AbstractVector{T}, dm::Diffus
     # Variables related to Ar deposition
     bulkargon = zero(T)
     bulkradius = last(rsteps) + step(rsteps)
-    bulkgrainsize = mineral.bulkgrainsize::T
     bulkargondeposition = mineral.bulkargondeposition::Vector{T}
     argondeposition = mineral.argondeposition::Matrix{T}
     @assert eachindex(bulkargondeposition) == axes(argondeposition,1) == Base.OneTo(ntsteps)
@@ -105,7 +104,7 @@ function modelage(mineral::SphericalAr{T}, Tsteps::AbstractVector{T}, dm::Diffus
             # Increment Ar concentration outside grain
             bulkargon += bulkargondeposition[i]
             # Set external boundary condition given Ar partitioning between grain and intragranular medium
-            y[nrsteps] = bulkradius * bulkargon * fraction_internal_Ar(Tsteps[i]+ΔT, bulkgrainsize)
+            y[nrsteps] = bulkradius * bulkargon * fraction_internal(Tsteps[i]+ΔT, mineral)
         end
 
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
@@ -155,7 +154,6 @@ function modelage(mineral::PlanarAr{T}, Tsteps::AbstractVector{T}, dm::Diffusivi
 
     # Variables related to Ar deposition
     bulkargon = zero(T)
-    bulkgrainsize = mineral.bulkgrainsize::T
     bulkargondeposition = mineral.bulkargondeposition::Vector{T}
     argondeposition = mineral.argondeposition::Matrix{T}
     @assert eachindex(bulkargondeposition) == axes(argondeposition,1) == Base.OneTo(ntsteps)
@@ -202,7 +200,7 @@ function modelage(mineral::PlanarAr{T}, Tsteps::AbstractVector{T}, dm::Diffusivi
             # Increment Ar concentration outside grain
             bulkargon += bulkargondeposition[i]
             # Set external boundary condition given Ar partitioning between grain and intragranular medium
-            y[nrsteps] = bulkargon * fraction_internal_Ar(Tsteps[i] + ΔT, bulkgrainsize)
+            y[nrsteps] = bulkargon * fraction_internal(Tsteps[i] + ΔT, mineral)
         end
 
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.

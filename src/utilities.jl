@@ -959,22 +959,22 @@
         return (vb-v)/vb
     end
 
-    function fraction_internal_Ar(T, grainsize_mm; K0=9.955215569888633e-5, Ea=26.86885827027531)
+    function fraction_internal_Ar(TK, grainsize_mm; K0=9.955215569888633e-5, Ea=26.86885827027531)
         ϕ = phi_boundary(grainsize_mm)
-        Kd = K0 * exp(-Ea/(0.008314472*T))
+        Kd = K0 * exp(-Ea/(0.008314472*TK))
         Ar_boundary = ϕ
         Ar_internal = (1 - ϕ) * Kd
         return Ar_internal/(Ar_internal+Ar_boundary)
     end
-
-    function fraction_internal_He(T, grainsize_mm; K0=0.00011279064713681025, Ea=26.72957128643152)
+    function fraction_internal_He(TK, grainsize_mm; K0=0.00011279064713681025, Ea=26.72957128643152)
         ϕ = phi_boundary(grainsize_mm)
-        Kd = K0 * exp(-Ea/(0.008314472*T))
+        Kd = K0 * exp(-Ea/(0.008314472*TK))
         He_boundary = ϕ
         He_internal = (1 - ϕ) * Kd
         return He_internal/(He_internal+He_boundary)
     end
-
+    fraction_internal(TK, mineral::HeliumSample) = fraction_internal_He(TK, mineral.bulkgrainsize)
+    fraction_internal(TK, mineral::ArgonSample) = fraction_internal_Ar(TK, mineral.bulkgrainsize)
 
 ## --- Ensure non-allocation of linear algebra
 function lu!(A::Tridiagonal{T,V}, pivot::Union{RowMaximum,NoPivot} = RowMaximum();
