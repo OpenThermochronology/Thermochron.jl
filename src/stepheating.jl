@@ -1,3 +1,23 @@
+## --- Step heating diffusivity types
+"""
+```julia
+MDDiffusivity(
+    D0::NTuple{N,T}             # [cm^2/sec] Maximum diffusivity
+    D0_logsigma::NTuple{N,T}    # [unitless] log uncertainty (default = 1/2 = a factor of ℯ two-sigma)
+    Ea::T                       # [kJ/mol] Activation energy
+    Ea_logsigma::T              # [unitless] log uncertainty (default = 1/2 = a factor of ℯ two-sigma)
+)
+```
+Multiple diffusivities for multiple domains
+"""
+Base.@kwdef struct MDDiffusivity{T<:AbstractFloat, N} <: DiffusivityModel{T}
+    D0::NTuple{N,T}             # [cm^2/sec] Maximum diffusivity
+    D0_logsigma::NTuple{N,T}    # [unitless] log uncertainty
+    Ea::NTuple{N,T}             # [kJ/mol] Activation energy
+    Ea_logsigma::NTuple{N,T}    # [unitless] log uncertainty 
+end
+Base.getindex(d::MDDiffusivity{T}, i::Int) where {T} = Diffusivity{T}(d.D0[i], d.D0_logsigma[i], d.Ea[i], d.Ea_logsigma[i])
+
 ## --- Initialize and degas daughter isotopes
 
 function degas_daughter!(mineral::NobleGasSample{T}, tsteps_degassing, Tsteps_degassing, dm; fuse::Bool=true) where {T}

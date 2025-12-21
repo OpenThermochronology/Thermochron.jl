@@ -48,11 +48,7 @@ module Thermochron
     const PlanarNobleGas{T} = Union{PlanarHe{T}, PlanarAr{T}}
     const SphericalNobleGas{T} = Union{ZirconHe{T},ApatiteHe{T},SphericalHe{T},SphericalAr{T}}
 
-    include("parsing.jl")
-    export chronometers, checktimediscretization                        # Parse datasets into Chronometer objects
-
-    include("argon.jl")
-    include("helium.jl")
+    include("noblegas.jl")
     include("diffusion.jl")
     export ZirconHeliumModel, ZRDAAM, ApatiteHeliumModel, RDAAM         # Damage-and-annealing based helium diffusivity model types
 
@@ -64,6 +60,9 @@ module Thermochron
     export Yamada2007PC, Guenthner2013FC                                # Zircon fission track annealing models
     export Jones2021FA                                                  # Other mineral annealing models
     export modelage, modellength, anneal!                               # Functions
+
+    include("parsing.jl")
+    export chronometers, checktimediscretization                        # Parse datasets into Chronometer objects
 
     include("utilities.jl")
     include("inversion.jl")

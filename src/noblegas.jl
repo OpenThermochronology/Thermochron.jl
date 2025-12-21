@@ -1,3 +1,31 @@
+## -- Argon age functions
+
+# The amount of ingrown argon since time t
+calc_Ar(t, K40) = K40*BR40K*(exp(λ40K*t)-1)
+# First time derivative of the amount of ingrown argon since time t
+calc_dArdt(t, K40) = K40*BR40K*λ40K*exp(λ40K*t)
+# Use Newton's method to solve for Ar age
+function newton_ar_age(Ar::T, K40; iterations::Int=16) where {T<:Number}
+    Tf = float(T)
+    argonage = one(Tf)
+    for _ in 1:iterations
+        ∂Ar∂t = calc_dArdt(argonage, K40) # Calculate derivative
+        argonage += (Ar - calc_Ar(argonage, K40))/∂Ar∂t # Move towards zero (calc_Ar(argonage) == μAr)
+    end
+    return max(argonage, zero(Tf))
+end
+# Apply to an ArgonSample
+function newton_age(mineral::ArgonSample)
+    # Daughter concentrations, in atoms/gram
+    μAr = final_diffusant(mineral)
+    # Parent concentrations in atoms/gram
+    μ40K = meanparent(mineral)
+    # Numerically solve for raw Ar age of the grain (i.e., as measured)
+    return newton_ar_age(μAr, μ40K)
+end
+meanparent(mineral::PlanarAr) = nanmean(mineral.r40K)
+meanparent(mineral::SphericalAr) = nanmean(mineral.r40K, mineral.relvolumes)
+
 ## --- Helium age functions
 
 # The amount of ingrown helium since time t
@@ -35,8 +63,27 @@ function meanparent(mineral::Union{SphericalHe, ZirconHe, ApatiteHe})
     return (nanmean(mineral.r238U,rv), nanmean(mineral.r235U,rv), nanmean(mineral.r232Th,rv), nanmean(mineral.r147Sm,rv))
 end
 
+## --- Concrete types for damage and diffusivity models
 
-## --- Concrete types for helium damage and diffusivity models
+
+"""
+```julia
+Diffusivity(
+    D0::T = 59.98               # [cm^2/sec] Maximum diffusion coefficient
+    D0_logsigma::T = log(2)/2   # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    Ea::T = 205.94              # [kJ/mol] Activation energy
+    Ea_logsigma::T = log(2)/2   # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+)
+```
+A generic diffusivity model, with user-specified D0 and Ea.
+Default values are appropriate for argon in k-feldspar.
+"""
+Base.@kwdef struct Diffusivity{T<:AbstractFloat} <: DiffusivityModel{T}
+    D0::T = 59.98               # [cm^2/sec] Maximum diffusion coefficient
+    D0_logsigma::T = log(2)/2   # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    Ea::T = 205.94              # [kJ/mol] Activation energy
+    Ea_logsigma::T = log(2)/2   # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+end
 
 """
 ```julia
@@ -332,14 +379,48 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::Abstr
     return ρᵣ
 end
 
-## --- Calculate apparent age given a particular t-T path
+## --- Age and likelihood of a noble gas chronometer given a t-T path
 
+"""
+```julia
+modelage(mineral::ZirconHe, Tsteps, [ρᵣ], dm::ZRDAAM)
+modelage(mineral::ApatiteHe, Tsteps, [ρᵣ], dm::RDAAM)
+modelage(mineral::SphericalHe, Tsteps, dm::Diffusivity)
+modelage(mineral::PlanarHe, Tsteps, dm::Diffusivity)
+modelage(mineral::SphericalAr, Tsteps, dm::Diffusivity)
+modelage(mineral::PlanarAr, Tsteps, dm::Diffusivity)
+```
+Calculate the predicted bulk age of a noble gas chronometer that has experienced a given 
+t-T path (specified by `mineral.tsteps` for time and `Tsteps` for temperature), 
+at a time resolution determined by `mineral.tsteps` using a Crank-Nicolson diffusion 
+solution for a spherical (or planar slab) grain of radius (or halfwidth ) `mineral.r` 
+at spatial resolution `mineral.dr`.
+
+Spherical implementation based on the the Crank-Nicolson solution for diffusion out of a
+spherical mineral crystal in Ketcham, 2005 (doi: 10.2138/rmg.2005.58.11).
+"""
+function modelage(mineral::NobleGasSample{T}, Tsteps::AbstractVector, dm::DiffusivityModel{T}; partitiondaughter::Bool=false) where {T <: AbstractFloat}
+    # Erase any previous runs; start at zero initial daughter
+    fill!(mineral.u, zero(T))
+
+    # Run Crank-Nicolson solver
+    crank_nicolson!(mineral, mineral.tsteps, Tsteps, dm; partitiondaughter, fuse=false, setting=:geological) 
+
+    # Numerically solve for resulting observed age of the grain (i.e, as measured, "raw" in AHe/ZHe parlanc)
+    return newton_age(mineral)::T
+end
 function modelage(mineral::Union{ZirconHe,ApatiteHe}, Tsteps::AbstractVector, ρᵣ::AbstractMatrix, dm::Union{RDAAM,ZRDAAM})
     mul!(mineral.annealeddamage, ρᵣ, mineral.alphadamage)
     modelage(mineral, Tsteps, dm)
 end
 
 # Log likelihood for model ages
+function model_ll(mineral::NobleGasSample, Tsteps, dm)
+    age = modelage(mineral, Tsteps, dm)
+    δ = age - mineral.age
+    σ² = mineral.age_sigma^2
+    -0.5*(log(2*pi*σ²) + δ^2/σ²)
+end
 function model_ll(mineral::Union{ZirconHe,ApatiteHe}, Tsteps, dm::DiffusivityModel)
     anneal!(mineral, Tsteps, dm)
     age = modelage(mineral, Tsteps, dm)

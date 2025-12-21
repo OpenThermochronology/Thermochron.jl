@@ -29,44 +29,6 @@ abstract type DiffusivityModel{T} <: Model{T} end
 abstract type ZirconHeliumModel{T} <: DiffusivityModel{T} end
 abstract type ApatiteHeliumModel{T} <: DiffusivityModel{T} end
 
-"""
-```julia
-Diffusivity(
-    D0::T = 59.98               # [cm^2/sec] Maximum diffusion coefficient
-    D0_logsigma::T = log(2)/2   # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
-    Ea::T = 205.94              # [kJ/mol] Activation energy
-    Ea_logsigma::T = log(2)/2   # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
-)
-```
-A generic diffusivity model, with user-specified D0 and Ea.
-Default values are appropriate for argon in k-feldspar.
-"""
-Base.@kwdef struct Diffusivity{T<:AbstractFloat} <: DiffusivityModel{T}
-    D0::T = 59.98               # [cm^2/sec] Maximum diffusion coefficient
-    D0_logsigma::T = log(2)/2   # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
-    Ea::T = 205.94              # [kJ/mol] Activation energy
-    Ea_logsigma::T = log(2)/2   # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
-end
-
-"""
-```julia
-MDDiffusivity(
-    D0::NTuple{N,T}             # [cm^2/sec] Maximum diffusivity
-    D0_logsigma::NTuple{N,T}    # [unitless] log uncertainty (default = 1/2 = a factor of ℯ two-sigma)
-    Ea::T                       # [kJ/mol] Activation energy
-    Ea_logsigma::T              # [unitless] log uncertainty (default = 1/2 = a factor of ℯ two-sigma)
-)
-```
-Multiple diffusivities for multiple domains
-"""
-Base.@kwdef struct MDDiffusivity{T<:AbstractFloat, N} <: DiffusivityModel{T}
-    D0::NTuple{N,T}             # [cm^2/sec] Maximum diffusivity
-    D0_logsigma::NTuple{N,T}    # [unitless] log uncertainty
-    Ea::NTuple{N,T}             # [kJ/mol] Activation energy
-    Ea_logsigma::NTuple{N,T}    # [unitless] log uncertainty 
-end
-Base.getindex(d::MDDiffusivity{T}, i::Int) where {T} = Diffusivity{T}(d.D0[i], d.D0_logsigma[i], d.Ea[i], d.Ea_logsigma[i])
-
 
 ## --- Define Boundary type to specify the working area
 

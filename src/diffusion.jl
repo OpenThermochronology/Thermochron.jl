@@ -387,42 +387,4 @@ function final_diffusant(mineral::SphericalNobleGas{T}) where {T<:AbstractFloat}
     return nanmean(vfinal, mineral.relvolumes)::T # Atoms/gram
 end
 
-## --- Age and likelihood of a noble gas chronometer given a t-T path
-
-"""
-```julia
-modelage(mineral::ZirconHe, Tsteps, [ρᵣ], dm::ZRDAAM)
-modelage(mineral::ApatiteHe, Tsteps, [ρᵣ], dm::RDAAM)
-modelage(mineral::SphericalHe, Tsteps, dm::Diffusivity)
-modelage(mineral::PlanarHe, Tsteps, dm::Diffusivity)
-modelage(mineral::SphericalAr, Tsteps, dm::Diffusivity)
-modelage(mineral::PlanarAr, Tsteps, dm::Diffusivity)
-```
-Calculate the predicted bulk age of a noble gas chronometer that has experienced a given 
-t-T path (specified by `mineral.tsteps` for time and `Tsteps` for temperature), 
-at a time resolution determined by `mineral.tsteps` using a Crank-Nicolson diffusion 
-solution for a spherical (or planar slab) grain of radius (or halfwidth ) `mineral.r` 
-at spatial resolution `mineral.dr`.
-
-Spherical implementation based on the the Crank-Nicolson solution for diffusion out of a
-spherical mineral crystal in Ketcham, 2005 (doi: 10.2138/rmg.2005.58.11).
-"""
-function modelage(mineral::NobleGasSample{T}, Tsteps::AbstractVector, dm::DiffusivityModel{T}; partitiondaughter::Bool=false) where {T <: AbstractFloat}
-    # Erase any previous runs; start at zero initial daughter
-    fill!(mineral.u, zero(T))
-
-    # Run Crank-Nicolson solver
-    crank_nicolson!(mineral, mineral.tsteps, Tsteps, dm; partitiondaughter, fuse=false, setting=:geological) 
-
-    # Numerically solve for resulting observed age of the grain (i.e, as measured, "raw" in AHe/ZHe parlanc)
-    return newton_age(mineral)::T
-end
-
-function model_ll(mineral::NobleGasSample, Tsteps, dm)
-    age = modelage(mineral, Tsteps, dm)
-    δ = age - mineral.age
-    σ² = mineral.age_sigma^2
-    -0.5*(log(2*pi*σ²) + δ^2/σ²)
-end
-
 ## --- End of File
