@@ -896,7 +896,13 @@
     end
 
     # Utility function to calculate model ages for all chronometers at once
-    function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, Tsteps::AbstractVector{T}; rescalestepheating::Bool=true, rescale::Bool=false, redegastracer::Bool=false, partitiondaughter::Bool=false) where {T<:AbstractFloat}
+    function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, Tsteps::AbstractVector{T}; 
+            rescale::Bool=false,
+            rescalestepheating::Bool=true,  
+            redegastracer::Bool=false, 
+            stepwisetracerfraction::Bool=false,
+            partitiondaughter::Bool=false, 
+        ) where {T<:AbstractFloat}
         imax = argmax(i->length(timediscretization(chrons[i])), eachindex(chrons))
         tsteps = timediscretization(chrons[imax])
         @assert issorted(tsteps)
@@ -1012,14 +1018,26 @@
                 c::SingleDomain{T, <:Union{ArgonSample{T}, HeliumSample{T}}}
                 age, stepage, fraction = modelage(c, Tstepsᵢ, dm::DiffusivityModel{T}; redegastracer, partitiondaughter)
                 @assert issorted(fraction) "Degassing fraction is not properly cumulative"
-                redegastracer && (ll += cumulative_degassing_ll(c; rescale=rescalestepheating)/scalesdd)
+                if redegastracer
+                    if stepwisetracerfraction
+                        ll += stepwise_degassing_ll(c; rescale=rescalestepheating)/scalesdd
+                    else
+                        ll += cumulative_degassing_ll(c; rescale=rescalestepheating)/scalesdd
+                    end
+                end
                 μcalc[i] = draw_from_population(stepage, fraction)
                 ll += model_ll(c, σcalc[i]; rescale=rescalestepheating)/scalesdd
             elseif isa(c, MultipleDomain)
                 c::MultipleDomain{T, <:Union{PlanarAr{T}, SphericalAr{T}}}
                 stepage, fraction = modelage(c, Tstepsᵢ, dm::MDDiffusivity{T}; redegastracer, partitiondaughter)
                 @assert issorted(fraction) "Degassing fraction is not properly cumulative"
-                redegastracer && (ll += cumulative_degassing_ll(c; rescale=rescalestepheating)/scalemdd)
+                if redegastracer
+                    if stepwisetracerfraction
+                        ll += stepwise_degassing_ll(c; rescale=rescalestepheating)/scalemdd
+                    else
+                        ll += cumulative_degassing_ll(c; rescale=rescalestepheating)/scalemdd
+                    end
+                end
                 μcalc[i] = draw_from_population(stepage, fraction)
                 ll += model_ll(c, σcalc[i]; rescale=rescalestepheating)/scalemdd
             else

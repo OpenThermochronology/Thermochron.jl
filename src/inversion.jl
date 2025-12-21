@@ -39,10 +39,11 @@
         npoints = (haskey(model, :npoints) ? model.npoints : minpoints)::Int
         npoints = max(npoints, detail.minpoints+1)
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
-        rescalestepheating = (haskey(model, :rescalestepheating) ? model.rescalestepheating : true)::Bool
-        rescale = (haskey(model, :rescale) ? model.rescale : false)::Bool
         dynamicsigma = (haskey(model, :dynamicsigma) ? model.dynamicsigma : false)::Bool
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
+        rescale = (haskey(model, :rescale) ? model.rescale : false)::Bool
+        rescalestepheating = (haskey(model, :rescalestepheating) ? model.rescalestepheating : true)::Bool
+        stepwisetracerfraction = (haskey(model, :stepwisetracerfraction) ? model.stepwisetracerfraction : false)::Bool
         partitiondaughter = (haskey(model, :partitiondaughter) ? model.partitiondaughter : false)::Bool
         dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10)::T
         dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : dTmax/4)::T
@@ -86,7 +87,7 @@
         initialproposal!(path, npoints) 
 
         # Log-likelihood for initial proposal
-        ll = llₚ = model!(μcalc, σcalc, chrons, damodels, path.Tsteps; rescalestepheating, rescale, partitiondaughter) + 
+        ll = llₚ = model!(μcalc, σcalc, chrons, damodels, path.Tsteps; rescale, rescalestepheating, partitiondaughter) + 
             diff_ll(path.Tsteps, dTmax, dTmax_sigma) + (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
 
         # Proposal probabilities (must sum to 1)
@@ -153,7 +154,7 @@
             end
 
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps; rescalestepheating, rescale, partitiondaughter)
+            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps; rescale, rescalestepheating, partitiondaughter)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
@@ -260,7 +261,7 @@
             end
 
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps; rescalestepheating, rescale, partitiondaughter)
+            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps; rescale, rescalestepheating, partitiondaughter)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
@@ -372,10 +373,11 @@
         npoints = (haskey(model, :npoints) ? model.npoints : minpoints)::Int
         npoints = max(npoints, detail.minpoints+1)
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
-        rescalestepheating = (haskey(model, :rescalestepheating) ? model.rescalestepheating : true)::Bool
-        rescale = (haskey(model, :rescale) ? model.rescale : false)::Bool
         dynamicsigma = (haskey(model, :dynamicsigma) ? model.dynamicsigma : false)::Bool
         dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
+        rescale = (haskey(model, :rescale) ? model.rescale : false)::Bool
+        rescalestepheating = (haskey(model, :rescalestepheating) ? model.rescalestepheating : true)::Bool
+        stepwisetracerfraction = (haskey(model, :stepwisetracerfraction) ? model.stepwisetracerfraction : false)::Bool
         partitiondaughter = (haskey(model, :partitiondaughter) ? model.partitiondaughter : false)::Bool
         dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10)::T
         dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : dTmax/4)::T
@@ -424,7 +426,7 @@
         initialproposal!(path, npoints)
 
         # Log-likelihood for initial proposal
-        ll = llₚ = model!(μcalc, σcalc, chrons, damodels, path.Tsteps; rescalestepheating, rescale, partitiondaughter, redegastracer) + 
+        ll = llₚ = model!(μcalc, σcalc, chrons, damodels, path.Tsteps; rescale, rescalestepheating, redegastracer, stepwisetracerfraction, partitiondaughter) + 
             diff_ll(path.Tsteps, dTmax, dTmax_sigma) + kinetic_ll(damodelsₚ, damodels₀, updatekinetics) + (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
         
         # Proposal probabilities (must sum to 1)
@@ -497,7 +499,7 @@
             end
                
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps; rescalestepheating, rescale, partitiondaughter, redegastracer)
+            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps; rescale, rescalestepheating, redegastracer, stepwisetracerfraction, partitiondaughter)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             llₚ += kinetic_ll(damodelsₚ, damodels₀, updatekinetics)
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
@@ -612,7 +614,7 @@
             end
 
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps; rescalestepheating, rescale, partitiondaughter, redegastracer)
+            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps; rescale, rescalestepheating, redegastracer, stepwisetracerfraction, partitiondaughter)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             llₚ += kinetic_ll(damodelsₚ, damodels₀, updatekinetics)
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
