@@ -1,32 +1,3 @@
-# Abstract type to include any number of mineral chronometers (zircon, apatite, etc.)
-abstract type Chronometer{T} end
-
-# Implement methods to allow broadcasting
-Base.length(x::Chronometer) = 1
-Base.iterate(x::Chronometer) = (x, nothing)
-Base.iterate(x::Chronometer, state) = nothing
-
-# Implement methods to allow copying and comparison
-Base.copy(x::Chronometer) = deepcopy(x)
-Base.:(==)(x::Chronometer, y::Chronometer) = false
-function Base.:(==)(x::T, y::T) where {T<:Chronometer}
-    for n in fieldnames(T)
-        isequal(getfield(x, n), getfield(y, n)) || return false
-    end
-    return true
-end
-
-# Abstract subtype for chronometers that include an absolute age and age uncertainty
-abstract type AbsoluteChronometer{T} <:Chronometer{T} end  
-
-# Abstract subtypes for different categories of chronometers
-abstract type FissionTrackLength{T} <: Chronometer{T} end
-abstract type FissionTrackSample{T} <: AbsoluteChronometer{T} end
-abstract type NobleGasSample{T} <: AbsoluteChronometer{T} end
-abstract type HeliumSample{T} <: NobleGasSample{T} end
-abstract type ArgonSample{T} <: NobleGasSample{T} end
-
-
 ## --- Fission track length types
 
 """

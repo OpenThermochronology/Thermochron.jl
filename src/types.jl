@@ -1,4 +1,34 @@
-## --- Overall Model type 
+## --- Chronometer type hierarchy
+
+# Abstract type to include any number of mineral chronometers (zircon, apatite, etc.)
+abstract type Chronometer{T} end
+
+# Implement methods to allow broadcasting
+Base.length(x::Chronometer) = 1
+Base.iterate(x::Chronometer) = (x, nothing)
+Base.iterate(x::Chronometer, state) = nothing
+
+# Implement methods to allow copying and comparison
+Base.copy(x::Chronometer) = deepcopy(x)
+Base.:(==)(x::Chronometer, y::Chronometer) = false
+function Base.:(==)(x::T, y::T) where {T<:Chronometer}
+    for n in fieldnames(T)
+        isequal(getfield(x, n), getfield(y, n)) || return false
+    end
+    return true
+end
+
+# Abstract subtype for chronometers that include an absolute age and age uncertainty
+abstract type AbsoluteChronometer{T} <:Chronometer{T} end  
+
+# Abstract subtypes for different categories of chronometers
+abstract type FissionTrackLength{T} <: Chronometer{T} end
+abstract type FissionTrackSample{T} <: AbsoluteChronometer{T} end
+abstract type NobleGasSample{T} <: AbsoluteChronometer{T} end
+abstract type HeliumSample{T} <: NobleGasSample{T} end
+abstract type ArgonSample{T} <: NobleGasSample{T} end
+
+## --- Model type hierarchy (annealing and diffusion models)
 abstract type Model{T} end
 
 # Implement methods to allow broadcasting and comparison
@@ -13,8 +43,7 @@ function Base.:(==)(x::T, y::T) where {T<:Model}
     return true
 end
 
-## --- Define AnnealingModel type hierarchy
-
+# AnnealingModel types
 abstract type AnnealingModel{T} <: Model{T} end
 abstract type ZirconAnnealingModel{T} <: AnnealingModel{T} end
 abstract type MonaziteAnnealingModel{T} <: AnnealingModel{T} end
@@ -23,15 +52,15 @@ abstract type FanningCurvilinearZircon{T} <: ZirconAnnealingModel{T} end
 abstract type FanningCurvilinearApatite{T} <: ApatiteAnnealingModel{T} end
 const FanningCurvilinear{T} = Union{FanningCurvilinearZircon{T}, FanningCurvilinearApatite{T}}
 
-## --- Define DiffusivityModel type hierarchy
-
+# DiffusivityModel types
 abstract type DiffusivityModel{T} <: Model{T} end
 abstract type ZirconHeliumModel{T} <: DiffusivityModel{T} end
 abstract type ApatiteHeliumModel{T} <: DiffusivityModel{T} end
 
 
-## --- Define Boundary type to specify the working area
+## --- Types used in t-T path generation
 
+# Define Boundary types to specify the working area
 struct Boundary{T<:AbstractFloat}
     agepoints::NTuple{2,T}  # Ma
     Tpoints::Vector{T}      # Degrees C
@@ -56,7 +85,7 @@ function Boundary(T::Type=Float64; agepoints, T₀, ΔT, Tpoints=collect(T₀), 
     )
 end
 
-## -- Define Constraint type to specify aribitrary t-T constraint boxes
+# Define Constraint type to specify aribitrary t-T constraint boxes
 struct Constraint{T<:AbstractFloat}
     agepoints::Vector{T} # Ma
     Tpoints::Vector{T}   # Degrees C
@@ -172,18 +201,6 @@ abstract type AbstractKineticResult end
 
 struct KineticResult{T<:AbstractFloat} <: AbstractKineticResult
     dmdist::Matrix{<:Model{T}}
-end
-
-# Query Diffusivities and MDDiffusivities from a KineticResult
-function Diffusivity(kr::KineticResult)
-    any(x->isa(x, Diffusivity), kr) || return nothing
-    ia = findall(x->isa(x, Diffusivity), kr[:,1])
-    return collect(kr[ia,:]')
-end
-function MDDiffusivity(kr::KineticResult)
-    any(x->isa(x, MDDiffusivity), kr) || return nothing
-    ia = findall(x->isa(x, MDDiffusivity), kr[:,1])
-    return collect(kr[ia,:]')
 end
 
 ## --- End of File

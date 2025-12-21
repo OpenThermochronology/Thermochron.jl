@@ -950,4 +950,18 @@
         return ll
     end
 
+## --- Extracting things from KineticResults
+
+# Query Diffusivities and MDDiffusivities from a KineticResult
+function Diffusivity(kr::KineticResult)
+    any(x->isa(x, Diffusivity), kr) || return nothing
+    ia = findall(x->isa(x, Diffusivity), kr[:,1])
+    return collect(kr[ia,:]')
+end
+function MDDiffusivity(kr::KineticResult)
+    any(x->isa(x, MDDiffusivity), kr) || return nothing
+    ia = findall(x->isa(x, MDDiffusivity), kr[:,1])
+    return collect(kr[ia,:]')
+end
+
 ## --- End of File
