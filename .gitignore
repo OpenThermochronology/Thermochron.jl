@@ -1,12 +1,12 @@
 *.jl.*.cov
 *.jl.cov
 *.jl.mem
-/examples/*.pdf
-/examples/*.jld
-/examples/*.jld2
-/examples/*.mat
+*.pdf
+*.jld
+*.jld2
+/*.mat
 /docs/build/
 .DS_Store
-/old
+/dev
 /Manifest.toml
 /test/Manifest.toml
