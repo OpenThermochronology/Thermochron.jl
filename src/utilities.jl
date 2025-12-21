@@ -973,10 +973,12 @@
         He_internal = (1 - ϕ) * Kd
         return He_internal/(He_internal+He_boundary)
     end
+
     fraction_internal(TK, mineral::HeliumSample) = fraction_internal_He(TK, mineral.bulkgrainsize)
     fraction_internal(TK, mineral::ArgonSample) = fraction_internal_Ar(TK, mineral.bulkgrainsize)
 
 ## --- Ensure non-allocation of linear algebra
+
 function lu!(A::Tridiagonal{T,V}, pivot::Union{RowMaximum,NoPivot} = RowMaximum();
         check::Bool = true, allowsingular::Bool = false) where {T,V}
     n = size(A, 1)
@@ -1064,3 +1066,5 @@ end
     check && LinearAlgebra._check_lu_success(info, allowsingular)
     return LU{T,Tridiagonal{T,V},typeof(ipiv)}(B, ipiv, convert(LinearAlgebra.BlasInt, info))
 end
+
+## --- End of File
