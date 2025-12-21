@@ -387,4 +387,94 @@ function final_diffusant(mineral::SphericalNobleGas{T}) where {T<:AbstractFloat}
     return nanmean(vfinal, mineral.relvolumes)::T # Atoms/gram
 end
 
+## --- Ensure non-allocation of linear algebra
+
+function lu!(A::Tridiagonal{T,V}, pivot::Union{RowMaximum,NoPivot} = RowMaximum();
+        check::Bool = true, allowsingular::Bool = false) where {T,V}
+    n = size(A, 1)
+    has_du2_defined = isdefined(A, :du2) && length(A.du2) == max(0, n-2)
+    if has_du2_defined
+        du2 = A.du2::V
+    else
+        du2 = similar(A.d, max(0, n-2))::V
+    end
+    _lu_tridiag!(Tridiagonal{T,V}(A.dl, A.d, A.du, du2), Vector{BlasInt}(undef, n), pivot, check, allowsingular)
+end
+function lu!(F::LU{<:Any,<:Tridiagonal}, A::Tridiagonal, pivot::Union{RowMaximum,NoPivot} = RowMaximum();
+        check::Bool = true, allowsingular::Bool = false)
+    B = F.factors
+    size(B) == size(A) || throw(DimensionMismatch())
+    copyto!(B, A)
+    _lu_tridiag!(B, F.ipiv, pivot, check, allowsingular)
+end
+@inline function _lu_tridiag!(B::Tridiagonal{T,V}, ipiv, pivot, check, allowsingular) where {T,V}
+
+    # Extract values
+    dl = B.dl::V
+    d = B.d::V
+    du = B.du::V
+    du2 = B.du2::V
+    n = length(d)
+
+    # Initialize variables
+    info = 0
+    fill!(du2, 0)
+
+    @inbounds begin
+        for i = 1:n
+            ipiv[i] = i
+        end
+        for i = 1:n-2
+            # pivot or not?
+            if pivot === NoPivot() || abs(d[i]) >= abs(dl[i])
+                # No interchange
+                if d[i] != 0
+                    fact = dl[i]/d[i]
+                    dl[i] = fact
+                    d[i+1] -= fact*du[i]
+                    du2[i] = 0
+                end
+            else
+                # Interchange
+                fact = d[i]/dl[i]
+                d[i] = dl[i]
+                dl[i] = fact
+                tmp = du[i]
+                du[i] = d[i+1]
+                d[i+1] = tmp - fact*d[i+1]
+                du2[i] = du[i+1]
+                du[i+1] = -fact*du[i+1]
+                ipiv[i] = i+1
+            end
+        end
+        if n > 1
+            i = n-1
+            if pivot === NoPivot() || abs(d[i]) >= abs(dl[i])
+                if d[i] != 0
+                    fact = dl[i]/d[i]
+                    dl[i] = fact
+                    d[i+1] -= fact*du[i]
+                end
+            else
+                fact = d[i]/dl[i]
+                d[i] = dl[i]
+                dl[i] = fact
+                tmp = du[i]
+                du[i] = d[i+1]
+                d[i+1] = tmp - fact*d[i+1]
+                ipiv[i] = i+1
+            end
+        end
+        # check for a zero on the diagonal of U
+        for i = 1:n
+            if d[i] == 0
+                info = i
+                break
+            end
+        end
+    end
+    check && LinearAlgebra._check_lu_success(info, allowsingular)
+    return LU{T,Tridiagonal{T,V},typeof(ipiv)}(B, ipiv, convert(LinearAlgebra.BlasInt, info))
+end
+
 ## --- End of File

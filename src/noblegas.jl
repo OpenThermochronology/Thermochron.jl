@@ -63,8 +63,33 @@ function meanparent(mineral::Union{SphericalHe, ZirconHe, ApatiteHe})
     return (nanmean(mineral.r238U,rv), nanmean(mineral.r235U,rv), nanmean(mineral.r232Th,rv), nanmean(mineral.r147Sm,rv))
 end
 
-## --- Concrete types for damage and diffusivity models
+## --- Noble Gas Partitioning
 
+function phi_boundary(grainsize_mm::Number; r_boundary=2e-9)
+    r = grainsize_mm/1000
+    v = r^3
+    vb = (r+r_boundary)^3
+    return (vb-v)/vb
+end
+function fraction_internal_Ar(TK, grainsize_mm; K0=9.955215569888633e-5, Ea=26.86885827027531)
+    ϕ = phi_boundary(grainsize_mm)
+    Kd = K0 * exp(-Ea/(0.008314472*TK))
+    Ar_boundary = ϕ
+    Ar_internal = (1 - ϕ) * Kd
+    return Ar_internal/(Ar_internal+Ar_boundary)
+end
+function fraction_internal_He(TK, grainsize_mm; K0=0.00011279064713681025, Ea=26.72957128643152)
+    ϕ = phi_boundary(grainsize_mm)
+    Kd = K0 * exp(-Ea/(0.008314472*TK))
+    He_boundary = ϕ
+    He_internal = (1 - ϕ) * Kd
+    return He_internal/(He_internal+He_boundary)
+end
+
+fraction_internal(TK, mineral::HeliumSample) = fraction_internal_He(TK, mineral.bulkgrainsize)
+fraction_internal(TK, mineral::ArgonSample) = fraction_internal_Ar(TK, mineral.bulkgrainsize)
+
+## --- Concrete types for damage and diffusivity models
 
 """
 ```julia
@@ -309,7 +334,7 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::Abstr
     # Guenthner et al volume-length conversion
     rmin = dm.rmin
     scale = 1/(1-rmin)
-    @fastmath @inbounds for j ∈ 1:ntsteps
+    @inbounds for j ∈ 1:ntsteps
         for i ∈ j:ntsteps
             ρᵣ[i,j] = if ρᵣ[i,j] >= rmin
                 (ρᵣ[i,j] - rmin) * scale
@@ -358,7 +383,7 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::Abstr
     rmr0 = dm.rmr0
     kappa = dm.kappa
     scale = 1/(1-rmr0)
-    @fastmath @inbounds for j ∈ 1:ntsteps
+    @inbounds for j ∈ 1:ntsteps
         for i ∈ j:ntsteps
             # rmr0 correction
             ρᵣ[i,j] = if ρᵣ[i,j] >= rmr0
@@ -428,3 +453,5 @@ function model_ll(mineral::Union{ZirconHe,ApatiteHe}, Tsteps, dm::DiffusivityMod
     σ² = mineral.age_sigma^2
     -0.5*(log(2*pi*σ²) + δ^2/σ²)
 end
+
+## --- End of File
