@@ -271,6 +271,87 @@
     end
     export alphastoppingpower
 
+
+    """
+    ```julia
+    alphacorrectionspherical(alpharadii, rparent, redges, relvolumes, parentₒ, redgesₒ, relvolumesₒ)
+    ```
+    Effective parent concentrations accounting for alphas per decay at secular
+    equilibrium as well as alpha ejection (given internal radial `rparent` 
+    concentration vector and spatial discretization `redges`, `relvolumes`) and
+    injection (given uniform external `parentₒ` concentration and spatial 
+    discretization `redgesₒ`, `relvolumesₒ`) for an infinite slab mineral grain.
+    """
+    function alphacorrectionspherical(alpharadii, rparent::AbstractVector{T}, redges, relvolumes, parentₒ::T, redgesₒ, relvolumesₒ) where {T}
+        # Prepare
+        rsteps = cntr(redges)
+        rstepsₒ = cntr(redgesₒ)
+        dint = zeros(T, length(rsteps))
+        parentHe = zeros(T, length(rparent))
+        @assert eachindex(rparent) == eachindex(rsteps) == eachindex(relvolumes) 
+        @assert eachindex(rparent) == eachindex(dint) == eachindex(parentHe)
+        @assert eachindex(rstepsₒ) == eachindex(relvolumesₒ)
+
+        # Correct for alpha ejection
+        @inbounds for i in eachindex(rsteps, relvolumes, rparent)
+            for rₐ in alpharadii
+                sphereintersectiondensity!(dint,redges,relvolumes,rₐ,rsteps[i])
+                @. parentHe += relvolumes[i] * dint * rparent[i]
+            end
+        end
+        # Correct for alpha injection
+        if parentₒ > 0
+            @inbounds for i in eachindex(rstepsₒ, relvolumesₒ)
+                for rₐ in alpharadii
+                    (rstepsₒ[i] - first(rstepsₒ)) > rₐ && continue
+                    sphereintersectiondensity!(dint, redges, relvolumes, rₐ, rstepsₒ[i])
+                    @. parentHe += relvolumesₒ[i] * dint * parentₒ
+                end
+            end
+        end
+        return parentHe
+    end
+
+    """
+    ```julia
+    alphacorrectionslab(alpharadii, rparent, redges, parentₒ, redgesₒ)
+    ```
+    Effective parent concentrations accounting for alphas per decay at secular
+    equilibrium as well as alpha ejection (given internal radial `rparent` 
+    concentration vector and spatial discretization `redges`) and injection
+    (given uniform external `parentₒ` concentration and spatial discretization
+    `redgesₒ`) for an infinite slab mineral grain.
+    """
+    function alphacorrectionslab(alpharadii, rparent::AbstractVector{T}, redges, parentₒ::T, redgesₒ) where {T}
+        # Prepare
+        rsteps = cntr(redges)
+        rstepsₒ = cntr(redgesₒ)
+        dint = zeros(T, length(rsteps))
+        parentHe = zeros(T, length(rparent))
+        @assert eachindex(rparent) == eachindex(rsteps)
+        @assert eachindex(rparent) == eachindex(dint) == eachindex(parentHe)
+
+        # Correct for alpha ejection
+        @inbounds for i in eachindex(rsteps, rparent)
+            for alpharadius in alpharadii
+                slabsphereintersectiondensity!(dint, redges,alpharadius, rsteps[i])
+                @. parentHe += dint * rparent[i]
+            end
+        end
+        # Correct for alpha injection
+        if parentₒ > 0
+            @inbounds for i in eachindex(rstepsₒ)
+                for alpharadius in alpharadii
+                    (rstepsₒ[i] - first(rstepsₒ)) > alpharadius && continue
+                    slabsphereintersectiondensity!(dint, redges, alpharadius, rstepsₒ[i])
+                    @. parentHe += dint * parentₒ
+                end
+            end
+        end
+        return parentHe
+    end
+
+
     # Utility function for agepoint and Tpoint buffers
     function collectto!(buffer, a, b, c)
         i₀ = firstindex(buffer)
