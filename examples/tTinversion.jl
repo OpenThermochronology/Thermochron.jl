@@ -63,8 +63,8 @@
     @info """Preparing model with $(length(agesteps)) $(allequal(diff(agesteps)) ? "linear" : "nonlinear") timesteps with bin centers between $(round(first(agesteps),digits=3)) and $(round(last(agesteps), digits=3)) Ma"""
 
     params = (
-        nsteps = 400000,                # [n] How many steps of the Markov chain should we run?
-        burnin = 100000,                # [n] How long should we wait for MC to converge (become stationary)
+        nsteps = 100000,                # [n] How many steps of the Markov chain should we run?
+        burnin = 50000,                # [n] How long should we wait for MC to converge (become stationary)
         dr = 1.0,                       # [μm] Radius step size
         dTmax = 25.0,                   # [Ma/dt] Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
         Tinit = 400.0,                  # [C] Initial model temperature (i.e., crystallization temperature)
@@ -180,7 +180,6 @@
 
     # # Load saved tTs
     # @load "$name.jld2"
-
 
 ## ---  Plot log likelihood distribution
 
@@ -564,7 +563,7 @@ end
 
     # Plot image with colorscale in first subplot
     A = imsc(tTimage, ylcn, 0, nanpctile(tTimage[:],98.5))
-    plot!(k[1], xlabel="Time (Ma)", ylabel="Temperature (°C)", tick_dir=:out, framestyle=:box)
+    plot!(k[1], xlabel="Time (Ma)", ylabel="Temperature (°C)", minorticks=true, tick_dir=:out, framestyle=:box)
     plot!(k[1], xc, yc, A, yflip=true, xflip=true, legend=false, aspectratio=params.tinit/params.Tinit/1.5, xlims=(0,params.tinit), ylims=(params.Tnow,params.Tinit))
     plot!(k[1], constraint, lw=1) # Add constraint boxes
 
@@ -577,8 +576,8 @@ end
 
 ## --- (Optional) Plot a zoomed-in version
 
-    # xrange = (0, 200)
-    # yrange=(0, 100)
+    # xrange = (0, 20)    # time [Ma]
+    # yrange = (0, 400)   # Temperature [C]
     # @time (tTimageZoom, xcZoom, ycZoom) = image_from_paths!(tT; xresolution=1800, yresolution=1200, method=:nearest, xrange, yrange)
 
     # # Prepare axes
@@ -586,8 +585,8 @@ end
 
     # # Plot image with colorscale in first subplot
     # A = imsc(tTimageZoom, ylcn, 0, nanpctile(tTimage[:],98.5))
-    # plot!(k[1], xlabel="Time (Ma)", ylabel="Temperature (°C)", tick_dir=:out, framestyle=:box)
-    # plot!(k[1], xcZoom, ycZoom, A, yflip=true, xflip=true, legend=false, xlims=xrange, ylims=yrange)
+    # plot!(k[1], xlabel="Time (Ma)", ylabel="Temperature (°C)", minorticks=true, tick_dir=:out, framestyle=:box)
+    # plot!(k[1], xcZoom, ycZoom, A, yflip=true, xflip=true, legend=false, aspectratio=nanrange(xrange)/nanrange(yrange)/1.5, xlims=xrange, ylims=yrange)
 
     # # Add colorbar in second subplot
     # cb = imsc(repeat(0:100, 1, 10), ylcn, 0, 100)
