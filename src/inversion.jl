@@ -43,7 +43,6 @@
         dynamicjumping = (haskey(params, :dynamicjumping) ? params.dynamicjumping : false)::Bool
         rescale = (haskey(params, :rescale) ? params.rescale : false)::Bool
         rescalestepheating = (haskey(params, :rescalestepheating) ? params.rescalestepheating : true)::Bool
-        stepwisetracerfraction = (haskey(params, :stepwisetracerfraction) ? params.stepwisetracerfraction : false)::Bool
         partitiondaughter = (haskey(params, :partitiondaughter) ? params.partitiondaughter : false)::Bool
         dTmax = T(haskey(params, :dTmax) ? params.dTmax : 10)::T
         dTmax_sigma = T(haskey(params, :dTmax_sigma) ? params.dTmax_sigma : dTmax/4)::T
@@ -58,8 +57,8 @@
         λannealing = T(haskey(params, :λannealing) ? params.λannealing : 7/burnin)::T
 
         # See what minerals we have
-        (haszhe = any(x->isa(x, ZirconHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, ZirconHe), chrons)) zircons"
-        (hasahe = any(x->isa(x, ApatiteHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, ApatiteHe), chrons)) apatites"
+        (any(x->isa(x, ZirconHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, ZirconHe), chrons)) zircons"
+        (any(x->isa(x, ApatiteHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, ApatiteHe), chrons)) apatites"
         (any(x->isa(x, SphericalHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, SphericalHe), chrons)) generic spherical He chronometers"
         (any(x->isa(x, PlanarHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, PlanarHe), chrons)) generic planar slab He chronometers"
         (any(x->isa(x, ZirconFT), chrons)) && @info "Inverting for fission track ages of $(count(x->isa(x, ZirconFT), chrons)) zircons"
@@ -145,13 +144,13 @@
 
             end
 
-            # Recalculate interpolated proposed t-T path
-            collectproposal!(path, npointsₚ)
-
             # Ensure we have enough points in the "detail" interval, if any
             if detail.minpoints > 0
                 (proposeddetail(path, npointsₚ, detail) < mindetail(path, npoints, detail)) && @goto brestart
             end
+
+            # Calculate interpolated proposed t-T path
+            collectproposal!(path, npointsₚ)
 
             # Calculate model ages for each grain, log likelihood of proposal
             llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps; rescale, rescalestepheating, partitiondaughter)
@@ -251,14 +250,14 @@
                 dynamicsigma && movesigma!(σcalcₚ, chrons)
 
             end
-
-            # Recalculate interpolated proposed t-T path
-            collectproposal!(path, npointsₚ)
             
             # Ensure we have enough points in the "detail" interval, if any
             if detail.minpoints > 0
                 (proposeddetail(path, npointsₚ, detail) < mindetail(path, npoints, detail)) && @goto crestart
             end
+
+            # Calculate interpolated proposed t-T path
+            collectproposal!(path, npointsₚ)
 
             # Calculate model ages for each grain, log likelihood of proposal
             llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps; rescale, rescalestepheating, partitiondaughter)
@@ -318,6 +317,7 @@
         finish!(progress)
 
         ttresult = TTResult(
+            agesteps,
             tpointdist, 
             Tpointdist, 
             ndist, 
@@ -393,8 +393,8 @@
         redegastracer = true # Required when we are co-inverting for diffusion parameters in _varkinetics inversions
 
         # See what minerals we have
-        (haszhe = any(x->isa(x, ZirconHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, ZirconHe), chrons)) zircons"
-        (hasahe = any(x->isa(x, ApatiteHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, ApatiteHe), chrons)) apatites"
+        (any(x->isa(x, ZirconHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, ZirconHe), chrons)) zircons"
+        (any(x->isa(x, ApatiteHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, ApatiteHe), chrons)) apatites"
         (any(x->isa(x, SphericalHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, SphericalHe), chrons)) generic spherical He chronometers"
         (any(x->isa(x, PlanarHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, PlanarHe), chrons)) generic planar slab He chronometers"
         (any(x->isa(x, ZirconFT), chrons)) && @info "Inverting for fission track ages of $(count(x->isa(x, ZirconFT), chrons)) zircons"
@@ -676,6 +676,7 @@
         finish!(progress)
 
         ttresult = TTResult(
+            agesteps,
             tpointdist, 
             Tpointdist, 
             ndist, 

@@ -186,7 +186,8 @@ end
 
 abstract type AbstractTTResult end
 
-struct TTResult{T<:AbstractFloat} <: AbstractTTResult
+struct TTResult{T<:AbstractFloat, V<:AbstractVector{T}} <: AbstractTTResult
+    agesteps::V
     tpointdist::Matrix{T}
     Tpointdist::Matrix{T}
     ndist::Vector{Int}
