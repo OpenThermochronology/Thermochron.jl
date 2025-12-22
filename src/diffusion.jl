@@ -118,6 +118,9 @@ function updatebeta!(β::Vector{T}, mineral::NobleGasSample{T}, dm::Diffusivity{
 
     return β
 end
+function updatebeta!(β::Vector{T}, mineral::NobleGasSample{T}, dm::SDDiffusivity{T}, dt::T, TK::T, tstep::Int, diffusivityratio=one(T); setting::Symbol=:laboratory) where {T}
+    updatebeta!(β, mineral, dm.model, dt, TK, tstep, diffusivityratio/abs2(dm.scale); setting)
+end
 
 # --- Core Crank-Nicolson solvers
 

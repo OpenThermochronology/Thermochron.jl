@@ -49,10 +49,9 @@ module Thermochron
     const SphericalNobleGas{T} = Union{ZirconHe{T},ApatiteHe{T},SphericalHe{T},SphericalAr{T}}
 
     include("noblegas.jl")
+    include("stepheating.jl")
     include("diffusion.jl")
     export ZirconHeliumModel, ZRDAAM, ApatiteHeliumModel, RDAAM         # Damage-and-annealing based helium diffusivity model types
-
-    include("stepheating.jl")
     export SingleDomain, MultipleDomain                                 # Types for modelling step-heating data, with one or more diffusion domains 
 
     include("fissiontrack.jl")

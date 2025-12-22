@@ -461,9 +461,17 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                     Sm147 = ds.Sm147_ppm[i],
                 )
                 dm = if mineral === "apatite"
-                    adm
+                    SDDiffusivity(
+                        model = adm,
+                        scale = 1.0 + rand()/1e6,   # Twiddle to establish uniqueness 
+                        scale_logsigma = log(2),
+                    )
                 elseif mineral === "zircon"
-                    zdm
+                    SDDiffusivity(
+                        model = zdm,
+                        scale = 1.0 + rand()/1e6,   # Twiddle to establish uniqueness 
+                        scale_logsigma = log(2),
+                    )
                 else # Custom diffusivity
                     Diffusivity(
                         D0 = T(ds.D0_cm_2_s[i]),

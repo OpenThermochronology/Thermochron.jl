@@ -119,6 +119,14 @@
     @test calcuncert[1:21] ≈ zeros(21)
     @test calcuncert[22:end] ≈ [1.8368172844202661, 1.1896389981502726, 1.1448424397109467, 1.2154485905638788, 1.1896389981502726, 0.6070538659171328]
 
+    # Test kintetic_ll! and updatekinetics! on all chronometer types
+    updatekinetics = falses(length(damodels))
+    @test Thermochron.kinetic_ll!(updatekinetics, damodels, damodels) ≈ 19.64330130235549
+    damodelsₚ = copy(damodels)
+    Thermochron.movekinetics!(damodelsₚ, updatekinetics)
+    Thermochron.movekinetics!(damodelsₚ, updatekinetics)
+    @test 10 < Thermochron.kinetic_ll!(updatekinetics, damodelsₚ, damodels) < 19.64330130235549
+
     # Test again with partitiondaughter=true
     chrons, damodels = chronometers(dsg, model, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; partitiondaughter=true) ≈ -121512.04499535152

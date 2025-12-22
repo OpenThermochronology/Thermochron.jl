@@ -526,11 +526,15 @@
         end
         return ll
     end
+    function kinetic_ll(dmₚ::SDDiffusivity, dm::SDDiffusivity)
+        kinetic_ll(unwrap(dmₚ), unwrap(dm)) + 
+        norm_ll(log(dm.scale), dm.scale_logsigma, log(dmₚ.scale))
+    end
     function kinetic_ll(dmₚ::AnnealingModel{T}, dm::AnnealingModel{T}) where {T<:AbstractFloat}
         @assert dmₚ == dm
         return zero(T)
     end
-    function kinetic_ll(damodelsₚ::Vector{<:Model{T}}, damodels::Vector{<:Model{T}}, updatekinetics::BitVector) where {T}
+    function kinetic_ll!(updatekinetics::BitVector, damodelsₚ::Vector{<:Model{T}}, damodels::Vector{<:Model{T}}) where {T}
         fill!(updatekinetics, true)
         ll = zero(T)
         # Count each unique kinetic model exactly once towards the kinetic log likelihood
@@ -818,8 +822,14 @@
         return path
     end
 
+    # Utilities for dealing with kinetic models that wrap other kinetic models
+    unwrap(x::Model) = x
+    unwrap(x::SDDiffusivity) = x.model
+    wrap(x::Model, ::Model) = x
+    wrap(x::DiffusivityModel, y::SDDiffusivity) = SDDiffusivity(x, y.scale, y.scale_logsigma)
+
     # Adjust kinetic models
-    movekinetics(dm, p=0.5) = dm
+    movekinetics(dm::Model, p=0.5) = dm
     function movekinetics(zdm::ZRDAAM{T}, p=0.5) where {T}
         ZRDAAM(
             DzEa = (rand()<p) ? exp(log(zdm.DzEa)+randn(T)*zdm.DzEa_logsigma/2) : zdm.DzEa,
@@ -858,23 +868,49 @@
     end
     function movekinetics(dm::MDDiffusivity{T}, p=0.5) where {T}
         MDDiffusivity(
-            D0 = (rand()<p) ? @.(exp(log(dm.D0)+(rand()<p)*randn(T)*dm.D0_logsigma/4)) : dm.D0,
+            D0 = ((rand()<p) ? @.(exp(log(dm.D0)+(rand()<p)*randn(T)*dm.D0_logsigma/4)) : dm.D0),
             D0_logsigma = dm.D0_logsigma,
-            Ea = (rand()<p) ? @.(exp(log(dm.Ea)+(rand()<p)*randn(T)*dm.Ea_logsigma/10)) : dm.Ea,
+            Ea = ((rand()<p) ? @.(exp(log(dm.Ea)+(rand()<p)*randn(T)*dm.Ea_logsigma/10)) : dm.Ea),
             Ea_logsigma = dm.Ea_logsigma,
         )
     end
-    function movekinetics!(damodels::Vector{<:Model}, updatekinetics::BitVector)
+    function movekinetics(dm::SDDiffusivity{T}, p=0.5) where {T}
+        SDDiffusivity(
+            model = movekinetics(dm.model, p),
+            scale = (rand()<p) ? exp(log(dm.scale)+randn(T)*dm.scale_logsigma/2) : dm.scale,
+            scale_logsigma = dm.scale_logsigma,
+        )
+    end
+    movewrapperkinetics(dm::Model, p=0.5) = dm
+    function movewrapperkinetics(dm::SDDiffusivity{T}, p=0.5) where {T}
+        SDDiffusivity(
+            model = dm.model,
+            scale = (rand()<p) ? exp(log(dm.scale)+randn(T)*dm.scale_logsigma/2) : dm.scale,
+            scale_logsigma = dm.scale_logsigma,
+        )
+    end
+    function movekinetics!(damodels::Vector{<:Model}, updatekinetics::BitVector, p=0.5)
         fill!(updatekinetics, true)
         for i in eachindex(damodels)
             if updatekinetics[i]
                 dm = damodels[i]
-                dmₚ = movekinetics(dm)
+                dmₚ = movekinetics(dm, p)
                 # Keep diffusivity models which start identical, identical
                 for j in eachindex(damodels)
-                    if updatekinetics[j] && (damodels[j] == dm)
-                        damodels[j] = dmₚ
-                        updatekinetics[j] = false
+                    if updatekinetics[j]
+                        if damodels[j] == dm
+                            # Identical models
+                            damodels[j] = dmₚ
+                            updatekinetics[j] = false
+                        elseif damodels[j] == unwrap(dm)
+                            # Model that we wrap
+                            damodels[j] = unwrap(dmₚ)
+                            updatekinetics[j] = false 
+                        elseif unwrap(damodels[j]) == unwrap(dm)
+                            # Model that wraps us (or that wraps same thing as us)
+                            damodels[j] = wrap(unwrap(dmₚ), movewrapperkinetics(damodels[j], p))
+                            updatekinetics[j] = false 
+                        end
                     end
                 end
             end
@@ -914,13 +950,13 @@
         @assert eachindex(tsteps) == eachindex(Tsteps) "`tsteps` has indices $(eachindex(tsteps)) while `Tsteps` has indices $(eachindex(Tsteps))"
 
         # Pre-anneal ZRDAAM samples, if any
-        if any(x->isa(x, ZRDAAM), damodels)
-            zdm = (damodels[findfirst(x->isa(x, ZRDAAM), damodels)])::ZRDAAM{T}
+        if any(x-> eltype(x) <: ZRDAAM, damodels)
+            zdm = unwrap(damodels[findfirst(x-> eltype(x) <: ZRDAAM, damodels)])::ZRDAAM{T}
             anneal!(chrons, ZirconHe, tsteps, Tsteps, zdm)
         end
         # Pre-anneal RDAAM samples, if any
-        if any(x->isa(x, RDAAM), damodels)
-            adm = (damodels[findfirst(x->isa(x, RDAAM), damodels)])::RDAAM{T}
+        if any(x-> eltype(x) <: RDAAM, damodels)
+            adm = unwrap(damodels[findfirst(x-> eltype(x) <: RDAAM, damodels)])::RDAAM{T}
             anneal!(chrons, ApatiteHe, tsteps, Tsteps, adm)
         end
 

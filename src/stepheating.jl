@@ -1,11 +1,28 @@
 ## --- Step heating diffusivity types
+
+"""
+```julia
+SDDiffusivity(
+    model::DiffusivityModel{T}  # Underlying (wrapped) diffusivity model
+    scale::T                    # [unitless] relative domain size (default = 1.0)
+    scale_logsigma::T           # [unitless] log uncertainty (default = log(2) = a factor of 2, one-sigma)
+)
+```
+One diffusivity, scaled to represent domain size as d/a^2
+"""
+Base.@kwdef struct SDDiffusivity{T,D<:DiffusivityModel{T}} <: DiffusivityModel{T}
+    model::D                    # Underlying (wrapped) diffusivity model
+    scale::T=1.0                # [unitless] relative domain size (default = 1.0)
+    scale_logsigma::T=log(2)    # [unitless] log uncertainty (default = log(2 = a factor of 2, one-sigma)
+end
+
 """
 ```julia
 MDDiffusivity(
     D0::NTuple{N,T}             # [cm^2/sec] Maximum diffusivity
-    D0_logsigma::NTuple{N,T}    # [unitless] log uncertainty (default = 1/2 = a factor of ℯ two-sigma)
+    D0_logsigma::NTuple{N,T}    # [unitless] log uncertainty
     Ea::T                       # [kJ/mol] Activation energy
-    Ea_logsigma::T              # [unitless] log uncertainty (default = 1/2 = a factor of ℯ two-sigma)
+    Ea_logsigma::T              # [unitless] log uncertainty
 )
 ```
 Multiple diffusivities for multiple domains
@@ -17,6 +34,10 @@ Base.@kwdef struct MDDiffusivity{T<:AbstractFloat, N} <: DiffusivityModel{T}
     Ea_logsigma::NTuple{N,T}    # [unitless] log uncertainty 
 end
 Base.getindex(d::MDDiffusivity{T}, i::Int) where {T} = Diffusivity{T}(d.D0[i], d.D0_logsigma[i], d.Ea[i], d.Ea_logsigma[i])
+
+# Implement eltype methods to deal with diffusivity models which are wrapper types
+Base.eltype(x::DiffusivityModel) = typeof(x)
+Base.eltype(x::SDDiffusivity{T,D}) where {T,D} = D
 
 ## --- Initialize and degas daughter isotopes
 
