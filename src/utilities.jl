@@ -394,9 +394,9 @@
         end
         return n
     end
-    proposeddetail(path::TtPath, npointsₚ::Int, detail::DetailInterval) = pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, path.agesteps)
-    accepteddetail(path::TtPath, npoints::Int, detail::DetailInterval) = pointsininterval(path.agepoints, npoints, detail.agemin, detail.agemax, path.agesteps)
-    mindetail(path::TtPath, npoints::Int, detail::DetailInterval) = min(accepteddetail(path, npoints, detail), detail.minpoints)
+    proposeddetail(path::TTPath, npointsₚ::Int, detail::DetailInterval) = pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, path.agesteps)
+    accepteddetail(path::TTPath, npoints::Int, detail::DetailInterval) = pointsininterval(path.agepoints, npoints, detail.agemin, detail.agemax, path.agesteps)
+    mindetail(path::TTPath, npoints::Int, detail::DetailInterval) = min(accepteddetail(path, npoints, detail), detail.minpoints)
 
     # Check if point k is distinct from other points in list within ± δ
     function isdistinct(points::AbstractArray, k::Int, δ::Number, npoints::Int=length(points))
@@ -617,12 +617,12 @@
         min(max(x, xmin), xmax)
     end
 
-    textrema(path::TtPath) = textrema(path.boundary)
+    textrema(path::TTPath) = textrema(path.boundary)
     function textrema(boundary::Boundary)
         a, b = first(boundary.agepoints), last(boundary.agepoints)
         a < b ? (a, b) : (b, a)
     end
-    Textrema(path::TtPath) = Textrema(path.boundary)
+    Textrema(path::TTPath) = Textrema(path.boundary)
     function Textrema(boundary::Boundary)
         a, b = first(boundary.T₀), last(boundary.T₀)
         a < b ? (a, b) : (b, a)
@@ -656,7 +656,7 @@
     end
 
     # Move a t-T point and apply boundary conditions
-    function movepoint!(path::TtPath{T}, k::Int, npoints::Int) where {T}
+    function movepoint!(path::TTPath{T}, k::Int, npoints::Int) where {T}
         # Move the age of one model point
         path.agepointsₚ[k] += rand(Normal{T}(zero(T), path.σⱼtₚ[k]))
 
@@ -679,7 +679,7 @@
     end
 
     # Add a t-T point
-    function addpoint!(path::TtPath{T}, k::Int, npoints::Int) where {T}
+    function addpoint!(path::TTPath{T}, k::Int, npoints::Int) where {T}
         @assert eachindex(path.agepointsₚ) == eachindex(path.Tpointsₚ) == eachindex(path.σⱼtₚ) == eachindex(path.σⱼTₚ)
 
         tmin, tmax = textrema(path.boundary)
@@ -718,7 +718,7 @@
         return movepoint!(path, k, npoints)
     end
 
-    function replacepoint!(path::TtPath{T}, k::Int, n::Int) where {T}
+    function replacepoint!(path::TTPath{T}, k::Int, n::Int) where {T}
         path.agepointsₚ[k] = path.agepointsₚ[n]
         path.Tpointsₚ[k] = path.Tpointsₚ[n]
         path.σⱼtₚ[k] = path.σⱼtₚ[n]
@@ -740,7 +740,7 @@
         end
         return constraint
     end
-    function movebounds!(path::TtPath)
+    function movebounds!(path::TTPath)
         movebounds!(path.constraint, path.boundary)
         movebounds!(path.boundary)
         return path
@@ -760,7 +760,7 @@
         return constraint
     end
 
-    function initialproposal!(path::TtPath, npoints::Int)
+    function initialproposal!(path::TTPath, npoints::Int)
         randomize!(path.boundary)
         randomize!(path.constraint, path.boundary)
         collectaccepted!(path, 0)
@@ -776,7 +776,7 @@
         return path
     end
 
-    function collectaccepted!(path::TtPath{T}, npoints::Int) where {T<:AbstractFloat}
+    function collectaccepted!(path::TTPath{T}, npoints::Int) where {T<:AbstractFloat}
         agepoints = view(path.agepoints, Base.OneTo(npoints))
         ages = collectto!(path.agepointbuffer, agepoints, path.boundary.agepoints, path.constraint.agepoints)
         Tpoints = view(path.Tpoints, Base.OneTo(npoints))
@@ -784,7 +784,7 @@
         linterp1s!(path.Tsteps, path.knot_index, ages, temperatures, path.agesteps)
         return path
     end
-    function collectproposal!(path::TtPath{T}, npointsₚ::Int) where {T<:AbstractFloat}
+    function collectproposal!(path::TTPath{T}, npointsₚ::Int) where {T<:AbstractFloat}
         agepointsₚ = view(path.agepointsₚ, Base.OneTo(npointsₚ))
         ages = collectto!(path.agepointbuffer, agepointsₚ, path.boundary.agepoints, path.constraint.agepointsₚ)
         Tpointsₚ = view(path.Tpointsₚ, Base.OneTo(npointsₚ))
@@ -792,7 +792,7 @@
         linterp1s!(path.Tsteps, path.knot_index, ages, temperatures, path.agesteps)
         return path
     end
-    function resetproposal!(path::TtPath)
+    function resetproposal!(path::TTPath)
         copyto!(path.agepointsₚ, path.agepoints)
         copyto!(path.Tpointsₚ, path.Tpoints)
         copyto!(path.σⱼtₚ, path.σⱼt)
@@ -801,7 +801,7 @@
         copyto!(path.constraint.Tpointsₚ, path.constraint.Tpoints)
         copyto!(path.boundary.Tpointsₚ, path.boundary.Tpoints)
     end
-    function acceptproposal!(path::TtPath)
+    function acceptproposal!(path::TTPath)
         copyto!(path.agepoints, path.agepointsₚ)
         copyto!(path.Tpoints, path.Tpointsₚ)
         copyto!(path.σⱼt, path.σⱼtₚ)
@@ -812,7 +812,7 @@
     end
 
     # Update jumping distribution
-    function updatejumping!(path::TtPath, k::Int)
+    function updatejumping!(path::TTPath, k::Int)
         if path.agepointsₚ[k] != path.agepoints[k]
             path.σⱼtₚ[k] = ℯ * abs(path.agepointsₚ[k] - path.agepoints[k])
         end

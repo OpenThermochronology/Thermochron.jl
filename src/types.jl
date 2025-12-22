@@ -122,8 +122,8 @@ function DetailInterval(T::Type=Float64; agemin=0, agemax=0, minpoints=0)
     DetailInterval{T}(agemin, agemax, Int(minpoints))
 end
 
-# Define overall TtPath type to contain all parameters needed to construct a t-T path proposal
-struct TtPath{T<:AbstractFloat, V<:AbstractVector{T}}
+# Define overall TTPath type to contain all parameters needed to construct a t-T path proposal
+struct TTPath{T<:AbstractFloat, V<:AbstractVector{T}}
     agesteps::V
     Tsteps::Vector{T}
     agepoints::Vector{T}
@@ -141,7 +141,7 @@ struct TtPath{T<:AbstractFloat, V<:AbstractVector{T}}
     boundary::Boundary{T}
     detail::DetailInterval{T}
 end
-function TtPath(agesteps::AbstractVector{T}, constraint::Constraint{T}, boundary::Boundary{T}, detail::DetailInterval{T}, maxpoints::Int) where {T}
+function TTPath(agesteps::AbstractVector{T}, constraint::Constraint{T}, boundary::Boundary{T}, detail::DetailInterval{T}, maxpoints::Int) where {T}
     # Discretized temperature
     Tsteps = zeros(T, length(agesteps))
     knot_index = zeros(Int, length(agesteps))
@@ -162,7 +162,7 @@ function TtPath(agesteps::AbstractVector{T}, constraint::Constraint{T}, boundary
     totalpoints = maxpoints + boundary.npoints + constraint.npoints
     agepointbuffer = similar(agepoints, totalpoints)
     Tpointbuffer = similar(agepoints, totalpoints)
-    TtPath(
+    TTPath(
         agesteps,
         Tsteps,
         agepoints,

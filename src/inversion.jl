@@ -75,7 +75,7 @@
         (any(x->isa(x, MultipleDomain), chrons)) && @info "Inverting for ages of $(count(x->isa(x, MultipleDomain), chrons)) multiple domain diffusion chronometers"
 
         # Struct to hold t-T path proposals and related variables
-        path = TtPath(agesteps, constraint, boundary, detail, maxpoints)
+        path = TTPath(agesteps, constraint, boundary, detail, maxpoints)
 
         # Variables to hold proposals
         npointsₚ = npoints
@@ -411,7 +411,7 @@
         (any(x->isa(x, MultipleDomain), chrons)) && @info "Inverting for ages of $(count(x->isa(x, MultipleDomain), chrons)) multiple domain diffusion chronometers"
 
         # Struct to hold t-T path proposals and related variables
-        path = TtPath(agesteps, constraint, boundary, detail, maxpoints)
+        path = TTPath(agesteps, constraint, boundary, detail, maxpoints)
 
         # Variables to hold proposals
         npointsₚ = npoints

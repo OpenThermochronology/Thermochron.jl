@@ -49,7 +49,7 @@
     @test Thermochron.hard(201, 0, 100) == 100
     @test Thermochron.hard(-101, 0, 100) == 0
 
-## --- Test Constraint, Boundary, and TtPath types
+## --- Test Constraint, Boundary, and TTPath types
     constraint = Constraint(
         agedist = [Uniform(500,580),],  # [Ma] Age distribution
         Tdist =   [   Uniform(0,50),],  # [C] Temperature distribution
@@ -66,8 +66,8 @@
     @test boundary isa Boundary{Float64}
 
     agesteps = reverse(1:10:1000.)
-    path = Thermochron.TtPath(agesteps, constraint, boundary, DetailInterval(), 50)
-    @test path isa Thermochron.TtPath{Float64}
+    path = Thermochron.TTPath(agesteps, constraint, boundary, DetailInterval(), 50)
+    @test path isa Thermochron.TTPath{Float64}
     @test path.agepoints == path.agepointsₚ == zeros(50)
     @test path.Tpoints == path.Tpointsₚ == zeros(50)
     @test path.Tsteps == zeros(100)
