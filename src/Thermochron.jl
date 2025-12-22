@@ -65,7 +65,7 @@ module Thermochron
 
     include("utilities.jl")
     include("inversion.jl")
-    export MCMC, MCMC_varkinetics                                       # Functions
+    export MCMC, MCMC_varkinetics, model, model!                        # Functions
 
     include("show.jl")
 

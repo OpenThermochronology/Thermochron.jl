@@ -7,12 +7,12 @@
     using LinearAlgebra
     BLAS.get_num_threads() > 2 && BLAS.set_num_threads(2)
 
-    model = (
+    params = (
         burnin = 350,               # [n] How long should we wait for MC to converge (become stationary)
         nsteps = 350,               # [n] How many steps of the Markov chain should we run after burn-in?
         dr = 1.0,                   # [μ] Radius step size
         dt = 10.0,                  # [Ma] time step size
-        dTmax = 25.0,               # [C/step] Maximum reheating/burial per model timestep
+        dTmax = 25.0,               # [C/step] Maximum reheating/burial per params timestep
         Tinit = 400.0,              # [C] initial model temperature (i.e., crystallization temperature)
         ΔTinit = -50.0,             # [C] Tinit can vary from Tinit to Tinit+ΔTinit
         Tnow = 0.0,                 # [C] Current surface temperature
@@ -41,18 +41,18 @@
     data.raw_He_age_sigma_Ma .= 0.1*data.raw_He_age_Ma
 
     # Crystallization ages and start time
-    tinit = ceil(maximum(data.crystallization_age_Ma)/model.dt) * model.dt
-    model = (model...,
+    tinit = ceil(maximum(data.crystallization_age_Ma)/params.dt) * params.dt
+    params = (params...,
         tinit = tinit,
-        agesteps = (tinit-model.dt/2 : -model.dt : 0+model.dt/2),
-        tsteps = (0+model.dt/2 : model.dt : tinit-model.dt/2),
+        agesteps = (tinit-params.dt/2 : -params.dt : 0+params.dt/2),
+        tsteps = (0+params.dt/2 : params.dt : tinit-params.dt/2),
     )
 
     # Boundary conditions (e.g. 10C at present and 650 C at the time of zircon formation).
     boundary = Boundary(
-        agepoints = [model.tnow, model.tinit],   # [Ma] Final and initial time
-        T₀ = [model.Tnow, model.Tinit],          # [C] Final and initial temperature
-        ΔT = [model.ΔTnow, model.ΔTinit],        # [C] Final and initial temperature range (positive or negative)
+        agepoints = [params.tnow, params.tinit],   # [Ma] Final and initial time
+        T₀ = [params.Tnow, params.Tinit],          # [C] Final and initial temperature
+        ΔT = [params.ΔTnow, params.ΔTinit],        # [C] Final and initial temperature range (positive or negative)
         tboundary = :reflecting, # Reflecting time boundary conditions
         Tboundary = :reflecting, # Reflecting temperature boundary conditions
     )
@@ -63,13 +63,13 @@
 ## --- Test generation and modelling of Chronometer objects, with StepRangeLen for timesteps/agesteps
 
     # Modern input format, generic.csv
-    tsteps = (model.dt/2 : model.dt : 3000-model.dt/2)
-    agesteps = (3000-model.dt/2 : -model.dt : model.dt/2)
+    tsteps = (params.dt/2 : params.dt : 3000-params.dt/2)
+    agesteps = (3000-params.dt/2 : -params.dt : params.dt/2)
     Tsteps = range(650, 0, length=length(tsteps))
-    model = (model..., agesteps = agesteps, tsteps = tsteps)
+    params = (params..., agesteps = agesteps, tsteps = tsteps)
 
     dsg = importdataset(joinpath(datapath, "generic.csv"), ',', importas=:Tuple)
-    chrons, damodels = chronometers(dsg, model, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
+    chrons, damodels = chronometers(dsg, params, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
     @test chrons isa Vector{<:Chronometer}
     @test length(chrons) == 27
     const FloatRange = typeof(1.0:1.0:10.0)
@@ -92,9 +92,8 @@
     @test get_age_sigma(chrons) ≈ [5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,0.53,0.20877153500779683,28.52408719185519,28.52408719185519,]
 
     # Test model calculations
-    calc = zeros(length(chrons))
-    calcuncert = zeros(length(chrons))
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps) ≈ -121502.38423678318
+    calc, calcuncert, ll = model(chrons, damodels, Tsteps)
+    @test ll ≈ -121502.38423678318
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -127582.33244603685
     @test round.(calc[1:18], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 242.1764, 276.2001, 1085.555, 304.6573, 95.84216, 149.8249, 297.8784, 262.766]
     @test calc[19] ≈ 0.8 atol=0.5
@@ -128,7 +127,7 @@
     @test 10 < Thermochron.kinetic_ll!(updatekinetics, damodelsₚ, damodels) < 19.64330130235549
 
     # Test again with partitiondaughter=true
-    chrons, damodels = chronometers(dsg, model, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
+    chrons, damodels = chronometers(dsg, params, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; partitiondaughter=true) ≈ -121512.04499535152
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; partitiondaughter=true, redegastracer=true) ≈ -127591.99320460518
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; partitiondaughter=true, redegastracer=true, stepwisetracerfraction=true) ≈ -121635.85117007693
@@ -148,12 +147,12 @@
     @test σcalc[t] ≈ [57.014755105003104, 57.014755105003104, 14.022789552152355, 14.022789552152355, 89.77854252945355, 22.081049122650942, 18.76032805406918]
 
     # Test again with Minnesota dataset
-    tsteps = (model.dt/2 : model.dt : model.tinit-model.dt/2)
-    agesteps = (model.tinit-model.dt/2 : -model.dt : model.dt/2)
-    Tsteps = range(model.Tinit, model.Tnow, length=length(tsteps))
-    model = (model..., agesteps = agesteps, tsteps = tsteps)
+    tsteps = (params.dt/2 : params.dt : params.tinit-params.dt/2)
+    agesteps = (params.tinit-params.dt/2 : -params.dt : params.dt/2)
+    Tsteps = range(params.Tinit, params.Tnow, length=length(tsteps))
+    params = (params..., agesteps = agesteps, tsteps = tsteps)
 
-    chrons, damodels = chronometers(ds, model, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
+    chrons, damodels = chronometers(ds, params, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
     @test chrons isa Vector{<:Chronometer}
     @test length(chrons) == length(ds.mineral)
     @test get_age(chrons) ≈ [770, 659, 649, 638, 620, 557, 545, 500, 493, 357, 329, 253, 241, 225, 225, 217, 193, 190, 72, 57, 42, 29, 11, 234, 98, 233, 339, 378, 258, 158, 269, 313, 309, 392]
@@ -176,13 +175,13 @@
     @test σtotal ≈ [71.76511200022767, 88.69939042178478, 76.20513740085536, 49.74341557807492, 52.05638860615669, 58.80850040722076, 57.32853093748527, 97.59191128458991, 68.09272937102548, 82.41401338162268, 104.5147581608337, 72.10558616290515, 79.47676757701001, 68.01965448205827, 72.8583946436481, 73.94974380762895, 63.02840819654363, 63.478989858090436, 45.255278015066644, 66.3078727295436, 52.90379008918621, 69.14186488208391, 62.394435852786344]
 
     # Test again with Manitoba dataset
-    tsteps = (model.dt/2 : model.dt : 2790-model.dt/2)
-    agesteps = (2790-model.dt/2 : -model.dt : model.dt/2)
+    tsteps = (params.dt/2 : params.dt : 2790-params.dt/2)
+    agesteps = (2790-params.dt/2 : -params.dt : params.dt/2)
     Tsteps = range(650, 0, length=length(tsteps))
-    model = (model..., agesteps = agesteps, tsteps = tsteps)
+    params = (params..., agesteps = agesteps, tsteps = tsteps)
 
     dsm = importdataset(joinpath(datapath, "manitoba.csv"), ',', importas=:Tuple)
-    chrons, damodels = chronometers(dsm, model, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
+    chrons, damodels = chronometers(dsm, params, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
     @test chrons isa Vector{<:Chronometer}
     @test length(chrons) == 333
     calc = zeros(length(chrons))
@@ -194,9 +193,9 @@
     agesteps = cntr(logrange(3000+10, 10, length=Int(3000/10)) .- 10)
     tsteps = (first(agesteps) - Thermochron.step_at(agesteps,1)/2) .- agesteps
     Tsteps = agesteps * 650/3000
-    model = (model..., agesteps=agesteps, tsteps=tsteps)
+    params = (params..., agesteps=agesteps, tsteps=tsteps)
 
-    chrons, damodels = chronometers(dsg, model, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
+    chrons, damodels = chronometers(dsg, params, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
     @test chrons isa Vector{<:Chronometer}
     @test length(chrons) == 27
     @test count(x->isa(x,SphericalHe{Float64, Vector{Float64}}), chrons) == 4
@@ -244,17 +243,17 @@
     # Test again with Minnesota dataset
     agesteps = cntr(logrange(tinit+10, 10, length=Int(tinit/10)) .- 10)
     tsteps = (first(agesteps) - Thermochron.step_at(agesteps,1)/2) .- agesteps
-    Tsteps = agesteps * (model.Tinit-model.Tnow)/length(tsteps) .+ model.Tnow
-    model = (model..., agesteps=agesteps, tsteps=tsteps)
+    Tsteps = agesteps * (params.Tinit-params.Tnow)/length(tsteps) .+ params.Tnow
+    params = (params..., agesteps=agesteps, tsteps=tsteps)
 
-    chrons, damodels = chronometers(ds, model, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
+    chrons, damodels = chronometers(ds, params, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
     @test chrons isa Vector{<:Chronometer}
     @test length(chrons) == length(ds.mineral)
     @test get_age(chrons) ≈ [770, 659, 649, 638, 620, 557, 545, 500, 493, 357, 329, 253, 241, 225, 225, 217, 193, 190, 72, 57, 42, 29, 11, 234, 98, 233, 339, 378, 258, 158, 269, 313, 309, 392]
     @test get_age_sigma(chrons) ≈ [15.0, 51.0, 13.0, 12.6, 18.4, 10.0, 12.0, 10.0, 43.0, 7.0, 7.0, 5.2, 4.6, 4.6, 6.0, 5.0, 4.0, 4.0, 2.0, 1.1, 1.1, 0.8, 0.2, 9.4, 2.0, 5.0, 6.0, 9.3, 5.0, 3.3, 8.1, 5.8, 6.0, 8.0]
 
-    tsteps = maximum(model.agesteps)+minimum(model.agesteps) .- model.agesteps
-    Tsteps = model.agesteps * (model.Tinit - model.Tnow)/tinit .+ model.Tnow
+    tsteps = maximum(params.agesteps)+minimum(params.agesteps) .- params.agesteps
+    Tsteps = params.agesteps * (params.Tinit - params.Tnow)/tinit .+ params.Tnow
 
     calc = zeros(length(chrons))
     calcuncert = zeros(length(chrons))
@@ -268,15 +267,15 @@
 ## --- Invert for t-T path via MCMC
 
     # Run Markov Chain
-    @time "\nCompiling MCMC" MCMC(data, model, boundary, unconf)
-    @time "\nRunning MCMC" tT = MCMC(data, model, boundary, unconf; liveplot)
+    @time "\nCompiling MCMC" MCMC(data, params, boundary, unconf)
+    @time "\nRunning MCMC" tT = MCMC(data, params, boundary, unconf; liveplot)
 
     @test isa(tT.Tpointdist, AbstractMatrix)
-    @test nanmaximum(tT.Tpointdist) <= model.Tinit
-    @test nanminimum(tT.Tpointdist) >= model.Tnow
+    @test nanmaximum(tT.Tpointdist) <= params.Tinit
+    @test nanminimum(tT.Tpointdist) >= params.Tnow
 
     @test isa(tT.tpointdist, AbstractMatrix)
-    @test nanmaximum(tT.Tpointdist) <= model.tinit
+    @test nanmaximum(tT.Tpointdist) <= params.tinit
     @test nanminimum(tT.Tpointdist) >= 0
 
     @test isa(tT.resultdist, AbstractMatrix)
@@ -294,24 +293,24 @@
     @info "Mean acceptance rate: $(mean(tT.acceptancedist))"
 
     @test isa(tT.ndist, AbstractVector{Int})
-    @test minimum(tT.ndist) >= model.minpoints
-    @test maximum(tT.ndist) <= model.maxpoints
+    @test minimum(tT.ndist) >= params.minpoints
+    @test maximum(tT.ndist) <= params.maxpoints
     @info "Mean npoints: $(mean(tT.ndist))"
 
-    @test mean(tT.jtdist) ≈ model.tinit/60
+    @test mean(tT.jtdist) ≈ params.tinit/60
     @info "Mean σjt: $(mean(tT.jtdist))"
 
-    @test mean(tT.jTdist) ≈ model.Tinit/60
+    @test mean(tT.jTdist) ≈ params.Tinit/60
     @info "Mean σjT : $(mean(tT.jTdist))"
 
 ## --- Test generation and use of Chronometer objects, switching back to a uniform Vector for agesteps/tsteps
 
-    tsteps = collect(model.dt/2 : model.dt : 3000-model.dt/2)
-    agesteps = collect(3000-model.dt/2 : -model.dt : model.dt/2)
+    tsteps = collect(params.dt/2 : params.dt : 3000-params.dt/2)
+    agesteps = collect(3000-params.dt/2 : -params.dt : params.dt/2)
     Tsteps = range(650, 0, length=length(tsteps))
-    model = (model..., agesteps = agesteps, tsteps = tsteps)
+    params = (params..., agesteps = agesteps, tsteps = tsteps)
 
-    chrons, damodels = chronometers(dsg, model, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
+    chrons, damodels = chronometers(dsg, params, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
     @test chrons isa Vector{<:Chronometer}
     @test length(chrons) == 27
     @test count(x->isa(x,SphericalHe{Float64, Vector{Float64}}), chrons) == 4
@@ -358,12 +357,12 @@
     @test calcuncert[22:end] ≈ [1.8368172844202661, 1.1896389981502726, 1.1448424397109467, 1.2154485905638788, 1.1896389981502726, 0.6070538659171328]
 
     # Modern input format, Minnesota dataset
-    tsteps = collect(model.dt/2 : model.dt : model.tinit-model.dt/2)
-    agesteps = collect(model.tinit-model.dt/2 : -model.dt : model.dt/2)
-    Tsteps = range(model.Tinit, model.Tnow, length=length(tsteps))
-    model = (model..., agesteps = agesteps, tsteps = tsteps)
+    tsteps = collect(params.dt/2 : params.dt : params.tinit-params.dt/2)
+    agesteps = collect(params.tinit-params.dt/2 : -params.dt : params.dt/2)
+    Tsteps = range(params.Tinit, params.Tnow, length=length(tsteps))
+    params = (params..., agesteps = agesteps, tsteps = tsteps)
 
-    chrons, damodels = chronometers(ds, model, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
+    chrons, damodels = chronometers(ds, params, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
     @test chrons isa Vector{<:Chronometer}
     @test length(chrons) == length(ds.mineral)
     @test get_age(chrons) ≈ [770, 659, 649, 638, 620, 557, 545, 500, 493, 357, 329, 253, 241, 225, 225, 217, 193, 190, 72, 57, 42, 29, 11, 234, 98, 233, 339, 378, 258, 158, 269, 313, 309, 392]
@@ -381,15 +380,15 @@
 ## --- Invert for t-T path, as above, but with variable kinetic parameters
 
     # Run Markov Chain
-    @time "\nCompiling MCMC_varkinetics" MCMC_varkinetics(data, model, boundary, unconf)
-    @time "\nRunning MCMC_varkinetics" tT, kinetics = MCMC_varkinetics(data, model, boundary, unconf; liveplot)
+    @time "\nCompiling MCMC_varkinetics" MCMC_varkinetics(data, params, boundary, unconf)
+    @time "\nRunning MCMC_varkinetics" tT, kinetics = MCMC_varkinetics(data, params, boundary, unconf; liveplot)
 
     @test isa(tT.Tpointdist, AbstractMatrix)
-    @test nanmaximum(tT.Tpointdist) <= model.Tinit
-    @test nanminimum(tT.Tpointdist) >= model.Tnow
+    @test nanmaximum(tT.Tpointdist) <= params.Tinit
+    @test nanminimum(tT.Tpointdist) >= params.Tnow
 
     @test isa(tT.tpointdist, AbstractMatrix)
-    @test nanmaximum(tT.Tpointdist) <= model.tinit
+    @test nanmaximum(tT.Tpointdist) <= params.tinit
     @test nanminimum(tT.Tpointdist) >= 0
 
     @test isa(tT.resultdist, AbstractMatrix)
@@ -407,15 +406,15 @@
     @info "Mean acceptance rate: $(mean(tT.acceptancedist))"
 
     @test isa(tT.ndist, AbstractVector{Int})
-    @test minimum(tT.ndist) >= model.minpoints
-    @test maximum(tT.ndist) <= model.maxpoints
+    @test minimum(tT.ndist) >= params.minpoints
+    @test maximum(tT.ndist) <= params.maxpoints
     @info "Mean npoints: $(mean(tT.ndist))"
 
 
-    @test mean(tT.jtdist) ≈ model.tinit/60
+    @test mean(tT.jtdist) ≈ params.tinit/60
     @info "Mean σjt: $(mean(tT.jtdist))"
 
-    @test mean(tT.jTdist) ≈ model.Tinit/60
+    @test mean(tT.jTdist) ≈ params.Tinit/60
     @info "Mean σjT: $(mean(tT.jTdist))"
 
     # Kinetics
@@ -456,14 +455,14 @@
         agemax = 1000, # Oldest end of detail interval
         minpoints = 3, # Minimum number of points in detail interval
     )
-    @time "\nMCMC with Detail interval" tT = MCMC(data, model, boundary, unconf, detail; liveplot)
+    @time "\nMCMC with Detail interval" tT = MCMC(data, params, boundary, unconf, detail; liveplot)
 
     @test isa(tT.Tpointdist, AbstractMatrix)
-    @test nanmaximum(tT.Tpointdist) <= model.Tinit
-    @test nanminimum(tT.Tpointdist) >= model.Tnow
+    @test nanmaximum(tT.Tpointdist) <= params.Tinit
+    @test nanminimum(tT.Tpointdist) >= params.Tnow
 
     @test isa(tT.tpointdist, AbstractMatrix)
-    @test nanmaximum(tT.Tpointdist) <= model.tinit
+    @test nanmaximum(tT.Tpointdist) <= params.tinit
     @test nanminimum(tT.Tpointdist) >= 0
 
     @test isa(tT.resultdist, AbstractMatrix)
@@ -481,26 +480,26 @@
     @info "Mean acceptance rate: $(mean(tT.acceptancedist))"
 
     @test isa(tT.ndist, AbstractVector{Int})
-    @test minimum(tT.ndist) >= model.minpoints
-    @test maximum(tT.ndist) <= model.maxpoints
+    @test minimum(tT.ndist) >= params.minpoints
+    @test maximum(tT.ndist) <= params.maxpoints
     @info "Mean npoints: $(mean(tT.ndist))"
 
-    @test mean(tT.jtdist) ≈ model.tinit/60
+    @test mean(tT.jtdist) ≈ params.tinit/60
     @info "Mean σjt: $(mean(tT.jtdist))"
 
-    @test mean(tT.jTdist) ≈ model.Tinit/60
+    @test mean(tT.jTdist) ≈ params.Tinit/60
     @info "Mean σjT: $(mean(tT.jTdist))"
 
 ## --- MCMC_varkinetics with Detail interval
 
-    @time "\nMCMC_varkinetics with Detail interval" tT, kinetics = MCMC_varkinetics(data, model, boundary, unconf, detail; liveplot)
+    @time "\nMCMC_varkinetics with Detail interval" tT, kinetics = MCMC_varkinetics(data, params, boundary, unconf, detail; liveplot)
 
     @test isa(tT.Tpointdist, AbstractMatrix)
-    @test nanmaximum(tT.Tpointdist) <= model.Tinit
-    @test nanminimum(tT.Tpointdist) >= model.Tnow
+    @test nanmaximum(tT.Tpointdist) <= params.Tinit
+    @test nanminimum(tT.Tpointdist) >= params.Tnow
 
     @test isa(tT.tpointdist, AbstractMatrix)
-    @test nanmaximum(tT.Tpointdist) <= model.tinit
+    @test nanmaximum(tT.Tpointdist) <= params.tinit
     @test nanminimum(tT.Tpointdist) >= 0
 
     @test isa(tT.resultdist, AbstractMatrix)
@@ -518,15 +517,15 @@
     @info "Mean acceptance rate: $(mean(tT.acceptancedist))"
 
     @test isa(tT.ndist, AbstractVector{Int})
-    @test minimum(tT.ndist) >= model.minpoints
-    @test maximum(tT.ndist) <= model.maxpoints
+    @test minimum(tT.ndist) >= params.minpoints
+    @test maximum(tT.ndist) <= params.maxpoints
     @info "Mean npoints: $(mean(tT.ndist))"
 
 
-    @test mean(tT.jtdist) ≈ model.tinit/60
+    @test mean(tT.jtdist) ≈ params.tinit/60
     @info "Mean σjt: $(mean(tT.jtdist))"
 
-    @test mean(tT.jTdist) ≈ model.Tinit/60
+    @test mean(tT.jTdist) ≈ params.Tinit/60
     @info "Mean σjT: $(mean(tT.jTdist))"
 
     # Kinetics
@@ -561,7 +560,7 @@
     @info "Mean zircon rmin: $rminmean"
 
     ## --- Add dynamic jumping, IGB partitioning, and a constraint box
-    model = (model...,
+    params = (params...,
         dynamicjumping=true,
         partitiondaughter=true,
     )
@@ -570,14 +569,14 @@
         Tdist =   [   Uniform(0,50),],  # [C] Temperature distribution
     )
 
-    @time "\nMCMC with Detail interval & dynamicjumping" tT = MCMC(data, model, boundary, unconf, detail; liveplot)
+    @time "\nMCMC with Detail interval & dynamicjumping" tT = MCMC(data, params, boundary, unconf, detail; liveplot)
 
     @test isa(tT.Tpointdist, AbstractMatrix)
-    @test nanmaximum(tT.Tpointdist) <= model.Tinit
-    @test nanminimum(tT.Tpointdist) >= model.Tnow
+    @test nanmaximum(tT.Tpointdist) <= params.Tinit
+    @test nanminimum(tT.Tpointdist) >= params.Tnow
 
     @test isa(tT.tpointdist, AbstractMatrix)
-    @test nanmaximum(tT.Tpointdist) <= model.tinit
+    @test nanmaximum(tT.Tpointdist) <= params.tinit
     @test nanminimum(tT.Tpointdist) >= 0
 
     @test isa(tT.resultdist, AbstractMatrix)
@@ -595,26 +594,26 @@
     @info "Mean acceptance rate: $(mean(tT.acceptancedist))"
 
     @test isa(tT.ndist, AbstractVector{Int})
-    @test minimum(tT.ndist) >= model.minpoints
-    @test maximum(tT.ndist) <= model.maxpoints
+    @test minimum(tT.ndist) >= params.minpoints
+    @test maximum(tT.ndist) <= params.maxpoints
     @info "Mean npoints: $(mean(tT.ndist))"
 
-    @test model.dt < mean(tT.jtdist) < model.tinit
+    @test params.dt < mean(tT.jtdist) < params.tinit
     @info "Mean σjt: $(mean(tT.jtdist))"
 
-    @test 0 < mean(tT.jTdist) < model.Tinit
+    @test 0 < mean(tT.jTdist) < params.Tinit
     @info "Mean σjT: $(mean(tT.jTdist))"
 
 ## --- MCMC_varkinetics with Detail interval & dynamicjumping
 
-    @time "\nMCMC_varkinetics with Detail interval & dynamicjumping" tT, kinetics = MCMC_varkinetics(data, model, boundary, unconf, detail; liveplot)
+    @time "\nMCMC_varkinetics with Detail interval & dynamicjumping" tT, kinetics = MCMC_varkinetics(data, params, boundary, unconf, detail; liveplot)
 
     @test isa(tT.Tpointdist, AbstractMatrix)
-    @test nanmaximum(tT.Tpointdist) <= model.Tinit
-    @test nanminimum(tT.Tpointdist) >= model.Tnow
+    @test nanmaximum(tT.Tpointdist) <= params.Tinit
+    @test nanminimum(tT.Tpointdist) >= params.Tnow
 
     @test isa(tT.tpointdist, AbstractMatrix)
-    @test nanmaximum(tT.Tpointdist) <= model.tinit
+    @test nanmaximum(tT.Tpointdist) <= params.tinit
     @test nanminimum(tT.Tpointdist) >= 0
 
     @test isa(tT.resultdist, AbstractMatrix)
@@ -632,14 +631,14 @@
     @info "Mean acceptance rate: $(mean(tT.acceptancedist))"
 
     @test isa(tT.ndist, AbstractVector{Int})
-    @test minimum(tT.ndist) >= model.minpoints
-    @test maximum(tT.ndist) <= model.maxpoints
+    @test minimum(tT.ndist) >= params.minpoints
+    @test maximum(tT.ndist) <= params.maxpoints
     @info "Mean npoints: $(mean(tT.ndist))"
 
-    @test model.dt < mean(tT.jtdist) < model.tinit
+    @test params.dt < mean(tT.jtdist) < params.tinit
     @info "Mean σjt: $(mean(tT.jtdist))"
 
-    @test 0 < mean(tT.jTdist) < model.Tinit
+    @test 0 < mean(tT.jTdist) < params.Tinit
     @info "Mean σjT: $(mean(tT.jTdist))"
 
     # Kinetics

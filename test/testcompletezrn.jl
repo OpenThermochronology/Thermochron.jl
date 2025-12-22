@@ -7,7 +7,7 @@
     using LinearAlgebra
     BLAS.get_num_threads() > 2 && BLAS.set_num_threads(2)
 
-    model = (
+    params = (
         burnin = 350,               # [n] How long should we wait for MC to converge (become stationary)
         nsteps = 350,               # [n] How many steps of the Markov chain should we run after burn-in?
         dr = 1.0,                   # [μ] Radius step size
@@ -41,18 +41,18 @@
     data.raw_He_age_sigma_Ma .= 0.1*data.raw_He_age_Ma
 
     # Crystallization ages and start time
-    tinit = ceil(maximum(data.crystallization_age_Ma)/model.dt) * model.dt
-    model = (model...,
+    tinit = ceil(maximum(data.crystallization_age_Ma)/params.dt) * params.dt
+    params = (params...,
         tinit = tinit,
-        agesteps = Array{Float64}(tinit-model.dt/2 : -model.dt : 0+model.dt/2),
-        tsteps = Array{Float64}(0+model.dt/2 : model.dt : tinit-model.dt/2),
+        agesteps = Array{Float64}(tinit-params.dt/2 : -params.dt : 0+params.dt/2),
+        tsteps = Array{Float64}(0+params.dt/2 : params.dt : tinit-params.dt/2),
     )
 
     # Boundary conditions (e.g. 10C at present and 650 C at the time of zircon formation).
     boundary = Boundary(
-        agepoints = [model.tnow, model.tinit],   # [Ma] Final and initial time
-        T₀ = [model.Tnow, model.Tinit],          # [C] Final and initial temperature
-        ΔT = [model.ΔTnow, model.ΔTinit],        # [C] Final and initial temperature range (positive or negative)
+        agepoints = [params.tnow, params.tinit],   # [Ma] Final and initial time
+        T₀ = [params.Tnow, params.Tinit],          # [C] Final and initial temperature
+        ΔT = [params.ΔTnow, params.ΔTinit],        # [C] Final and initial temperature range (positive or negative)
         tboundary = :reflecting, # Reflecting time boundary conditions
         Tboundary = :reflecting, # Reflecting temperature boundary conditions
     )
@@ -66,15 +66,15 @@
 ## --- Invert for t-T path via MCMC
 
     # Run Markov Chain
-    @time "\nCompiling MCMC" MCMC(data, model, boundary, constraint)
-    @time "\nRunning MCMC" tT = MCMC(data, model, boundary, constraint; liveplot)
+    @time "\nCompiling MCMC" MCMC(data, params, boundary, constraint)
+    @time "\nRunning MCMC" tT = MCMC(data, params, boundary, constraint; liveplot)
 
     @test isa(tT.Tpointdist, AbstractMatrix)
-    @test nanmaximum(tT.Tpointdist) <= model.Tinit
-    @test nanminimum(tT.Tpointdist) >= model.Tnow
+    @test nanmaximum(tT.Tpointdist) <= params.Tinit
+    @test nanminimum(tT.Tpointdist) >= params.Tnow
 
     @test isa(tT.tpointdist, AbstractMatrix)
-    @test nanmaximum(tT.Tpointdist) <= model.tinit
+    @test nanmaximum(tT.Tpointdist) <= params.tinit
     @test nanminimum(tT.Tpointdist) >= 0
 
     @test isa(tT.resultdist, AbstractMatrix)
@@ -92,14 +92,14 @@
     @info "Mean acceptance rate: $(mean(tT.acceptancedist))"
 
     @test isa(tT.ndist, AbstractVector{Int})
-    @test minimum(tT.ndist) >= model.minpoints
-    @test maximum(tT.ndist) <= model.maxpoints
+    @test minimum(tT.ndist) >= params.minpoints
+    @test maximum(tT.ndist) <= params.maxpoints
     @info "Mean npoints: $(mean(tT.ndist))"
 
-    @test mean(tT.jtdist) ≈ model.tinit/60
+    @test mean(tT.jtdist) ≈ params.tinit/60
     @info "Mean σjt: $(mean(tT.jtdist))"
 
-    @test mean(tT.jTdist) ≈ model.Tinit/60
+    @test mean(tT.jTdist) ≈ params.Tinit/60
     @info "Mean σjT: $(mean(tT.jTdist))"
 
 ## --- MCMC with Detail interval
@@ -108,14 +108,14 @@
         agemax = 1000, # Oldest end of detail interval
         minpoints = 3, # Minimum number of points in detail interval
     )
-    @time "\nMCMC with Detail interval" tT = MCMC(data, model, boundary, constraint, detail; liveplot)
+    @time "\nMCMC with Detail interval" tT = MCMC(data, params, boundary, constraint, detail; liveplot)
 
     @test isa(tT.Tpointdist, AbstractMatrix)
-    @test nanmaximum(tT.Tpointdist) <= model.Tinit
-    @test nanminimum(tT.Tpointdist) >= model.Tnow
+    @test nanmaximum(tT.Tpointdist) <= params.Tinit
+    @test nanminimum(tT.Tpointdist) >= params.Tnow
 
     @test isa(tT.tpointdist, AbstractMatrix)
-    @test nanmaximum(tT.Tpointdist) <= model.tinit
+    @test nanmaximum(tT.Tpointdist) <= params.tinit
     @test nanminimum(tT.Tpointdist) >= 0
 
     @test isa(tT.resultdist, AbstractMatrix)
@@ -133,28 +133,28 @@
     @info "Mean acceptance rate: $(mean(tT.acceptancedist))"
 
     @test isa(tT.ndist, AbstractVector{Int})
-    @test minimum(tT.ndist) >= model.minpoints
-    @test maximum(tT.ndist) <= model.maxpoints
+    @test minimum(tT.ndist) >= params.minpoints
+    @test maximum(tT.ndist) <= params.maxpoints
     @info "Mean npoints: $(mean(tT.ndist))"
 
-    @test mean(tT.jtdist) ≈ model.tinit/60
+    @test mean(tT.jtdist) ≈ params.tinit/60
     @info "Mean σjt: $(mean(tT.jtdist))"
 
-    @test mean(tT.jTdist) ≈ model.Tinit/60
+    @test mean(tT.jTdist) ≈ params.Tinit/60
     @info "Mean σjT: $(mean(tT.jTdist))"
 
 ## --- MCMC with Detail interval & dynamicjumping
-    model = (model...,
+    params = (params...,
         dynamicjumping=true
     )
-    @time "\nMCMC with Detail interval & dynamicjumping" tT = MCMC(data, model, boundary, constraint, detail; liveplot)
+    @time "\nMCMC with Detail interval & dynamicjumping" tT = MCMC(data, params, boundary, constraint, detail; liveplot)
 
     @test isa(tT.Tpointdist, AbstractMatrix)
-    @test nanmaximum(tT.Tpointdist) <= model.Tinit
-    @test nanminimum(tT.Tpointdist) >= model.Tnow
+    @test nanmaximum(tT.Tpointdist) <= params.Tinit
+    @test nanminimum(tT.Tpointdist) >= params.Tnow
 
     @test isa(tT.tpointdist, AbstractMatrix)
-    @test nanmaximum(tT.Tpointdist) <= model.tinit
+    @test nanmaximum(tT.Tpointdist) <= params.tinit
     @test nanminimum(tT.Tpointdist) >= 0
 
     @test isa(tT.resultdist, AbstractMatrix)
@@ -172,14 +172,14 @@
     @info "Mean acceptance rate: $(mean(tT.acceptancedist))"
 
     @test isa(tT.ndist, AbstractVector{Int})
-    @test minimum(tT.ndist) >= model.minpoints
-    @test maximum(tT.ndist) <= model.maxpoints
+    @test minimum(tT.ndist) >= params.minpoints
+    @test maximum(tT.ndist) <= params.maxpoints
     @info "Mean npoints: $(mean(tT.ndist))"
 
-    @test model.dt < mean(tT.jtdist) < model.tinit
+    @test params.dt < mean(tT.jtdist) < params.tinit
     @info "Mean σjt: $(mean(tT.jtdist))"
 
-    @test 0 < mean(tT.jTdist) < model.Tinit
+    @test 0 < mean(tT.jTdist) < params.Tinit
     @info "Mean σjT: $(mean(tT.jTdist))"
 
 ## --- End of File

@@ -62,7 +62,7 @@
     agesteps, tsteps = checktimediscretization(Float64, agesteps)
     @info """Preparing model with $(length(agesteps)) $(allequal(diff(agesteps)) ? "linear" : "nonlinear") timesteps with bin centers between $(round(first(agesteps),digits=3)) and $(round(last(agesteps), digits=3)) Ma"""
 
-    model = (
+    params = (
         nsteps = 400000,                # [n] How many steps of the Markov chain should we run?
         burnin = 100000,                # [n] How long should we wait for MC to converge (become stationary)
         dr = 1.0,                       # [μm] Radius step size
@@ -104,9 +104,9 @@
 
     # Boundary conditions (e.g. 10C at present and 650 C at the time of zircon formation).
     boundary = Boundary(
-        agepoints = [0.0, model.tinit],          # [Ma] Final and initial time
-        T₀ = [model.Tnow, model.Tinit],          # [C] Final and initial temperature
-        ΔT = [model.ΔTnow, model.ΔTinit],        # [C] Final and initial temperature range (positive or negative)
+        agepoints = [0.0, params.tinit],          # [Ma] Final and initial time
+        T₀ = [params.Tnow, params.Tinit],          # [C] Final and initial temperature
+        ΔT = [params.ΔTnow, params.ΔTinit],        # [C] Final and initial temperature range (positive or negative)
         tboundary = :reflecting, # Reflecting time boundary conditions
         Tboundary = :reflecting, # Reflecting temperature boundary conditions
     )
@@ -124,14 +124,14 @@
 
 ## --- Process data into Chronometer objects
 
-    chrons, damodels = chronometers(ds, model)
+    chrons, damodels = chronometers(ds, params)
 
     # Model uncertainty is not well known (depending on annealing parameters,
     # decay constants, diffusion parameters, etc.), but is certainly non-zero.
     # In addition, observed thermochronometric ages often display excess dispersion beyond analytical
     # uncertainty. Here we specify a default minimum uncertainty representing the average expected 
     # misfit between model and data, which may optionally be resampled during inversion.
-    model = (;model...,
+    params = (;params...,
         σcalc = 0.025*Thermochron.value.(chrons),     # [Ma] model uncertainty (2.5%)
     )
 
@@ -141,8 +141,8 @@
     tap = isa.(chrons, ApatiteHe)
     if count(tap) > 1
         h = ageeuplot(chrons[tap], label="Internal uncertainty", title="apatite")
-        empiricaluncertainty!(model.σcalc, chrons, ApatiteHe, sigma_eU=10, sigma_offset=10)
-        σtotal = sqrt.(get_age_sigma(chrons[tap]).^2 + model.σcalc[tap].^2)
+        empiricaluncertainty!(params.σcalc, chrons, ApatiteHe, sigma_eU=10, sigma_offset=10)
+        σtotal = sqrt.(get_age_sigma(chrons[tap]).^2 + params.σcalc[tap].^2)
         ageeuplot!(h, chrons[tap], yerror=2*σtotal, label="Empirical uncertainty")
         savefig(h, name*"_ap-empirical.pdf")
         display(h)
@@ -152,8 +152,8 @@
     tzr = isa.(chrons, ZirconHe)
     if count(tzr) > 1
         h = ageeuplot(chrons[tzr], label="Internal uncertainty", title="zircon")
-        empiricaluncertainty!(model.σcalc, chrons, ZirconHe, sigma_eU=100, sigma_offset=10)
-        σtotal = sqrt.(get_age_sigma(chrons[tzr]).^2 + model.σcalc[tzr].^2)
+        empiricaluncertainty!(params.σcalc, chrons, ZirconHe, sigma_eU=100, sigma_offset=10)
+        σtotal = sqrt.(get_age_sigma(chrons[tzr]).^2 + params.σcalc[tzr].^2)
         ageeuplot!(h, chrons[tzr], yerror=2*σtotal, label="Empirical uncertainty")
         savefig(h, name*"_zir-empirical.pdf")
         display(h)
@@ -162,21 +162,21 @@
 ## --- Invert for maximum likelihood t-T path
 
     # Run Markov Chain
-    # @time tT = MCMC(chrons, damodels, model, boundary, constraint, detail; liveplot=true)
-    @time tT, kinetics = MCMC_varkinetics(chrons, damodels, model, boundary, constraint, detail; liveplot=true)
+    # @time tT = MCMC(chrons, damodels, params, boundary, constraint, detail; liveplot=true)
+    @time tT, kinetics = MCMC_varkinetics(chrons, damodels, params, boundary, constraint, detail; liveplot=true)
     @info """tT.tpointdist & tT.Tpointdist collected, size: $(size(tT.Tpointdist))
-    Mean log-likelihood: $(nanmean(view(tT.lldist, model.burnin:model.nsteps)))
-    Mean acceptance rate: $(nanmean(view(tT.acceptancedist, model.burnin:model.nsteps)))
-    Mean npoints: $(nanmean(view(tT.ndist, model.burnin:model.nsteps)))
-    Mean jₜ: $(nanmean(view(tT.jtdist,model.burnin:model.nsteps)))
-    Mean jT: $(nanmean(view(tT.jTdist, model.burnin:model.nsteps)))
+    Mean log-likelihood: $(nanmean(view(tT.lldist, params.burnin:params.nsteps)))
+    Mean acceptance rate: $(nanmean(view(tT.acceptancedist, params.burnin:params.nsteps)))
+    Mean npoints: $(nanmean(view(tT.ndist, params.burnin:params.nsteps)))
+    Mean jₜ: $(nanmean(view(tT.jtdist,params.burnin:params.nsteps)))
+    Mean jT: $(nanmean(view(tT.jTdist, params.burnin:params.nsteps)))
     """
 
 ## --- (optional) Save or load full tT results to/from file
     using JLD2, CodecZlib
 
     # Save tTs using JLD2 (compressed)
-    @save "$name.jld2" {compress=true} tT kinetics model
+    @save "$name.jld2" {compress=true} tT kinetics params
 
     # # Load saved tTs
     # @load "$name.jld2"
@@ -209,7 +209,7 @@
     for i in eachindex(C, mincolor)
         t = isa.(chrons, C[i])
         if any(t)
-            σtotal = sqrt.(get_age_sigma(chrons[t]).^2 + model.σcalc[t].^2)
+            σtotal = sqrt.(get_age_sigma(chrons[t]).^2 + params.σcalc[t].^2)
             h = ageeuplot(chrons[t], yerror=2σtotal,
                 label="Data (2σ total)", 
                 color = :black,
@@ -253,7 +253,7 @@
         
         # Get observed ages and uncertainties
         observed_ages = Thermochron.value.(chrons[tzr])
-        σtotal = sqrt.(get_age_sigma(chrons[tzr]).^2 + model.σcalc[tzr].^2)
+        σtotal = sqrt.(get_age_sigma(chrons[tzr]).^2 + params.σcalc[tzr].^2)
         
         # Get eU values for color scaling
         eU_vals = eU.(chrons[tzr])
@@ -304,7 +304,7 @@ t = isa.(chrons, ApatiteFT)
 if any(t)
     rmr0 = chrons[t] .|> x->x.rmr0
     μobs = get_age(chrons[t])
-    σtotal = sqrt.(get_age_sigma(chrons[t]).^2 + model.σcalc[t].^2)
+    σtotal = sqrt.(get_age_sigma(chrons[t]).^2 + params.σcalc[t].^2)
     h = scatter(rmr0, μobs, yerror=2σtotal,
         xlabel = "rₘᵣ₀ [unitless]", ylabel = "Age [Ma]",
         label = "Data (2σ total)", framestyle = :box,
@@ -367,7 +367,7 @@ end
         t = isa.(chrons, C[i])
         if any(t)
             μobs = get_age(chrons[t])
-            σtotal = sqrt.(get_age_sigma(chrons[t]).^2 + model.σcalc[t].^2)
+            σtotal = sqrt.(get_age_sigma(chrons[t]).^2 + params.σcalc[t].^2)
             h = plot(μobs, yerror=2σtotal,
                 xlabel = "Sample number",
                 ylabel = "Age [Ma]",
@@ -565,7 +565,7 @@ end
     # Plot image with colorscale in first subplot
     A = imsc(tTimage, ylcn, 0, nanpctile(tTimage[:],98.5))
     plot!(k[1], xlabel="Time (Ma)", ylabel="Temperature (°C)", tick_dir=:out, framestyle=:box)
-    plot!(k[1], xc, yc, A, yflip=true, xflip=true, legend=false, aspectratio=model.tinit/model.Tinit/1.5, xlims=(0,model.tinit), ylims=(model.Tnow,model.Tinit))
+    plot!(k[1], xc, yc, A, yflip=true, xflip=true, legend=false, aspectratio=params.tinit/params.Tinit/1.5, xlims=(0,params.tinit), ylims=(params.Tnow,params.Tinit))
     plot!(k[1], constraint, lw=1) # Add constraint boxes
 
     # Add colorbar in second subplot

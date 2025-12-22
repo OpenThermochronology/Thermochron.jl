@@ -1,6 +1,6 @@
     """
     ```julia
-    MCMC(chrons::Vector{<:Chronometer}, model::NamedTuple, npoints::Int, path.agepoints::Vector, path.Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval];
+    MCMC(chrons::Vector{<:Chronometer}, params::NamedTuple, npoints::Int, path.agepoints::Vector, path.Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval];
         liveplot::Bool=false, 
         maxplots::Int=256, 
         maxplotsburnin::Int=maxplots÷2, 
@@ -9,7 +9,7 @@
     ```
     Markov chain Monte Carlo time-Temperature inversion of the thermochronometric chrons 
     specified as a vector `chrons` of `Chronometer` objects (`ZirconHe`, `ApatiteHe`, 
-    `ApatiteFT`, etc.) and model parameters specified by the named tuple `model`, 
+    `ApatiteFT`, etc.) and model parameters specified by the named tuple `params`, 
     with variable diffusion kinetics.
 
     Returns a `TTResult` object containing posterior time-temperature paths,
@@ -18,44 +18,44 @@
 
     ## Examples
     ```julia
-    tT = MCMC(chrons::NamedTuple, model::NamedTuple, constraint::Constraint, boundary::Boundary, [detail::DetailInterval])
+    tT = MCMC(chrons::NamedTuple, params::NamedTuple, constraint::Constraint, boundary::Boundary, [detail::DetailInterval])
     ```
     """
-    function MCMC(dataset::NamedTuple, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T); kwargs...) where {T <: AbstractFloat}
-        chrons, damodels = chronometers(T, dataset, model)
-        MCMC(chrons, damodels, model, boundary, constraint, detail; kwargs...)
+    function MCMC(dataset::NamedTuple, params::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T); kwargs...) where {T <: AbstractFloat}
+        chrons, damodels = chronometers(T, dataset, params)
+        MCMC(chrons, damodels, params, boundary, constraint, detail; kwargs...)
     end
-    function MCMC(chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T); 
+    function MCMC(chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, params::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T); 
             liveplot::Bool=false, 
             maxplots::Int=256, 
             maxplotsburnin::Int=maxplots÷2, 
             maxplotscollection::Int=maxplots÷2
         ) where T <: AbstractFloat
         # Process inputs
-        burnin = (haskey(model, :burnin) ? model.burnin : 5*10^5)::Int
-        nsteps = (haskey(model, :nsteps) ? model.nsteps : 10^6)::Int
-        minpoints = (haskey(model, :minpoints) ? model.minpoints : 1)::Int
-        maxpoints = (haskey(model, :maxpoints) ? model.maxpoints : 50)::Int
-        npoints = (haskey(model, :npoints) ? model.npoints : minpoints)::Int
+        burnin = (haskey(params, :burnin) ? params.burnin : 5*10^5)::Int
+        nsteps = (haskey(params, :nsteps) ? params.nsteps : 10^6)::Int
+        minpoints = (haskey(params, :minpoints) ? params.minpoints : 1)::Int
+        maxpoints = (haskey(params, :maxpoints) ? params.maxpoints : 50)::Int
+        npoints = (haskey(params, :npoints) ? params.npoints : minpoints)::Int
         npoints = max(npoints, detail.minpoints+1)
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
-        dynamicsigma = (haskey(model, :dynamicsigma) ? model.dynamicsigma : false)::Bool
-        dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
-        rescale = (haskey(model, :rescale) ? model.rescale : false)::Bool
-        rescalestepheating = (haskey(model, :rescalestepheating) ? model.rescalestepheating : true)::Bool
-        stepwisetracerfraction = (haskey(model, :stepwisetracerfraction) ? model.stepwisetracerfraction : false)::Bool
-        partitiondaughter = (haskey(model, :partitiondaughter) ? model.partitiondaughter : false)::Bool
-        dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10)::T
-        dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : dTmax/4)::T
-        agesteps = applyeltype(T, model.agesteps)
+        dynamicsigma = (haskey(params, :dynamicsigma) ? params.dynamicsigma : false)::Bool
+        dynamicjumping = (haskey(params, :dynamicjumping) ? params.dynamicjumping : false)::Bool
+        rescale = (haskey(params, :rescale) ? params.rescale : false)::Bool
+        rescalestepheating = (haskey(params, :rescalestepheating) ? params.rescalestepheating : true)::Bool
+        stepwisetracerfraction = (haskey(params, :stepwisetracerfraction) ? params.stepwisetracerfraction : false)::Bool
+        partitiondaughter = (haskey(params, :partitiondaughter) ? params.partitiondaughter : false)::Bool
+        dTmax = T(haskey(params, :dTmax) ? params.dTmax : 10)::T
+        dTmax_sigma = T(haskey(params, :dTmax_sigma) ? params.dTmax_sigma : dTmax/4)::T
+        agesteps = applyeltype(T, params.agesteps)
         @assert issorted(agesteps, lt=<=, rev=true) "`agesteps` must be in strictly decreasing order"
         @assert last(agesteps) >= 0 "all `agesteps` must be positive"
-        σmodel = T(haskey(model, :σmodel) ? model.σmodel : 1)::T
-        σcalc = (haskey(model, :σcalc) ? model.σcalc : fill(σmodel, length(chrons)))::Vector{T}
+        σmodel = T(haskey(params, :σmodel) ? params.σmodel : 1)::T
+        σcalc = (haskey(params, :σcalc) ? params.σcalc : fill(σmodel, length(chrons)))::Vector{T}
         μcalc = zeros(T, length(chrons))::Vector{T}
         @assert eachindex(σcalc) == eachindex(μcalc) == eachindex(chrons)
-        T0annealing = T(haskey(model, :T0annealing) ? model.T0annealing : 1)::T
-        λannealing = T(haskey(model, :λannealing) ? model.λannealing : 7/burnin)::T
+        T0annealing = T(haskey(params, :T0annealing) ? params.T0annealing : 1)::T
+        λannealing = T(haskey(params, :λannealing) ? params.λannealing : 7/burnin)::T
 
         # See what minerals we have
         (haszhe = any(x->isa(x, ZirconHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, ZirconHe), chrons)) zircons"
@@ -333,7 +333,7 @@
 
     """
     ```julia
-    MCMC_varkinetics(chrons::Vector{<:Chronometer}, model::NamedTuple, npoints::Int, path.agepoints::Vector, path.Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval];
+    MCMC_varkinetics(chrons::Vector{<:Chronometer}, params::NamedTuple, npoints::Int, path.agepoints::Vector, path.Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval];
         liveplot::Bool=false, 
         maxplots::Int=256, 
         maxplotsburnin::Int=maxplots÷2, 
@@ -342,7 +342,7 @@
     ```
     Markov chain Monte Carlo time-Temperature inversion of the thermochronometric chrons 
     specified as a vector `chrons` of `Chronometer` objects (`ZirconHe`, `ApatiteHe`, 
-    `ApatiteFT`, etc.) and model parameters specified by the named tuple `model`, 
+    `ApatiteFT`, etc.) and model parameters specified by the named tuple `params`, 
     with variable diffusion kinetics.
 
     Returns a `TTResult` object containing posterior time-temperature paths,
@@ -352,44 +352,44 @@
 
     ## Examples
     ```julia
-    tT, kinetics = MCMC_varkinetics(chrons::NamedTuple, model::NamedTuple, constraint::Constraint, boundary::Boundary, [detail::DetailInterval])
+    tT, kinetics = MCMC_varkinetics(chrons::NamedTuple, params::NamedTuple, constraint::Constraint, boundary::Boundary, [detail::DetailInterval])
     ```
     """
-    function MCMC_varkinetics(dataset::NamedTuple, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T); kwargs...) where {T <: AbstractFloat}
-        chrons, damodels = chronometers(T, dataset, model)
-        MCMC_varkinetics(chrons, damodels, model, boundary, constraint, detail; kwargs...)
+    function MCMC_varkinetics(dataset::NamedTuple, params::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T); kwargs...) where {T <: AbstractFloat}
+        chrons, damodels = chronometers(T, dataset, params)
+        MCMC_varkinetics(chrons, damodels, params, boundary, constraint, detail; kwargs...)
     end
-    function MCMC_varkinetics(chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, model::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T); 
+    function MCMC_varkinetics(chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, params::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T); 
             liveplot::Bool=false, 
             maxplots::Int=512, 
             maxplotsburnin::Int=maxplots÷2, 
             maxplotscollection::Int=maxplots÷2
         ) where T <: AbstractFloat
         # Process inputs
-        burnin = (haskey(model, :burnin) ? model.burnin : 5*10^5)::Int
-        nsteps = (haskey(model, :nsteps) ? model.nsteps : 10^6)::Int
-        minpoints = (haskey(model, :minpoints) ? model.minpoints : 1)::Int
-        maxpoints = (haskey(model, :maxpoints) ? model.maxpoints : 50)::Int
-        npoints = (haskey(model, :npoints) ? model.npoints : minpoints)::Int
+        burnin = (haskey(params, :burnin) ? params.burnin : 5*10^5)::Int
+        nsteps = (haskey(params, :nsteps) ? params.nsteps : 10^6)::Int
+        minpoints = (haskey(params, :minpoints) ? params.minpoints : 1)::Int
+        maxpoints = (haskey(params, :maxpoints) ? params.maxpoints : 50)::Int
+        npoints = (haskey(params, :npoints) ? params.npoints : minpoints)::Int
         npoints = max(npoints, detail.minpoints+1)
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
-        dynamicsigma = (haskey(model, :dynamicsigma) ? model.dynamicsigma : false)::Bool
-        dynamicjumping = (haskey(model, :dynamicjumping) ? model.dynamicjumping : false)::Bool
-        rescale = (haskey(model, :rescale) ? model.rescale : false)::Bool
-        rescalestepheating = (haskey(model, :rescalestepheating) ? model.rescalestepheating : true)::Bool
-        stepwisetracerfraction = (haskey(model, :stepwisetracerfraction) ? model.stepwisetracerfraction : false)::Bool
-        partitiondaughter = (haskey(model, :partitiondaughter) ? model.partitiondaughter : false)::Bool
-        dTmax = T(haskey(model, :dTmax) ? model.dTmax : 10)::T
-        dTmax_sigma = T(haskey(model, :dTmax_sigma) ? model.dTmax_sigma : dTmax/4)::T
-        agesteps = applyeltype(T, model.agesteps)
+        dynamicsigma = (haskey(params, :dynamicsigma) ? params.dynamicsigma : false)::Bool
+        dynamicjumping = (haskey(params, :dynamicjumping) ? params.dynamicjumping : false)::Bool
+        rescale = (haskey(params, :rescale) ? params.rescale : false)::Bool
+        rescalestepheating = (haskey(params, :rescalestepheating) ? params.rescalestepheating : true)::Bool
+        stepwisetracerfraction = (haskey(params, :stepwisetracerfraction) ? params.stepwisetracerfraction : false)::Bool
+        partitiondaughter = (haskey(params, :partitiondaughter) ? params.partitiondaughter : false)::Bool
+        dTmax = T(haskey(params, :dTmax) ? params.dTmax : 10)::T
+        dTmax_sigma = T(haskey(params, :dTmax_sigma) ? params.dTmax_sigma : dTmax/4)::T
+        agesteps = applyeltype(T, params.agesteps)
         @assert issorted(agesteps, lt=<=, rev=true) "`agesteps` must be in strictly decreasing order"
         @assert last(agesteps) >= 0 "all `agesteps` must be positive"
-        σmodel = T(haskey(model, :σmodel) ? model.σmodel : 1)::T
-        σcalc = (haskey(model, :σcalc) ? model.σcalc : fill(σmodel, length(chrons)))::Vector{T}
+        σmodel = T(haskey(params, :σmodel) ? params.σmodel : 1)::T
+        σcalc = (haskey(params, :σcalc) ? params.σcalc : fill(σmodel, length(chrons)))::Vector{T}
         μcalc = zeros(T, length(chrons))::Vector{T}
         @assert eachindex(σcalc) == eachindex(μcalc) == eachindex(chrons)
-        T0annealing = T(haskey(model, :T0annealing) ? model.T0annealing : 1)::T
-        λannealing = T(haskey(model, :λannealing) ? model.λannealing : 7/burnin)::T
+        T0annealing = T(haskey(params, :T0annealing) ? params.T0annealing : 1)::T
+        λannealing = T(haskey(params, :λannealing) ? params.λannealing : 7/burnin)::T
         redegastracer = true # Required when we are co-inverting for diffusion parameters in _varkinetics inversions
 
         # See what minerals we have
