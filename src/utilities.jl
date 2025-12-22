@@ -932,19 +932,20 @@
     end
 
     # Utility functions to calculate model ages for all chronometers at once
-    function model(chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, Tsteps::AbstractVector{T}; kwargs...) where {T}
+    function model(chrons::AbstractVector{<:Chronometer{T}}, damodels::AbstractVector{<:Model{T}}, Tsteps::AbstractVector{T}; kwargs...) where {T}
         μcalc = zeros(T, size(chrons))
         σcalc =  zeros(T, size(chrons))
         ll = model!(μcalc, σcalc, chrons, damodels, Tsteps; kwargs...)
         return μcalc, σcalc, ll
     end
-    function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, Tsteps::AbstractVector{T}; 
+    function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::AbstractVector{<:Chronometer{T}}, damodels::AbstractVector{<:Model{T}}, Tsteps::AbstractVector{T}; 
             rescale::Bool=false,
             rescalestepheating::Bool=true,  
             redegastracer::Bool=false, 
             stepwisetracerfraction::Bool=false,
             partitiondaughter::Bool=false, 
         ) where {T<:AbstractFloat}
+        @assert eachindex(chrons) == eachindex(μcalc) == eachindex(σcalc) == eachindex(damodels)
         imax = argmax(i->length(timediscretization(chrons[i])), eachindex(chrons))
         tsteps = timediscretization(chrons[imax])
         @assert issorted(tsteps)

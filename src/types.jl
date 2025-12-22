@@ -197,11 +197,21 @@ struct TTResult{T<:AbstractFloat, V<:AbstractVector{T}} <: AbstractTTResult
     lldist::Vector{T}
     acceptancedist::BitVector
 end
+Base.length(tT::TTResult) = size(tT.tpointdist, 2)
+Base.eachindex(tT::TTResult) = axes(tT.tpointdist, 2)
+function Base.getindex(tT::TTResult{T}, i::Int) where {T}
+    ages = view(tT.tpointdist, 1:(tT.ndist[i]+2))
+    temperatures = view(tT.Tpointdist, 1:(tT.ndist[i]+2))
+    return linterp1s(ages, temperatures, tT.agesteps) # Tsteps
+end
 
 abstract type AbstractKineticResult end
 
 struct KineticResult{T<:AbstractFloat} <: AbstractKineticResult
     dmdist::Matrix{<:Model{T}}
 end
+Base.length(k::KineticResult) = size(k.dmdist, 2)
+Base.eachindex(k::KineticResult) = axes(k.dmdist, 2)
+Base.getindex(k::KineticResult, i::Int) = view(k.dmdist, :, i)
 
 ## --- End of File

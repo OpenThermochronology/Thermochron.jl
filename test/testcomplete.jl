@@ -270,6 +270,11 @@
     @time "\nCompiling MCMC" MCMC(data, params, boundary, unconf)
     @time "\nRunning MCMC" tT = MCMC(data, params, boundary, unconf; liveplot)
 
+    @test tT isa Thermochron.TTResult
+    @test length(tT) == 350
+    @test tT[1] isa AbstractVector{Float64}
+    @test eachindex(tT[1]) == eachindex(params.agesteps)
+
     @test isa(tT.Tpointdist, AbstractMatrix)
     @test nanmaximum(tT.Tpointdist) <= params.Tinit
     @test nanminimum(tT.Tpointdist) >= params.Tnow
@@ -383,6 +388,16 @@
     @time "\nCompiling MCMC_varkinetics" MCMC_varkinetics(data, params, boundary, unconf)
     @time "\nRunning MCMC_varkinetics" tT, kinetics = MCMC_varkinetics(data, params, boundary, unconf; liveplot)
 
+    @test tT isa Thermochron.TTResult
+    @test length(tT) == 350
+    @test tT[1] isa AbstractVector{Float64}
+    @test eachindex(tT[1]) == eachindex(params.agesteps)
+
+    @test kinetics isa Thermochron.KineticResult
+    @test length(kinetics) == 350
+    @test kinetics[1] isa AbstractVector{<:Thermochron.Model}
+
+    # t-T results
     @test isa(tT.Tpointdist, AbstractMatrix)
     @test nanmaximum(tT.Tpointdist) <= params.Tinit
     @test nanminimum(tT.Tpointdist) >= params.Tnow
