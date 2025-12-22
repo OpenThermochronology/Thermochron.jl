@@ -29,21 +29,21 @@
     # Literature samples from McDannell et al. 2022 (doi: 10.1130/G50315.1), Manitoba
     # (12 ZirconHe, 5 ApatiteHe, 47 ApatiteFT, 269 ApatiteTrackLengthOriented)
     name = "Manitoba"
-    ds = importdataset("manitoba.csv", ',', importas=:Tuple)
+    ds = importdataset("exampledata/manitoba.csv", ',', importas=:Tuple)
 
     # # Literature samples from Guenthner 2013 (doi: 10.2475/03.2013.01), Minnesota
     # # (23 ZirconHe, 11 ApatiteHe)
     # name = "Minnesota"
-    # ds = importdataset("minnesota.csv", ',', importas=:Tuple)
+    # ds = importdataset("exampledata/minnesota.csv", ',', importas=:Tuple)
 
     # # Literature samples from Valla et al. 2011 (doi: 10.1038/NGEO1242), Visp, Switzerland
     # # (23 ApatiteHe, 4 He-4/He-3)
     # name = "VIS"
-    # ds = importdataset("vis.csv", ',', importas=:Tuple)
+    # ds = importdataset("exampledata/vis.csv", ',', importas=:Tuple)
 
     # Literature sample from McDannell et al. 2018 (doi: 10.1016/j.epsl.2018.03.012), Quebec
     # name = "OL13"
-    # ds = importdataset("ol13.csv", ',', importas=:Tuple)
+    # ds = importdataset("exampledata/ol13.csv", ',', importas=:Tuple)
 
 ## --- Prepare problem
 

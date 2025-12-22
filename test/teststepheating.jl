@@ -61,10 +61,10 @@
 
 ## --- Import a single-domain diffusion dataset
 
-    datapath = joinpath("..", "examples", "vis.csv")
+    datapath = joinpath("..", "examples", "exampledata", "vis.csv")
     ds = importdataset(datapath, importas=:Tuple)
 
-    datapath = joinpath("..", "examples", "vis-03a.csv")
+    datapath = joinpath("..", "examples", "exampledata", "vis-03a.csv")
     sdds = importdataset(datapath, importas=:Tuple)
 
     agesteps = cntr(450:-2:0.0)
@@ -109,7 +109,7 @@
 
 ## --- Import a Multiple Domain Diffusion dataset
 
-    datapath = joinpath("..", "examples", "ol13-mdd.csv")
+    datapath = joinpath("..", "examples", "exampledata", "ol13-mdd.csv")
     mdds = importdataset(datapath, importas=:Tuple)
 
     agesteps = 995:-10.:5

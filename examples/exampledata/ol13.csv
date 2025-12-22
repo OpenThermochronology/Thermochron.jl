@@ -1,2 +1,2 @@
 grain name,mineral,crystallization age [Ma],halfwidth [um],D0 [cm^2/s],Ea [kJ/mol],geometry,mdd file,offset [C],raw Ar age [Ma],raw Ar age sigma [Ma],raw He age [Ma],raw He age sigma [Ma],FT age [Ma],FT age sigma [Ma],track length [um],track angle [degrees],dpar [um],F [apfu],Cl [apfu],OH [apfu],rmr0,U238 [ppm],Th232 [ppm],Sm147 [ppm],U238_matrix [ppm],Th232_matrix [ppm],Sm147_matrix [ppm],reference
-ol13-mdd,feldspar,1002,,,,slab,../examples/ol13-mdd.csv,,,,,,,,,,,,,,,,,,,,,McDannell et al. (2018)
+ol13-mdd,feldspar,1002,,,,slab,../examples/exampledata/ol13-mdd.csv,,,,,,,,,,,,,,,,,,,,,McDannell et al. (2018)

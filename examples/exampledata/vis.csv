@@ -1,9 +1,9 @@
 grain name,mineral,crystallization age [Ma],halfwidth [um],offset [C],He step heating file,raw He age [Ma],raw He age sigma [Ma],U238 [ppm],Th232 [ppm],Sm147 [ppm],Reference
-VIS-07 e,apatite,400,92.57,78.93,../examples/vis-07e.csv,0.9,0.41,20.9,39.9,8.37,Valla et al. (2011) 10.1038/ngeo1242
+VIS-07 e,apatite,400,92.57,78.93,../examples/exampledata/vis-07e.csv,0.9,0.41,20.9,39.9,8.37,Valla et al. (2011) 10.1038/ngeo1242
 VIS-07 x,apatite,400,89.87,78.93,,1.6,0.41,38.8,59.3,19.23,Valla et al. (2011) 10.1038/ngeo1242
 VIS-07 y,apatite,400,73.01,78.93,,0.8,0.41,29.9,43.3,13.125,Valla et al. (2011) 10.1038/ngeo1242
 VIS-07 z,apatite,400,72.54,78.93,,1.5,0.41,18.2,30,9.84,Valla et al. (2011) 10.1038/ngeo1242
-VIS-06 a,apatite,400,127.97,72.63,../examples/vis-06a.csv,2.3,0.49,42.1,30.3,11.595,Valla et al. (2011) 10.1038/ngeo1242
+VIS-06 a,apatite,400,127.97,72.63,../examples/exampledata/vis-06a.csv,2.3,0.49,42.1,30.3,11.595,Valla et al. (2011) 10.1038/ngeo1242
 VIS-06 b,apatite,400,105.3,72.63,,3.4,0.49,45.7,56.2,18.285,Valla et al. (2011) 10.1038/ngeo1242
 VIS-06 s,apatite,400,94.84,72.63,,2.4,0.49,74.7,81.7,45.06,Valla et al. (2011) 10.1038/ngeo1242
 VIS-06 x,apatite,400,122.39,72.63,,2.8,0.49,98.2,60.8,25.305,Valla et al. (2011) 10.1038/ngeo1242
@@ -12,12 +12,12 @@ VIS-06 z,apatite,400,73.93,72.63,,2.7,0.49,42.4,37.1,40.815,Valla et al. (2011) 
 VIS-05 x,apatite,400,81.37,53.38,,2.5,0.25,26.7,30.5,33.765,Valla et al. (2011) 10.1038/ngeo1242
 VIS-05 y,apatite,400,90.49,53.38,,2.3,0.25,19.3,24.9,29.49,Valla et al. (2011) 10.1038/ngeo1242
 VIS-05 z,apatite,400,85.32,53.38,,2,0.25,13.2,15.8,33.915,Valla et al. (2011) 10.1038/ngeo1242
-VIS-04 c,apatite,400,93.44,46.38,../examples/vis-04c.csv,2.9,0.53,17.6,18.2,11.13,Valla et al. (2011) 10.1038/ngeo1242
+VIS-04 c,apatite,400,93.44,46.38,../examples/exampledata/vis-04c.csv,2.9,0.53,17.6,18.2,11.13,Valla et al. (2011) 10.1038/ngeo1242
 VIS-04 s,apatite,400,81.37,46.38,,1.5,0.53,12.2,20.6,10.305,Valla et al. (2011) 10.1038/ngeo1242
 VIS-04 x,apatite,400,79.84,46.38,,2.6,0.53,22,25.7,14.145,Valla et al. (2011) 10.1038/ngeo1242
 VIS-04 y,apatite,400,77.83,46.38,,2.5,0.53,17.7,17,10.875,Valla et al. (2011) 10.1038/ngeo1242
 VIS-04 z,apatite,400,94.29,46.38,,2.3,0.53,45.2,42,27.255,Valla et al. (2011) 10.1038/ngeo1242
-VIS-03 a,apatite,400,86,28.88,../examples/vis-03a.csv,4.1,0.53,20.8,5.5,28.605,Valla et al. (2011) 10.1038/ngeo1242
+VIS-03 a,apatite,400,86,28.88,../examples/exampledata/vis-03a.csv,4.1,0.53,20.8,5.5,28.605,Valla et al. (2011) 10.1038/ngeo1242
 VIS-03 s,apatite,400,82.85,28.88,,3,0.53,61,15,44.58,Valla et al. (2011) 10.1038/ngeo1242
 VIS-03 x,apatite,400,92.86,28.88,,3.6,0.53,48.2,17.1,47.04,Valla et al. (2011) 10.1038/ngeo1242
 VIS-03 z,apatite,400,73.47,28.88,,3,0.53,99.8,42,81.48,Valla et al. (2011) 10.1038/ngeo1242

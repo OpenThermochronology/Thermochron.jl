@@ -1,8 +1,8 @@
 ## --- Prepare problem
 
     # Read in data from file using StatGeochem
-    datapath = joinpath("..", "examples")
-    ds = importdataset(joinpath(datapath, "minnesota.csv"), ',', importas=:Tuple);
+    datapath = joinpath("..", "examples",)
+    ds = importdataset(joinpath(datapath, "exampledata", "minnesota.csv"), ',', importas=:Tuple);
 
     using LinearAlgebra
     BLAS.get_num_threads() > 2 && BLAS.set_num_threads(2)
@@ -180,7 +180,7 @@
     Tsteps = range(650, 0, length=length(tsteps))
     params = (params..., agesteps = agesteps, tsteps = tsteps)
 
-    dsm = importdataset(joinpath(datapath, "manitoba.csv"), ',', importas=:Tuple)
+    dsm = importdataset(joinpath(datapath, "exampledata", "manitoba.csv"), ',', importas=:Tuple)
     chrons, damodels = chronometers(dsm, params, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
     @test chrons isa Vector{<:Chronometer}
     @test length(chrons) == 333

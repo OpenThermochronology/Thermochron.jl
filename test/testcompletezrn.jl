@@ -1,7 +1,7 @@
 ## --- Prepare problem
 
     # Read in data from file using StatGeochem
-    datapath = joinpath("..", "examples", "minnesotazrn.csv")
+    datapath = joinpath("..", "examples", "exampledata", "minnesotazrn.csv")
     ds = importdataset(datapath, ',', importas=:Tuple);
 
     using LinearAlgebra
