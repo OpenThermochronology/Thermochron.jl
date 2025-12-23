@@ -29,21 +29,23 @@
     # Literature samples from McDannell et al. 2022 (doi: 10.1130/G50315.1), Manitoba
     # (12 ZirconHe, 5 ApatiteHe, 47 ApatiteFT, 269 ApatiteTrackLengthOriented)
     name = "Manitoba"
-    ds = importdataset("exampledata/manitoba.csv", ',', importas=:Tuple)
+    datapath = joinpath("exampledata", "manitoba.csv")
 
     # # Literature samples from Guenthner 2013 (doi: 10.2475/03.2013.01), Minnesota
     # # (23 ZirconHe, 11 ApatiteHe)
     # name = "Minnesota"
-    # ds = importdataset("exampledata/minnesota.csv", ',', importas=:Tuple)
+    # datapath = joinpath("exampledata", "minnesota.csv")
 
     # # Literature samples from Valla et al. 2011 (doi: 10.1038/NGEO1242), Visp, Switzerland
     # # (23 ApatiteHe, 4 He-4/He-3)
     # name = "VIS"
-    # ds = importdataset("exampledata/vis.csv", ',', importas=:Tuple)
+    # datapath = joinpath("exampledata", "vis.csv")
 
     # Literature sample from McDannell et al. 2018 (doi: 10.1016/j.epsl.2018.03.012), Quebec
     # name = "OL13"
-    # ds = importdataset("exampledata/ol13.csv", ',', importas=:Tuple)
+    # datapath = joinpath("exampledata", "ol13.csv")
+
+    ds = importdataset(datapath, ',', importas=:Tuple)
 
 ## --- Prepare problem
 
@@ -53,8 +55,8 @@
     agesteps = cntr(tinit:-dt:0)
 
     # # Option B: Logarithmic timesteps
-    # detail = 300 # Approximate number of model timesteps (more is slower but more accurate)
-    # dt = maximum(ds.crystallization_age_Ma)/detail # [Ma] Average model timestep
+    # resolution = 300 # Approximate number of model timesteps (more is slower but more accurate)
+    # dt = maximum(ds.crystallization_age_Ma)/resolution # [Ma] Average model timestep
     # tinit = maximum(ds.crystallization_age_Ma) # [Ma] Model start time
     # agesteps = cntr(logrange(tinit+dt, dt, length=Int(tinit÷dt+1)) .- dt)
 
@@ -63,8 +65,8 @@
     @info """Preparing model with $(length(agesteps)) $(allequal(diff(agesteps)) ? "linear" : "nonlinear") timesteps with bin centers between $(round(first(agesteps),digits=3)) and $(round(last(agesteps), digits=3)) Ma"""
 
     params = (
-        nsteps = 100000,                # [n] How many steps of the Markov chain should we run?
-        burnin = 50000,                # [n] How long should we wait for MC to converge (become stationary)
+        nsteps = 400000,                # [n] How many steps of the Markov chain should we run?
+        burnin = 100000,                # [n] How long should we wait for MC to converge (become stationary)
         dr = 1.0,                       # [μm] Radius step size
         dTmax = 25.0,                   # [Ma/dt] Maximum reheating/burial per model timestep. If too high, may cause numerical problems in Crank-Nicholson solve
         Tinit = 400.0,                  # [C] Initial model temperature (i.e., crystallization temperature)
@@ -79,6 +81,7 @@
         minpoints = 15,                 # [n] Minimum allowed number of model t-T points (nodes)
         maxpoints = 50,                 # [n] Maximum allowed number of model t-T points (nodes)
         dynamicjumping = true,          # Update the t and T jumping (proposal) distributions based on previously accepted jumps
+        stepwisetracerfraction = false, # Calculate degassing ll based on stepwise fraction degassed (rather than cumulative)
         # Damage and annealing models for diffusivity (specify custom kinetics if desired)
         adm = RDAAM(),                  # Flowers et al. 2009 (doi: 10.1016/j.gca.2009.01.015) apatite diffusivity model
         zdm = ZRDAAM(),                 # Guenthner et al. 2013 (doi: 10.2475/03.2013.01) zircon diffusivity model
@@ -94,13 +97,13 @@
     # Default: no detail interval
     detail = DetailInterval()
 
-    # Uncomment this section to require greater t-T node density in some time interval
-    # (typically the youngest end of the total time interval, where you may expect the data more resolving power)
-    detail = DetailInterval(
-        agemin = 0.0, # Youngest end of detail interval
-        agemax = 1000, # Oldest end of detail interval
-        minpoints = 8, # Minimum number of points in detail interval
-    )
+    # # Uncomment this section to require greater t-T node density in some time interval
+    # # (typically the youngest end of the total time interval, where you may expect the data more resolving power)
+    # detail = DetailInterval(
+    #     agemin = 0.0, # Youngest end of detail interval
+    #     agemax = tinit/5, # Oldest end of detail interval
+    #     minpoints = 8, # Minimum number of points in detail interval
+    # )
 
     # Boundary conditions (e.g. 10C at present and 650 C at the time of zircon formation).
     boundary = Boundary(
