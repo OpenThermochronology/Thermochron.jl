@@ -1092,18 +1092,38 @@
         return ll
     end
 
+## --- Check validity and consistency of temporal discretization
+
+    function checktimediscretization(::Type{T}, agesteps, tsteps=nothing) where {T<:AbstractFloat}
+        isnothing(tsteps) && isnothing(agesteps) && @error "At least one of `tsteps` or `agesteps` is required"
+        isnothing(tsteps) && (tsteps = ((first(agesteps) - step_at(agesteps,1)/2) .- agesteps))
+        isnothing(agesteps) && (agesteps = (last(tsteps) + step_at(tsteps, lastindex(tsteps))/2) .- tsteps)
+        @assert issorted(tsteps, lt=<=) "`tsteps` must be in strictly increasing order"
+        @assert first(tsteps) >= 0 "all `tsteps` must be positive"
+        @assert issorted(agesteps, lt=<=, rev=true) "`agesteps` must be in strictly decreasing order"
+        @assert last(agesteps) >= 0 "all `agesteps` must be positive"
+        @assert eachindex(agesteps) == eachindex(tsteps) "`tsteps` and `agesteps` must have equivalent indices"
+        @assert tsteps ≈ (first(agesteps) - step_at(agesteps,1)/2) .- agesteps "`tsteps` and `agesteps` must represent the same chronology"
+        return applyeltype(T, agesteps), applyeltype(T, tsteps)
+    end
+
+    # Ensure a specific element type
+    applyeltype(::Type{T}, x::AbstractArray{T}) where {T} = x
+    applyeltype(::Type{T}, x::AbstractArray) where {T} = T.(x)
+    applyeltype(::Type{T}, x::OrdinalRange) where {T} = range(T(first(x)), T(last(x)), length(x))
+
 ## --- Extracting things from KineticResults
 
-# Query Diffusivities and MDDiffusivities from a KineticResult
-function Diffusivity(kr::KineticResult)
-    any(x->isa(x, Diffusivity), kr) || return nothing
-    ia = findall(x->isa(x, Diffusivity), kr[:,1])
-    return collect(kr[ia,:]')
-end
-function MDDiffusivity(kr::KineticResult)
-    any(x->isa(x, MDDiffusivity), kr) || return nothing
-    ia = findall(x->isa(x, MDDiffusivity), kr[:,1])
-    return collect(kr[ia,:]')
-end
+    # Query Diffusivities and MDDiffusivities from a KineticResult
+    function Diffusivity(kr::KineticResult)
+        any(x->isa(x, Diffusivity), kr) || return nothing
+        ia = findall(x->isa(x, Diffusivity), kr[:,1])
+        return collect(kr[ia,:]')
+    end
+    function MDDiffusivity(kr::KineticResult)
+        any(x->isa(x, MDDiffusivity), kr) || return nothing
+        ia = findall(x->isa(x, MDDiffusivity), kr[:,1])
+        return collect(kr[ia,:]')
+    end
 
 ## --- End of File
