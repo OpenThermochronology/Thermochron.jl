@@ -55,6 +55,7 @@
         @assert eachindex(σcalc) == eachindex(μcalc) == eachindex(chrons)
         T0annealing = T(haskey(params, :T0annealing) ? params.T0annealing : 1)::T
         λannealing = T(haskey(params, :λannealing) ? params.λannealing : 7/burnin)::T
+        redegastracer = false # Not required as diffusion parameters don't change
 
         # See what minerals we have
         (any(x->isa(x, ZirconHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, ZirconHe), chrons)) zircons"
@@ -86,7 +87,7 @@
         initialproposal!(path, npoints) 
 
         # Log-likelihood for initial proposal
-        ll = llₚ = model!(μcalc, σcalc, chrons, damodels, path.Tsteps; rescale, rescalestepheating, partitiondaughter) + 
+        ll = llₚ = model!(μcalc, σcalc, chrons, damodels, path.Tsteps; rescale, rescalestepheating, redegastracer, partitiondaughter) + 
             diff_ll(path.Tsteps, dTmax, dTmax_sigma) + (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
 
         # Proposal probabilities (must sum to 1)
@@ -153,7 +154,7 @@
             collectproposal!(path, npointsₚ)
 
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps; rescale, rescalestepheating, partitiondaughter)
+            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps; rescale, rescalestepheating, redegastracer, partitiondaughter)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
@@ -260,7 +261,7 @@
             collectproposal!(path, npointsₚ)
 
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps; rescale, rescalestepheating, partitiondaughter)
+            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps; rescale, rescalestepheating, redegastracer, partitiondaughter)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 

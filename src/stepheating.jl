@@ -103,7 +103,7 @@ tracerdiffusivityratio(x::HeliumSample{T}) where {T} = T((4/3)^0.3)
 
 
 ## ---  Combined daughter+tracer degassing functions
-function degas!(mineral::HeliumSample, tsteps_degassing, Tsteps_degassing, dm; fuse=true, redegastracer=false)
+function degas!(mineral::HeliumSample, tsteps_degassing, Tsteps_degassing, dm; fuse::Bool=true, redegastracer::Bool=true)
     total_daughter = degas_daughter!(mineral, tsteps_degassing, Tsteps_degassing, dm; fuse)
     # Now diffuse parent isotope tracer (He-3), if neccesary
     if redegastracer || !(0 < sum(mineral.step_tracer))
@@ -111,7 +111,7 @@ function degas!(mineral::HeliumSample, tsteps_degassing, Tsteps_degassing, dm; f
     end
     return mineral.step_tracer, mineral.step_daughter
 end
-function degas!(mineral::ArgonSample, tsteps_degassing, Tsteps_degassing, dm; fuse=true, redegastracer=false)
+function degas!(mineral::ArgonSample, tsteps_degassing, Tsteps_degassing, dm; fuse::Bool=true, redegastracer::Bool=true)
     degas_daughter!(mineral, tsteps_degassing, Tsteps_degassing, dm; fuse)
     # Now diffuse parent isotope tracer (Ar-39), if neccesary
     if redegastracer || !(0 < sum(mineral.step_tracer))
@@ -123,7 +123,7 @@ end
 
 ## --- Age and likelihood functions for step heating data
 
-function modelage(sdd::SingleDomain{T,<:HeliumSample}, Tsteps::AbstractVector, dm::DiffusivityModel{T}; redegastracer::Bool=false, partitiondaughter::Bool=false) where {T<:AbstractFloat}
+function modelage(sdd::SingleDomain{T,<:HeliumSample}, Tsteps::AbstractVector, dm::DiffusivityModel{T}; redegastracer::Bool=true, partitiondaughter::Bool=false) where {T<:AbstractFloat}
     stepratio = fill!(sdd.model_age, zero(T))
     fraction = fill!(sdd.model_fraction, zero(T))
     # Degas
@@ -139,7 +139,7 @@ function modelage(sdd::SingleDomain{T,<:HeliumSample}, Tsteps::AbstractVector, d
 
     return age, stepratio, fraction
 end
-function modelage(sdd::SingleDomain{T,<:ArgonSample}, Tsteps::AbstractVector, dm::DiffusivityModel{T}; redegastracer::Bool=false, partitiondaughter::Bool=false) where {T<:AbstractFloat}
+function modelage(sdd::SingleDomain{T,<:ArgonSample}, Tsteps::AbstractVector, dm::DiffusivityModel{T}; redegastracer::Bool=true, partitiondaughter::Bool=false) where {T<:AbstractFloat}
     stepage = fill!(sdd.model_age, zero(T))
     fraction = fill!(sdd.model_fraction, zero(T))
     # Degas
@@ -156,7 +156,7 @@ function modelage(sdd::SingleDomain{T,<:ArgonSample}, Tsteps::AbstractVector, dm
 
     return age, stepage, fraction
 end
-function modelage(mdd::MultipleDomain{T,<:ArgonSample}, Tsteps::AbstractVector, dm::MDDiffusivity{T}; redegastracer::Bool=false, partitiondaughter::Bool=false) where {T<:AbstractFloat}
+function modelage(mdd::MultipleDomain{T,<:ArgonSample}, Tsteps::AbstractVector, dm::MDDiffusivity{T}; redegastracer::Bool=true, partitiondaughter::Bool=false) where {T<:AbstractFloat}
     age = fill!(mdd.model_age, zero(T))
     tracer = fill!(mdd.model_tracer, zero(T))
     daughter = fill!(mdd.model_daughter, zero(T))
