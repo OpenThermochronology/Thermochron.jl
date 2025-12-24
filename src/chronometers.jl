@@ -14,6 +14,8 @@ ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64;
     Cl::Number = NaN,                       # [APFU] Cl concentration, in atoms per formula unit
     OH::Number = NaN,                       # [APFU] OH concentration, in atoms per formula unit
     rmr0::Number = NaN,                     # [unitless] annealing parameter
+    name::String = "",                      # Sample or grain name
+    notes::String = "",                     # Sample notes
     agesteps::AbstracVector | tsteps::AbstracVector, # Temporal discretization
 )
 ```
@@ -49,6 +51,9 @@ struct ApatiteTrackLengthOriented{T<:AbstractFloat, V<:AbstractVector{T}} <: Fis
     calc::Vector{T}         # [um] last calculated mean and standard deviation
     agesteps::V             # [Ma] age in Ma relative to the present
     tsteps::V               # [Ma] forward time since crystallization
+    hash::UInt64            # [unitless] unique ID for linking track lengths with the same offset, agesteps, l0, etc.
+    name::String            # Sample or grain name
+    notes::String           # Sample notes
 end
 function ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64; 
         length::Number = NaN, 
@@ -62,11 +67,13 @@ function ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64;
         Cl::Number = NaN, 
         OH::Number = NaN, 
         rmr0::Number = NaN,
-        agesteps = nothing, 
-        tsteps = nothing, 
-        r = zeros(T, size(agesteps)),
-        pr = zeros(T, size(agesteps)),
-        calc = zeros(T, 2),
+        name::String = "",
+        notes::String = "",
+        agesteps = nothing,
+        tsteps = nothing,
+        r::Vector = zeros(T, size(agesteps)),
+        pr::Vector = zeros(T, size(agesteps)),
+        calc::Vector = zeros(T, 2),
     )
     # Temporal discretization
     agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
@@ -86,6 +93,9 @@ function ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64;
         calc,
         agesteps,
         tsteps,
+        h,
+        name,
+        notes,
     )
 end
 
@@ -102,6 +112,8 @@ ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
     Cl::Number = NaN,                       # [APFU] Cl concentration, in atoms per formula unit
     OH::Number = NaN,                       # [APFU] OH concentration, in atoms per formula unit
     rmr0::Number = NaN,                     # [unitless] annealing parameter
+    name::String = "",                      # Sample or grain name
+    notes::String = "",                     # Sample notes
     agesteps::AbstracVector | tsteps::AbstracVector, # Temporal discretization
 )
 ```
@@ -135,6 +147,8 @@ struct ApatiteTrackLength{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTrac
     agesteps::V             # [Ma] age in Ma relative to the present
     tsteps::V               # [Ma] forward time since crystallization
     hash::UInt64            # [unitless] unique ID for linking track lengths with the same offset, agesteps, l0, etc.
+    name::String            # Sample or grain name
+    notes::String           # Sample notes
 end
 function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64; 
         length::Number = NaN, 
@@ -146,11 +160,13 @@ function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
         Cl::Number = NaN, 
         OH::Number = NaN, 
         rmr0::Number = NaN,
-        agesteps = nothing, 
-        tsteps = nothing, 
-        r = zeros(T, size(agesteps)),
-        pr = zeros(T, size(agesteps)),
-        calc = zeros(T, 2),
+        name::String = "",
+        notes::String = "",
+        agesteps = nothing,
+        tsteps = nothing,
+        r::Vector = zeros(T, size(agesteps)),
+        pr::Vector = zeros(T, size(agesteps)),
+        calc::Vector = zeros(T, 2),
     )
     # Temporal discretization
     agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
@@ -170,6 +186,8 @@ function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
         agesteps,
         tsteps,
         h,
+        name,
+        notes,
     )
 end
 
@@ -179,7 +197,9 @@ ZirconTrackLength(T::Type{<:AbstractFloat}=Float64;
     length::Number = NaN,                   # [um] fission track length
     offset::Number = zero(T),               # [C] temperature offset relative to other samples
     l0::Number = 11.17,                     # [um] Initial track length
-    l0_sigma::Number = 0.051,               # [um] Initial track length unertainty    
+    l0_sigma::Number = 0.051,               # [um] Initial track length unertainty
+    name::String = "",                      # Sample or grain name
+    notes::String = "",                     # Sample notes  
     agesteps::AbstracVector | tsteps::AbstracVector, # Temporal discretization
 )
 ```
@@ -202,17 +222,21 @@ struct ZirconTrackLength{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTrack
     agesteps::V             # [Ma] age in Ma relative to the present
     tsteps::V               # [Ma] forward time since crystallization
     hash::UInt64            # [unitless] unique ID for linking track lengths with the same offset, agesteps, l0, etc.
+    name::String            # Sample or grain name
+    notes::String           # Sample notes
 end
 function ZirconTrackLength(T::Type{<:AbstractFloat}=Float64; 
         length::Number = NaN, 
         offset::Number = zero(T),
         l0::Number = 11.17,
         l0_sigma::Number = 0.051,
-        agesteps = nothing, 
+        name::String = "",
+        notes::String = "",
+        agesteps = nothing,
         tsteps = nothing,
-        r = zeros(T, size(agesteps)),
-        pr = zeros(T, size(agesteps)),
-        calc = zeros(T, 2),
+        r::Vector = zeros(T, size(agesteps)),
+        pr::Vector = zeros(T, size(agesteps)),
+        calc::Vector = zeros(T, 2),
     )
     # Temporal discretization
     agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
@@ -236,6 +260,8 @@ function ZirconTrackLength(T::Type{<:AbstractFloat}=Float64;
         agesteps,
         tsteps,
         h,
+        name,
+        notes,
     )
 end
 
@@ -246,7 +272,9 @@ MonaziteTrackLength(T::Type{<:AbstractFloat} = Float64;
     length::Number = NaN,                   # [um] fission track length
     offset::Number = zero(T),               # [C] temperature offset relative to other samples
     l0::Number = 10.60,                     # [um] Initial track length
-    l0_sigma::Number = 0.19,                # [um] Initial track length unertainty    
+    l0_sigma::Number = 0.19,                # [um] Initial track length unertainty
+    name::String = "",                      # Sample or grain name
+    notes::String = "",                     # Sample notes
     agesteps::AbstracVector | tsteps::AbstracVector, # Temporal discretization
 )
 ```
@@ -269,17 +297,21 @@ struct MonaziteTrackLength{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTra
     agesteps::V             # [Ma] age in Ma relative to the present
     tsteps::V               # [Ma] forward time since crystallization
     hash::UInt64            # [unitless] unique ID for linking track lengths with the same offset, agesteps, l0, etc.
+    name::String            # Sample or grain name
+    notes::String           # Sample notes
 end
 function MonaziteTrackLength(T::Type{<:AbstractFloat}=Float64; 
         length::Number = NaN,
         offset::Number = zero(T),
         l0::Number = 10.60,
         l0_sigma::Number = 0.19,
-        agesteps = nothing, 
-        tsteps = nothing, 
-        r = zeros(T, size(agesteps)),
-        pr = zeros(T, size(agesteps)),
-        calc = zeros(T, 2),
+        name::String = "",
+        notes::String = "",
+        agesteps = nothing,
+        tsteps = nothing,
+        r::Vector = zeros(T, size(agesteps)),
+        pr::Vector = zeros(T, size(agesteps)),
+        calc::Vector = zeros(T, 2),
     )
     # Temporal discretization
     agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
@@ -303,6 +335,8 @@ function MonaziteTrackLength(T::Type{<:AbstractFloat}=Float64;
         agesteps,
         tsteps,
         h,
+        name,
+        notes,
     )
 end
 
@@ -314,7 +348,9 @@ ZirconFT(T::Type{<:AbstractFloat} = Float64;
     age::Number = NaN,              # [Ma] fission track age
     age_sigma::Number = NaN,        # [Ma] fission track age uncertainty
     offset::Number = zero(T),       # [C] temperature offset relative to other samples
-    agesteps::AbstracVector | tsteps::AbstracVector, 
+    name::String = "",              # Sample or grain name
+    notes::String = "",             # Sample notes
+    agesteps::AbstracVector | tsteps::AbstracVector, # Temporal discretization
 )
 ```
 Construct a `ZirconFT` chronometer representing a zircon with a fission track age 
@@ -331,13 +367,17 @@ struct ZirconFT{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTrackSample{T}
     offset::T               # [C] temperature offset relative to other samples
     agesteps::V             # [Ma] age in Ma relative to the present
     tsteps::V               # [Ma] forward time since crystallization
+    name::String            # Sample or grain name
+    notes::String           # Sample notes
 end
 function ZirconFT(T::Type{<:AbstractFloat}=Float64; 
         age::Number = NaN,              # [Ma] fission track age
         age_sigma::Number = NaN,        # [Ma] fission track age uncertainty
         offset::Number = zero(T),       # [C] temperature offset relative to other samples
-        agesteps = nothing, 
-        tsteps = nothing, 
+        name::String = "",
+        notes::String = "",
+        agesteps = nothing,
+        tsteps = nothing,
     )
     # Temporal discretization
     agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
@@ -347,6 +387,8 @@ function ZirconFT(T::Type{<:AbstractFloat}=Float64;
         T(offset),
         agesteps,
         tsteps,
+        name,
+        notes,
     )
 end
 
@@ -357,6 +399,8 @@ MonaziteFT(T::Type{<:AbstractFloat} = Float64;
     age::Number = NaN,              # [Ma] fission track age
     age_sigma::Number = NaN,        # [Ma] fission track age uncertainty
     offset::Number = zero(T),       # [C] temperature offset relative to other samples
+    name::String = "",              # Sample or grain name
+    notes::String = "",             # Sample notes
     agesteps::AbstracVector | tsteps::AbstracVector, # Temporal discretization
 )
 ```
@@ -374,13 +418,17 @@ struct MonaziteFT{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTrackSample{
     offset::T               # [C] temperature offset relative to other samples
     agesteps::V             # [Ma] age in Ma relative to the present
     tsteps::V               # [Ma] forward time since crystallization
+    name::String            # Sample or grain name
+    notes::String           # Sample notes
 end
 function MonaziteFT(T::Type{<:AbstractFloat}=Float64; 
         age::Number = NaN,              # [Ma] fission track age
         age_sigma::Number = NaN,        # [Ma] fission track age uncertainty
         offset::Number = zero(T),       # [C] temperature offset relative to other samples
-        agesteps=nothing,
-        tsteps=nothing, 
+        name::String = "",
+        notes::String = "",
+        agesteps = nothing,
+        tsteps = nothing, 
     )
     # Temporal discretization
     agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
@@ -390,6 +438,8 @@ function MonaziteFT(T::Type{<:AbstractFloat}=Float64;
         T(offset),
         agesteps,
         tsteps,
+        name,
+        notes,
     )
 end
 
@@ -405,6 +455,8 @@ ApatiteFT(T::Type{<:AbstractFloat} = Float64;
     Cl::Number = NaN,               # [APFU] Cl concentration, in atoms per formula unit
     OH::Number = NaN,               # [APFU] OH concentration, in atoms per formula unit
     rmr0::Number = NaN,             # [unitless] annealing parameter
+    name::String = "",              # Sample or grain name
+    notes::String = "",             # Sample notes
     agesteps::AbstracVector | tsteps::AbstracVector, # Temporal discretization
 )
 ```
@@ -429,6 +481,8 @@ struct ApatiteFT{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTrackSample{T
     rmr0::T                 # [unitless] relative resistance to annealing (0=most, 1=least)
     agesteps::V             # [Ma] age in Ma relative to the present
     tsteps::V               # [Ma] forward time since crystallization
+    name::String            # Sample or grain name
+    notes::String           # Sample notes
 end
 function ApatiteFT(T::Type{<:AbstractFloat}=Float64; 
         age::Number = NaN, 
@@ -439,8 +493,10 @@ function ApatiteFT(T::Type{<:AbstractFloat}=Float64;
         Cl::Number = NaN,
         OH::Number = NaN,
         rmr0::Number = NaN,
-        agesteps=nothing, 
-        tsteps=nothing, 
+        name::String = "",
+        notes::String = "",
+        agesteps = nothing,
+        tsteps = nothing,
     )
     # Temporal discretization
     agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
@@ -464,6 +520,8 @@ function ApatiteFT(T::Type{<:AbstractFloat}=Float64;
         T(rmr0),
         agesteps,
         tsteps,
+        name,
+        notes,
     )
 end
 
@@ -485,6 +543,8 @@ ZirconHe(T=Float64;
     Sm147_matrix::Number = zero(T),         # [ppm] matrix Sm-147 concentration
     grainsize_matrix::Number = one(T),      # [mm] average grain size of matrix rock
     volumeweighting::Symbol=:cylindrical,   # (:spherical, :cylindrical, or :planar) relative volume proportions of each radial model shell, for averaging purposes
+    name::String = "",                      # Sample or grain name
+    notes::String = "",                     # Sample notes
     agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
 )
 ```
@@ -513,20 +573,20 @@ struct ZirconHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     r232Th::Vector{T}           # [atoms/g] radial Th-232 concentrations
     r147Sm::Vector{T}           # [atoms/g] radial Sm-147 concentrations
     bulkgrainsize::T            # [mm] average grain size of the whole-rock matrix
-    bulkdeposition::Vector{T}  # [atoms/g] alpha (helium) production outside grain
-    deposition::Matrix{T}  # [atoms/g] alpha (helium) deposition matrix within grain
+    bulkdeposition::Vector{T}   # [atoms/g] alpha (helium) production outside grain
+    deposition::Matrix{T}       # [atoms/g] alpha (helium) deposition matrix within grain
     alphadamage::Matrix{T}      # [decays/g] initial damage matrix
     pr::Matrix{T}               # [unitless] reduced damage density matrix
     annealeddamage::Matrix{T}   # [decays/g] annealed damage matrix
-    u::Matrix{T}
-    β::Vector{T}
-    Dz::Vector{T}
-    DN17::Vector{T}
-    A::Tridiagonal{T, Vector{T}}
-    F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}}
-    y::Vector{T}
+    u::Matrix{T}                # Diffusion profiles, coordinate transform'd
+    β::Vector{T}                # Radial vector of inverse diffusivity (2 * dr^2 / (D*dt)) for Crank-Nicolson
+    A::Tridiagonal{T, Vector{T}}# Tridiagonal matrix for Crank-Nicolson
+    F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}} # LU factorization object for Crank-Nicolson
+    y::Vector{T}                # RHS vector for Crank-Nicolson
     step_tracer::Vector{T}      # [atoms/g] buffer for degassed He-3 when modelling experimental heating schedule
     step_daughter::Vector{T}    # [atoms/g] buffer for degassed He-4 when modelling experimental heating schedule
+    name::String                # Sample or grain name
+    notes::String               # Sample notes
 end
 function ZirconHe(T::Type{<:AbstractFloat}=Float64;
         age::Number = T(NaN),
@@ -542,6 +602,8 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
         Sm147_matrix::Number = zero(T), 
         grainsize_matrix::Number = one(T),
         volumeweighting::Symbol=:cylindrical,
+        name::String = "",
+        notes::String = "",
         agesteps = nothing,
         tsteps = nothing,
     )
@@ -630,10 +692,6 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
     annealeddamage = similar(alphadamage)
     β = zeros(T, nrsteps)
 
-    # Allocate arrays for diffusivities
-    Dz = zeros(T, length(tsteps))
-    DN17 = zeros(T, length(tsteps))
-
     # Allocate output matrix for all timesteps
     u = zeros(T, nrsteps, length(tsteps)+1)
 
@@ -676,13 +734,13 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
         annealeddamage,
         u,
         β,
-        Dz,
-        DN17,
         A,
         F,
         y,
         step_tracer,
         step_daughter,
+        name,
+        notes,
     )
 end
 
@@ -702,7 +760,10 @@ ApatiteHe(T=Float64;
     Th232_matrix::Number = zero(T),         # [ppm] matrix Th-232 concentration
     Sm147_matrix::Number = zero(T),         # [ppm] matrix Sm-147 concentration
     grainsize_matrix::Number = one(T),      # [mm] average grain size of matrix rock
-    volumeweighting::Symbol=:cylindrical,   # (:spherical, :cylindrical, or :planar) relative volume proportions of each radial model shell, for averaging purposes    agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
+    volumeweighting::Symbol=:cylindrical,   # (:spherical, :cylindrical, or :planar) relative volume proportions of each radial model shell, for averaging purposes
+    name::String = "",                      # Sample or grain name
+    notes::String = "",                     # Sample notes
+    agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
 )
 ```
 Construct an `ApatiteHe` chronometer representing an apatite with a raw 
@@ -730,20 +791,20 @@ struct ApatiteHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     r232Th::Vector{T}           # [atoms/g] radial Th-232 concentrations
     r147Sm::Vector{T}           # [atoms/g] radial Sm-147 concentrations
     bulkgrainsize::T            # [mm] average grain size of the whole-rock matrix
-    bulkdeposition::Vector{T}  # [atoms/g] alpha (helium) production outside grain
-    deposition::Matrix{T}  # [atoms/g] alpha (helium) deposition matrix within grain
+    bulkdeposition::Vector{T}   # [atoms/g] alpha (helium) production outside grain
+    deposition::Matrix{T}       # [atoms/g] alpha (helium) deposition matrix within grain
     alphadamage::Matrix{T}      # [decays/g] initial damage matrix
     pr::Matrix{T}               # [unitless] reduced damage density matrix
     annealeddamage::Matrix{T}   # [decays/g] annealed damage matrix
-    u::Matrix{T}
-    β::Vector{T}
-    DL::Vector{T}
-    Dtrap::Vector{T}
-    A::Tridiagonal{T, Vector{T}}
-    F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}}
-    y::Vector{T}
+    u::Matrix{T}                # Diffusion profiles, coordinate transform'd
+    β::Vector{T}                # Radial vector of inverse diffusivity (2 * dr^2 / (D*dt)) for Crank-Nicolson
+    A::Tridiagonal{T, Vector{T}}# Tridiagonal matrix for Crank-Nicolson
+    F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}} # LU factorization object for Crank-Nicolson
+    y::Vector{T}                # RHS vector for Crank-Nicolson
     step_tracer::Vector{T}      # [atoms/g] buffer for degassed He-3 when modelling experimental heating schedule
     step_daughter::Vector{T}    # [atoms/g] buffer for degassed He-4 when modelling experimental heating schedule
+    name::String                # Sample or grain name
+    notes::String               # Sample notes
 end
 function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
         age::Number = T(NaN),
@@ -759,6 +820,8 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
         Sm147_matrix::Number = zero(T), 
         grainsize_matrix::Number = one(T),
         volumeweighting::Symbol = :cylindrical,
+        name::String = "",
+        notes::String = "",
         agesteps = nothing,
         tsteps = nothing,
     )
@@ -847,10 +910,6 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
     annealeddamage = similar(alphadamage)
     β = zeros(T, nrsteps)
 
-    # Allocate arrays for diffusivities
-    DL = zeros(T, length(tsteps))
-    Dtrap = zeros(T, length(tsteps))
-
     # Allocate output matrix for all timesteps
     u = zeros(T, nrsteps, length(tsteps)+1)
 
@@ -893,13 +952,13 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
         annealeddamage,
         u,
         β,
-        DL,
-        Dtrap,
         A,
         F,
         y,
         step_tracer,
         step_daughter,
+        name,
+        notes,
     )
 end
 
@@ -920,6 +979,8 @@ SphericalHe(T=Float64;
     Th232_matrix::Number = zero(T),         # [ppm] matrix Th-232 concentration
     Sm147_matrix::Number = zero(T),         # [ppm] matrix Sm-147 concentration
     grainsize_matrix::Number = one(T),      # [mm] average grain size of matrix rock
+    name::String = "",                      # Sample or grain name
+    notes::String = "",                     # Sample notes
     agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
 )
 ```
@@ -951,14 +1012,15 @@ struct SphericalHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     bulkgrainsize::T            # [mm] average grain size of the whole-rock matrix
     bulkdeposition::Vector{T}   # [atoms/g] alpha (helium) production outside grain
     deposition::Matrix{T}       # [atoms/g] alpha (helium) deposition matrix within grain
-    u::Matrix{T}
-    β::Vector{T}
-    De::Vector{T}
-    A::Tridiagonal{T, Vector{T}}
-    F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}}
-    y::Vector{T}
+    u::Matrix{T}                # Diffusion profiles, coordinate transform'd
+    β::Vector{T}                # Radial vector of inverse diffusivity (2 * dr^2 / (D*dt)) for Crank-Nicolson
+    A::Tridiagonal{T, Vector{T}}# Tridiagonal matrix for Crank-Nicolson
+    F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}} # LU factorization object for Crank-Nicolson
+    y::Vector{T}                # RHS vector for Crank-Nicolson
     step_tracer::Vector{T}      # [atoms/g] buffer for degassed He-3 when modelling experimental heating schedule
     step_daughter::Vector{T}    # [atoms/g] buffer for degassed He-4 when modelling experimental heating schedule
+    name::String                # Sample or grain name
+    notes::String               # Sample notes
 end
 function SphericalHe(T::Type{<:AbstractFloat}=Float64;
         age::Number = T(NaN),
@@ -975,6 +1037,8 @@ function SphericalHe(T::Type{<:AbstractFloat}=Float64;
         Sm147_matrix::Number = zero(T), 
         grainsize_matrix::Number = one(T),
         volumeweighting::Symbol = :spherical,
+        name::String = "",
+        notes::String = "",
         agesteps = nothing,
         tsteps = nothing,
     )
@@ -1050,9 +1114,6 @@ function SphericalHe(T::Type{<:AbstractFloat}=Float64;
     # Allocate additional variables that will be needed for Crank-Nicolson
     β = zeros(T, nrsteps)
 
-    # Allocate arrays for diffusivities
-    De = zeros(T, length(tsteps))
-
     # Allocate output matrix for all timesteps
     u = zeros(T, nrsteps, length(tsteps)+1)
 
@@ -1092,12 +1153,13 @@ function SphericalHe(T::Type{<:AbstractFloat}=Float64;
         deposition,
         u,
         β,
-        De,
         A,
         F,
         y,
         step_tracer,
         step_daughter,
+        name,
+        notes,
     )
 end
 
@@ -1117,6 +1179,8 @@ PlanarHe(T=Float64;
     Th232_matrix::Number = zero(T),         # [ppm] matrix Th-232 concentration
     Sm147_matrix::Number = zero(T),         # [ppm] matrix Sm-147 concentration
     grainsize_matrix::Number = one(T),      # [mm] average grain size of matrix rock
+    name::String = "",                      # Sample or grain name
+    notes::String = "",                     # Sample notes
     agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
 )
 ```
@@ -1147,14 +1211,15 @@ struct PlanarHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     bulkgrainsize::T            # [mm] average grain size of the whole-rock matrix
     bulkdeposition::Vector{T}   # [atoms/g] alpha (helium) production outside grain
     deposition::Matrix{T}       # [atoms/g] alpha (helium) deposition matrix within grain
-    u::Matrix{T}
-    β::Vector{T}
-    De::Vector{T}
-    A::Tridiagonal{T, Vector{T}}
-    F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}}
-    y::Vector{T}
+    u::Matrix{T}                # Diffusion profiles
+    β::Vector{T}                # Radial vector of inverse diffusivity (2 * dr^2 / (D*dt)) for Crank-Nicolson
+    A::Tridiagonal{T, Vector{T}}# Tridiagonal matrix for Crank-Nicolson
+    F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}} # LU factorization object for Crank-Nicolson
+    y::Vector{T}                # RHS vector for Crank-Nicolson
     step_tracer::Vector{T}      # [atoms/g] buffer for degassed He-3 when modelling experimental heating schedule
     step_daughter::Vector{T}    # [atoms/g] buffer for degassed He-4 when modelling experimental heating schedule
+    name::String                # Sample or grain name
+    notes::String               # Sample notes
 end
 function PlanarHe(T::Type{<:AbstractFloat}=Float64;
         age::Number = T(NaN),
@@ -1170,6 +1235,8 @@ function PlanarHe(T::Type{<:AbstractFloat}=Float64;
         Th232_matrix::Number = zero(T), 
         Sm147_matrix::Number = zero(T), 
         grainsize_matrix::Number = one(T),
+        name::String = "",
+        notes::String = "",
         agesteps = nothing,
         tsteps = nothing,
     )
@@ -1242,9 +1309,6 @@ function PlanarHe(T::Type{<:AbstractFloat}=Float64;
     # Allocate additional variables that will be needed for Crank-Nicolson
     β = zeros(T, nrsteps)
 
-    # Allocate arrays for diffusivities
-    De = zeros(T, length(tsteps))
-
     # Allocate output matrix for all timesteps
     u = zeros(T, nrsteps, length(tsteps)+1)
 
@@ -1283,12 +1347,13 @@ function PlanarHe(T::Type{<:AbstractFloat}=Float64;
         deposition,
         u,
         β,
-        De,
         A,
         F,
         y,
         step_tracer,
         step_daughter,
+        name,
+        notes,
     )
 end
 
@@ -1303,6 +1368,8 @@ SphericalAr(T=Float64;
     K40::Number = 16.34,                    # [ppm] mineral K-40 concentration
     K40_matrix::Number = zero(T)            # [ppm] matrix K-40 concentration
     grainsize_matrix::Number = one(T),      # [mm] average grain size of matrix rock
+    name::String = "",                      # Sample or grain name
+    notes::String = "",                     # Sample notes
     agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
 )
 ```
@@ -1329,14 +1396,15 @@ struct SphericalAr{T<:AbstractFloat, V<:AbstractVector{T}} <: ArgonSample{T}
     bulkgrainsize::T            # [mm] average grain size of the whole-rock matrix
     bulkdeposition::Vector{T}   # [atoms/g], converted from PPMw Ar-40 production outside grain
     deposition::Matrix{T}       # [atoms/g], converted from PPMw Ar-40 deposition matrix
-    u::Matrix{T}
-    β::Vector{T}
-    De::Vector{T}
-    A::Tridiagonal{T, Vector{T}}
-    F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}}
-    y::Vector{T}
+    u::Matrix{T}                # Diffusion profiles, coordinate transform'd
+    β::Vector{T}                # Radial vector of inverse diffusivity (2 * dr^2 / (D*dt)) for Crank-Nicolson
+    A::Tridiagonal{T, Vector{T}}# Tridiagonal matrix for Crank-Nicolson
+    F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}} # LU factorization object for Crank-Nicolson
+    y::Vector{T}                # RHS vector for Crank-Nicolson
     step_tracer::Vector{T}      # [atoms/g] buffer for degassed Ar-39 when modelling experimental heating schedule
     step_daughter::Vector{T}    # [atoms/g] buffer for degassed Ar-40 when modelling experimental heating schedule
+    name::String                # Sample or grain name
+    notes::String               # Sample notes
 end
 function SphericalAr(T::Type{<:AbstractFloat}=Float64;
         age::Number = T(NaN),
@@ -1348,6 +1416,8 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
         K40_matrix::Number = zero(T),
         grainsize_matrix::Number = one(T),
         volumeweighting::Symbol = :spherical,
+        name::String = "",
+        notes::String = "",
         agesteps = nothing,
         tsteps = nothing,
     )
@@ -1393,9 +1463,6 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
     # Allocate additional variables that will be needed for Crank-Nicolson
     β = zeros(T, nrsteps)
 
-    # Allocate arrays for diffusivities
-    De = zeros(T, length(tsteps))
-
     # Allocate output matrix for all timesteps
     u = zeros(T, nrsteps, length(tsteps)+1)
 
@@ -1432,12 +1499,13 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
         deposition,
         u,
         β,
-        De,
         A,
         F,
         y,
         step_tracer,
         step_daughter,
+        name,
+        notes,
     )
 end
 
@@ -1452,6 +1520,8 @@ PlanarAr(T=Float64;
     K40::Number = 16.34,                    # [ppm] mineral K-40 concentration
     K40_matrix::Number = zero(T)            # [ppm] matrix K-40 concentration
     grainsize_matrix::Number = one(T),      # [mm] average grain size of matrix rock
+    name::String = "",                      # Sample or grain name
+    notes::String = "",                     # Sample notes
     agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
 )
 ```
@@ -1475,16 +1545,17 @@ struct PlanarAr{T<:AbstractFloat, V<:AbstractVector{T}} <: ArgonSample{T}
     nrsteps::Int                # [n] number of spatial steps, including both implicit points at each side
     r40K::Vector{T}             # [atoms/g] radial K-40 concentrations
     bulkgrainsize::T            # [mm] average grain size of the whole-rock matrix
-    bulkdeposition::Vector{T} # [atoms/g], converted from PPMw Ar-40 production outside grain
-    deposition::Matrix{T}  # [atoms/g], converted from PPMw Ar-40 deposition matrix
-    u::Matrix{T}
-    β::Vector{T}
-    De::Vector{T}
-    A::Tridiagonal{T, Vector{T}}
-    F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}}
-    y::Vector{T}
+    bulkdeposition::Vector{T}   # [atoms/g], converted from PPMw Ar-40 production outside grain
+    deposition::Matrix{T}       # [atoms/g], converted from PPMw Ar-40 deposition matrix
+    u::Matrix{T}                # Diffusion profiles
+    β::Vector{T}                # Radial vector of inverse diffusivity (2 * dr^2 / (D*dt)) for Crank-Nicolson
+    A::Tridiagonal{T, Vector{T}}# Tridiagonal matrix for Crank-Nicolson
+    F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}} # LU factorization object for Crank-Nicolson
+    y::Vector{T}                # RHS vector for Crank-Nicolson
     step_tracer::Vector{T}      # [atoms/g] buffer for degassed Ar-39 when modelling experimental heating schedule
     step_daughter::Vector{T}    # [atoms/g] buffer for degassed Ar-40 when modelling experimental heating schedule
+    name::String                # Sample or grain name
+    notes::String               # Sample notes
 end
 function PlanarAr(T::Type{<:AbstractFloat}=Float64;
         age::Number = T(NaN),
@@ -1495,6 +1566,8 @@ function PlanarAr(T::Type{<:AbstractFloat}=Float64;
         K40::Number = 16.34, 
         K40_matrix::Number = zero(T),
         grainsize_matrix::Number = one(T),
+        name::String = "",
+        notes::String = "",
         agesteps = nothing,
         tsteps = nothing,
     )
@@ -1538,9 +1611,6 @@ function PlanarAr(T::Type{<:AbstractFloat}=Float64;
     # Allocate additional variables that will be needed for Crank-Nicolson
     β = zeros(T, nrsteps)
 
-    # Allocate arrays for diffusivities
-    De = zeros(T, length(tsteps))
-
     # Allocate output matrix for all timesteps
     u = zeros(T, nrsteps, length(tsteps)+1)
 
@@ -1576,12 +1646,13 @@ function PlanarAr(T::Type{<:AbstractFloat}=Float64;
         deposition,
         u,
         β,
-        De,
         A,
         F,
         y,
         step_tracer,
         step_daughter,
+        name,
+        notes,
     )
 end
 
@@ -1599,6 +1670,8 @@ end
         fit::AbstractVector,                            # [Bool] Whether or not each degassing step should be used in inversion
         offset::Number = zero(T),                       # [C] temperature offset relative to other samples
         fuse::Bool = true,                              # [Bool] Treat the grain as having fused (released all remaining Ar)
+        name::String = "",                              # Sample or grain name
+        notes::String = "",                             # Sample notes
         agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
         kwargs...                                       # Any further keyword arguments are forwarded to the constructor for the domain `C`
     )
@@ -1626,19 +1699,23 @@ end
         model_fraction::Vector{T}               # [unitless] cumulative fraction of tracer He-3 degasssed
         tsteps_degassing::FloatRange            # [s] time steps of model heating schedule
         Tsteps_degassing::Vector{T}             # [C] temperature steps of model heating schedule
+        name::String                            # Sample or grain name
+        notes::String                           # Sample notes
     end
     function SingleDomain(T=Float64, C=ApatiteHe;
             step_age::AbstractVector,
             step_age_sigma::AbstractVector,
             fraction_experimental::AbstractVector,
-            fraction_experimental_sigma::AbstractVector=fill(T(0.005), size(fraction_experimental)),
+            fraction_experimental_sigma::AbstractVector = fill(T(0.005), size(fraction_experimental)),
             tsteps_experimental::AbstractVector,
             Tsteps_experimental::AbstractVector,
             fit::AbstractVector,
             offset::Number = zero(T),
             fuse::Bool = true,
-            agesteps=nothing,
-            tsteps=nothing,
+            name::String = "",
+            notes::String = "",
+            agesteps = nothing,
+            tsteps = nothing,
             kwargs...
         )
         # Temporal discretization
@@ -1656,8 +1733,6 @@ end
         tsteps_degassing = floatrange(first(tsteps_experimental), last(tsteps_experimental), length=length(agesteps))
         Tsteps_degassing = linterp1(tsteps_experimental, T.(Tsteps_experimental), tsteps_degassing) 
         model_age = zeros(T, length(tsteps_degassing))
-        model_tracer = zeros(T, length(tsteps_degassing))
-        model_daughter = zeros(T, length(tsteps_degassing))
         model_fraction = zeros(T, length(tsteps_degassing))
         
         # Allocate domain
@@ -1678,6 +1753,8 @@ end
             model_fraction,
             tsteps_degassing,
             Tsteps_degassing,
+            name,
+            notes,
         )
     end
 
@@ -1696,8 +1773,10 @@ end
         offset::Number = zero(T),                       # [C] temperature offset relative to other samples
         fuse::Bool = true,                              # [Bool] Treat the grain as having fused (released all remaining Ar)
         volume_fraction::AbstractVector,                # [unitless] fraction of total volume represented by each domain
-        r::Number = 100,                                # [um] nominal model domain radius (spherical) or half-width (planar)
-        dr::Number = one(T),                            # [um] nominal model domain radius step
+        r::Number = 100,                                # [um] model domain radius (spherical) or half-width (planar)
+        dr::Number = one(T),                            # [um] model domain radius step
+        name::String = "",                              # Sample or grain name
+        notes::String = "",                             # Sample notes
         agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
         kwargs...                                       # Any further keyword arguments are forwarded to the constructor for the domain `C`
     )
@@ -1732,6 +1811,8 @@ end
         model_fraction::Vector{T}               # [unitless] cumulative fraction of parent tracer degasssed
         tsteps_degassing::FloatRange            # [s] time steps of model heating schedule
         Tsteps_degassing::Vector{T}             # [C] temperature steps of model heating schedule
+        name::String                            # Sample or grain name
+        notes::String                           # Sample notes
     end
     function MultipleDomain(T=Float64, C=PlanarAr;
             step_age::AbstractVector,
@@ -1746,8 +1827,10 @@ end
             volume_fraction::AbstractVector,
             r::Number = 100,
             dr::Number = one(T),
-            agesteps=nothing,
-            tsteps=nothing,
+            name::String = "",
+            notes::String = "",
+            agesteps = nothing,
+            tsteps = nothing,
             kwargs...
         )
         # Temporal discretization
@@ -1799,6 +1882,8 @@ end
             model_fraction,
             tsteps_degassing,
             Tsteps_degassing,
+            name,
+            notes,
         )
     end
 

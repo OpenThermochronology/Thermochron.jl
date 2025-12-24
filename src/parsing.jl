@@ -112,6 +112,8 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
         sample_agesteps = agesteps[first_index:end]
         mineral = lowercase(string(ds.mineral[i]))
         offset = (haskey(ds, :offset_C) && !isnan(ds.offset_C[i])) ? ds.offset_C[i] : 0
+        name = (haskey(ds, :grain_name) && ds.grain_name[i]==ds.grain_name[i]) ? string(ds.grain_name[i]) : ""
+        notes = (haskey(ds, :notes) && ds.notes[i]==ds.notes[i]) ? string(ds.notes[i]) : ""
         He_step_heating_file = haskey(ds, :He_step_heating_file) ? ds.He_step_heating_file[i] : ""
         Ar_step_heating_file = haskey(ds, :Ar_step_heating_file) ? ds.Ar_step_heating_file[i] : haskey(ds, :mdd_file) ? ds.mdd_file[i] : ""
 
@@ -122,9 +124,8 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                 c = ZirconHe(T;
                     age = ds.raw_He_age_Ma[i],
                     age_sigma = ds.raw_He_age_sigma_Ma[i],
-                    offset = offset,
                     r = ds.halfwidth_um[i],
-                    dr = dr,
+                    dr, offset, name, notes,
                     U238 = (haskey(ds, :U238_ppm) && !isnan(ds.U238_ppm[i])) ? ds.U238_ppm[i] : 0,
                     Th232 = (haskey(ds, :Th232_ppm) && !isnan(ds.Th232_ppm[i])) ? ds.Th232_ppm[i] : 0,
                     Sm147 = (haskey(ds, :Sm147_ppm) && !isnan(ds.Sm147_ppm[i])) ? ds.Sm147_ppm[i] : 0,
@@ -143,7 +144,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                 c = ZirconFT(T;
                     age = ds.FT_age_Ma[i],
                     age_sigma = ds.FT_age_sigma_Ma[i],
-                    offset = offset,
+                    offset, name, notes,
                     agesteps = sample_agesteps,
                 )
                 push!(chrons, c)
@@ -159,9 +160,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                 haskey(calcdict, h) || (calcdict[h] = zeros(T, 2))
                 c = ZirconTrackLength(T;
                     length = ds.track_length_um[i],
-                    offset = offset,
-                    l0 = l0,
-                    l0_sigma = l0_sigma,
+                    offset, l0, l0_sigma, name, notes,
                     agesteps = sample_agesteps,
                     r = rdict[h],
                     pr = prdict[h],
@@ -176,7 +175,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                 c = MonaziteFT(T;
                     age = ds.FT_age_Ma[i],
                     age_sigma = ds.FT_age_sigma_Ma[i],
-                    offset = offset,
+                    offset, name, notes,
                     agesteps = sample_agesteps,
                 )
                 push!(chrons, c)
@@ -192,9 +191,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                 haskey(calcdict, h) || (calcdict[h] = zeros(T, 2))
                 c = MonaziteTrackLength(T;
                     length = ds.track_length_um[i],
-                    offset = offset,
-                    l0 = l0,
-                    l0_sigma = l0_sigma,
+                    offset, l0, l0_sigma, name, notes,
                     agesteps = sample_agesteps,
                     r = rdict[h],
                     pr = prdict[h],
@@ -210,9 +207,8 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                 c = ApatiteHe(T;
                     age = ds.raw_He_age_Ma[i],
                     age_sigma = ds.raw_He_age_sigma_Ma[i],
-                    offset = offset,
                     r = ds.halfwidth_um[i],
-                    dr = dr,
+                    dr, offset, name, notes,
                     U238 = (haskey(ds, :U238_ppm) && !isnan(ds.U238_ppm[i])) ? ds.U238_ppm[i] : 0,
                     Th232 = (haskey(ds, :Th232_ppm) && !isnan(ds.Th232_ppm[i])) ? ds.Th232_ppm[i] : 0,
                     Sm147 = (haskey(ds, :Sm147_ppm) && !isnan(ds.Sm147_ppm[i])) ? ds.Sm147_ppm[i] : 0,
@@ -231,7 +227,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                 c = ApatiteFT(T;
                     age = ds.FT_age_Ma[i],
                     age_sigma = ds.FT_age_sigma_Ma[i],
-                    offset = offset,
+                    offset, name, notes,
                     dpar = haskey(ds, :dpar_um) ? ds.dpar_um[i] : NaN,
                     F = haskey(ds, :F_apfu) ? ds.F_apfu[i] : NaN,
                     Cl = haskey(ds, :Cl_apfu) ? ds.Cl_apfu[i] : NaN,
@@ -260,7 +256,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                     c = ApatiteTrackLengthOriented(T;
                         length = ds.track_length_um[i],
                         angle = ds.track_angle_degrees[i],
-                        offset, l0, l0_sigma, dpar, F, Cl, OH, rmr0,
+                        offset, l0, l0_sigma, dpar, F, Cl, OH, rmr0, name, notes,
                         agesteps = sample_agesteps,
                         r = rdict[h],
                         pr = prdict[h],
@@ -276,7 +272,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                     haskey(calcdict, h) || (calcdict[h] = zeros(T, 2))
                     c = ApatiteTrackLength(T;
                         length = ds.track_length_um[i],
-                        offset, l0, l0_sigma, dpar, F, Cl, OH, rmr0,
+                        offset, l0, l0_sigma, dpar, F, Cl, OH, rmr0, name, notes,
                         agesteps = sample_agesteps,
                         r = rdict[h],
                         pr = prdict[h],
@@ -307,10 +303,9 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                 c = DomainType(T;
                     age = ds.raw_He_age_Ma[i],
                     age_sigma = ds.raw_He_age_sigma_Ma[i],
-                    offset = offset,
                     stoppingpower = alphastoppingpower(ds.mineral[i]),
                     r = ds.halfwidth_um[i],
-                    dr = dr,
+                    dr, offset, name, notes,
                     U238 = (haskey(ds, :U238_ppm) && !isnan(ds.U238_ppm[i])) ? ds.U238_ppm[i] : 0,
                     Th232 = (haskey(ds, :Th232_ppm) && !isnan(ds.Th232_ppm[i])) ? ds.Th232_ppm[i] : 0,
                     Sm147 = (haskey(ds, :Sm147_ppm) && !isnan(ds.Sm147_ppm[i])) ? ds.Sm147_ppm[i] : 0,
@@ -335,9 +330,8 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                 c = DomainType(T;
                     age = ds.raw_Ar_age_Ma[i],
                     age_sigma = ds.raw_Ar_age_sigma_Ma[i],
-                    offset = offset,
                     r = ds.halfwidth_um[i],
-                    dr = dr,
+                    dr, offset, name, notes,
                     K40 = (haskey(ds, :K40_ppm) && !isnan(ds.K40_ppm[i])) ? ds.K40_ppm[i] : 16.34,
                     K40_matrix = (haskey(ds, :K40_matrix_ppm) && !isnan(ds.K40_matrix_ppm[i])) ? ds.K40_matrix_ppm[i] : 0,
                     grainsize_matrix = (haskey(ds, :grainsize_matrix_mm) && !isnan(ds.grainsize_matrix_mm[i])) ? ds.grainsize_matrix_mm[i] : 1,
@@ -371,9 +365,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                         tsteps_experimental,
                         Tsteps_experimental = dds.temperature_C,
                         fit = dds.fit,
-                        offset,
-                        r,
-                        dr,
+                        offset, r, dr, name, notes,
                         volume_fraction = dds.volume_fraction[.!isnan.(dds.volume_fraction)],
                         K40 = (haskey(ds, :K40_ppm) && !isnan(ds.K40_ppm[i])) ? ds.K40_ppm[i] : 16.34,
                         K40_matrix = (haskey(ds, :K40_matrix_ppm) && !isnan(ds.K40_matrix_ppm[i])) ? ds.K40_matrix_ppm[i] : 0,
@@ -398,9 +390,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                     tsteps_experimental,
                     Tsteps_experimental = dds.temperature_C,
                     fit = dds.fit,
-                    offset,
-                    r,
-                    dr,
+                    offset, r, dr, name, notes,
                     K40 = (haskey(ds, :K40_ppm) && !isnan(ds.K40_ppm[i])) ? ds.K40_ppm[i] : 16.34,
                     K40_matrix = (haskey(ds, :K40_matrix_ppm) && !isnan(ds.K40_matrix_ppm[i])) ? ds.K40_matrix_ppm[i] : 0,
                     grainsize_matrix = (haskey(ds, :grainsize_matrix_mm) && !isnan(ds.grainsize_matrix_mm[i])) ? ds.grainsize_matrix_mm[i] : 1,
@@ -451,14 +441,13 @@ function chronometers(T::Type{<:AbstractFloat}, ds, model;
                     tsteps_experimental,
                     Tsteps_experimental = dds.temperature_C,
                     fit = dds.fit,
-                    agesteps,
-                    r,
-                    dr,
+                    r, dr, name, notes,
                     age = ds.raw_He_age_Ma[i],
                     age_sigma = ds.raw_He_age_sigma_Ma[i],
                     U238 = ds.U238_ppm[i],
                     Th232 = ds.Th232_ppm[i],
                     Sm147 = ds.Sm147_ppm[i],
+                    agesteps,
                 )
                 dm = if mineral === "apatite"
                     SDDiffusivity(
