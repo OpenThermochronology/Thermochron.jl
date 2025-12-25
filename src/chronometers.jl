@@ -1934,6 +1934,12 @@ function eU(x::HeliumSample{T}) where {T<:AbstractFloat}
     return T(eu)
 end
 
+# Retrieve size (ESR for spherical samples, halfwidth for planar samples)
+radius(x::Chronometer{T}) where {T<:AbstractFloat} = T(NaN)
+radius(x::NobleGasSample) = maximum(x.redges)
+radius(x::SingleDomain) = radius(x.domain)
+radius(x::MultipleDomain) = radius(first(x.domains))
+
 ## -- Utility functions related to age and age uncertinty of absolute chronometers
 
 # Get age and age sigma from a vector of chronometers

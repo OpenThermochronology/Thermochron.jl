@@ -44,7 +44,7 @@ module Thermochron
     export ZirconFT, MonaziteFT, ApatiteFT                              # Concrete fission track types
     export SphericalHe, PlanarHe, ZirconHe, ApatiteHe                   # Concrete U-Th/He types
     export SphericalAr, PlanarAr                                        # Concrete K/Ar types
-    export get_age, get_age_sigma, empiricaluncertainty!, eU            # Functions
+    export get_age, get_age_sigma, empiricaluncertainty!, eU, radius    # Functions
     const PlanarNobleGas{T} = Union{PlanarHe{T}, PlanarAr{T}}
     const SphericalNobleGas{T} = Union{ZirconHe{T},ApatiteHe{T},SphericalHe{T},SphericalAr{T}}
 
@@ -72,8 +72,10 @@ module Thermochron
     # Methodless functions for plotting extensions
     function ageeuplot end
     function ageeuplot! end
+    function agesizeplot end
+    function agesizeplot! end
     function errorbox end
     function errorbox! end
-    export ageeuplot, ageeuplot!, errorbox, errorbox!
+    export ageeuplot, ageeuplot!, agesizeplot, agesizeplot!, errorbox, errorbox!
 
 end

@@ -19,6 +19,11 @@ module PlotsExt
     Thermochron.ageeuplot!(hdl::Plots.Plot, x::Vector{<:Chronometer}; seriestype=:scatter, mscolor=:auto, kwargs...) = plot!(hdl, Thermochron.eU.(x), Thermochron.value.(x); yerror=2*Thermochron.stdev.(x), seriestype, mscolor, kwargs...)
     Thermochron.ageeuplot!(hdl::Plots.Subplot, x::Vector{<:Chronometer}; seriestype=:scatter, mscolor=:auto, kwargs...) = plot!(hdl, Thermochron.eU.(x), Thermochron.value.(x); yerror=2*Thermochron.stdev.(x), seriestype, mscolor, kwargs...)
 
+    # Age-size plots
+    Thermochron.agesizeplot(x::Vector{<:Chronometer}, args...; framestyle=:box, xlabel="Radius [μm]", ylabel="Age [Ma]", kwargs...) = agesizeplot!(plot(), x, args...; framestyle, xlabel, ylabel, kwargs...)
+    Thermochron.agesizeplot!(hdl::Plots.Plot, x::Vector{<:Chronometer}; seriestype=:scatter, mscolor=:auto, kwargs...) = plot!(hdl, Thermochron.radius.(x), Thermochron.value.(x); yerror=2*Thermochron.stdev.(x), seriestype, mscolor, kwargs...)
+    Thermochron.agesizeplot!(hdl::Plots.Subplot, x::Vector{<:Chronometer}; seriestype=:scatter, mscolor=:auto, kwargs...) = plot!(hdl, Thermochron.radius.(x), Thermochron.value.(x); yerror=2*Thermochron.stdev.(x), seriestype, mscolor, kwargs...)
+
     # Error boxes for Ar-Ar age spectra
     Thermochron.errorbox(xc::AbstractVector, y::AbstractVector, t::BitVector=trues(length(y)); kwargs...) = errorbox!(plot(), xc, y, t; kwargs...)
     function Thermochron.errorbox!(h::Union{Plots.Plot, Plots.Subplot}, xc::AbstractVector, y::AbstractVector, t::BitVector=trues(length(y)); yerror::AbstractVector=zeros(size(x)), startvalue=0, framestyle=:box, label="", kwargs...)
