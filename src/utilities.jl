@@ -14,7 +14,7 @@
         if f < i < l
             # Assume boundaries are halfway between nodes, implying a step width 
             # of (x[i+1]-x[i])/2 + (x[i]-x[i-1])/2, or simplified
-            T((x[i+1] - x[i-1])/2)
+            (x[i+1] - x[i-1])/2
         elseif i <= f
             # Assume first step is symmetric
             (x[f+1] - x[f])
@@ -25,33 +25,64 @@
     end
     @inline step_at(x::Union{OrdinalRange, StepRangeLen}, ::Integer) = step_fast(x)
 
-    function leftbound_at(x::AbstractVector{T}, i::Integer) where {T<:Number}
-        Tf = float(T)
-        length(x) > 1 || Tf(NaN)
-        f,l = firstindex(x), lastindex(x)
-        # Assume boundaries are halfway between nodes
-        if f < i < l
-            Tf((x[i-1] + x[i])/2)
-        elseif i <= f
-            Tf(x[f] - (x[f+1] - x[f])/2)
+    # Bounding nodes at a given index
+    function bounds_at(x::AbstractVector{T}, i::Integer) where {T<:Number}
+        length(x) > 1 || return typemin(T), typemax(T)
+        imin,imax = firstindex(x), lastindex(x)
+        if imin < i <= imax
+            l, r = x[i-1], x[i]
+        elseif i <= imin
+            l, r, = 2x[imin]-x[imin+1], x[imin]
         else
-            Tf((x[l-1] + x[l])/2)
+            l, r = x[imax], 2x[imax]-x[imax-1]
         end
-    end
-    function rightbound_at(x::AbstractVector{T}, i::Integer) where {T<:Number}
-        Tf = float(T)
-        length(x) > 1 || Tf(NaN)
-        f,l = firstindex(x), lastindex(x)
-        # Assume boundaries are halfway between nodes
-        if f < i < l
-            Tf((x[i] + x[i+1])/2)
-        elseif i <= f
-            Tf((x[f] + x[f+1])/2)
-        else
-            Tf(x[l] + (x[l] - x[l-1])/2)
-        end
+        return (l < r) ? (l, r) : (r, l)
     end
 
+    # Check if point k is distinct from other points in a list (within ± δ, or between one pair of nodes)
+    function isdistinct(points::AbstractArray, k::Int, δ::Number, npoints::Int=length(points))
+        @assert k ∈ eachindex(points)
+        notused = max(length(points)-npoints, 0)
+        @inbounds for i in Iterators.drop(reverse(eachindex(points)), notused)
+            if i!=k && abs(points[i] - points[k]) <= δ
+                return false
+            end
+        end
+        return true
+    end
+    function isdistinct(points::AbstractArray, k::Int, nodes::AbstractArray, npoints::Int=length(points))
+        @assert k ∈ eachindex(points)
+        length(points) > 1 || return false
+        i = searchsortedfirst(nodes, points[k], rev=(last(nodes)<first(nodes)))
+        l, u = bounds_at(nodes, i)
+        notused = max(length(points)-npoints, 0)
+        @inbounds for i in Iterators.drop(reverse(eachindex(points)), notused)
+            if (i != k) && (l < points[i] <= u)
+                return false
+            end
+        end
+        return true
+    end
+
+    # Calculate the number of distinct points in a list (i.e., separated by at least one node)
+    function pointsininterval(points::AbstractArray, npoints::Int, lower::Number, upper::Number, nodes::AbstractArray)
+        @assert firstindex(points) == 1
+        @assert npoints <= lastindex(points)
+        n = 0
+        @inbounds for j in eachindex(nodes)
+            if lower < nodes[j] <= upper
+                for k in 1:npoints
+                    l, u = bounds_at(nodes, j)
+                    if max(lower,l) < points[k] <= min(upper, u)
+                        # Only one point per interval can count towards total
+                        n += 1
+                        break
+                    end
+                end
+            end
+        end
+        return n
+    end
 
     # Normal log likelihood
     @inline function norm_ll(mu::Number, sigma::Number, x::Number)
@@ -65,15 +96,16 @@
         -0.5*(log(2*pi*σ²) + δ^2/σ²)
     end
 
+    # Copy only unique points from `source` to `dest`
     function copyunique!(dest, source)
         isempty(source) && return dest
         id = firstindex(dest)
         for i in eachindex(source)
             sᵢ = source[i]
             add = true
-            for i in firstindex(dest):id
-                if dest[i] == sᵢ
-                    add=false
+            for j in firstindex(dest):id
+                if dest[j] == sᵢ
+                    add = false
                     break
                 end
             end
@@ -85,6 +117,7 @@
         return dest
     end
 
+    # Relative volume fractions for different potential mineral shapes
     function volumefraction(shape::Symbol, redges::AbstractArray, r::Number=last(redges))
         if shape === :spherical
             return (redges[2:end].^3 .- redges[1:end-1].^3)./r^3
@@ -351,133 +384,12 @@
         return parentHe
     end
 
-
-    # Utility function for agepoint and Tpoint buffers
-    function collectto!(buffer, a, b, c)
-        i₀ = firstindex(buffer)
-        copyto!(buffer, i₀, a, 1, length(a))
-        i₀ += length(a)
-        copyto!(buffer, i₀, b, 1, length(b))
-        i₀ += length(b)
-        copyto!(buffer, i₀, c, 1, length(c))
-        i₀ += length(c)
-        return view(buffer, firstindex(buffer):i₀-1)
-    end
-
-    # Utility functions for checking the number of distinct t-T nodes in a given time interval
-    function pointsininterval(points::AbstractArray, npoints::Int, lower::Number, upper::Number)
-        @assert firstindex(points) == 1
-        @assert npoints <= lastindex(points)
-        n = 0
-        @inbounds for i = 1:npoints
-            if  lower < points[i] <= upper
-                n += 1
-            end
-        end
-        return n
-    end
-    function pointsininterval(points::AbstractArray, npoints::Int, lower::Number, upper::Number, nodes::AbstractArray)
-        @assert firstindex(points) == 1
-        @assert npoints <= lastindex(points)
-        n = 0
-        @inbounds for j in eachindex(nodes)
-            if lower < nodes[j] <= upper
-                for k in 1:npoints
-                    l, u = minmax(leftbound_at(nodes, j), rightbound_at(nodes, j))
-                    if max(lower,l) <= points[k] < min(upper, u)
-                        # Only one point per interval can count towards total
-                        n += 1
-                        break
-                    end
-                end
-            end
-        end
-        return n
-    end
+    # Utilities for checking the number of distinct t-T nodes in a given time interval
     proposeddetail(path::TTPath, npointsₚ::Int, detail::DetailInterval) = pointsininterval(path.agepointsₚ, npointsₚ, detail.agemin, detail.agemax, path.agesteps)
     accepteddetail(path::TTPath, npoints::Int, detail::DetailInterval) = pointsininterval(path.agepoints, npoints, detail.agemin, detail.agemax, path.agesteps)
     mindetail(path::TTPath, npoints::Int, detail::DetailInterval) = min(accepteddetail(path, npoints, detail), detail.minpoints)
 
-    # Check if point k is distinct from other points in list within ± δ
-    function isdistinct(points::AbstractArray, k::Int, δ::Number, npoints::Int=length(points))
-        @assert k ∈ eachindex(points)
-        notused = max(length(points)-npoints, 0)
-        @inbounds for i in Iterators.drop(reverse(eachindex(points)), notused)
-            if i!=k && abs(points[i] - points[k]) <= δ
-                return false
-            end
-        end
-        return true
-    end
-    function isdistinct(points::AbstractArray, k::Int, nodes::AbstractArray, npoints::Int=length(points); kwargs...)
-        length(points) > 1 || return false
-        i = searchsortedfirst(nodes, points[k]; kwargs...)
-        i₋,i₊ = firstindex(nodes), lastindex(nodes)
-        if i₋ < i <= i₊
-            l, u = nodes[i-1], nodes[i]
-        elseif i <= i₋
-            l, u = typemin(nodes[i₋]), nodes[i₋]
-        else
-            l, u = nodes[i₊], typemax(nodes[i₊])
-        end
-        @assert k ∈ eachindex(points)
-        notused = max(length(points)-npoints, 0)
-        @inbounds for i in Iterators.drop(reverse(eachindex(points)), notused)
-            if (i != k) && (l < points[i] <= u)
-                return false
-            end
-        end
-        return true
-    end
-
-
-    # Utility functions for checking maximum reheating or cooling rate
-    function maxdiff(x::AbstractArray{T}) where {T}
-        i₀ = firstindex(x)
-        δₘ = zero(T)
-        if length(x) > 1
-            last = x[i₀]
-            @inbounds for i ∈ (i₀+1):(i₀+length(x)-1)
-                δᵢ = x[i] - last
-                if δᵢ > δₘ
-                    δₘ = δᵢ
-                end
-                last = x[i]
-            end
-        end
-        return δₘ
-    end
-    function mindiff(x::AbstractArray{T}) where {T}
-        i₀ = firstindex(x)
-        δₘ = zero(T)
-        if length(x) > 1
-            last = x[i₀]
-            @inbounds for i ∈ (i₀+1):(i₀+length(x)-1)
-                δᵢ = x[i] - last
-                if δᵢ < δₘ
-                    δₘ = δᵢ
-                end
-                last = x[i]
-            end
-        end
-        return δₘ
-    end
-    function maxabsdiff(x::AbstractArray{T}) where {T}
-        i₀ = firstindex(x)
-        δₘ = zero(T) 
-        if length(x) > 1
-            last = x[i₀]
-            @inbounds for i ∈ (i₀+1):(i₀+length(x)-1)
-                δᵢ = abs(x[i] - last)
-                if δᵢ > δₘ
-                    δₘ = δᵢ
-                end
-                last = x[i]
-            end
-        end
-        return δₘ
-    end
-
+    # Log likelihood function for maximum reheating rate
     function diff_ll(x::AbstractArray{T}, μ::Number, σ::Number; maxsigma::Number=6) where {T<:Number}
         i₀ = firstindex(x)
         d = Normal(μ, σ)
@@ -499,8 +411,7 @@
         return ll
     end
 
-    # Log likelihood functions for ZRDAAM and RDAAM kinetic uncertainties
-        
+    # Log likelihood functions for kinetic uncertainties
     function kinetic_ll(dmₚ::ZRDAAM, dm::ZRDAAM)
         norm_ll(log(dm.DzD0), dm.DzD0_logsigma, log(dmₚ.DzD0)) + 
         norm_ll(log(dm.DzEa), dm.DzEa_logsigma, log(dmₚ.DzEa)) + 
@@ -553,7 +464,7 @@
         return ll
     end
 
-
+    # Draw a random length from a fission track sample
     function draw_from_population(track::FissionTrackLength{T}, bandwidth::T) where {T<:AbstractFloat}
         pr = track.pr::Vector{T}
         rΣ = sum(pr)*rand()
@@ -670,7 +581,7 @@
         path.Tpointsₚ[k] = boundtemp(path.Tpointsₚ[k], path.boundary)
 
         # Ensure uniqueness
-        while !isdistinct(path.agepointsₚ, k, path.agesteps, npoints; rev=true)
+        while !isdistinct(path.agepointsₚ, k, path.agesteps, npoints)
             path.agepointsₚ[k] += rand(Normal{T}(zero(T), path.σⱼtₚ[k]))
             path.agepointsₚ[k] = boundtime(path.agepointsₚ[k], path.boundary)
         end
@@ -718,6 +629,7 @@
         return movepoint!(path, k, npoints)
     end
 
+    # Remove a t-T point
     function replacepoint!(path::TTPath{T}, k::Int, n::Int) where {T}
         path.agepointsₚ[k] = path.agepointsₚ[n]
         path.Tpointsₚ[k] = path.Tpointsₚ[n]
@@ -746,6 +658,7 @@
         return path
     end
     
+    # Generate an initial proposal, respecting any boundary conditions and constraint boxes
     function randomize!(boundary::Boundary)
         @inbounds for i in eachindex(boundary.Tpoints)
             boundary.Tpoints[i] = boundary.T₀[i] + rand()*boundary.ΔT[i]
@@ -759,7 +672,6 @@
         end
         return constraint
     end
-
     function initialproposal!(path::TTPath, npoints::Int)
         randomize!(path.boundary)
         randomize!(path.constraint, path.boundary)
@@ -776,6 +688,17 @@
         return path
     end
 
+    # Collect t-T node proposals
+    function collectto!(buffer, a, b, c)
+        i₀ = firstindex(buffer)
+        copyto!(buffer, i₀, a, 1, length(a))
+        i₀ += length(a)
+        copyto!(buffer, i₀, b, 1, length(b))
+        i₀ += length(b)
+        copyto!(buffer, i₀, c, 1, length(c))
+        i₀ += length(c)
+        return view(buffer, firstindex(buffer):i₀-1)
+    end
     function collectaccepted!(path::TTPath{T}, npoints::Int) where {T<:AbstractFloat}
         agepoints = view(path.agepoints, Base.OneTo(npoints))
         ages = collectto!(path.agepointbuffer, agepoints, path.boundary.agepoints, path.constraint.agepoints)
@@ -792,6 +715,8 @@
         linterp1s!(path.Tsteps, path.knot_index, ages, temperatures, path.agesteps)
         return path
     end
+
+    # Accept and reject proposals
     function resetproposal!(path::TTPath)
         copyto!(path.agepointsₚ, path.agepoints)
         copyto!(path.Tpointsₚ, path.Tpoints)
@@ -932,7 +857,7 @@
     end
 
     # Utility functions to calculate model ages for all chronometers at once
-    function model(chrons::AbstractVector{<:Chronometer{T}}, damodels::AbstractVector{<:Model{T}}, Tsteps::AbstractVector{T}; kwargs...) where {T}
+    function model!(chrons::AbstractVector{<:Chronometer{T}}, damodels::AbstractVector{<:Model{T}}, Tsteps::AbstractVector{T}; kwargs...) where {T}
         μcalc = zeros(T, size(chrons))
         σcalc =  zeros(T, size(chrons))
         ll = model!(μcalc, σcalc, chrons, damodels, Tsteps; kwargs...)

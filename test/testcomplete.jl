@@ -92,7 +92,7 @@
     @test get_age_sigma(chrons) ≈ [5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,0.53,0.20877153500779683,28.52408719185519,28.52408719185519,]
 
     # Test model calculations
-    calc, calcuncert, ll = model(chrons, damodels, Tsteps; redegastracer=false)
+    calc, calcuncert, ll = model!(chrons, damodels, Tsteps; redegastracer=false)
     @test ll ≈ -121501.73283633107
     @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -126957.5420142205
     @test round.(calc[1:18], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 242.1764, 276.2001, 1085.555, 304.6573, 95.84216, 149.8249, 297.8784, 262.766]

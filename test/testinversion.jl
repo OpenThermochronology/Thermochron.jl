@@ -11,7 +11,8 @@
     @test Thermochron.collectto!(buffer, a, b, c) == vcat(a,b,c)
 
     # Test pointsininterval
-    @test Thermochron.pointsininterval(collect(1:10), 10, 0.5, 5.5) == 5
+    @test Thermochron.pointsininterval(collect(1:10), 10, 0.5, 5.5, 0:10) == 5
+    @test Thermochron.pointsininterval(collect(1:10), 10, 0.5, 5.5, 0.5:9.5) == 5
 
     # Test diff_ll
     @test Thermochron.diff_ll(1:10, 1, 1) == -6.238324625039508

@@ -9,13 +9,7 @@
 
 ## --- Test diff utilities
 
-    for _ in 1:4
-        local x = rand(100)
-        local d = diff(x)
-        @test Thermochron.maxdiff(x) === maximum(d)
-        @test Thermochron.mindiff(x) === minimum(d)
-        @test Thermochron.maxabsdiff(x) === maximum(abs.(d))
-    end
+    @test Thermochron.diff_ll(1:100, 1, 1) ≈ -68.62157087543464
 
     @test Thermochron.isdistinct(1:10, 5, 0.5)
     @test !Thermochron.isdistinct(1:10, 5, 1.5)

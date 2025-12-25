@@ -52,6 +52,7 @@ function degas_daughter!(mineral::NobleGasSample{T}, tsteps_degassing, Tsteps_de
 end
 
 ## --- Initialize and degas tracer isotopes
+
 function degas_tracer!(mdd::MultipleDomain{T}, dm::MDDiffusivity{T}) where {T<:AbstractFloat}
     fraction = fill!(mdd.model_fraction, zero(T))
     tracer = fill!(mdd.model_tracer, zero(T))
@@ -103,6 +104,7 @@ tracerdiffusivityratio(x::HeliumSample{T}) where {T} = T((4/3)^0.3)
 
 
 ## ---  Combined daughter+tracer degassing functions
+
 function degas!(mineral::HeliumSample, tsteps_degassing, Tsteps_degassing, dm; fuse::Bool=true, redegastracer::Bool=true)
     total_daughter = degas_daughter!(mineral, tsteps_degassing, Tsteps_degassing, dm; fuse)
     # Now diffuse parent isotope tracer (He-3), if neccesary
@@ -193,29 +195,6 @@ function model_ll(dd::Union{SingleDomain{T},MultipleDomain{T}}, σ::T=zero(T); r
     return ll
 end
 
-function cumulative_fraction_uncertainty(sigma, i::Int)
-    i₋ = firstindex(sigma)
-    i₊ = lastindex(sigma)
-    σ²₋ = sum(abs2, view(sigma, i₋:i))
-    σ²₊ = sum(abs2, view(sigma,(i+1):i₊))
-    σ = sqrt(1/(1/σ²₋ + 1/σ²₊))
-end
-
-function cumulative_degassing_ll(dd::Union{SingleDomain{T},MultipleDomain{T}}; rescale=false) where {T<:AbstractFloat}
-    ll = zero(T)
-    fit_until = findlast(dd.fit)
-    @inbounds for i in eachindex(dd.tsteps_experimental, dd.fraction_experimental, dd.fraction_experimental_sigma, dd.fit)
-        if i <= fit_until
-            σ = cumulative_fraction_uncertainty(dd.fraction_experimental_sigma, i)
-            σ ≈ 0 && continue
-            model_fractionᵢ = linterp1(dd.tsteps_degassing, dd.model_fraction, dd.tsteps_experimental[i])
-            ll += norm_ll(dd.fraction_experimental[i], σ, model_fractionᵢ)
-        end
-    end
-    rescale && (ll /= sqrt(fit_until))
-    return ll
-end
-
 function stepwise_degassing_ll(dd::Union{SingleDomain{T},MultipleDomain{T}}; rescale=false) where {T<:AbstractFloat}
     ll = zero(T)
     last_model_fractionᵢ = zero(T)
@@ -232,6 +211,27 @@ function stepwise_degassing_ll(dd::Union{SingleDomain{T},MultipleDomain{T}}; res
     end
     rescale && (ll /= sqrt(count(dd.fit)))
     return ll
+end
+function cumulative_degassing_ll(dd::Union{SingleDomain{T},MultipleDomain{T}}; rescale=false) where {T<:AbstractFloat}
+    ll = zero(T)
+    fit_until = findlast(dd.fit)
+    @inbounds for i in eachindex(dd.tsteps_experimental, dd.fraction_experimental, dd.fraction_experimental_sigma, dd.fit)
+        if i <= fit_until
+            σ = cumulative_fraction_uncertainty(dd.fraction_experimental_sigma, i)
+            σ ≈ 0 && continue
+            model_fractionᵢ = linterp1(dd.tsteps_degassing, dd.model_fraction, dd.tsteps_experimental[i])
+            ll += norm_ll(dd.fraction_experimental[i], σ, model_fractionᵢ)
+        end
+    end
+    rescale && (ll /= sqrt(fit_until))
+    return ll
+end
+function cumulative_fraction_uncertainty(sigma, i::Int)
+    i₋ = firstindex(sigma)
+    i₊ = lastindex(sigma)
+    σ²₋ = sum(abs2, view(sigma, i₋:i))
+    σ²₊ = sum(abs2, view(sigma,(i+1):i₊))
+    σ = sqrt(1/(1/σ²₋ + 1/σ²₊))
 end
 
 ## --- End of File
