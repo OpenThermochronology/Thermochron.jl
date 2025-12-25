@@ -186,7 +186,12 @@
                         ylabel="Temperature [°C]", 
                         colorbar_title="Number of paths",
                         title="Burn-in: $n of $burnin steps",
+                        minorticks=true,
+                        tickdir=:out,
+                        xflip=true,
+                        yflip=true,
                     )
+                    plot!(h, path.constraint, lw=1, linecolor=:red, legend=:none, xlims=xlims(h), ylims=ylims(h))
                     x = 1:ceil(Int, n/50000):n
                     l = plot(x, view(lldistburnin, x),
                         framestyle=:box,
@@ -299,11 +304,16 @@
                 (A, xc, yc) = image_from_paths!(imgcounts, tpointdist[:,new], Tpointdist[:,new]; xrange=boundary.agepoints, yrange=boundary.T₀)
                 h = heatmap(xc, yc, A, colormap=:viridis, clims=(0, nanpctile(A,99.5)),
                     framestyle=:box,
-                    xlabel="Time [Ma]", 
-                    ylabel="Temperature [°C]", 
+                    xlabel="Time [Ma]",
+                    ylabel="Temperature [°C]",
                     colorbar_title="Number of paths",
-                    title="Collection: $n of $nsteps steps"
+                    title="Collection: $n of $nsteps steps",
+                    minorticks=true,
+                    tickdir=:out,
+                    xflip=true,
+                    yflip=true,
                 )
+                plot!(h, path.constraint, lw=1, linecolor=:red, legend=:none, xlims=xlims(h), ylims=ylims(h))
                 x = 1:ceil(Int, n/50000):n
                 l = plot(x, view(lldist, x),
                     framestyle=:box,
@@ -534,7 +544,12 @@
                         ylabel="Temperature [°C]", 
                         colorbar_title="Number of paths",
                         title="Burn-in: $n of $burnin steps",
+                        minorticks=true,
+                        tickdir=:out,
+                        xflip=true,
+                        yflip=true,
                     )
+                    plot!(h, path.constraint, lw=1, linecolor=:red, legend=:none, xlims=xlims(h), ylims=ylims(h))
                     x = 1:ceil(Int, n/50000):n
                     l = plot(x, view(lldistburnin, x),
                         framestyle=:box,
@@ -662,7 +677,10 @@
                     title="Collection: $n of $nsteps steps",
                     minorticks=true,
                     tickdir=:out,
+                    xflip=true,
+                    yflip=true,
                 )
+                plot!(h, path.constraint, lw=1, linecolor=:red, legend=:none, xlims=xlims(h), ylims=ylims(h))
                 x = 1:ceil(Int, n/50000):n
                 l = plot(x, view(lldist, x),
                     framestyle=:box,
