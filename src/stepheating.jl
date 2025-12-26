@@ -5,7 +5,7 @@
 SDDiffusivity(
     model::DiffusivityModel{T}  # Underlying (wrapped) diffusivity model
     scale::T                    # [unitless] relative domain size (default = 1.0)
-    scale_logsigma::T           # [unitless] log uncertainty (default = log(2) = a factor of 2, one-sigma)
+    scale_logsigma::T           # [unitless] log uncertainty (default = 1.0 = a factor of ℯ, one-sigma)
 )
 ```
 One diffusivity, scaled to represent domain size as d/a^2
@@ -13,7 +13,7 @@ One diffusivity, scaled to represent domain size as d/a^2
 Base.@kwdef struct SDDiffusivity{T,D<:DiffusivityModel{T}} <: DiffusivityModel{T}
     model::D                    # Underlying (wrapped) diffusivity model
     scale::T=1.0                # [unitless] relative domain size (default = 1.0)
-    scale_logsigma::T=log(2)    # [unitless] log uncertainty (default = log(2 = a factor of 2, one-sigma)
+    scale_logsigma::T=1.0       # [unitless] log uncertainty (default = 1.0 = a factor of ℯ, one-sigma)
 end
 
 """
