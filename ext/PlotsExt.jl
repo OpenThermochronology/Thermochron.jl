@@ -111,6 +111,16 @@ module PlotsExt
 
         return plot(hd, he; layout, size, kwargs...)
     end
+
+    function Plots.plot(d::SDDiffusivity, dms::Vector{<:Thermochron.Model}; framestyle=:box, alpha=0.75, title="", kwargs...) 
+        hd = plot(; framestyle, xlabel="Log10(scale [unitless])", ylabel="Probability Density", title, kwargs...)
+        a = dms .|> x->log10(x.scale)
+        histogram!(hd, a; normalized=true, lw=0, color=lines[1], label="posterior", bins=(minimum(a)-0.05):0.1:(maximum(a)+0.1), alpha, kwargs...)
+        a₀ = Normal(log10(d.scale), d.scale_logsigma/log(10))
+        x = range(mean(a₀)-3std(a₀), mean(a₀)+3std(a₀), length=100)
+        plot!(hd, x, pdf.(a₀,x); color=lines[1], label="prior", kwargs...)
+        return hd
+    end
     function Plots.plot(d::MDDiffusivity, dms::Vector{<:Thermochron.Model}, r=100.0; framestyle=:box, layout=(2,1), size=(600,800), alpha=0.75, kwargs...) 
         ndomains = length(d.D0)
         hd = plot(; framestyle, xlabel="Log10(D₀/a² [1/s])", ylabel="Probability Density", kwargs...)
