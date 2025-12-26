@@ -112,7 +112,7 @@ module PlotsExt
         return plot(hd, he; layout, size, kwargs...)
     end
 
-    function Plots.plot(d::SDDiffusivity, dms::Vector{<:Thermochron.Model}; framestyle=:box, alpha=0.75, title="", kwargs...) 
+    function Plots.plot(d::SDDiffusivity, dms::Vector{<:Thermochron.Model}; framestyle=:box, title="", alpha=0.75, kwargs...) 
         hd = plot(; framestyle, xlabel="Log10(scale [unitless])", ylabel="Probability Density", title, kwargs...)
         a = dms .|> x->log10(x.scale)
         histogram!(hd, a; normalized=true, lw=0, color=lines[1], label="posterior", bins=(minimum(a)-0.05):0.1:(maximum(a)+0.1), alpha, kwargs...)
@@ -121,7 +121,7 @@ module PlotsExt
         plot!(hd, x, pdf.(a₀,x); color=lines[1], label="prior", kwargs...)
         return hd
     end
-    function Plots.plot(d::MDDiffusivity, dms::Vector{<:Thermochron.Model}, r=100.0; framestyle=:box, layout=(2,1), size=(600,800), alpha=0.75, kwargs...) 
+    function Plots.plot(d::MDDiffusivity, dms::Vector{<:Thermochron.Model}, r=100.0; framestyle=:box, layout=(2,1), size=(600,800), title="", alpha=0.75, kwargs...) 
         ndomains = length(d.D0)
         hd = plot(; framestyle, xlabel="Log10(D₀/a² [1/s])", ylabel="Probability Density", kwargs...)
         for j in 1:ndomains
@@ -129,7 +129,7 @@ module PlotsExt
             histogram!(hd, D0a2; normalized=true, lw=0, color=lines[j], label="", bins=(minimum(D0a2)-0.05):0.1:(maximum(D0a2)+0.1), alpha, kwargs...)
             D0a2₀ = Normal(log10(d.D0[j]./(r/10000)^2), d.D0_logsigma[j]/log(10))
             x = range(mean(D0a2₀)-3std(D0a2₀), mean(D0a2₀)+3std(D0a2₀), length=100)
-            plot!(hd, x, pdf.(D0a2₀,x), color=lines[j], label="domain $j", kwargs...)
+            plot!(hd, x, pdf.(D0a2₀,x); color=lines[j], label="domain $j", kwargs...)
         end
 
         he = plot(; framestyle, xlabel="Log10(Eₐ [kj/mol])", ylabel="Probability Density")
@@ -138,10 +138,10 @@ module PlotsExt
             histogram!(he, Ea; normalized=true, lw=0, color=lines[j], label=(j==1 ? "posterior" : ""), bins=(minimum(Ea)-0.0025):0.005:(maximum(Ea)+0.005), alpha, kwargs...)
             Ea₀ = Normal(log10(d.Ea[j]), d.Ea_logsigma[j]/log(10))
             x = range(mean(Ea₀)-3std(Ea₀), mean(Ea₀)+3std(Ea₀), length=100)
-            plot!(he, x, pdf.(Ea₀,x), color=lines[j], label=(j==1 ? "prior" : ""), kwargs...)
+            plot!(he, x, pdf.(Ea₀,x); color=lines[j], label=(j==1 ? "prior" : ""), kwargs...)
         end
         
-        return plot(hd, he; layout, size, kwargs...)
+        return plot(hd, he; layout, size, title, kwargs...)
     end
 
     # Constraint boxes

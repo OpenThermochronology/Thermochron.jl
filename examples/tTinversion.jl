@@ -495,9 +495,9 @@ end
             t = tmin .<= c.tsteps_degassing .<= tmax
             for pi in plotindices
                 dm = if @isdefined kinetics
-                    kinetics[pi][i]
+                    kinetics[pi][di]
                 else
-                    damodels[i]
+                    damodels[di]
                 end
                 modelage(c, tT[pi], dm)
                 plot!(h, c.tsteps_degassing, c.model_fraction, label="", color=:powderblue, alpha=0.15)
