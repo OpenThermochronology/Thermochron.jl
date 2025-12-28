@@ -1683,9 +1683,9 @@ end
 
     See also: `degas!`
     """
-    struct SingleDomain{T<:AbstractFloat, C<:Union{HeliumSample{T}, ArgonSample{T}}} <: AbsoluteChronometer{T}
-        step_age::Vector{T}                          # [Ma or unitless] measured ages (for Ar-40/Ar-39) or Rstep/Rbulk ratios (for He-4/He-3) at each degassing step
-        step_age_sigma::Vector{T}                    # [Ma or unitless] measured age (or ratio) uncertainties (one-sigma) at each degassing step
+    struct SingleDomain{T<:AbstractFloat, C<:NobleGasSample{T}} <: AbsoluteChronometer{T}
+        step_age::Vector{T}                     # [Ma or unitless] measured ages (for Ar-40/Ar-39) or Rstep/Rbulk ratios (for He-4/He-3) at each degassing step
+        step_age_sigma::Vector{T}               # [Ma or unitless] measured age (or ratio) uncertainties (one-sigma) at each degassing step
         fraction_experimental::Vector{T}        # [unitless] cumulative fraction of total tracer (Ar-39 or He-3) released each degassing step
         fraction_experimental_sigma::Vector{T}  # [unitless] uncertainty in degassing fraction
         midpoint_experimental::Vector{T}        # [unitless] midpoint of fraction_experimental for each step
@@ -1792,7 +1792,7 @@ end
 
     See also: `MDDiffusivity`, `PlanarAr`, `SphericalAr`, `degas!`
     """
-    struct MultipleDomain{T<:AbstractFloat, C<:Union{HeliumSample{T}, ArgonSample{T}}} <: AbsoluteChronometer{T}
+    struct MultipleDomain{T<:AbstractFloat, C<:NobleGasSample{T}} <: AbsoluteChronometer{T}
         step_age::Vector{T}                     # [Ma or unitless] measured ages (for Ar-40/Ar-39) or Rstep/Rbulk ratios (for He-4/He-3) at each degassing step
         step_age_sigma::Vector{T}               # [Ma or unitless] measured age (or ratio) uncertainties at each degassing step
         fraction_experimental::Vector{T}        # [unitless] cumulative fraction of total tracer (Ar-39 or He-3) released each degassing step
