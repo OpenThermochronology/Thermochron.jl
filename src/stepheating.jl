@@ -2,42 +2,60 @@
 
 """
 ```julia
-SDDiffusivity(
-    model::DiffusivityModel{T}  # Underlying (wrapped) diffusivity model
-    scale::T                    # [unitless] relative domain size (default = 1.0)
-    scale_logsigma::T           # [unitless] log uncertainty (default = 1.0 = a factor of ℯ, one-sigma)
+SDiffusivity(
+    model::DiffusivityModel{T}      # Underlying (wrapped) diffusivity model
+    scale::T                        # [unitless] relative domain size (default = 1.0)
+    scale_logsigma::T               # [unitless] log uncertainty (default = 1.0 = a factor of ℯ, one-sigma)
 )
 ```
-One diffusivity, scaled to represent domain size as d/a^2
+One diffusivity, rescaled
 """
-Base.@kwdef struct SDDiffusivity{T,D<:DiffusivityModel{T}} <: DiffusivityModel{T}
-    model::D                    # Underlying (wrapped) diffusivity model
-    scale::T=1.0                # [unitless] relative domain size (default = 1.0)
-    scale_logsigma::T=1.0       # [unitless] log uncertainty (default = 1.0 = a factor of ℯ, one-sigma)
+Base.@kwdef struct SDiffusivity{T,D<:DiffusivityModel{T}} <: DiffusivityModel{T}
+    model::D                        # Underlying (wrapped) diffusivity model
+    scale::T=1.0                    # [unitless] relative domain size (default = 1.0)
+    scale_logsigma::T=1.0           # [unitless] log uncertainty (default = 1.0 = a factor of ℯ, one-sigma)
 end
 
 """
 ```julia
-MDDiffusivity(
-    D0::NTuple{N,T}             # [cm^2/sec] Maximum diffusivity
-    D0_logsigma::NTuple{N,T}    # [unitless] log uncertainty
-    Ea::T                       # [kJ/mol] Activation energy
-    Ea_logsigma::T              # [unitless] log uncertainty
+MSDiffusivity(
+    model::DiffusivityModel{T}      # Underlying (wrapped) diffusivity model
+    scale::NTuple{N,T}              # [unitless] relative domain size 
+    scale_logsigma::NTuple{N,T}     # [unitless] log uncertainty 
+    volume_fraction::NTuple{N,T}    # [unitless] Volume fraction of each domain
+)
+```
+One diffusivity, rescaled multiple times
+"""
+Base.@kwdef struct MSDiffusivity{T,N,D<:DiffusivityModel{T}} <: MultipleDiffusivity{T}
+    model::D                                        # Underlying (wrapped) diffusivity model
+    scale::NTuple{N,T}=ntuple(i->1.0, N)            # [unitless] relative domain size 
+    scale_logsigma::NTuple{N,T}=ntuple(i->1.0, N)   # [unitless] log uncertainty 
+    volume_fraction::NTuple{N,T}=ntuple(i->1/N, N)  # [unitless] Volume fraction of each domain
+end
+Base.getindex(d::MSDiffusivity{T,N,D}, i::Int) where {T,N,D} = SDiffusivity{T,D}(d.model, d.scale[i], d.scale_logsigma[i])
+
+"""
+```julia
+MDiffusivity(
+    D0::NTuple{N,T}                 # [cm^2/sec] Maximum diffusivity
+    D0_logsigma::NTuple{N,T}        # [unitless] log uncertainty
+    Ea::NTuple{N,T}                 # [kJ/mol] Activation energy
+    Ea_logsigma::NTuple{N,T}        # [unitless] log uncertainty
+    volume_fraction::NTuple{N,T}    # [unitless] Volume fraction of each domain
 )
 ```
 Multiple diffusivities for multiple domains
 """
-Base.@kwdef struct MDDiffusivity{T<:AbstractFloat, N} <: DiffusivityModel{T}
-    D0::NTuple{N,T}             # [cm^2/sec] Maximum diffusivity
-    D0_logsigma::NTuple{N,T}    # [unitless] log uncertainty
-    Ea::NTuple{N,T}             # [kJ/mol] Activation energy
-    Ea_logsigma::NTuple{N,T}    # [unitless] log uncertainty 
+Base.@kwdef struct MDiffusivity{T<:AbstractFloat, N} <: MultipleDiffusivity{T}
+    D0::NTuple{N,T}                 # [cm^2/sec] Maximum diffusivity
+    D0_logsigma::NTuple{N,T}        # [unitless] log uncertainty
+    Ea::NTuple{N,T}                 # [kJ/mol] Activation energy
+    Ea_logsigma::NTuple{N,T}        # [unitless] log uncertainty 
+    volume_fraction::NTuple{N,T}    # [unitless] Volume fraction of each domain
 end
-Base.getindex(d::MDDiffusivity{T}, i::Int) where {T} = Diffusivity{T}(d.D0[i], d.D0_logsigma[i], d.Ea[i], d.Ea_logsigma[i])
+Base.getindex(d::MDiffusivity{T}, i::Int) where {T} = Diffusivity{T}(d.D0[i], d.D0_logsigma[i], d.Ea[i], d.Ea_logsigma[i])
 
-# Implement eltype methods to deal with diffusivity models which are wrapper types
-Base.eltype(x::DiffusivityModel) = typeof(x)
-Base.eltype(x::SDDiffusivity{T,D}) where {T,D} = D
 
 ## --- Initialize and degas daughter isotopes
 
@@ -53,14 +71,14 @@ end
 
 ## --- Initialize and degas tracer isotopes
 
-function degas_tracer!(mdd::MultipleDomain{T}, dm::MDDiffusivity{T}) where {T<:AbstractFloat}
+function degas_tracer!(mdd::MultipleDomain{T}, dm::MDiffusivity{T}) where {T<:AbstractFloat}
     fraction = fill!(mdd.model_fraction, zero(T))
     tracer = fill!(mdd.model_tracer, zero(T))
     # Degas
-    for i in eachindex(mdd.domains, mdd.volume_fraction)
+    for i in eachindex(mdd.domains, dm.volume_fraction)
         domain = mdd.domains[i]
         degas_tracer!(domain, one(T), mdd.tsteps_degassing, mdd.Tsteps_degassing, dm; fuse=mdd.fuse)
-        @. tracer += domain.step_tracer * mdd.volume_fraction[i]
+        @. tracer += domain.step_tracer * dm.volume_fraction[i]
     end
     # Cumulative fraction of tracer degassed
     cumsum!(fraction, tracer)
@@ -158,19 +176,45 @@ function modelage(sdd::SingleDomain{T,<:ArgonSample}, Tsteps::AbstractVector, dm
 
     return age, stepage, fraction
 end
-function modelage(mdd::MultipleDomain{T,<:ArgonSample}, Tsteps::AbstractVector, dm::MDDiffusivity{T}; redegastracer::Bool=true, partitiondaughter::Bool=false) where {T<:AbstractFloat}
+function modelage(mdd::MultipleDomain{T,<:HeliumSample}, Tsteps::AbstractVector, dm::MultipleDiffusivity{T}; redegastracer::Bool=true, partitiondaughter::Bool=false) where {T<:AbstractFloat}
+    ratio = fill!(mdd.model_age, zero(T))
+    tracer = fill!(mdd.model_tracer, zero(T))
+    daughter = fill!(mdd.model_daughter, zero(T))
+    fraction = fill!(mdd.model_fraction, zero(T))
+    fuse = mdd.fuse::Bool
+    # Degas
+    @assert eachindex(mdd.domains) == eachindex(dm.volume_fraction)
+    for i in eachindex(mdd.domains)
+        domain = mdd.domains[i]
+        modelage(domain, Tsteps, dm[i]; partitiondaughter)
+        p, d = degas!(domain, mdd.tsteps_degassing, mdd.Tsteps_degassing, dm[i]; fuse, redegastracer)
+        @. tracer += p * dm.volume_fraction[i]
+        @. daughter += d * dm.volume_fraction[i]
+    end
+    # Calculate Rstep/Rbulk for each degassing step
+    @inbounds for i in eachindex(tracer, daughter)
+        ratio[i] = daughter[i]/tracer[i]
+    end
+    # Cumulative fraction of tracer degassed
+    cumsum!(fraction, tracer)
+    fraction ./= last(fraction)
+
+    return ratio, fraction
+end
+function modelage(mdd::MultipleDomain{T,<:ArgonSample}, Tsteps::AbstractVector, dm::MultipleDiffusivity{T}; redegastracer::Bool=true, partitiondaughter::Bool=false) where {T<:AbstractFloat}
     age = fill!(mdd.model_age, zero(T))
     tracer = fill!(mdd.model_tracer, zero(T))
     daughter = fill!(mdd.model_daughter, zero(T))
     fraction = fill!(mdd.model_fraction, zero(T))
     fuse = mdd.fuse::Bool
     # Degas
-    for i in eachindex(mdd.domains, mdd.volume_fraction)
+    @assert eachindex(mdd.domains) == eachindex(dm.volume_fraction)
+    for i in eachindex(mdd.domains)
         domain = mdd.domains[i]
         modelage(domain, Tsteps, dm[i]; partitiondaughter)
         p, d = degas!(domain, mdd.tsteps_degassing, mdd.Tsteps_degassing, dm[i]; fuse, redegastracer)
-        @. tracer += p * mdd.volume_fraction[i]
-        @. daughter += d * mdd.volume_fraction[i]
+        @. tracer += p * dm.volume_fraction[i]
+        @. daughter += d * dm.volume_fraction[i]
     end
     # Calculate ages for each degassing step
     for i in eachindex(tracer, daughter)

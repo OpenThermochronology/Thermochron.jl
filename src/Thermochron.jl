@@ -35,8 +35,9 @@ module Thermochron
     export κ40K
     
     include("types.jl")
-    export Constraint, Unconformity, Boundary, DetailInterval           # Types used as inputs to MCMC functions
-    export Diffusivity, SDDiffusivity, MDDiffusivity                    # Type for generic user-specified diffusivities
+    export Constraint, Boundary, DetailInterval                         # Types used to pass information to MCMC functions
+    export Diffusivity, SDiffusivity                                    # Types for generic and scaled diffusivities
+    export MDiffusivity, MSDiffusivity, MultipleDiffusivity             # Types for multiple diffusivities
     
     include("chronometers.jl")
     export Chronometer, AbsoluteChronometer                             # Abstract types

@@ -112,33 +112,53 @@ module PlotsExt
         return plot(hd, he; layout, size, kwargs...)
     end
 
-    function Plots.plot(d::SDDiffusivity, dms::Vector{<:Thermochron.Model}; framestyle=:box, title="", alpha=0.75, kwargs...) 
-        hd = plot(; framestyle, xlabel="Log10(scale [unitless])", ylabel="Probability Density", title, kwargs...)
+    function Plots.plot(d::SDiffusivity, dms::Vector{<:Thermochron.Model}; framestyle=:box, title="", alpha=0.75, kwargs...) 
+        hd = plot(; title, xlabel="Log10(scale [unitless])", ylabel="Probability Density", framestyle, kwargs...)
         a = dms .|> x->log10(x.scale)
-        histogram!(hd, a; normalized=true, lw=0, color=lines[1], label="posterior", bins=(minimum(a)-0.05):0.1:(maximum(a)+0.1), alpha, kwargs...)
+        histogram!(hd, a; bins=(minimum(a)-0.05):0.1:(maximum(a)+0.1), normalized=true, 
+            label="posterior", color=lines[1], lw=0, alpha, kwargs...
+        )
         a₀ = Normal(log10(d.scale), d.scale_logsigma/log(10))
         x = range(mean(a₀)-3std(a₀), mean(a₀)+3std(a₀), length=100)
-        plot!(hd, x, pdf.(a₀,x); color=lines[1], label="prior", kwargs...)
+        plot!(hd, x, pdf.(a₀,x); label="prior", color=lines[1], kwargs...)
         return hd
     end
-    function Plots.plot(d::MDDiffusivity, dms::Vector{<:Thermochron.Model}, r=100.0; framestyle=:box, layout=(2,1), size=(600,800), title="", alpha=0.75, kwargs...) 
+    function Plots.plot(d::MSDiffusivity, dms::Vector{<:Thermochron.Model}; framestyle=:box, title="", alpha=0.75, kwargs...) 
+        ndomains = length(d.scale)
+        hd = plot(; title, xlabel="Log10(scale [unitless])", ylabel="Probability Density", framestyle, kwargs...)
+        for j in 1:ndomains
+            a = dms .|> x->log10(x.scale[j])
+            histogram!(hd, a; normalized=true, bins=(minimum(a)-0.05):0.1:(maximum(a)+0.1), 
+                label=(j==1 ? "posterior" : ""), color=lines[1], lw=0, alpha, kwargs...
+            )
+            a₀ = Normal(log10(d.scale[j]), d.scale_logsigma[j]/log(10))
+            x = range(mean(a₀)-3std(a₀), mean(a₀)+3std(a₀), length=100)
+            plot!(hd, x, pdf.(a₀,x); label=(j==1 ? "prior" : ""), color=lines[1], kwargs...)
+        end
+        return hd
+    end
+    function Plots.plot(d::MDiffusivity, dms::Vector{<:Thermochron.Model}, r=100.0; framestyle=:box, layout=(2,1), size=(600,800), title="", alpha=0.75, kwargs...) 
         ndomains = length(d.D0)
-        hd = plot(; framestyle, xlabel="Log10(D₀/a² [1/s])", ylabel="Probability Density", kwargs...)
+        hd = plot(; xlabel="Log10(D₀/a² [1/s])", ylabel="Probability Density", framestyle, kwargs...)
         for j in 1:ndomains
             D0a2 = dms .|> x->log10(x.D0[j]/(r/10000)^2)
-            histogram!(hd, D0a2; normalized=true, lw=0, color=lines[j], label="", bins=(minimum(D0a2)-0.05):0.1:(maximum(D0a2)+0.1), alpha, kwargs...)
+            histogram!(hd, D0a2; normalized=true, bins=(minimum(D0a2)-0.05):0.1:(maximum(D0a2)+0.1),
+                label="", color=lines[j], lw=0, alpha, kwargs...
+            )
             D0a2₀ = Normal(log10(d.D0[j]./(r/10000)^2), d.D0_logsigma[j]/log(10))
             x = range(mean(D0a2₀)-3std(D0a2₀), mean(D0a2₀)+3std(D0a2₀), length=100)
-            plot!(hd, x, pdf.(D0a2₀,x); color=lines[j], label="domain $j", kwargs...)
+            plot!(hd, x, pdf.(D0a2₀,x); label="domain $j", color=lines[j], kwargs...)
         end
 
         he = plot(; framestyle, xlabel="Log10(Eₐ [kj/mol])", ylabel="Probability Density")
         for j in 1:ndomains
             Ea = dms .|> x->log10(x.Ea[j])
-            histogram!(he, Ea; normalized=true, lw=0, color=lines[j], label=(j==1 ? "posterior" : ""), bins=(minimum(Ea)-0.0025):0.005:(maximum(Ea)+0.005), alpha, kwargs...)
+            histogram!(he, Ea; normalized=true, bins=(minimum(Ea)-0.0025):0.005:(maximum(Ea)+0.005), 
+                label=(j==1 ? "posterior" : ""), color=lines[j], lw=0, alpha, kwargs...
+            )
             Ea₀ = Normal(log10(d.Ea[j]), d.Ea_logsigma[j]/log(10))
             x = range(mean(Ea₀)-3std(Ea₀), mean(Ea₀)+3std(Ea₀), length=100)
-            plot!(he, x, pdf.(Ea₀,x); color=lines[j], label=(j==1 ? "prior" : ""), kwargs...)
+            plot!(he, x, pdf.(Ea₀,x); label=(j==1 ? "prior" : ""), color=lines[j], kwargs...)
         end
         
         return plot(hd, he; layout, size, title, kwargs...)

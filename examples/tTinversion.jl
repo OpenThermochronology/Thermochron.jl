@@ -474,8 +474,8 @@ end
     nplot = 33
     plotindices = rand(eachindex(tT), nplot)
     C = (SingleDomain, MultipleDomain)
-    D = (SDDiffusivity, MDDiffusivity)
-    for (C,D) in zip((SingleDomain, MultipleDomain), (SDDiffusivity, MDDiffusivity))
+    D = (SDiffusivity, MultipleDiffusivity)
+    for (C,D) in zip((SingleDomain, MultipleDomain), (SDiffusivity, MultipleDiffusivity))
         dis = if @isdefined kinetics
             findall(x->x isa D, first(kinetics))
         else
@@ -547,23 +547,23 @@ end
     end
 
     if @isdefined kinetics
-        # SDDiffusivity
-        im = findall(x->isa(x, SDDiffusivity), damodels[:,1])
-        id = findall(x->isa(x, SDDiffusivity), kinetics.dmdist[:,1])
+        # SDiffusivity
+        im = findall(x->isa(x, SDiffusivity), damodels[:,1])
+        id = findall(x->isa(x, SDiffusivity), kinetics.dmdist[:,1])
         for i in eachindex(im,id)
             grain_name = chrons[im[i]].name
-            hdm = plot(damodels[im[i]], kinetics.dmdist[id[i],:]; title = "$grain_name SDDiffusivity")
-            savefig(hdm, "$(name)_$(grain_name)_SDDiffusivity_kinetics.pdf")
+            hdm = plot(damodels[im[i]], kinetics.dmdist[id[i],:]; title = "$grain_name SDiffusivity")
+            savefig(hdm, "$(name)_$(grain_name)_SDiffusivity_kinetics.pdf")
             display(hdm)
         end
-        # MDDiffusivity
-        im = findall(x->isa(x, MDDiffusivity), damodels[:,1])
-        id = findall(x->isa(x, MDDiffusivity), kinetics.dmdist[:,1])
+        # MultipleDiffusivity
+        im = findall(x->isa(x, MultipleDiffusivity), damodels[:,1])
+        id = findall(x->isa(x, MultipleDiffusivity), kinetics.dmdist[:,1])
         for i in eachindex(im,id)
             r = last(first(chrons[im[i]].domains).redges)
             grain_name = chrons[im[i]].name
-            hdm = plot(damodels[im[i]], kinetics.dmdist[id[i],:], r; title = "$grain_name MDDiffusivity")
-            savefig(hdm, "$(name)_$(grain_name)_MDDiffusivity_kinetics.pdf")
+            hdm = plot(damodels[im[i]], kinetics.dmdist[id[i],:], r; title = "$grain_name MultipleDiffusivity")
+            savefig(hdm, "$(name)_$(grain_name)_MultipleDiffusivity_kinetics.pdf")
             display(hdm)
         end
     end

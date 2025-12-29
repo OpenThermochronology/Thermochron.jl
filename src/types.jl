@@ -25,6 +25,7 @@ abstract type AbsoluteChronometer{T} <:Chronometer{T} end
 abstract type FissionTrackLength{T} <: Chronometer{T} end
 abstract type FissionTrackSample{T} <: AbsoluteChronometer{T} end
 abstract type NobleGasSample{T} <: AbsoluteChronometer{T} end
+abstract type StepHeatingSample{T,C} <: NobleGasSample{T} end
 abstract type HeliumSample{T} <: NobleGasSample{T} end
 abstract type ArgonSample{T} <: NobleGasSample{T} end
 
@@ -54,6 +55,7 @@ const FanningCurvilinear{T} = Union{FanningCurvilinearZircon{T}, FanningCurvilin
 
 # DiffusivityModel types
 abstract type DiffusivityModel{T} <: Model{T} end
+abstract type MultipleDiffusivity{T} <: DiffusivityModel{T} end
 abstract type ZirconHeliumModel{T} <: DiffusivityModel{T} end
 abstract type ApatiteHeliumModel{T} <: DiffusivityModel{T} end
 
@@ -110,7 +112,11 @@ function Constraint(T::Type=Float64; agedist=Uniform{T}[], Tdist=Uniform{T}[], a
 end
 
 # For backwards compatibility with old scripts
-const Unconformity = Constraint
+function Unconformity(args...)
+    @warn "The `Unconformity` type has been deprecated, use `Constraint` instead"
+    Constraint(args...)
+end
+export Unconformity
 
 # Define DetailInterval type to specify a minumum number of t-T path nodes within a given time interval
 struct DetailInterval{T<:AbstractFloat}

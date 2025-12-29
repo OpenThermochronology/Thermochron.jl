@@ -1683,7 +1683,7 @@ end
 
     See also: `degas!`
     """
-    struct SingleDomain{T<:AbstractFloat, C<:NobleGasSample{T}} <: AbsoluteChronometer{T}
+    struct SingleDomain{T<:AbstractFloat, C<:NobleGasSample{T}} <: StepHeatingSample{T,C}
         step_age::Vector{T}                     # [Ma or unitless] measured ages (for Ar-40/Ar-39) or Rstep/Rbulk ratios (for He-4/He-3) at each degassing step
         step_age_sigma::Vector{T}               # [Ma or unitless] measured age (or ratio) uncertainties (one-sigma) at each degassing step
         fraction_experimental::Vector{T}        # [unitless] cumulative fraction of total tracer (Ar-39 or He-3) released each degassing step
@@ -1788,11 +1788,11 @@ end
     Domain diffusivity and volume parameters must be supplied as vectors
     `Ea` [kJ/mol], `lnD0a2` [log(1/s)], and `volume_fraction` [unitless]
     obtained by separately fitting the release spectrum (the former two
-    as an `MDDiffusivity` object).
+    as an `MDiffusivity` object).
 
-    See also: `MDDiffusivity`, `PlanarAr`, `SphericalAr`, `degas!`
+    See also: `MDiffusivity`, `PlanarAr`, `SphericalAr`, `degas!`
     """
-    struct MultipleDomain{T<:AbstractFloat, C<:NobleGasSample{T}} <: AbsoluteChronometer{T}
+    struct MultipleDomain{T<:AbstractFloat, C<:NobleGasSample{T}} <: StepHeatingSample{T,C}
         step_age::Vector{T}                     # [Ma or unitless] measured ages (for Ar-40/Ar-39) or Rstep/Rbulk ratios (for He-4/He-3) at each degassing step
         step_age_sigma::Vector{T}               # [Ma or unitless] measured age (or ratio) uncertainties at each degassing step
         fraction_experimental::Vector{T}        # [unitless] cumulative fraction of total tracer (Ar-39 or He-3) released each degassing step
@@ -1804,7 +1804,6 @@ end
         offset::T                               # [C] temperature offset relative to other samples
         fuse::Bool                              # [Bool] Treat the grain as having fused (released all remaining Ar)
         domains::Vector{C}                      # Vector of chronometer obects for each domain
-        volume_fraction::Vector{T}              # [unitless] fraction of total volume represented by each domain
         model_age::Vector{T}                    # [Ma] calculated age at each model degassing step
         model_tracer::Vector{T}                 # [atoms/g equivalent] parent tracer degassed
         model_daughter::Vector{T}               # [atoms/g], converted from PPMw daughter degassed
@@ -1852,12 +1851,6 @@ end
         model_tracer = zeros(T, length(tsteps_degassing))
         model_daughter = zeros(T, length(tsteps_degassing))
         model_fraction = zeros(T, length(tsteps_degassing))
-
-        # Ensure volume fraction sums to one
-        if !isapprox(nansum(volume_fraction), 1, atol=0.01)
-            @warn "volume fractions $volume_fraction do not sum to 1"
-            volume_fraction ./= nansum(volume_fraction)
-        end
         
         # Allocate domains
         bulk_age = nanmean(step_age, @.(fit./step_age_sigma^2))
@@ -1875,7 +1868,6 @@ end
             T(offset),
             fuse,
             domains,
-            T.(volume_fraction),
             model_age,
             model_tracer,
             model_daughter,
@@ -1896,7 +1888,7 @@ Base.eltype(x::SingleDomain{T,C}) where {T,C} = C
 
 # Retrive the nominal value (age, length, etc) of any Chronometer
 value(x::AbsoluteChronometer{T}) where {T} = x.age::T
-value(x::Union{SingleDomain{T}, MultipleDomain{T}}) where {T} = nanmean(x.step_age, @.(x.fit/x.step_age_sigma^2))::T
+value(x::StepHeatingSample{T}) where {T} = nanmean(x.step_age, @.(x.fit/x.step_age_sigma^2))::T
 value(x::FissionTrackLength{T}) where {T} = x.length::T
 value(x::ApatiteTrackLengthOriented{T}) where {T} = x.lcmod::T
 function val(x::Chronometer)
@@ -1906,7 +1898,7 @@ end
 
 # Retrive the nominal 1-sigma uncertainty (in age, length, etc.) of any Chronometer
 stdev(x::AbsoluteChronometer{T}) where {T} = x.age_sigma::T
-stdev(x::Union{SingleDomain{T}, MultipleDomain{T}}) where {T} = nanstd(x.step_age, @.(x.fit/x.step_age_sigma^2))::T
+stdev(x::StepHeatingSample{T}) where {T} = nanstd(x.step_age, @.(x.fit/x.step_age_sigma^2))::T
 stdev(x::FissionTrackLength{T}) where {T} = zero(T)
 function err(x::Chronometer)
     @warn "Thermochron.err has been deprecated in favor of Thermochron.stdev"
@@ -1935,8 +1927,8 @@ function eU(x::HeliumSample{T}) where {T<:AbstractFloat}
 end
 
 # Retrieve size (ESR for spherical samples, halfwidth for planar samples)
-radius(x::Chronometer{T}) where {T<:AbstractFloat} = T(NaN)
-radius(x::NobleGasSample) = maximum(x.redges)
+radius(x::Chronometer{T}) where {T} = T(NaN)
+radius(x::NobleGasSample{T}) where {T} = maximum(x.redges)::T
 radius(x::SingleDomain) = radius(x.domain)
 radius(x::MultipleDomain) = radius(first(x.domains))
 

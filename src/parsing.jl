@@ -336,28 +336,30 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
             fraction_experimental = dds.fraction_degassed
             fraction_experimental_sigma = haskey(dds, :fraction_experimental_sigma) ? dds.fraction_experimental_sigma : fill(0.005, size(fraction_experimental))
             tsteps_experimental = issorted(dds.time_s, lt=<=) ? dds.time_s : cumsum(dds.time_s)
-            if haskey(dds, :lnD0_a_2) && count(!isnan, dds.lnD0_a_2) > 0
+            if haskey(dds, :volume_fraction) && count(!isnan, dds.volume_fraction) > 0
+                volume_fraction = dds.volume_fraction[.!isnan.(dds.volume_fraction)]
                 c = MultipleDomain(T, DomainType;
-                        step_age = dds.age_Ma,
-                        step_age_sigma = dds.age_sigma_Ma,
-                        fraction_experimental,
-                        fraction_experimental_sigma,
-                        tsteps_experimental,
-                        Tsteps_experimental = dds.temperature_C,
-                        fit = dds.fit,
-                        offset, r, dr,
-                        volume_fraction = dds.volume_fraction[.!isnan.(dds.volume_fraction)],
-                        K40 = (haskey(ds, :K40_ppm) && !isnan(ds.K40_ppm[i])) ? ds.K40_ppm[i] : 16.34,
-                        K40_matrix = (haskey(ds, :K40_matrix_ppm) && !isnan(ds.K40_matrix_ppm[i])) ? ds.K40_matrix_ppm[i] : 0,
-                        grainsize_matrix = (haskey(ds, :grainsize_matrix_mm) && !isnan(ds.grainsize_matrix_mm[i])) ? ds.grainsize_matrix_mm[i] : 1,
-                        agesteps, name, notes,
+                    step_age = dds.age_Ma,
+                    step_age_sigma = dds.age_sigma_Ma,
+                    fraction_experimental,
+                    fraction_experimental_sigma,
+                    tsteps_experimental,
+                    Tsteps_experimental = dds.temperature_C,
+                    fit = dds.fit,
+                    offset, r, dr,
+                    volume_fraction,
+                    K40 = (haskey(ds, :K40_ppm) && !isnan(ds.K40_ppm[i])) ? ds.K40_ppm[i] : 16.34,
+                    K40_matrix = (haskey(ds, :K40_matrix_ppm) && !isnan(ds.K40_matrix_ppm[i])) ? ds.K40_matrix_ppm[i] : 0,
+                    grainsize_matrix = (haskey(ds, :grainsize_matrix_mm) && !isnan(ds.grainsize_matrix_mm[i])) ? ds.grainsize_matrix_mm[i] : 1,
+                    agesteps, name, notes,
                 )
-                tdomains = .!isnan.(dds.lnD0_a_2)
-                dm = MDDiffusivity(
+                tdomains = .!isnan.(dds.volume_fraction)
+                dm = MDiffusivity(
                     D0 = (T.(exp.(dds.lnD0_a_2[tdomains]).*(r/10000)^2)...,),
                     D0_logsigma = (T.(haskey(dds, :lnD0_a_2_sigma) ? dds.lnD0_a_2_sigma[tdomains] : fill(log(2)/2, count(tdomains)))...,),
                     Ea = (T.(dds.Ea_kJ_mol[tdomains])...,),
                     Ea_logsigma = (T.(haskey(dds, :Ea_logsigma) ? dds.Ea_logsigma[tdomains] : fill(log(2)/4, count(tdomains)))...,),
+                    volume_fraction = (volume_fraction...,),
                 )
                 push!(chrons, c)
                 push!(damodels, dm)
@@ -410,10 +412,62 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
             fraction_experimental ./= total_He_3 # Rescale from 0-1
             fraction_experimental_sigma = haskey(dds, :He_3_sigma) ? dds.He_3_sigma./total_He_3 : fill(0.005, size(fraction_experimental))
             tsteps_experimental = issorted(dds.time_s, lt=<=) ? dds.time_s : cumsum(dds.time_s)
-            if haskey(dds, :lnD0_a_2) && count(!isnan, dds.lnD0_a_2) > 0
-                @warn "Multiple domain He not implemented, skipping"
+            if haskey(dds, :volume_fraction) && count(!isnan, dds.volume_fraction) > 0
+                # Ensure volume fractions sums to one
+                volume_fraction = dds.volume_fraction[.!isnan.(dds.volume_fraction)]
+                if !isapprox(sum(volume_fraction), 1, atol=0.01)
+                    @warn "Volume fractions do not sum to one: \n$volume_fraction\nrenormalizing"
+                    volume_fraction ./=sum(volume_fraction)
+                end
+                ndomains = length(volume_fraction)
+                c = MultipleDomain(T, DomainType;
+                    step_age = Rstep./Rbulk,
+                    step_age_sigma = Rstep_sigma./Rbulk,
+                    fraction_experimental,
+                    fraction_experimental_sigma,
+                    tsteps_experimental,
+                    Tsteps_experimental = dds.temperature_C,
+                    fit = dds.fit,
+                    r, dr, volume_fraction,
+                    age = ds.raw_He_age_Ma[i],
+                    age_sigma = ds.raw_He_age_sigma_Ma[i],
+                    U238 = ds.U238_ppm[i],
+                    Th232 = ds.Th232_ppm[i],
+                    Sm147 = ds.Sm147_ppm[i],
+                    U238_matrix = (haskey(ds, :U238_matrix_ppm) && !isnan(ds.U238_matrix_ppm[i])) ? ds.U238_matrix_ppm[i] : 0,
+                    Th232_matrix = (haskey(ds, :Th232_matrix_ppm) && !isnan(ds.Th232_matrix_ppm[i])) ? ds.Th232_matrix_ppm[i] : 0,
+                    Sm147_matrix = (haskey(ds, :Sm147_matrix_ppm) && !isnan(ds.Sm147_matrix_ppm[i])) ? ds.Sm147_matrix_ppm[i] : 0,
+                    grainsize_matrix = (haskey(ds, :grainsize_matrix_mm) && !isnan(ds.grainsize_matrix_mm[i])) ? ds.grainsize_matrix_mm[i] : 1,
+                    agesteps, name, notes,
+                )
+                dm = if mineral === "apatite"
+                    MSDiffusivity{T,ndomains,typeof(adm)}(
+                        model = adm,
+                        scale = ntuple(i->exp(1-i), ndomains) .* (1 .+ randn.()./1e9),  # Twiddle to ensure uniqueness 
+                        scale_logsigma = ntuple(i->1.0, ndomains),
+                        volume_fraction = (volume_fraction...,),
+                    )
+                elseif mineral === "zircon"
+                    MSDiffusivity{T,ndomains,typeof(zdm)}(
+                        model = zdm,
+                        scale = ntuple(i->exp(1-i), ndomains) .* (1 .+ randn.()./1e9),  # Twiddle to ensure uniqueness 
+                        scale_logsigma = ntuple(i->1.0, ndomains),
+                        volume_fraction = (volume_fraction...,),
+                    )
+                else # Custom diffusivity
+                    tdomains = .!isnan.(dds.volume_fraction)
+                    MDiffusivity(
+                        D0 = (T.(exp.(dds.lnD0_a_2[tdomains]).*(r/10000)^2)...,),
+                        D0_logsigma = (T.(haskey(dds, :lnD0_a_2_sigma) ? dds.lnD0_a_2_sigma[tdomains] : fill(log(2)/2, count(tdomains)))...,),
+                        Ea = (T.(dds.Ea_kJ_mol[tdomains])...,),
+                        Ea_logsigma = (T.(haskey(dds, :Ea_logsigma) ? dds.Ea_logsigma[tdomains] : fill(log(2)/4, count(tdomains)))...,),
+                        volume_fraction = (volume_fraction...,),
+                    )
+                end
+                push!(chrons, c)
+                push!(damodels, dm)
             else
-                c = SingleDomain(Float64, DomainType;
+                c = SingleDomain(T, DomainType;
                     step_age = Rstep./Rbulk,
                     step_age_sigma = Rstep_sigma./Rbulk,
                     fraction_experimental,
@@ -427,19 +481,23 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                     U238 = ds.U238_ppm[i],
                     Th232 = ds.Th232_ppm[i],
                     Sm147 = ds.Sm147_ppm[i],
+                    U238_matrix = (haskey(ds, :U238_matrix_ppm) && !isnan(ds.U238_matrix_ppm[i])) ? ds.U238_matrix_ppm[i] : 0,
+                    Th232_matrix = (haskey(ds, :Th232_matrix_ppm) && !isnan(ds.Th232_matrix_ppm[i])) ? ds.Th232_matrix_ppm[i] : 0,
+                    Sm147_matrix = (haskey(ds, :Sm147_matrix_ppm) && !isnan(ds.Sm147_matrix_ppm[i])) ? ds.Sm147_matrix_ppm[i] : 0,
+                    grainsize_matrix = (haskey(ds, :grainsize_matrix_mm) && !isnan(ds.grainsize_matrix_mm[i])) ? ds.grainsize_matrix_mm[i] : 1,
                     agesteps, name, notes,
                 )
                 dm = if mineral === "apatite"
-                    SDDiffusivity(
+                    SDiffusivity(
                         model = adm,
-                        scale = 1.0 + rand()/1e6,   # Twiddle to establish uniqueness 
-                        scale_logsigma = log(2),
+                        scale = 1.0 + randn()/1e9,   # Twiddle to establish uniqueness 
+                        scale_logsigma = 1.0,
                     )
                 elseif mineral === "zircon"
-                    SDDiffusivity(
+                    SDiffusivity(
                         model = zdm,
-                        scale = 1.0 + rand()/1e6,   # Twiddle to establish uniqueness 
-                        scale_logsigma = log(2),
+                        scale = 1.0 + randn()/1e9,   # Twiddle to establish uniqueness 
+                        scale_logsigma = 1.0,
                     )
                 else # Custom diffusivity
                     Diffusivity(

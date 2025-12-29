@@ -429,17 +429,24 @@
         norm_ll(log(dm.D0), dm.D0_logsigma, log(dmₚ.D0)) + 
         norm_ll(log(dm.Ea), dm.Ea_logsigma, log(dmₚ.Ea))
     end
-    function kinetic_ll(dmₚ::MDDiffusivity{T}, dm::MDDiffusivity{T}) where {T<:AbstractFloat}
+    function kinetic_ll(dmₚ::MDiffusivity{T}, dm::MDiffusivity{T}) where {T<:AbstractFloat}
         ll = zero(T)
-        for i in eachindex(dm.Ea, dm.Ea_logsigma, dm.D0, dm.D0_logsigma)
+        for i in eachindex(dm.Ea, dm.Ea_logsigma, dmₚ.Ea, dm.D0, dm.D0_logsigma, dmₚ.D0)
             ll += norm_ll(log(dm.Ea[i]), dm.Ea_logsigma[i], log(dmₚ.Ea[i]))
             ll += norm_ll(log(dm.D0[i]), dm.D0_logsigma[i], log(dmₚ.D0[i]))
         end
         return ll
     end
-    function kinetic_ll(dmₚ::SDDiffusivity, dm::SDDiffusivity)
+    function kinetic_ll(dmₚ::SDiffusivity, dm::SDiffusivity)
         kinetic_ll(unwrap(dmₚ), unwrap(dm)) + 
         norm_ll(log(dm.scale), dm.scale_logsigma, log(dmₚ.scale))
+    end
+    function kinetic_ll(dmₚ::MSDiffusivity, dm::MSDiffusivity)
+        ll = kinetic_ll(unwrap(dmₚ), unwrap(dm))
+        for i in eachindex(dm.scale, dm.scale_logsigma, dmₚ.scale)
+            ll += norm_ll(log(dm.scale[i]), dm.scale_logsigma[i], log(dmₚ.scale[i]))
+        end
+        return ll
     end
     function kinetic_ll(dmₚ::AnnealingModel{T}, dm::AnnealingModel{T}) where {T<:AbstractFloat}
         @assert dmₚ == dm
@@ -749,9 +756,10 @@
 
     # Utilities for dealing with kinetic models that wrap other kinetic models
     unwrap(x::Model) = x
-    unwrap(x::SDDiffusivity) = x.model
+    unwrap(x::Union{SDiffusivity,MSDiffusivity}) = x.model
     wrap(x::Model, ::Model) = x
-    wrap(x::DiffusivityModel, y::SDDiffusivity) = SDDiffusivity(x, y.scale, y.scale_logsigma)
+    wrap(x::DiffusivityModel, y::SDiffusivity) = SDiffusivity(x, y.scale, y.scale_logsigma)
+    wrap(x::DiffusivityModel, y::MSDiffusivity) = MSDiffusivity(x, y.scale, y.scale_logsigma, y.volume_fraction)
 
     # Adjust kinetic models
     movekinetics(dm::Model, p=0.5) = dm
@@ -791,27 +799,36 @@
             Ea_logsigma = dm.Ea_logsigma,
         )
     end
-    function movekinetics(dm::MDDiffusivity{T}, p=0.5) where {T}
-        MDDiffusivity(
+    function movekinetics(dm::MDiffusivity{T}, p=0.5) where {T}
+        MDiffusivity(
             D0 = ((rand()<p) ? @.(exp(log(dm.D0)+(rand()<p)*randn(T)*dm.D0_logsigma/4)) : dm.D0),
             D0_logsigma = dm.D0_logsigma,
             Ea = ((rand()<p) ? @.(exp(log(dm.Ea)+(rand()<p)*randn(T)*dm.Ea_logsigma/10)) : dm.Ea),
             Ea_logsigma = dm.Ea_logsigma,
+            volume_fraction = dm.volume_fraction,
         )
     end
-    function movekinetics(dm::SDDiffusivity{T}, p=0.5) where {T}
-        SDDiffusivity(
-            model = movekinetics(dm.model, p),
-            scale = (rand()<p) ? exp(log(dm.scale)+randn(T)*dm.scale_logsigma/2) : dm.scale,
-            scale_logsigma = dm.scale_logsigma,
-        )
-    end
+    movekinetics(dm::Union{SDiffusivity,MSDiffusivity}, p=0.05) = wrap(movekinetics(unwrap(dm),p), movewrapperkinetics(dm, p))
     movewrapperkinetics(dm::Model, p=0.5) = dm
-    function movewrapperkinetics(dm::SDDiffusivity{T}, p=0.5) where {T}
-        SDDiffusivity(
+    function movewrapperkinetics(dm::SDiffusivity{T}, p=0.5) where {T}
+        SDiffusivity(
             model = dm.model,
             scale = (rand()<p) ? exp(log(dm.scale)+randn(T)*dm.scale_logsigma/2) : dm.scale,
             scale_logsigma = dm.scale_logsigma,
+        )
+    end
+    function movewrapperkinetics(dm::MSDiffusivity{T,N}, p=0.5) where {T,N}
+        volume_fraction = if rand()<p
+            vf = @. dm.volume_fraction + (rand()<p)*rand()/N
+            vf ./ sum(vf)
+        else
+            dm.volume_fraction
+        end
+        MSDiffusivity(
+            model = dm.model,
+            scale = ((rand()<p) ? @.(exp(log(dm.scale)+(rand()<p)*randn(T)*dm.scale_logsigma/4)) : dm.scale),
+            scale_logsigma = dm.scale_logsigma,
+            volume_fraction = volume_fraction,
         )
     end
     function movekinetics!(damodels::Vector{<:Model}, updatekinetics::BitVector, p=0.5)
@@ -882,13 +899,15 @@
         @assert eachindex(tsteps) == eachindex(Tsteps) "`tsteps` has indices $(eachindex(tsteps)) while `Tsteps` has indices $(eachindex(Tsteps))"
 
         # Pre-anneal ZRDAAM samples, if any
-        if any(x-> eltype(x) <: ZRDAAM, damodels)
-            zdm = unwrap(damodels[findfirst(x-> eltype(x) <: ZRDAAM, damodels)])::ZRDAAM{T}
+        if any(x->isa(unwrap(x),ZRDAAM), damodels)
+            iz = findfirst(x->isa(unwrap(x),ZRDAAM), damodels)
+            zdm = unwrap(damodels[iz])::ZRDAAM{T}
             anneal!(chrons, ZirconHe, tsteps, Tsteps, zdm)
         end
         # Pre-anneal RDAAM samples, if any
-        if any(x-> eltype(x) <: RDAAM, damodels)
-            adm = unwrap(damodels[findfirst(x-> eltype(x) <: RDAAM, damodels)])::RDAAM{T}
+        if any(x->isa(unwrap(x),RDAAM), damodels)
+            ir = findfirst(x->isa(unwrap(x),RDAAM), damodels)
+            adm = unwrap(damodels[ir])::RDAAM{T}
             anneal!(chrons, ApatiteHe, tsteps, Tsteps, adm)
         end
 
@@ -996,8 +1015,8 @@
                 μcalc[i] = draw_from_population(stepage, fraction)
                 ll += model_ll(c, σcalc[i]; rescale=rescalestepheating)/scalesdd
             elseif isa(c, MultipleDomain)
-                c::MultipleDomain{T, <:Union{PlanarAr{T}, SphericalAr{T}}}
-                stepage, fraction = modelage(c, Tstepsᵢ, dm::MDDiffusivity{T}; redegastracer, partitiondaughter)
+                c::MultipleDomain{T, <:Union{ArgonSample{T}, HeliumSample{T}}}
+                stepage, fraction = modelage(c, Tstepsᵢ, dm::MultipleDiffusivity{T}; redegastracer, partitiondaughter)
                 @assert issorted(fraction) "Degassing fraction is not properly cumulative"
                 if redegastracer
                     if stepwisetracerfraction
@@ -1045,9 +1064,9 @@
         ia = findall(x->isa(x, Diffusivity), kr[:,1])
         return collect(kr[ia,:]')
     end
-    function MDDiffusivity(kr::KineticResult)
-        any(x->isa(x, MDDiffusivity), kr) || return nothing
-        ia = findall(x->isa(x, MDDiffusivity), kr[:,1])
+    function MDiffusivity(kr::KineticResult)
+        any(x->isa(x, MDiffusivity), kr) || return nothing
+        ia = findall(x->isa(x, MDiffusivity), kr[:,1])
         return collect(kr[ia,:]')
     end
 
