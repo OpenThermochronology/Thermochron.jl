@@ -4,6 +4,7 @@ R = 0.008314472         # [kJ/(K*mol)]
 r_boundary = 2e-9       # [m] Grain boundary region thickness
 
 using StatGeochem, Plots
+using LsqFit: curve_fit
 ds = importdataset("baxter 2007 partitioning.csv", importas=:tuple)
 
 ## --- Arrhenius (D0 and Ea) fit to Ar partitioning data (i.e., D = D0*exp(-Ea/(R*T)))
@@ -30,7 +31,6 @@ h = plot(framestyle=:box,
 )
 scatter!(h, ds.T_C[t], K_Ar_itm[t], label="Observed Kⁱₑ Ar", zcolor=ds.duration_h[t], colorbar_title="Experiment duration [hr]")
 
-using LsqFit
 f(x, c) = @. c[1] * exp(-c[2]/(R*(x+273.15)))
 c0 = [1., 1.]
 fobj = curve_fit(f, ds.T_C[t], K_Ar_itm[t], c0, lower=[1e-9, 0], upper=[1., 200])
@@ -64,7 +64,6 @@ h = plot(framestyle=:box,
 )
 scatter!(ds.T_C[t], K_He_itm[t], label="Observed Kⁱₑ He", zcolor=ds.duration_h[t], colorbar_title="Experiment duration [hr]")
 
-using LsqFit
 f(x, c) = @. c[1] * exp(-c[2]/(R*(x+273.15)))
 c0 = [1., 1.]
 fobj = curve_fit(f, ds.T_C[t], K_He_itm[t], c0, lower=[1e-9, 0], upper=[1., 200])
@@ -73,6 +72,31 @@ K0_He, Ea_He = fobj.param
 @info "Ea_He = $Ea_He"
 x = range(xlims()..., length=100)
 plot!(x, @.(K0_He*exp(-Ea_He/(R*(x+273.15)))), label="$(round(K0_He, sigdigits=4)) exp(-$(round(Ea_He, sigdigits=4)) / RT)")
+
+## -- Both systems combined
+
+tHe = (ds.duration_h .> 20) .& .!isnan.(K_He_itm)
+tAr = (ds.duration_h .> 20) .& .!isnan.(K_Ar_itm)
+T_C = [ds.T_C[tHe]; ds.T_C[tAr]]
+K_itm = [K_He_itm[tHe]; K_Ar_itm[tAr];]
+duration = [ds.duration_h[tHe]; ds.duration_h[tAr]]
+h = plot(framestyle=:box, 
+    xlabel="T [C]", 
+    ylabel="Kⁱₑ [internal/externa]", 
+    yscale=:log10, 
+    ylims=(10^-6, 10^-4),
+)
+scatter!(T_C, K_itm, label="Observed Kⁱₑ", zcolor=duration, colorbar_title="Experiment duration [hr]")
+
+f(x, c) = @. c[1] * exp(-c[2]/(R*(x+273.15)))
+c0 = [1., 1.]
+fobj = curve_fit(f, T_C, K_itm, c0, lower=[1e-9, 0], upper=[1., 200])
+K0, Ea = fobj.param
+@info "K0 = $K0"
+@info "Ea = $Ea"
+x = range(xlims()..., length=100)
+plot!(x, @.(K0*exp(-Ea/(R*(x+273.15)))), label="$(round(K0, sigdigits=4)) exp(-$(round(Ea, sigdigits=4)) / RT)")
+
 
 ## --- Resulting equations
 

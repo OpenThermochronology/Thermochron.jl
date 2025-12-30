@@ -1,0 +1,4 @@
+[deps]
+LsqFit = "2fda8390-95c7-5789-9bda-21331edee243"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+StatGeochem = "df4de05a-b714-11e8-3c2a-c30fb13e804c"
