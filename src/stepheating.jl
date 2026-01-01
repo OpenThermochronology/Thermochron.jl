@@ -117,8 +117,10 @@ function degas_tracer!(mineral::SphericalNobleGas{T}, initial_tracer, tsteps_deg
     crank_nicolson!(mineral, tsteps_degassing, Tsteps_degassing, dm; fuse, diffusivityratio)
     return diffusant_lost!(mineral.step_tracer, mineral; fuse)
 end
-tracerdiffusivityratio(x::ArgonSample{T}) where {T} = T((40/39)^0.3)
-tracerdiffusivityratio(x::HeliumSample{T}) where {T} = T((4/3)^0.3)
+
+# Follow Shuster (2004) who found no isotopic fractionation / 
+# variation in diffusivity between He-3 and He-4 in apatite
+tracerdiffusivityratio(x::NobleGasSample{T}) where {T} = one(T)
 
 
 ## ---  Combined daughter+tracer degassing functions

@@ -93,8 +93,8 @@
 
     # Test model calculations
     calc, calcuncert, ll = model!(chrons, damodels, Tsteps; redegastracer=false)
-    @test ll ≈ -121518.90658880194
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -127791.6937329364
+    @test ll ≈ -121504.198902584
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -127899.62209075777
     @test round.(calc[1:18], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 242.1764, 276.2001, 1085.555, 304.6573, 95.84216, 149.8249, 297.8784, 262.766]
     @test calc[19] ≈ 0.8 atol=0.5
     @test calc[20] ≈ 0.8 atol=0.5
@@ -109,8 +109,8 @@
     damodels[isa.(damodels, Thermochron.ZirconAnnealingModel)] .= Guenthner2013FC()
     damodels[isa.(damodels, Thermochron.ApatiteAnnealingModel)] .= Ketcham1999FC()
     damodels = unionize(damodels)
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=false) ≈ -121536.7987547648
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -127809.58589889925
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=false) ≈ -121522.09106854686
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -127917.51425672062
     @test round.(calc[1:18], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 242.1764, 276.2001, 1110.379, 304.2772, 95.84216, 149.8249, 297.8784, 262.766]
     @test calc[19] ≈ 0.8 atol=0.5
     @test calc[20] ≈ 0.8 atol=0.5
@@ -130,9 +130,9 @@
 
     # Test again with partitiondaughter=true
     chrons, damodels = chronometers(dsg, params, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; partitiondaughter=true, redegastracer=false) ≈ -121528.56734747728
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; partitiondaughter=true, redegastracer=true) ≈ -127801.35449149637
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; partitiondaughter=true, redegastracer=true, stepwisetracerfraction=true) ≈ -121731.77967159545
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; partitiondaughter=true, redegastracer=false) ≈ -121513.85966104156
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; partitiondaughter=true, redegastracer=true) ≈ -127909.28285223208
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; partitiondaughter=true, redegastracer=true, stepwisetracerfraction=true) ≈ -121712.36210523923 
     @test round.(calc[1:18], sigdigits=7) ≈ [100.512, 196.5576, 110.7153, 200.3158, 196.0983, 868.0376, 969.4693, 962.8585, 286.9455, 290.1031, 242.1764, 277.9584, 1085.555, 304.6573, 95.84216, 149.9689, 298.9059, 262.766]
     @test calc[19] ≈ 0.8 atol=0.5
     @test calc[20] ≈ 0.8 atol=0.5
@@ -216,8 +216,8 @@
 
     calc = zeros(length(chrons))
     calcuncert = zeros(length(chrons))
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=false) ≈ -118305.93364056372
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -125437.90053707422
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=false) ≈ -118307.34389827936
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -125544.48549371747
     @test round.(calc[1:18], sigdigits=7) ≈ [97.38443, 192.5678, 106.6764, 195.3374, 191.1125, 865.807, 967.5609, 960.928, 287.2698, 290.2198, 240.5851, 274.3691, 1078.846, 302.8478, 95.39966, 149.9576, 296.5752, 259.3508]
     @test calc[19] ≈ 0.8 atol=0.5
     @test calc[20] ≈ 0.8 atol=0.5
@@ -231,8 +231,8 @@
     damodels[isa.(damodels, Thermochron.ZirconAnnealingModel)] .= Guenthner2013FC()
     damodels[isa.(damodels, Thermochron.ApatiteAnnealingModel)] .= Ketcham1999FC()
     damodels = unionize(damodels)
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=false) ≈ -118317.01395088105
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -125448.98084739156
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=false) ≈ -118318.4242085967
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -125555.5658040348
     @test round.(calc[1:18], sigdigits=7) ≈ [97.38443, 192.5678, 106.6764, 195.3374, 191.1125, 865.807, 967.5609, 960.928, 287.2698, 290.2198, 240.5851, 274.3691, 1103.519, 302.1657, 95.39966, 149.9576, 296.5752, 259.3508]
     @test calc[19] ≈ 0.8 atol=0.5
     @test calc[20] ≈ 0.8 atol=0.5
@@ -336,9 +336,9 @@
 
     calc = zeros(length(chrons))
     calcuncert = zeros(length(chrons))
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=false) ≈ -121518.90658882367
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -127791.6937343229
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true, stepwisetracerfraction=true) ≈ -121722.11891269467
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=false) ≈ -121504.19890255701
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -127899.6220896984
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true, stepwisetracerfraction=true) ≈ -121702.70134680004
     @test round.(calc[1:18], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 242.1764, 276.2001, 1085.555, 304.6573, 95.84216, 149.8249, 297.8784, 262.766]
     @test calc[19] ≈ 0.8 atol=0.5
     @test calc[20] ≈ 0.8 atol=0.5
@@ -352,8 +352,8 @@
     damodels[isa.(damodels, Thermochron.ZirconAnnealingModel)] .= Guenthner2013FC()
     damodels[isa.(damodels, Thermochron.ApatiteAnnealingModel)] .= Ketcham1999FC()
     damodels = unionize(damodels)
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=false) ≈ -121536.79875478652
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -127809.58590028575
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=false) ≈ -121522.09106851986
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=true) ≈ -127917.51425566126
     @test round.(calc[1:18], sigdigits=7) ≈ [100.512, 196.5576, 110.1727, 199.4224, 195.2399, 868.0376, 969.4693, 962.8585, 286.9455, 289.894, 242.1764, 276.2001, 1110.379, 304.2772, 95.84216, 149.8249, 297.8784, 262.766]
     @test calc[19] ≈ 0.8 atol=0.5
     @test calc[20] ≈ 0.8 atol=0.5
