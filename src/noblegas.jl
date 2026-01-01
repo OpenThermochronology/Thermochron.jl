@@ -63,31 +63,44 @@ function meanparent(mineral::Union{SphericalHe, ZirconHe, ApatiteHe})
     return (nanmean(mineral.r238U,rv), nanmean(mineral.r235U,rv), nanmean(mineral.r232Th,rv), nanmean(mineral.r147Sm,rv))
 end
 
-## --- Noble Gas Partitioning
+## --- Other properties of noble gases
 
+# Follow Shuster (2004) who found no isotopic fractionation / 
+# variation in diffusivity between He-3 and He-4 in apatite,
+# notably contrary to (e.g.) Graham's Law for gaseous diffusion
+# which would involve sqrt(m1/m2) mass dependence
+tracerdiffusivityratio(x::NobleGasSample{T}) where {T} = one(T)
+
+
+# Partitioning of noble gases between crystal interiors and inter-
+# granular boundaries (IGB), following a fit of the form K=K0*exp(-Ea/RT)
+# to the data of Baxter et al. (2007) (K0=0.00010632, Ea=)
+function partitioning_internal_bulk(TK::Number, mineral::NobleGasSample, rp::RegionalParameters)
+    partitioning_internal_bulk(TK, mineral.bulkgrainsize, rp.K0_itm, rp.Ea_itm)
+end
+function partitioning_internal_bulk(TK::Number, grainsize_mm::Number, K0::Number, Ea::Number)
+    ϕ = phi_boundary(grainsize_mm)
+    Kd = K0 * exp(-Ea/(0.008314472*TK))
+    boundary = ϕ                        # Boundary volume fraction * boundary concentration (1)
+    internal = (1 - ϕ) * Kd             # Interior volume fraction* interior concentration (1*kd)
+    return Kd/(internal+boundary)       # (internal concentration) / (bulk concentration)
+end
+
+# Volume fraction of IGB, assuming boundary thickness `r_bouyndary`
+# Note that an `r_boundary` of 2e-9m was used in fitting the data of 
+# Baxter et al. (2007) to determine K0 and Ea, and thus must be used 
+# here `phi_boundary` as well for consistency
 function phi_boundary(grainsize_mm::Number; r_boundary=2e-9)
     r = grainsize_mm/1000
     v = r^3
     vb = (r+r_boundary)^3
     return (vb-v)/vb
 end
-function fraction_internal_Ar(TK, grainsize_mm; K0=9.955215569888633e-5, Ea=26.86885827027531)
-    ϕ = phi_boundary(grainsize_mm)
-    Kd = K0 * exp(-Ea/(0.008314472*TK))
-    Ar_boundary = ϕ
-    Ar_internal = (1 - ϕ) * Kd
-    return Ar_internal/(Ar_internal+Ar_boundary)
-end
-function fraction_internal_He(TK, grainsize_mm; K0=0.00011279064713681025, Ea=26.72957128643152)
-    ϕ = phi_boundary(grainsize_mm)
-    Kd = K0 * exp(-Ea/(0.008314472*TK))
-    He_boundary = ϕ
-    He_internal = (1 - ϕ) * Kd
-    return He_internal/(He_internal+He_boundary)
-end
 
-fraction_internal(TK, mineral::HeliumSample) = fraction_internal_He(TK, mineral.bulkgrainsize)
-fraction_internal(TK, mineral::ArgonSample) = fraction_internal_Ar(TK, mineral.bulkgrainsize)
+# Fraction of noble gas retained at the whole-rock scale in the IGB
+# over duration `dt` Ma
+fraction_retained(dt::Number, ::HeliumSample, rp::RegionalParameters) = exp(-rp.λ_itm*dt)
+fraction_retained(dt::Number, ::ArgonSample, rp::RegionalParameters) = exp(-0.660772*rp.λ_itm*dt) # Slower diffusive loss for Ar by a factor of sqrt(31/71)
 
 ## --- Concrete types for damage and diffusivity models
 
@@ -424,12 +437,12 @@ at spatial resolution `mineral.dr`.
 Spherical implementation based on the the Crank-Nicolson solution for diffusion out of a
 spherical mineral crystal in Ketcham, 2005 (doi: 10.2138/rmg.2005.58.11).
 """
-function modelage(mineral::NobleGasSample{T}, Tsteps::AbstractVector, dm::DiffusivityModel{T}; partitiondaughter::Bool=false) where {T <: AbstractFloat}
+function modelage(mineral::NobleGasSample{T}, Tsteps::AbstractVector, dm::DiffusivityModel{T}, rp::RegionalParameters{T}=RegionalParameters(); partitiondaughter::Bool=false) where {T <: AbstractFloat}
     # Erase any previous runs; start at zero initial daughter
     fill!(mineral.u, zero(T))
 
     # Run Crank-Nicolson solver
-    crank_nicolson!(mineral, mineral.tsteps, Tsteps, dm; partitiondaughter, fuse=false, setting=:geological) 
+    crank_nicolson_geol!(mineral, mineral.tsteps, Tsteps, dm, rp; partitiondaughter) 
 
     # Numerically solve for resulting observed age of the grain (i.e, as measured, "raw" in AHe/ZHe parlanc)
     return newton_age(mineral)::T
@@ -440,15 +453,15 @@ function modelage(mineral::Union{ZirconHe,ApatiteHe}, Tsteps::AbstractVector, ρ
 end
 
 # Log likelihood for model ages
-function model_ll(mineral::NobleGasSample, Tsteps, dm)
-    age = modelage(mineral, Tsteps, dm)
+function model_ll(mineral::NobleGasSample, Tsteps, dm::DiffusivityModel, rp::RegionalParameters=RegionalParameters())
+    age = modelage(mineral, Tsteps, dm, rp)
     δ = age - mineral.age
     σ² = mineral.age_sigma^2
     -0.5*(log(2*pi*σ²) + δ^2/σ²)
 end
-function model_ll(mineral::Union{ZirconHe,ApatiteHe}, Tsteps, dm::DiffusivityModel)
+function model_ll(mineral::Union{ZirconHe,ApatiteHe}, Tsteps, dm::DiffusivityModel, rp::RegionalParameters=RegionalParameters())
     anneal!(mineral, Tsteps, dm)
-    age = modelage(mineral, Tsteps, dm)
+    age = modelage(mineral, Tsteps, dm, rp)
     δ = age - mineral.age
     σ² = mineral.age_sigma^2
     -0.5*(log(2*pi*σ²) + δ^2/σ²)

@@ -1,6 +1,6 @@
 ## --- Calculate β parameters in-place with current diffusivity information
 
-function updatebeta!(β::Vector{T}, mineral::ZirconHe{T}, dm::ZRDAAM{T}, dt::T, TK::T, tstep::Int, diffusivityratio=one(T); setting::Symbol=:geological) where {T}
+function updatebeta!(β::Vector{T}, mineral::ZirconHe{T}, dm::ZRDAAM{T}, dt::T, TK::T, tstep::Int, diffusivityratio=one(T); setting::Symbol=:laboratory) where {T}
     # The annealed damage matrix
     # We will use the last timestep of the geological annealed damage matrix,
     # Assuming He diffuses out faster than annealing occurs during laboratory degassing
@@ -124,20 +124,83 @@ end
 
 # --- Core Crank-Nicolson solvers
 
+# Laboratory (no rp, no offset, no ingrowth)
 function crank_nicolson!(mineral::PlanarNobleGas{T}, tsteps::AbstractVector{T}, Tsteps::AbstractVector{T}, dm::Diffusivity{T}; 
         fuse::Bool=false, 
-        partitiondaughter::Bool=false, 
         diffusivityratio::Number=one(T), 
-        setting::Symbol=:laboratory,
     ) where {T <: AbstractFloat}
-
-    @assert (setting===:laboratory) || (setting===:geological)
-    partitiondaughter &= (setting===:geological)
-    ingrowth = (setting===:geological)
 
     # Temperature conversion
     ΔT = T(273.15)
-    (setting === :geological) && (ΔT += mineral.offset)
+
+    # Check time and radius discretization
+    nrsteps = mineral.nrsteps::Int
+    ntsteps = length(tsteps)
+    @assert eachindex(tsteps) == eachindex(Tsteps) == Base.OneTo(ntsteps)
+
+    # Output matrix for all timesteps
+    # u = v*r is the coordinate transform (u-substitution) for the Crank-
+    # Nicholson equations where v is the Ar profile and r is radius
+    u = mineral.u::DenseMatrix{T}
+    @assert axes(u,2) == 1:ntsteps+1
+    @assert axes(u,1) == 1:nrsteps
+
+    # Common β factor is constant across all radii since diffusivity is constant
+    β = mineral.β::Vector{T}
+
+    # Vector for RHS of Crank-Nicholson equation with regular grid cells
+    y = mineral.y
+
+    # Tridiagonal matrix for LHS of Crank-Nicolson equation with regular grid cells
+    A = mineral.A       # Tridiagonal matrix
+    F = mineral.F       # LU object for in-place lu factorization
+
+    @inbounds for i in Base.OneTo(ntsteps-fuse)
+        # Duration and temperature of current timestep
+        dt = step_at(tsteps, i)
+        TK = Tsteps[i]+ΔT
+
+        # Beta factor containing diffusivity information for each radial step
+        updatebeta!(β, mineral, dm, dt, TK, i, diffusivityratio; setting=:laboratory)
+
+        # Update tridiagonal matrix
+        fill!(A.dl, 1)         # Sub-diagonal
+        @. A.d = -2 - β        # Diagonal
+        fill!(A.du, 1)         # Supra-diagonal
+
+        # Neumann inner boundary condition (-u(i,1) + u(i,2) = 0)
+        A.du[1] = -1
+        A.d[1] = 1
+        y[1] = 0
+
+        # Dirichlet outer boundary condition (u(i,end) = u(i-1,end))
+        A.dl[nrsteps-1] = 0
+        A.d[nrsteps] = 1
+        y[nrsteps] = u[nrsteps,i]
+
+        # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
+        # From Ketcham (2005) https://doi.org/10.2138/rmg.2005.58.11
+        @turbo for k = 2:nrsteps-1
+            𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
+            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊    # No diffusant depositon on lab timescales
+        end
+
+        # Invert using tridiagonal matrix algorithm
+        # equivalent to u[:,i+1] = A\y
+        lu!(F, A, allowsingular=true)
+        ldiv!(F, y)
+        u[:,i+1] = y
+    end
+
+    return mineral
+end
+# Geological (yes rp, yes ingrowth)
+function crank_nicolson_geol!(mineral::PlanarNobleGas{T}, tsteps::AbstractVector{T}, Tsteps::AbstractVector{T}, dm::Diffusivity{T}, rp::RegionalParameters{T}; 
+        partitiondaughter::Bool=false, 
+    ) where {T <: AbstractFloat}
+
+    # Temperature conversion
+    ΔT = T(273.15) + mineral.offset
 
     # Check time and radius discretization
     nrsteps = mineral.nrsteps::Int
@@ -167,13 +230,13 @@ function crank_nicolson!(mineral::PlanarNobleGas{T}, tsteps::AbstractVector{T}, 
     A = mineral.A       # Tridiagonal matrix
     F = mineral.F       # LU object for in-place lu factorization
 
-    @inbounds for i in Base.OneTo(ntsteps-fuse)
+    @inbounds for i in Base.OneTo(ntsteps)
         # Duration and temperature of current timestep
         dt = step_at(tsteps, i)
         TK = Tsteps[i]+ΔT
 
         # Beta factor containing diffusivity information for each radial step
-        updatebeta!(β, mineral, dm, dt, TK, i, diffusivityratio; setting)
+        updatebeta!(β, mineral, dm, dt, TK, i; setting=:geological)
 
         # Update tridiagonal matrix
         fill!(A.dl, 1)         # Sub-diagonal
@@ -194,22 +257,16 @@ function crank_nicolson!(mineral::PlanarNobleGas{T}, tsteps::AbstractVector{T}, 
         # grain and intragranular medium, following the partition coefficient measurements
         # of Baxter, Asimow, and Farley (2006) https://doi.org/10.1016/j.gca.2006.09.011
         if partitiondaughter
+            bulkdaughter *= fraction_retained(dt, mineral, rp)
             bulkdaughter += bulkdeposition[i]
-            y[nrsteps] = bulkdaughter * fraction_internal(TK, mineral)
+            y[nrsteps] = bulkdaughter * partitioning_internal_bulk(TK, mineral, rp)
         end
 
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham (2005) https://doi.org/10.2138/rmg.2005.58.11
-        if ingrowth
-            @turbo for k = 2:nrsteps-1
-                𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
-                y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - deposition[i, k-1]*β[k]
-            end
-        else
-            @turbo for k = 2:nrsteps-1
-                𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
-                y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊    # No diffusant depositon on lab timescales
-            end
+        @turbo for k = 2:nrsteps-1
+            𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
+            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - deposition[i, k-1]*β[k]
         end
 
         # Invert using tridiagonal matrix algorithm
@@ -221,20 +278,14 @@ function crank_nicolson!(mineral::PlanarNobleGas{T}, tsteps::AbstractVector{T}, 
 
     return mineral
 end
+# Laboratory (no rp, no offset, no ingrowth)
 function crank_nicolson!(mineral::SphericalNobleGas{T}, tsteps::AbstractVector{T}, Tsteps::AbstractVector{T}, dm::DiffusivityModel{T}; 
         fuse::Bool=false, 
-        partitiondaughter::Bool=false, 
         diffusivityratio::Number=one(T), 
-        setting::Symbol=:laboratory,
     ) where {T <: AbstractFloat}
-
-    @assert (setting===:laboratory) || (setting===:geological)
-    partitiondaughter &= (setting===:geological)
-    ingrowth = (setting===:geological)
 
     # Temperature conversion
     ΔT = T(273.15)
-    (setting === :geological) && (ΔT += mineral.offset)
 
     # Check time and radius discretization
     nrsteps = mineral.nrsteps::Int
@@ -242,13 +293,6 @@ function crank_nicolson!(mineral::SphericalNobleGas{T}, tsteps::AbstractVector{T
     @assert eachindex(rsteps) == Base.OneTo(nrsteps-2)
     ntsteps = length(tsteps)
     @assert eachindex(tsteps) == eachindex(Tsteps) == Base.OneTo(ntsteps)
-
-    # Variables related to daughter ingrowth/deposition
-    bulkdaughter = zero(T)
-    bulkradius = last(rsteps) + step(rsteps)
-    bulkdeposition = mineral.bulkdeposition::Vector{T}
-    deposition = mineral.deposition::Matrix{T}
-    @assert eachindex(bulkdeposition) == axes(deposition, 1) == Base.OneTo(ntsteps)
 
     # Output matrix for all timesteps
     # u = v*r is the coordinate transform (u-substitution) for the Crank-
@@ -273,7 +317,84 @@ function crank_nicolson!(mineral::SphericalNobleGas{T}, tsteps::AbstractVector{T
         TK = Tsteps[i]+ΔT
 
         # Beta factor containing diffusivity information for each radial step
-        updatebeta!(β, mineral, dm, dt, TK, i, diffusivityratio; setting)
+        updatebeta!(β, mineral, dm, dt, TK, i, diffusivityratio; setting=:laboratory)
+
+        # Update tridiagonal matrix
+        fill!(A.dl, 1)         # Sub-diagonal
+        @. A.d = -2 - β        # Diagonal
+        fill!(A.du, 1)         # Supra-diagonal
+
+        # Neumann inner boundary condition (u(i,1) + u(i,2) = 0)
+        A.du[1] = 1
+        A.d[1] = 1
+        y[1] = 0
+
+        # Dirichlet outer boundary condition (u(i,end) = u(i-1,end))
+        A.dl[nrsteps-1] = 0
+        A.d[nrsteps] = 1
+        y[nrsteps] = u[nrsteps,i]
+
+        # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
+        # From Ketcham (2005) https://doi.org/10.2138/rmg.2005.58.11
+        @turbo for k = 2:nrsteps-1
+            𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
+            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊    # No diffusant depositon on lab timescales
+        end
+
+        # Invert using tridiagonal matrix algorithm
+        # equivalent to u[:,i+1] = A\y
+        lu!(F, A, allowsingular=true)
+        ldiv!(F, y)
+        u[:,i+1] = y
+    end
+
+    return mineral
+end
+# Geological (yes rp, yes offset, yes ingrowth)
+function crank_nicolson_geol!(mineral::SphericalNobleGas{T}, tsteps::AbstractVector{T}, Tsteps::AbstractVector{T}, dm::DiffusivityModel{T}, rp::RegionalParameters{T}; 
+        partitiondaughter::Bool=false, 
+    ) where {T <: AbstractFloat}
+
+    # Temperature conversion
+    ΔT = T(273.15) + mineral.offset
+
+    # Check time and radius discretization
+    nrsteps = mineral.nrsteps::Int
+    rsteps = mineral.rsteps::AbstractVector{T}
+    @assert eachindex(rsteps) == Base.OneTo(nrsteps-2)
+    ntsteps = length(tsteps)
+    @assert eachindex(tsteps) == eachindex(Tsteps) == Base.OneTo(ntsteps)
+
+    # Variables related to daughter ingrowth/deposition
+    bulkdaughter = zero(T)
+    bulkdeposition = mineral.bulkdeposition::Vector{T}
+    deposition = mineral.deposition::Matrix{T}
+    @assert eachindex(bulkdeposition) == axes(deposition, 1) == Base.OneTo(ntsteps)
+
+    # Output matrix for all timesteps
+    # u = v*r is the coordinate transform (u-substitution) for the Crank-
+    # Nicholson equations where v is the Ar profile and r is radius
+    u = mineral.u::DenseMatrix{T}
+    @assert axes(u,2) == 1:ntsteps+1
+    @assert axes(u,1) == 1:nrsteps
+
+    # Common β factor is constant across all radii since diffusivity is constant
+    β = mineral.β::Vector{T}
+
+    # Vector for RHS of Crank-Nicholson equation with regular grid cells
+    y = mineral.y
+
+    # Tridiagonal matrix for LHS of Crank-Nicolson equation with regular grid cells
+    A = mineral.A       # Tridiagonal matrix
+    F = mineral.F       # LU object for in-place lu factorization
+
+    @inbounds for i in Base.OneTo(ntsteps)
+        # Duration and temperature of current timestep
+        dt = step_at(tsteps, i)
+        TK = Tsteps[i]+ΔT
+
+        # Beta factor containing diffusivity information for each radial step
+        updatebeta!(β, mineral, dm, dt, TK, i; setting=:geological)
 
         # Update tridiagonal matrix
         fill!(A.dl, 1)         # Sub-diagonal
@@ -294,22 +415,16 @@ function crank_nicolson!(mineral::SphericalNobleGas{T}, tsteps::AbstractVector{T
         # grain and intragranular medium, following the partition coefficient measurements
         # of Baxter, Asimow, and Farley (2006) https://doi.org/10.1016/j.gca.2006.09.011
         if partitiondaughter
+            bulkdaughter *= fraction_retained(dt, mineral, rp)
             bulkdaughter += bulkdeposition[i]
-            y[nrsteps] = bulkradius * bulkdaughter * fraction_internal(TK, mineral)
+            y[nrsteps] = bulkdaughter * partitioning_internal_bulk(TK, mineral, rp)
         end
 
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham (2005) https://doi.org/10.2138/rmg.2005.58.11
-        if ingrowth
-            @turbo for k = 2:nrsteps-1
-                𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
-                y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - rsteps[k-1]*deposition[i, k-1]*β[k]
-            end
-        else
-            @turbo for k = 2:nrsteps-1
-                𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
-                y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊    # No diffusant depositon on lab timescales
-            end
+        @turbo for k = 2:nrsteps-1
+            𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
+            y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - rsteps[k-1]*deposition[i, k-1]*β[k]
         end
 
         # Invert using tridiagonal matrix algorithm
