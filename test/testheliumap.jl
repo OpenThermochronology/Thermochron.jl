@@ -78,35 +78,36 @@
 
     dm = RDAAM() # Standard RDAAM
     pr, Teq = Thermochron.anneal(tsteps, Tsteps, dm)
-    modelage(apatite,Tsteps,pr,dm) # to not time compilation
-    @time "Running modelage" age = modelage(apatite,Tsteps,pr,dm)
-    @test age ≈ 203.42367713504134
+    mul!(apatite.annealeddamage, pr, apatite.alphadamage)
     for _ in 1:4 # Re-run to ensure internal state does not change
-        @test modelage(apatite,Tsteps,pr,dm) ≈ 203.42367713504134
+        @test modelage(apatite,Tsteps,dm) ≈ 203.42367713504134
     end
 
     crystalradius = 35.
     U = 110.7
     Th = 35.1
     apatite = ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps), volumeweighting=:spherical)
+    mul!(apatite.annealeddamage, pr, apatite.alphadamage)
     for _ in 1:4 # Re-run to ensure internal state does not change
-        @test modelage(apatite,Tsteps,pr,dm) ≈ 238.17143431655836
+        @test modelage(apatite,Tsteps,dm) ≈ 238.17143431655836
     end
 
     crystalradius = 135.
     U = 173.8
     Th = 117.1
     apatite = ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps), volumeweighting=:spherical)
+    mul!(apatite.annealeddamage, pr, apatite.alphadamage)
     for _ in 1:4 # Re-run to ensure internal state does not change
-        @test modelage(apatite,Tsteps,pr,dm) ≈ 357.12024274070734
+        @test modelage(apatite,Tsteps,dm) ≈ 357.12024274070734
     end
 
     crystalradius = 135.
     U = 50.0
     Th = 40.0
     apatite = ApatiteHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps), volumeweighting=:spherical)
+    mul!(apatite.annealeddamage, pr, apatite.alphadamage)
     for _ in 1:4 # Re-run to ensure internal state does not change
-        @test modelage(apatite,Tsteps,pr,dm) ≈ 356.7536971988364
+        @test modelage(apatite,Tsteps,dm) ≈ 356.7536971988364
     end
 
 ## --- As above but with Sm as well
@@ -116,8 +117,9 @@
     Th = 35.1
     Sm = 38.13
     apatite = ApatiteHe(age=240, age_sigma=5, r=crystalradius,dr=dr,U238=U,Th232=Th,Sm147=Sm, agesteps=reverse(tsteps), volumeweighting=:spherical)
+    mul!(apatite.annealeddamage, pr, apatite.alphadamage)
     @test apatite.r147Sm ≈ fill(1.56203306122449e17, 35)
-    @test modelage(apatite,Tsteps,pr,dm) ≈ 238.4490428757609
+    @test modelage(apatite,Tsteps,dm) ≈ 238.4490428757609
 
 ## --- Test log likelihood
 

@@ -42,7 +42,6 @@
     U = 462.98
     Th = 177.76
     zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps), volumeweighting=:spherical)
-    @time "Allocating a zircon" zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps), volumeweighting=:spherical)
     @test isa(zircon, ZirconHe)
     show(zircon)
     println()
@@ -77,39 +76,36 @@
         rmin=0.0,           # unitless
     )
     pr, Teq = Thermochron.anneal(tsteps, Tsteps, dm)
-    modelage(zircon,Tsteps,pr,dm)
-    @time "Running modelage" age = modelage(zircon,Tsteps,pr,dm)
-    @test age ≈ 387.19242740182005
-    # Re-run to ensure internal state does not change
-    for _ in 1:4
-        @test modelage(zircon,Tsteps,pr,dm) ≈ 387.19242740182005
+    mul!(zircon.annealeddamage, pr, zircon.alphadamage)
+    for _ in 1:4 # Re-run to ensure internal state does not change
+        @test modelage(zircon,Tsteps,dm) ≈ 387.19242740182005
     end
 
     crystalradius = 35.
     U = 1107.
     Th = 351.
     zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps), volumeweighting=:spherical)
-    # Re-run to ensure internal state does not change
-    for _ in 1:4
-        @test modelage(zircon,Tsteps,pr,dm) ≈ 229.2186148665553
+    mul!(zircon.annealeddamage, pr, zircon.alphadamage)
+    for _ in 1:4 # Re-run to ensure internal state does not change
+        @test modelage(zircon,Tsteps,dm) ≈ 229.2186148665553
     end
 
     crystalradius = 135.
     U = 1738.
     Th = 1171.
     zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps), volumeweighting=:spherical)
-    # Re-run to ensure internal state does not change
-    for _ in 1:4
-        @test modelage(zircon,Tsteps,pr,dm) ≈ 9.782712202364312
+    mul!(zircon.annealeddamage, pr, zircon.alphadamage)
+    for _ in 1:4 # Re-run to ensure internal state does not change
+        @test modelage(zircon,Tsteps,dm) ≈ 9.782712202364312
     end
 
     crystalradius = 135.
     U = 500.
     Th = 400.
     zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps), volumeweighting=:spherical)
-    # Re-run to ensure internal state does not change
-    for _ in 1:4
-        @test modelage(zircon,Tsteps,pr,dm) ≈ 692.0250480712558
+    mul!(zircon.annealeddamage, pr, zircon.alphadamage)
+    for _ in 1:4 # Re-run to ensure internal state does not change
+        @test modelage(zircon,Tsteps,dm) ≈ 692.0250480712558
     end
 
 ## --- Test integrated age program 10 Ma timestep
@@ -143,10 +139,12 @@
     U = 462.98
     Th = 177.76
     zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps), volumeweighting=:spherical)
-    @test modelage(zircon,Tsteps,pr,dm) ≈ 137.8640379913473
+    mul!(zircon.annealeddamage, pr, zircon.alphadamage)
+    @test modelage(zircon,Tsteps,dm) ≈ 137.8640379913473
 
     zircon = ZirconHe(r=crystalradius,dr=dr,U238=U,Th232=Th,agesteps=reverse(tsteps))
-    @test modelage(zircon,Tsteps,pr,dm) ≈  153.39166800612637 
+    mul!(zircon.annealeddamage, pr, zircon.alphadamage)
+    @test modelage(zircon,Tsteps,dm) ≈  153.39166800612637 
 
 ## --- As above but with Sm as well
 
@@ -155,8 +153,9 @@
     Th = 177.76
     Sm = 38.13
     zircon = ZirconHe(age=140, age_sigma=5, r=crystalradius,dr=dr,U238=U,Th232=Th,Sm147=Sm,agesteps=reverse(tsteps), volumeweighting=:spherical)
+    mul!(zircon.annealeddamage, pr, zircon.alphadamage)
     @test zircon.r147Sm ≈ fill(1.56203306122449e17, 59)
-    @test modelage(zircon,Tsteps,pr,dm) ≈ 137.69909831083055 
+    @test modelage(zircon,Tsteps,dm) ≈ 137.69909831083055 
 
 ## --- Test log likelihood
 

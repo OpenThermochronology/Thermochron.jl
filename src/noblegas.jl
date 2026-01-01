@@ -447,10 +447,6 @@ function modelage(mineral::NobleGasSample{T}, Tsteps::AbstractVector, dm::Diffus
     # Numerically solve for resulting observed age of the grain (i.e, as measured, "raw" in AHe/ZHe parlanc)
     return newton_age(mineral)::T
 end
-function modelage(mineral::Union{ZirconHe,ApatiteHe}, Tsteps::AbstractVector, ρᵣ::AbstractMatrix, dm::Union{RDAAM,ZRDAAM})
-    mul!(mineral.annealeddamage, ρᵣ, mineral.alphadamage)
-    modelage(mineral, Tsteps, dm)
-end
 
 # Log likelihood for model ages
 function model_ll(mineral::NobleGasSample, Tsteps, dm::DiffusivityModel, rp::RegionalParameters=RegionalParameters())
