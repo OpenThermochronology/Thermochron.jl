@@ -276,6 +276,9 @@ function crank_nicolson_geol!(mineral::PlanarNobleGas{T}, tsteps::AbstractVector
         u[:,i+1] = y
     end
 
+    # Store final geological diffusion profile
+    copyto!(mineral.vfinal, @views(mineral.u[2:end-1,end]))
+
     return mineral
 end
 # Laboratory (no rp, no offset, no ingrowth)
@@ -434,6 +437,10 @@ function crank_nicolson_geol!(mineral::SphericalNobleGas{T}, tsteps::AbstractVec
         u[:,i+1] = y
     end
 
+    # Store final geological diffusion profile
+    copyto!(mineral.vfinal, @views(mineral.u[2:end-1,end]))
+    mineral.vfinal ./= mineral.rsteps # Remove coordinate transform
+
     return mineral
 end
 
@@ -494,16 +501,8 @@ end
 
 ## --- How much diffusant is left at the end of a Crank-Nicolson run?
 
-function final_diffusant(mineral::PlanarNobleGas{T}) where {T<:AbstractFloat}
-    vfinal = @views mineral.u[2:end-1,end]
-    return nanmean(vfinal)::T # Atoms/gram
-end
-function final_diffusant(mineral::SphericalNobleGas{T}) where {T<:AbstractFloat}
-    # Convert from u (coordinate-transform'd conc.) to v (conc.)
-    vfinal = @views mineral.u[2:end-1,end]
-    vfinal ./= mineral.rsteps
-    return nanmean(vfinal, mineral.relvolumes)::T # Atoms/gram
-end
+meandaughter(mineral::PlanarNobleGas{T}) where {T} = nanmean(mineral.vfinal)::T # Atoms/gram
+meandaughter(mineral::SphericalNobleGas{T}) where {T} = nanmean(mineral.vfinal, mineral.relvolumes)::T # Atoms/gram
 
 ## --- Ensure non-allocation of linear algebra
 

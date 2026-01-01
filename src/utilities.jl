@@ -940,19 +940,19 @@
             if isa(c, SphericalAr) || isa(c, PlanarAr)
                 c::Union{SphericalAr{T}, PlanarAr{T}}
                 μcalc[i] = modelage(c, Tstepsᵢ, dm::Diffusivity{T}; partitiondaughter)
-                ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scalegar
+                ll += model_ll(c, σcalc[i])/scalegar
             elseif isa(c, SphericalHe) || isa(c, PlanarHe)
                 c::Union{SphericalHe{T}, PlanarHe{T}}
                 μcalc[i] = modelage(c, Tstepsᵢ, dm::Diffusivity{T}; partitiondaughter)
-                ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scaleghe
+                ll += model_ll(c, σcalc[i])/scaleghe
             elseif isa(c, ZirconHe)
                 c::ZirconHe{T}
                 μcalc[i] = modelage(c, Tstepsᵢ, dm::ZirconHeliumModel{T}; partitiondaughter)
-                ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scalezhe
+                ll += model_ll(c, σcalc[i])/scalezhe
             elseif isa(c, ApatiteHe)
                 c::ApatiteHe{T}
                 μcalc[i] = modelage(c, Tstepsᵢ, dm::ApatiteHeliumModel{T}; partitiondaughter)
-                ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scaleahe
+                ll += model_ll(c, σcalc[i])/scaleahe
             elseif isa(c, ZirconFT)
                 c::ZirconFT{T}
                 μcalc[i] = modelage(c, Tstepsᵢ, dm::ZirconAnnealingModel{T})

@@ -14,8 +14,7 @@
     Tsteps = collect(range(650, 0, length=length(tsteps)))
 
     dm = Diffusivity(;D0, Ea)
-    SphericalHe(r=r,dr=dr,U238=U,Th232=Th,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
-    @time "Allocating a mineral" mineral = SphericalHe(r=r,dr=dr,U238=U,Th232=Th,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
+    mineral = SphericalHe(r=r,dr=dr,U238=U,Th232=Th,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
     @test isa(mineral, SphericalHe)
     show(mineral)
     println()
@@ -36,9 +35,6 @@
 
 ## --- Test integrated age program for SphericalHe
 
-    modelage(mineral,Tsteps,dm) # to not time compilation
-    @time "Running modelage" age = modelage(mineral,Tsteps,dm)
-    @test age ≈ 86.5695536176058
     # Re-run to ensure internal state does not change
     @test modelage(mineral,Tsteps,dm) ≈ 86.5695536176058
     @test modelage(mineral,Tsteps,dm) ≈ 86.5695536176058

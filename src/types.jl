@@ -18,16 +18,16 @@ function Base.:(==)(x::T, y::T) where {T<:Chronometer}
     return true
 end
 
-# Abstract subtype for chronometers that include an absolute age and age uncertainty
+# Abstract subtypes for Chronometers that include an absolute age and age uncertainty
 abstract type AbsoluteChronometer{T} <:Chronometer{T} end  
+abstract type FissionTrackSample{T} <: AbsoluteChronometer{T} end   # Any absolute chronometer based on the annealing of fission tracks
+abstract type StepHeatingSample{T,C} <: AbsoluteChronometer{T} end  # A chronometer recording laboratory step heating. Wraps one or more diffusive (typically noble gas) chronometers
+abstract type NobleGasSample{T} <: AbsoluteChronometer{T} end       # Any chronometer based on diffusion of noble gasses
+abstract type HeliumSample{T} <: NobleGasSample{T} end              # Any chronometer based on the diffusion of radiogenic He
+abstract type ArgonSample{T} <: NobleGasSample{T} end               # Any chronometer based on the diffusion of radiogenic Ar
 
-# Abstract subtypes for different categories of chronometers
-abstract type FissionTrackLength{T} <: Chronometer{T} end
-abstract type FissionTrackSample{T} <: AbsoluteChronometer{T} end
-abstract type NobleGasSample{T} <: AbsoluteChronometer{T} end
-abstract type StepHeatingSample{T,C} <: NobleGasSample{T} end
-abstract type HeliumSample{T} <: NobleGasSample{T} end
-abstract type ArgonSample{T} <: NobleGasSample{T} end
+# Other abstract Chronometer types
+abstract type FissionTrackLength{T} <: Chronometer{T} end           # Any chronometer based on the lengths of partially annealed fission tracks
 
 ## --- Model type hierarchy (annealing and diffusion models)
 abstract type Model{T} end

@@ -17,7 +17,7 @@ end
 # Apply to an ArgonSample
 function newton_age(mineral::ArgonSample)
     # Daughter concentrations, in atoms/gram
-    μAr = final_diffusant(mineral)
+    μAr = meandaughter(mineral)
     # Parent concentrations in atoms/gram
     μ40K = meanparent(mineral)
     # Numerically solve for raw Ar age of the grain (i.e., as measured)
@@ -49,7 +49,7 @@ end
 # Apply to a HeliumSample
 function newton_age(mineral::HeliumSample)
     # Daughter concentrations, in atoms/gram
-    μHe = final_diffusant(mineral)
+    μHe = meandaughter(mineral)
     # Parent concentrations in atoms/gram
     μ238U, μ235U, μ232Th, μ147Sm = meanparent(mineral)
     # Numerically solve for raw Ar age of the grain (i.e., as measured)
@@ -450,10 +450,11 @@ end
 
 # Log likelihood for model ages
 function model_ll(mineral::NobleGasSample, Tsteps, dm::DiffusivityModel, rp::RegionalParameters=RegionalParameters())
-    age = modelage(mineral, Tsteps, dm, rp)
-    δ = age - mineral.age
-    σ² = mineral.age_sigma^2
-    -0.5*(log(2*pi*σ²) + δ^2/σ²)
+    modelage(mineral, Tsteps, dm, rp)
+    return model_ll(mineral)
+end
+function model_ll(mineral::NobleGasSample{T}, σ::T=zero(T)) where {T}
+    return norm_ll(newton_age(mineral), σ, mineral.age, mineral.age_sigma)
 end
 
 ## --- End of File

@@ -578,7 +578,8 @@ struct ZirconHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     alphadamage::Matrix{T}      # [decays/g] initial damage matrix
     pr::Matrix{T}               # [unitless] reduced damage density matrix
     annealeddamage::Matrix{T}   # [decays/g] annealed damage matrix
-    u::Matrix{T}                # Diffusion profiles, coordinate transform'd
+    u::Matrix{T}                # Diffusion profiles, coordinate transform'd, including boundary conditions
+    vfinal::Vector{T}           # Final diffusion profile
     β::Vector{T}                # Radial vector of inverse diffusivity (2 * dr^2 / (D*dt)) for Crank-Nicolson
     A::Tridiagonal{T, Vector{T}}# Tridiagonal matrix for Crank-Nicolson
     F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}} # LU factorization object for Crank-Nicolson
@@ -694,6 +695,7 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
 
     # Allocate output matrix for all timesteps
     u = zeros(T, nrsteps, length(tsteps)+1)
+    vfinal = zeros(T, nrsteps-2)
 
     # Allocate variables for tridiagonal matrix and RHS
     dl = ones(T, nrsteps-1)    # Sub-diagonal row
@@ -733,6 +735,7 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
         pr,
         annealeddamage,
         u,
+        vfinal,
         β,
         A,
         F,
@@ -796,7 +799,8 @@ struct ApatiteHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     alphadamage::Matrix{T}      # [decays/g] initial damage matrix
     pr::Matrix{T}               # [unitless] reduced damage density matrix
     annealeddamage::Matrix{T}   # [decays/g] annealed damage matrix
-    u::Matrix{T}                # Diffusion profiles, coordinate transform'd
+    u::Matrix{T}                # Diffusion profiles, coordinate transform'd, including boundary conditions
+    vfinal::Vector{T}           # Final diffusion profile
     β::Vector{T}                # Radial vector of inverse diffusivity (2 * dr^2 / (D*dt)) for Crank-Nicolson
     A::Tridiagonal{T, Vector{T}}# Tridiagonal matrix for Crank-Nicolson
     F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}} # LU factorization object for Crank-Nicolson
@@ -912,6 +916,7 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
 
     # Allocate output matrix for all timesteps
     u = zeros(T, nrsteps, length(tsteps)+1)
+    vfinal = zeros(T, nrsteps-2)
 
     # Allocate variables for tridiagonal matrix and RHS
     dl = ones(T, nrsteps-1)    # Sub-diagonal row
@@ -951,6 +956,7 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
         pr,
         annealeddamage,
         u,
+        vfinal,
         β,
         A,
         F,
@@ -1012,7 +1018,8 @@ struct SphericalHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     bulkgrainsize::T            # [mm] average grain size of the whole-rock matrix
     bulkdeposition::Vector{T}   # [atoms/g] alpha (helium) production outside grain
     deposition::Matrix{T}       # [atoms/g] alpha (helium) deposition matrix within grain
-    u::Matrix{T}                # Diffusion profiles, coordinate transform'd
+    u::Matrix{T}                # Diffusion profiles, coordinate transform'd, including boundary conditions
+    vfinal::Vector{T}           # Final diffusion profile
     β::Vector{T}                # Radial vector of inverse diffusivity (2 * dr^2 / (D*dt)) for Crank-Nicolson
     A::Tridiagonal{T, Vector{T}}# Tridiagonal matrix for Crank-Nicolson
     F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}} # LU factorization object for Crank-Nicolson
@@ -1116,6 +1123,7 @@ function SphericalHe(T::Type{<:AbstractFloat}=Float64;
 
     # Allocate output matrix for all timesteps
     u = zeros(T, nrsteps, length(tsteps)+1)
+    vfinal = zeros(T, nrsteps-2)
 
     # Allocate variables for tridiagonal matrix and RHS
     dl = ones(T, nrsteps-1)    # Sub-diagonal row
@@ -1152,6 +1160,7 @@ function SphericalHe(T::Type{<:AbstractFloat}=Float64;
         bulkdeposition,
         deposition,
         u,
+        vfinal,
         β,
         A,
         F,
@@ -1211,7 +1220,8 @@ struct PlanarHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     bulkgrainsize::T            # [mm] average grain size of the whole-rock matrix
     bulkdeposition::Vector{T}   # [atoms/g] alpha (helium) production outside grain
     deposition::Matrix{T}       # [atoms/g] alpha (helium) deposition matrix within grain
-    u::Matrix{T}                # Diffusion profiles
+    u::Matrix{T}                # Diffusion profiles, including boundary conditions
+    vfinal::Vector{T}           # Final diffusion profile
     β::Vector{T}                # Radial vector of inverse diffusivity (2 * dr^2 / (D*dt)) for Crank-Nicolson
     A::Tridiagonal{T, Vector{T}}# Tridiagonal matrix for Crank-Nicolson
     F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}} # LU factorization object for Crank-Nicolson
@@ -1311,6 +1321,7 @@ function PlanarHe(T::Type{<:AbstractFloat}=Float64;
 
     # Allocate output matrix for all timesteps
     u = zeros(T, nrsteps, length(tsteps)+1)
+    vfinal = zeros(T, nrsteps-2)
 
     # Allocate variables for tridiagonal matrix and RHS
     dl = ones(T, nrsteps-1)    # Sub-diagonal row
@@ -1346,6 +1357,7 @@ function PlanarHe(T::Type{<:AbstractFloat}=Float64;
         bulkdeposition,
         deposition,
         u,
+        vfinal,
         β,
         A,
         F,
@@ -1396,7 +1408,8 @@ struct SphericalAr{T<:AbstractFloat, V<:AbstractVector{T}} <: ArgonSample{T}
     bulkgrainsize::T            # [mm] average grain size of the whole-rock matrix
     bulkdeposition::Vector{T}   # [atoms/g], converted from PPMw Ar-40 production outside grain
     deposition::Matrix{T}       # [atoms/g], converted from PPMw Ar-40 deposition matrix
-    u::Matrix{T}                # Diffusion profiles, coordinate transform'd
+    u::Matrix{T}                # Diffusion profiles, coordinate transform'd, including boundary conditions
+    vfinal::Vector{T}           # Final diffusion profile
     β::Vector{T}                # Radial vector of inverse diffusivity (2 * dr^2 / (D*dt)) for Crank-Nicolson
     A::Tridiagonal{T, Vector{T}}# Tridiagonal matrix for Crank-Nicolson
     F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}} # LU factorization object for Crank-Nicolson
@@ -1465,6 +1478,7 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
 
     # Allocate output matrix for all timesteps
     u = zeros(T, nrsteps, length(tsteps)+1)
+    vfinal = zeros(T, nrsteps-2)
 
     # Allocate variables for tridiagonal matrix and RHS
     dl = ones(T, nrsteps-1)    # Sub-diagonal row
@@ -1498,6 +1512,7 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
         bulkdeposition,
         deposition,
         u,
+        vfinal,
         β,
         A,
         F,
@@ -1547,7 +1562,8 @@ struct PlanarAr{T<:AbstractFloat, V<:AbstractVector{T}} <: ArgonSample{T}
     bulkgrainsize::T            # [mm] average grain size of the whole-rock matrix
     bulkdeposition::Vector{T}   # [atoms/g], converted from PPMw Ar-40 production outside grain
     deposition::Matrix{T}       # [atoms/g], converted from PPMw Ar-40 deposition matrix
-    u::Matrix{T}                # Diffusion profiles
+    u::Matrix{T}                # Diffusion profiles, including boundary conditions
+    vfinal::Vector{T}           # Final diffusion profile
     β::Vector{T}                # Radial vector of inverse diffusivity (2 * dr^2 / (D*dt)) for Crank-Nicolson
     A::Tridiagonal{T, Vector{T}}# Tridiagonal matrix for Crank-Nicolson
     F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}} # LU factorization object for Crank-Nicolson
@@ -1613,7 +1629,8 @@ function PlanarAr(T::Type{<:AbstractFloat}=Float64;
 
     # Allocate output matrix for all timesteps
     u = zeros(T, nrsteps, length(tsteps)+1)
-
+    vfinal = zeros(T, nrsteps-2)
+    
     # Allocate variables for tridiagonal matrix and RHS
     dl = ones(T, nrsteps-1)    # Sub-diagonal row
     d = ones(T, nrsteps)       # Diagonal
@@ -1645,6 +1662,7 @@ function PlanarAr(T::Type{<:AbstractFloat}=Float64;
         bulkdeposition,
         deposition,
         u,
+        vfinal,
         β,
         A,
         F,
