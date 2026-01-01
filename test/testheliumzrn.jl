@@ -159,6 +159,7 @@
 
 ## --- Test log likelihood
 
+    mul!(zircon.annealeddamage, pr, zircon.alphadamage)
     @test Thermochron.model_ll(zircon,Tsteps,dm) ≈ -2.63425941730323
 
 ## --- Check ZRDAAM effective closure temperatures

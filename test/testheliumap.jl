@@ -123,6 +123,7 @@
 
 ## --- Test log likelihood
 
+    mul!(apatite.annealeddamage, pr, apatite.alphadamage)
     @test Thermochron.model_ll(apatite,Tsteps,dm) ≈ -2.576485805663333
 
 ## --- Check RDAAM effective closure temperatures

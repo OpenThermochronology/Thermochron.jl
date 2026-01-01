@@ -455,12 +455,5 @@ function model_ll(mineral::NobleGasSample, Tsteps, dm::DiffusivityModel, rp::Reg
     σ² = mineral.age_sigma^2
     -0.5*(log(2*pi*σ²) + δ^2/σ²)
 end
-function model_ll(mineral::Union{ZirconHe,ApatiteHe}, Tsteps, dm::DiffusivityModel, rp::RegionalParameters=RegionalParameters())
-    anneal!(mineral, Tsteps, dm)
-    age = modelage(mineral, Tsteps, dm, rp)
-    δ = age - mineral.age
-    σ² = mineral.age_sigma^2
-    -0.5*(log(2*pi*σ²) + δ^2/σ²)
-end
 
 ## --- End of File
