@@ -78,6 +78,9 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
     aftm = (haskey(params, :aftm) ? params.aftm : Ketcham2007FC())::ApatiteAnnealingModel{T}
     uaftm = (haskey(params, :uaftm) ? params.uaftm : Ketcham1999FC(:unoriented))::ApatiteAnnealingModel{T}
 
+    # Default regional parameters
+    rp = (haskey(params, :rp) ? params.rp : RegionalParameters{T}())::RegionalParameters{T}
+
     # Dictionaries to store reused `r` and `pr` vectors for fission track length chronometers
     # These will be indexed by hash, such that identical tracks can reuse the same `r` and `pr`
     rdict = Dict{UInt64,Vector{T}}()
@@ -512,6 +515,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
             end
         end
     end
+    push!(damodels, rp) # Regional parameters go in last position, independent of any chronometers
 
     isempty(chrons) && @error "No chronometers found"
     return unionize(chrons), unionize(damodels)

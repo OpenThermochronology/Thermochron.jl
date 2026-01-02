@@ -122,11 +122,11 @@
 
     # Test kintetic_ll! and updatekinetics! on all chronometer types
     updatekinetics = falses(length(damodels))
-    @test Thermochron.kinetic_ll!(updatekinetics, damodels, damodels) ≈ 17.468736232362367
+    @test Thermochron.kinetic_ll!(updatekinetics, damodels, damodels) ≈ 14.751635596600659
     damodelsₚ = copy(damodels)
     Thermochron.movekinetics!(damodelsₚ, updatekinetics)
     Thermochron.movekinetics!(damodelsₚ, updatekinetics)
-    @test 10 < Thermochron.kinetic_ll!(updatekinetics, damodelsₚ, damodels) < 17.468736232362367
+    @test 10 < Thermochron.kinetic_ll!(updatekinetics, damodelsₚ, damodels) < 14.751635596600659
 
     # Test again with partitiondaughter=true
     chrons, damodels = chronometers(dsg, params, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
@@ -435,7 +435,7 @@
     @info "Mean σjT: $(mean(tT.jTdist))"
 
     # Kinetics
-    admdist = kinetics.dmdist[end, :]
+    admdist = kinetics.dmdist[2, :]
     D0Lmean = mean(admdist .|> x-> x.D0L)
     @test 0 < D0Lmean
     @info "Mean apatite D0L: $D0Lmean"
@@ -546,7 +546,7 @@
     @info "Mean σjT: $(mean(tT.jTdist))"
 
     # Kinetics
-    admdist = kinetics.dmdist[end, :]
+    admdist = kinetics.dmdist[2, :]
     D0Lmean = mean(admdist .|> x-> x.D0L)
     @test 0 < D0Lmean
     @info "Mean apatite D0L: $D0Lmean"
@@ -659,7 +659,7 @@
     @info "Mean σjT: $(mean(tT.jTdist))"
 
     # Kinetics
-    admdist = kinetics.dmdist[end, :]
+    admdist = kinetics.dmdist[2, :]
     D0Lmean = mean(admdist .|> x-> x.D0L)
     @test 0 < D0Lmean
     @info "Mean apatite D0L: $D0Lmean"

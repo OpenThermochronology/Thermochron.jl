@@ -437,7 +437,7 @@ at spatial resolution `mineral.dr`.
 Spherical implementation based on the the Crank-Nicolson solution for diffusion out of a
 spherical mineral crystal in Ketcham, 2005 (doi: 10.2138/rmg.2005.58.11).
 """
-function modelage(mineral::NobleGasSample{T}, Tsteps::AbstractVector, dm::DiffusivityModel{T}, rp::RegionalParameters{T}=RegionalParameters(); partitiondaughter::Bool=false) where {T <: AbstractFloat}
+function modelage(mineral::NobleGasSample{T}, Tsteps::AbstractVector, dm::DiffusivityModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}(); partitiondaughter::Bool=false) where {T <: AbstractFloat}
     # Erase any previous runs; start at zero initial daughter
     fill!(mineral.u, zero(T))
 

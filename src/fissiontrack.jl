@@ -399,7 +399,7 @@ which they respetively implement include
   `Jones2021FA`         Fanning Arrhenius (Fanning Linear) model adapted from Jones et al. 2021 (doi: 10.5194/gchron-3-89-2021)
 
 """
-function modelage(zircon::ZirconFT{T}, Tsteps::AbstractVector, am::ZirconAnnealingModel{T}) where {T <: AbstractFloat}
+function modelage(zircon::ZirconFT{T}, Tsteps::AbstractVector, am::ZirconAnnealingModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T <: AbstractFloat}
     agesteps = agediscretization(zircon)
     tsteps = timediscretization(zircon)
     ΔT = temperatureoffset(zircon)
@@ -416,7 +416,7 @@ function modelage(zircon::ZirconFT{T}, Tsteps::AbstractVector, am::ZirconAnneali
     end
     return newton_ft_age(ftobs)
 end
-function modelage(monazite::MonaziteFT{T}, Tsteps::AbstractVector, am::MonaziteAnnealingModel{T}) where {T <: AbstractFloat}
+function modelage(monazite::MonaziteFT{T}, Tsteps::AbstractVector, am::MonaziteAnnealingModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T <: AbstractFloat}
     agesteps = agediscretization(monazite)
     tsteps = timediscretization(monazite)
     ΔT = temperatureoffset(monazite)
@@ -433,7 +433,7 @@ function modelage(monazite::MonaziteFT{T}, Tsteps::AbstractVector, am::MonaziteA
     end
     return newton_ft_age(ftobs)
 end
-function modelage(apatite::ApatiteFT{T}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}) where {T <: AbstractFloat}
+function modelage(apatite::ApatiteFT{T}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T <: AbstractFloat}
     agesteps = agediscretization(apatite)
     tsteps = timediscretization(apatite)
     ΔT = temperatureoffset(apatite)
@@ -452,8 +452,8 @@ function modelage(apatite::ApatiteFT{T}, Tsteps::AbstractVector, am::ApatiteAnne
     return newton_ft_age(ftobs)
 end
 
-function model_ll(mineral::FissionTrackSample, Tsteps::AbstractVector, am::AnnealingModel)
-    age = modelage(mineral, Tsteps, am)
+function model_ll(mineral::FissionTrackSample, Tsteps::AbstractVector, am::AnnealingModel, rp::RegionalParameters=RegionalParameters())
+    age = modelage(mineral, Tsteps, am, rp)
     δ = age - mineral.age
     σ² = mineral.age_sigma^2
     -0.5*(log(2*pi*σ²) + δ^2/σ²)
@@ -474,7 +474,7 @@ which they respetively implement include
   `Ketcham1999FC`       Fanning Curvilinear apatite model of Ketcham et al. 1999 (doi: 10.2138/am-1999-0903)
   `Ketcham2007FC`       Fanning Curvilinear apatite model of Ketcham et al. 2007 (doi: 10.2138/am.2007.2281)
 """
-function modellength(track::Union{ApatiteTrackLength{T}, ApatiteTrackLengthOriented{T}}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}) where {T <: AbstractFloat}
+function modellength(track::Union{ApatiteTrackLength{T}, ApatiteTrackLengthOriented{T}}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T <: AbstractFloat}
     agesteps = agediscretization(track)
     tsteps = timediscretization(track)
     ΔT = temperatureoffset(track)
@@ -498,7 +498,7 @@ function modellength(track::Union{ApatiteTrackLength{T}, ApatiteTrackLengthOrien
     track.calc .= μ, σ
     return μ, σ
 end
-function modellength(track::MonaziteTrackLength{T}, Tsteps::AbstractVector, am::MonaziteAnnealingModel{T}) where {T <: AbstractFloat}
+function modellength(track::MonaziteTrackLength{T}, Tsteps::AbstractVector, am::MonaziteAnnealingModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T <: AbstractFloat}
     agesteps = agediscretization(track)
     tsteps = timediscretization(track)
     ΔT = temperatureoffset(track)
@@ -521,7 +521,7 @@ function modellength(track::MonaziteTrackLength{T}, Tsteps::AbstractVector, am::
     track.calc .= μ, σ
     return μ, σ
 end
-function modellength(track::ZirconTrackLength{T}, Tsteps::AbstractVector, am::ZirconAnnealingModel{T}) where {T <: AbstractFloat}
+function modellength(track::ZirconTrackLength{T}, Tsteps::AbstractVector, am::ZirconAnnealingModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T <: AbstractFloat}
     agesteps = agediscretization(track)
     tsteps = timediscretization(track)
     ΔT = temperatureoffset(track)
@@ -546,8 +546,8 @@ function modellength(track::ZirconTrackLength{T}, Tsteps::AbstractVector, am::Zi
 end
 
 
-function model_ll(track::FissionTrackLength, Tsteps::AbstractVector, am::AnnealingModel)
-    l,σ = modellength(track, Tsteps, am)
+function model_ll(track::FissionTrackLength, Tsteps::AbstractVector, am::AnnealingModel, rp::RegionalParameters=RegionalParameters())
+    l,σ = modellength(track, Tsteps, am, rp)
     return model_ll(track, σ)
 end
 function model_ll(track::FissionTrackLength{T}, σ::T) where {T<:AbstractFloat}

@@ -412,6 +412,12 @@
     end
 
     # Log likelihood functions for kinetic uncertainties
+    function kinetic_ll(rpₚ::RegionalParameters, rp::RegionalParameters)
+        norm_ll(log(rp.geotherm), rp.geotherm_logsigma, log(rpₚ.geotherm)) + 
+        norm_ll(log(rp.K0_itm), rp.K0_itm_logsigma, log(rpₚ.K0_itm)) + 
+        norm_ll(log(rp.Ea_itm), rp.Ea_itm_logsigma, log(rpₚ.Ea_itm)) + 
+        norm_ll(log(rp.λ_itm), rp.λ_itm_logsigma, log(rpₚ.λ_itm))
+    end
     function kinetic_ll(dmₚ::ZRDAAM, dm::ZRDAAM)
         norm_ll(log(dm.DzD0), dm.DzD0_logsigma, log(dmₚ.DzD0)) + 
         norm_ll(log(dm.DzEa), dm.DzEa_logsigma, log(dmₚ.DzEa)) + 
@@ -763,8 +769,20 @@
 
     # Adjust kinetic models
     movekinetics(dm::Model, p=0.5) = dm
+    function movekinetics(rp::RegionalParameters{T}, p=0.5) where {T}
+        RegionalParameters(;
+            geotherm = (rand()<p) ? exp(log(rp.geotherm)+randn(T)*rp.geotherm_logsigma/2) : rp.geotherm,
+            geotherm_logsigma = rp.geotherm_logsigma,
+            K0_itm = (rand()<p) ? exp(log(rp.K0_itm)+randn(T)*rp.K0_itm_logsigma/2) : rp.K0_itm,
+            K0_itm_logsigma = rp.K0_itm_logsigma,
+            Ea_itm = (rand()<p) ? exp(log(rp.Ea_itm)+randn(T)*rp.Ea_itm_logsigma/2) : rp.Ea_itm,
+            Ea_itm_logsigma = rp.Ea_itm_logsigma,
+            λ_itm = (rand()<p) ? exp(log(rp.λ_itm)+randn(T)*rp.λ_itm_logsigma/2) : rp.λ_itm,
+            λ_itm_logsigma = rp.λ_itm_logsigma,
+        )
+    end
     function movekinetics(zdm::ZRDAAM{T}, p=0.5) where {T}
-        ZRDAAM(
+        ZRDAAM(;
             DzEa = (rand()<p) ? exp(log(zdm.DzEa)+randn(T)*zdm.DzEa_logsigma/2) : zdm.DzEa,
             DzEa_logsigma = zdm.DzEa_logsigma,
             DzD0 = (rand()<p) ? exp(log(zdm.DzD0)+randn(T)*zdm.DzD0_logsigma/2) : zdm.DzD0,
@@ -779,7 +797,7 @@
     end
     function movekinetics(adm::RDAAM{T}, p=0.5) where {T}
         rmr0 = (rand()<p) ? reflecting(adm.rmr0 + randn(T)*adm.rmr0_sigma/2, 0, 1) : adm.rmr0
-        RDAAM(
+        RDAAM(;
             D0L = (rand()<p) ? exp(log(adm.D0L)+randn(T)*adm.D0L_logsigma/2) : adm.D0L,
             D0L_logsigma = adm.D0L_logsigma,
             EaL = (rand()<p) ? exp(log(adm.EaL)+randn(T)*adm.EaL_logsigma/2) : adm.EaL,
@@ -792,7 +810,7 @@
         )
     end
     function movekinetics(dm::Diffusivity{T}, p=0.5) where {T}
-        Diffusivity(
+        Diffusivity(;
             D0 = (rand()<p) ? exp(log(dm.D0)+randn(T)*dm.D0_logsigma/2) : dm.D0,
             D0_logsigma = dm.D0_logsigma,
             Ea = (rand()<p) ? exp(log(dm.Ea)+randn(T)*dm.Ea_logsigma/2) : dm.Ea,
@@ -800,7 +818,7 @@
         )
     end
     function movekinetics(dm::MDiffusivity{T}, p=0.5) where {T}
-        MDiffusivity(
+        MDiffusivity(;
             D0 = ((rand()<p) ? @.(exp(log(dm.D0)+(rand()<p)*randn(T)*dm.D0_logsigma/4)) : dm.D0),
             D0_logsigma = dm.D0_logsigma,
             Ea = ((rand()<p) ? @.(exp(log(dm.Ea)+(rand()<p)*randn(T)*dm.Ea_logsigma/10)) : dm.Ea),
@@ -811,7 +829,7 @@
     movekinetics(dm::Union{SDiffusivity,MSDiffusivity}, p=0.05) = wrap(movekinetics(unwrap(dm),p), movewrapperkinetics(dm, p))
     movewrapperkinetics(dm::Model, p=0.5) = dm
     function movewrapperkinetics(dm::SDiffusivity{T}, p=0.5) where {T}
-        SDiffusivity(
+        SDiffusivity(;
             model = dm.model,
             scale = (rand()<p) ? exp(log(dm.scale)+randn(T)*dm.scale_logsigma/2) : dm.scale,
             scale_logsigma = dm.scale_logsigma,
@@ -824,7 +842,7 @@
         else
             dm.volume_fraction
         end
-        MSDiffusivity(
+        MSDiffusivity(;
             model = dm.model,
             scale = ((rand()<p) ? @.(exp(log(dm.scale)+(rand()<p)*randn(T)*dm.scale_logsigma/4)) : dm.scale),
             scale_logsigma = dm.scale_logsigma,
@@ -887,7 +905,10 @@
             stepwisetracerfraction::Bool=false,
             partitiondaughter::Bool=false, 
         ) where {T<:AbstractFloat}
-        @assert eachindex(chrons) == eachindex(μcalc) == eachindex(σcalc) == eachindex(damodels)
+        @assert eachindex(chrons) == eachindex(μcalc) == eachindex(σcalc) == (eachindex(damodels)[1:end-1])
+        # Last damodel is regional parameters
+        rp = last(damodels)::RegionalParameters{T}
+        # Ttime discretization
         imax = argmax(i->length(timediscretization(chrons[i])), eachindex(chrons))
         tsteps = timediscretization(chrons[imax])
         @assert issorted(tsteps)
@@ -933,42 +954,42 @@
 
         # Cycle through each Chronometer, model and calculate log likelihood
         ll = zero(T)
-        for i in eachindex(chrons, μcalc, σcalc, damodels)
+        for i in eachindex(chrons)
             c, dm = chrons[i], damodels[i]
             first_index = firstindex(Tsteps) + length(tsteps) - length(timediscretization(c))
             Tstepsᵢ = @views(Tsteps[first_index:end])
             if isa(c, SphericalAr) || isa(c, PlanarAr)
                 c::Union{SphericalAr{T}, PlanarAr{T}}
-                μcalc[i] = modelage(c, Tstepsᵢ, dm::Diffusivity{T}; partitiondaughter)
+                μcalc[i] = modelage(c, Tstepsᵢ, dm::Diffusivity{T}, rp; partitiondaughter)
                 ll += model_ll(c, σcalc[i])/scalegar
             elseif isa(c, SphericalHe) || isa(c, PlanarHe)
                 c::Union{SphericalHe{T}, PlanarHe{T}}
-                μcalc[i] = modelage(c, Tstepsᵢ, dm::Diffusivity{T}; partitiondaughter)
+                μcalc[i] = modelage(c, Tstepsᵢ, dm::Diffusivity{T}, rp; partitiondaughter)
                 ll += model_ll(c, σcalc[i])/scaleghe
             elseif isa(c, ZirconHe)
                 c::ZirconHe{T}
-                μcalc[i] = modelage(c, Tstepsᵢ, dm::ZirconHeliumModel{T}; partitiondaughter)
+                μcalc[i] = modelage(c, Tstepsᵢ, dm::ZirconHeliumModel{T}, rp; partitiondaughter)
                 ll += model_ll(c, σcalc[i])/scalezhe
             elseif isa(c, ApatiteHe)
                 c::ApatiteHe{T}
-                μcalc[i] = modelage(c, Tstepsᵢ, dm::ApatiteHeliumModel{T}; partitiondaughter)
+                μcalc[i] = modelage(c, Tstepsᵢ, dm::ApatiteHeliumModel{T}, rp; partitiondaughter)
                 ll += model_ll(c, σcalc[i])/scaleahe
             elseif isa(c, ZirconFT)
                 c::ZirconFT{T}
-                μcalc[i] = modelage(c, Tstepsᵢ, dm::ZirconAnnealingModel{T})
+                μcalc[i] = modelage(c, Tstepsᵢ, dm::ZirconAnnealingModel{T}, rp)
                 ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scalezft
             elseif isa(c, MonaziteFT)
                 c::MonaziteFT{T}
-                μcalc[i] = modelage(c, Tstepsᵢ, dm::MonaziteAnnealingModel{T})
+                μcalc[i] = modelage(c, Tstepsᵢ, dm::MonaziteAnnealingModel{T}, rp)
                 ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scalemft
             elseif isa(c, ApatiteFT)
                 c::ApatiteFT{T}
-                μcalc[i] = modelage(c, Tstepsᵢ, dm::ApatiteAnnealingModel{T})
+                μcalc[i] = modelage(c, Tstepsᵢ, dm::ApatiteAnnealingModel{T}, rp)
                 ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scaleaft
             elseif isa(c, ZirconTrackLength)
                 c::ZirconTrackLength{T}
                 if isnan(first(c.calc))
-                    μ, σcalc[i] = modellength(c, Tstepsᵢ, dm::ZirconAnnealingModel{T})
+                    μ, σcalc[i] = modellength(c, Tstepsᵢ, dm::ZirconAnnealingModel{T}, rp)
                 else
                     μ, σcalc[i] = c.calc
                 end
@@ -977,7 +998,7 @@
             elseif isa(c, MonaziteTrackLength)
                 c::MonaziteTrackLength{T}
                 if isnan(first(c.calc))
-                    μ, σcalc[i] = modellength(c, Tstepsᵢ, dm::MonaziteAnnealingModel{T})
+                    μ, σcalc[i] = modellength(c, Tstepsᵢ, dm::MonaziteAnnealingModel{T}, rp)
                 else
                     μ, σcalc[i] = c.calc
                 end
@@ -986,7 +1007,7 @@
             elseif isa(c, ApatiteTrackLength)
                 c::ApatiteTrackLength{T}
                 if isnan(first(c.calc))
-                    μ, σcalc[i] = modellength(c, Tstepsᵢ, dm::ApatiteAnnealingModel{T})
+                    μ, σcalc[i] = modellength(c, Tstepsᵢ, dm::ApatiteAnnealingModel{T}, rp)
                 else
                     μ, σcalc[i] = c.calc
                 end
@@ -995,7 +1016,7 @@
             elseif isa(c, ApatiteTrackLengthOriented)
                 c::ApatiteTrackLengthOriented{T}
                 if isnan(first(c.calc))
-                    μ, σcalc[i] = modellength(c, Tstepsᵢ, dm::ApatiteAnnealingModel{T})
+                    μ, σcalc[i] = modellength(c, Tstepsᵢ, dm::ApatiteAnnealingModel{T}, rp)
                 else
                     μ, σcalc[i] = c.calc
                 end
@@ -1003,7 +1024,7 @@
                 ll += model_ll(c, σcalc[i])/scaleato
             elseif isa(c, SingleDomain)
                 c::SingleDomain{T, <:Union{ArgonSample{T}, HeliumSample{T}}}
-                age, stepage, fraction = modelage(c, Tstepsᵢ, dm::DiffusivityModel{T}; redegastracer, partitiondaughter)
+                age, stepage, fraction = modelage(c, Tstepsᵢ, dm::DiffusivityModel{T}, rp; redegastracer, partitiondaughter)
                 @assert issorted(fraction) "Degassing fraction is not properly cumulative"
                 if redegastracer
                     if stepwisetracerfraction
@@ -1016,7 +1037,7 @@
                 ll += model_ll(c, σcalc[i]; rescale=rescalestepheating)/scalesdd
             elseif isa(c, MultipleDomain)
                 c::MultipleDomain{T, <:Union{ArgonSample{T}, HeliumSample{T}}}
-                stepage, fraction = modelage(c, Tstepsᵢ, dm::MultipleDiffusivity{T}; redegastracer, partitiondaughter)
+                stepage, fraction = modelage(c, Tstepsᵢ, dm::MultipleDiffusivity{T}, rp; redegastracer, partitiondaughter)
                 @assert issorted(fraction) "Degassing fraction is not properly cumulative"
                 if redegastracer
                     if stepwisetracerfraction
@@ -1029,7 +1050,7 @@
                 ll += model_ll(c, σcalc[i]; rescale=rescalestepheating)/scalemdd
             else
                 # NaN if not calculated
-                μcalc[i] = T(NaN)
+                μcalc[i] = σcalc[i] = T(NaN)
             end
         end
             
