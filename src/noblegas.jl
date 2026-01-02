@@ -72,8 +72,8 @@ end
 tracerdiffusivityratio(x::NobleGasSample{T}) where {T} = one(T)
 
 
-# Partitioning of noble gases between crystal interiors and inter-
-# granular boundaries (IGB), following a fit of the form K=K0*exp(-Ea/RT)
+# Partitioning of noble gases between crystal interiors and inter-granular
+# transport medium (ITM/IGB), following a fit of the form K=K0*exp(-Ea/RT)
 # to the data of Baxter et al. (2007) (K0=0.00010632, Ea=)
 function partitioning_internal_bulk(TK::Number, mineral::NobleGasSample, rp::RegionalParameters)
     partitioning_internal_bulk(TK, mineral.bulkgrainsize, rp.K0_itm, rp.Ea_itm)
@@ -86,7 +86,7 @@ function partitioning_internal_bulk(TK::Number, grainsize_mm::Number, K0::Number
     return Kd/(internal+boundary)       # (internal concentration) / (bulk concentration)
 end
 
-# Volume fraction of IGB, assuming boundary thickness `r_bouyndary`
+# Volume fraction of ITM/IGB, assuming boundary thickness `r_bouyndary`
 # Note that an `r_boundary` of 2e-9m was used in fitting the data of 
 # Baxter et al. (2007) to determine K0 and Ea, and thus must be used 
 # here `phi_boundary` as well for consistency

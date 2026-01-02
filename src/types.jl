@@ -61,13 +61,13 @@ abstract type ApatiteHeliumModel{T} <: DiffusivityModel{T} end
 
 # Other model types
 Base.@kwdef struct RegionalParameters{T} <: Model{T}
-    geotherm::T = 30.0                  # [C/km] geothermal gradient
-    geotherm_logsigma::T = log(2)       # [unitless] log uncertainty, factor of 2 (one-sigma)
-    K0_itm::T = 0.00010632              # [unitless] K0 for mineral/igb noble gas partitioning
+    geotherm::T = 30.0                  # [C/km] Geothermal gradient
+    geotherm_logsigma::T = log(2)       # [unitless] Log uncertainty, factor of 2 (one-sigma)
+    K0_itm::T = 0.00010632              # [unitless] Preexponential constant for mineral-ITM/IGB noble gas partitioning
     K0_itm_logsigma::T = log(2)         # [unitless] log uncertainty, factor of 2 (one-sigma)
-    Ea_itm::T = 26.815
+    Ea_itm::T = 26.815                  # [kJ/mol] Activation energy for for mineral-ITM/IGB noble gas partitioning
     Ea_itm_logsigma::T = log(2)/2       # [unitless] log uncertainty, factor of sqrt(2) (one-sigma)
-    λ_itm::T = 1/1000                   # [1/Ma] loss rate 
+    λ_itm::T = 1/2000                   # [1/Ma] bulk loss rate
     λ_itm_logsigma::T = log(10)         # [unitless] log uncertainty, factor of 10 (one-sigma)
 end
 

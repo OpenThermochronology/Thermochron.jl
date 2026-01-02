@@ -771,13 +771,13 @@
     movekinetics(dm::Model, p=0.5) = dm
     function movekinetics(rp::RegionalParameters{T}, p=0.5) where {T}
         RegionalParameters(;
-            geotherm = (rand()<p) ? exp(log(rp.geotherm)+randn(T)*rp.geotherm_logsigma/2) : rp.geotherm,
+            geotherm = (rand()<p) ? exp(log(rp.geotherm)+randn(T)*rp.geotherm_logsigma/4) : rp.geotherm,
             geotherm_logsigma = rp.geotherm_logsigma,
-            K0_itm = (rand()<p) ? exp(log(rp.K0_itm)+randn(T)*rp.K0_itm_logsigma/2) : rp.K0_itm,
+            K0_itm = (rand()<p) ? exp(log(rp.K0_itm)+randn(T)*rp.K0_itm_logsigma/4) : rp.K0_itm,
             K0_itm_logsigma = rp.K0_itm_logsigma,
-            Ea_itm = (rand()<p) ? exp(log(rp.Ea_itm)+randn(T)*rp.Ea_itm_logsigma/2) : rp.Ea_itm,
+            Ea_itm = (rand()<p) ? exp(log(rp.Ea_itm)+randn(T)*rp.Ea_itm_logsigma/4) : rp.Ea_itm,
             Ea_itm_logsigma = rp.Ea_itm_logsigma,
-            λ_itm = (rand()<p) ? exp(log(rp.λ_itm)+randn(T)*rp.λ_itm_logsigma/2) : rp.λ_itm,
+            λ_itm = (rand()<p) ? exp(log(rp.λ_itm)+randn(T)*rp.λ_itm_logsigma/4) : rp.λ_itm,
             λ_itm_logsigma = rp.λ_itm_logsigma,
         )
     end
@@ -817,11 +817,11 @@
             Ea_logsigma = dm.Ea_logsigma,
         )
     end
-    function movekinetics(dm::MDiffusivity{T}, p=0.5) where {T}
+    function movekinetics(dm::MDiffusivity{T,N}, p=0.5) where {T,N}
         MDiffusivity(;
-            D0 = ((rand()<p) ? @.(exp(log(dm.D0)+(rand()<p)*randn(T)*dm.D0_logsigma/4)) : dm.D0),
+            D0 = ((rand()<p) ? @.(exp(log(dm.D0)+(rand()<2/N)*randn(T)*dm.D0_logsigma/4)) : dm.D0),
             D0_logsigma = dm.D0_logsigma,
-            Ea = ((rand()<p) ? @.(exp(log(dm.Ea)+(rand()<p)*randn(T)*dm.Ea_logsigma/10)) : dm.Ea),
+            Ea = ((rand()<p) ? @.(exp(log(dm.Ea)+(rand()<2/N)*randn(T)*dm.Ea_logsigma/10)) : dm.Ea),
             Ea_logsigma = dm.Ea_logsigma,
             volume_fraction = dm.volume_fraction,
         )
@@ -837,16 +837,16 @@
     end
     function movewrapperkinetics(dm::MSDiffusivity{T,N}, p=0.5) where {T,N}
         volume_fraction = if rand()<p
-            vf = @. dm.volume_fraction + (rand()<p)*rand()/N
+            vf = @. abs(dm.volume_fraction + (rand()<2/N)*randn(T)/N)
             vf ./ sum(vf)
         else
             dm.volume_fraction
         end
         MSDiffusivity(;
             model = dm.model,
-            scale = ((rand()<p) ? @.(exp(log(dm.scale)+(rand()<p)*randn(T)*dm.scale_logsigma/4)) : dm.scale),
+            scale = ((rand()<p) ? @.(exp(log(dm.scale)+(rand()<2/N)*randn(T)*dm.scale_logsigma/4)) : dm.scale),
             scale_logsigma = dm.scale_logsigma,
-            volume_fraction = volume_fraction,
+            volume_fraction,
         )
     end
     function movekinetics!(damodels::Vector{<:Model}, updatekinetics::BitVector, p=0.5)
