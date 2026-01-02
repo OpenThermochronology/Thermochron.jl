@@ -9,109 +9,109 @@
     am = Ketcham1999FC()
     @test am isa Thermochron.Ketcham1999FC{Float64}
 
-    @test Thermochron.reltracklength(1, 0, am) ≈ 0.969772147771495
-    @test Thermochron.reltracklength(1, 10, am) ≈ 0.964689584499856
-    @test Thermochron.reltracklength(1, 100, am) ≈ 0.8757101462242018
-    @test Thermochron.reltracklength(1, 200, am) ≈ 0.6865397486321438
-    @test Thermochron.reltracklength(1, 500, am) ≈ 0.0
+    @test Thermochron.reltracklength(1, 0+273.15, am) ≈ 0.969772147771495
+    @test Thermochron.reltracklength(1, 10+273.15, am) ≈ 0.964689584499856
+    @test Thermochron.reltracklength(1, 100+273.15, am) ≈ 0.8757101462242018
+    @test Thermochron.reltracklength(1, 200+273.15, am) ≈ 0.6865397486321438
+    @test Thermochron.reltracklength(1, 500+273.15, am) ≈ 0.0
 
-    @test Thermochron.equivalenttime.(1:10, 100, 100, am) ≈ 1:10
-    @test Thermochron.equivalenttime.(1:10, 50, 100, am) ≈ [0.0017396519912747071, 0.003298079407422488, 0.004794716652673411, 0.006252588352279524, 0.007682296289640212, 0.009089953816004663, 0.010479534909963182, 0.01185382650735338, 0.013214888894288724, 0.014564305574711722]
-    @test Thermochron.equivalenttime.(1:10, 150, 100, am) ≈  [660.4429511024003, 1395.0963084362782, 2160.6369846963353, 2946.952051746238, 3749.0850835490833, 4564.053074060813, 5389.851797105461, 6225.0371840101425, 7068.5169276849765, 7919.434602704827]
+    @test Thermochron.equivalenttime.(1:10, 100+273.15, 100+273.15, am) ≈ 1:10
+    @test Thermochron.equivalenttime.(1:10, 50+273.15, 100+273.15, am) ≈ [0.0017396519912747071, 0.003298079407422488, 0.004794716652673411, 0.006252588352279524, 0.007682296289640212, 0.009089953816004663, 0.010479534909963182, 0.01185382650735338, 0.013214888894288724, 0.014564305574711722]
+    @test Thermochron.equivalenttime.(1:10, 150+273.15, 100+273.15, am) ≈  [660.4429511024003, 1395.0963084362782, 2160.6369846963353, 2946.952051746238, 3749.0850835490833, 4564.053074060813, 5389.851797105461, 6225.0371840101425, 7068.5169276849765, 7919.434602704827]
  
-    @test Thermochron.reltrackdensity(1, 0, am) ≈ 0.9516354364343921
-    @test Thermochron.reltrackdensity(1, 10, am) ≈ 0.9435033351997696 
-    @test Thermochron.reltrackdensity(1, 100, am) ≈ 0.801136233958723 
-    @test Thermochron.reltrackdensity(1, 200, am) ≈ 0.3210110092650815
-    @test Thermochron.reltrackdensity(1, 500, am) ≈ 0.0
+    @test Thermochron.reltrackdensity(1, 0+273.15, am) ≈ 0.9516354364343921
+    @test Thermochron.reltrackdensity(1, 10+273.15, am) ≈ 0.9435033351997696 
+    @test Thermochron.reltrackdensity(1, 100+273.15, am) ≈ 0.801136233958723 
+    @test Thermochron.reltrackdensity(1, 200+273.15, am) ≈ 0.3210110092650815
+    @test Thermochron.reltrackdensity(1, 500+273.15, am) ≈ 0.0
 
 ## --- Ketcham et al. 2007 Simplified Curvilinear apatite
 
     am = Ketcham2007FC()
     @test am isa Thermochron.Ketcham2007FC{Float64}
 
-    @test Thermochron.reltracklength(1, 0, am) ≈ 0.9749628064438557
-    @test Thermochron.reltracklength(1, 10, am) ≈ 0.9701964063931915
-    @test Thermochron.reltracklength(1, 100, am) ≈ 0.8759898250381366
-    @test Thermochron.reltracklength(1, 200, am) ≈ 0.5928200145772959
-    @test Thermochron.reltracklength(1, 500, am) ≈ 0.016540366949720275
+    @test Thermochron.reltracklength(1, 0+273.15, am) ≈ 0.9749628064438557
+    @test Thermochron.reltracklength(1, 10+273.15, am) ≈ 0.9701964063931915
+    @test Thermochron.reltracklength(1, 100+273.15, am) ≈ 0.8759898250381366
+    @test Thermochron.reltracklength(1, 200+273.15, am) ≈ 0.5928200145772959
+    @test Thermochron.reltracklength(1, 500+273.15, am) ≈ 0.016540366949720275
 
-    @test Thermochron.equivalenttime.(1:10, 100, 100, am) ≈ 1:10
-    @test Thermochron.equivalenttime.(1:10, 50, 100, am) ≈ [0.0015478065155001086, 0.002954611923287363, 0.00431269182539665, 0.005640066461673555, 0.006945066485586564, 0.008232508754276639, 0.009505531052511628, 0.010766337684274287, 0.012016560593707997, 0.013257455657955832]
-    @test Thermochron.equivalenttime.(1:10, 150, 100, am) ≈ [646.5878531291968, 1354.896862856624, 2088.5372542290797, 2839.1277381635086, 3602.579481389471, 4376.439427402521, 5159.063447504911, 5949.269302029918, 6746.164254698982, 7549.049388886254]
+    @test Thermochron.equivalenttime.(1:10, 100+273.15, 100+273.15, am) ≈ 1:10
+    @test Thermochron.equivalenttime.(1:10, 50+273.15, 100+273.15, am) ≈ [0.0015478065155001086, 0.002954611923287363, 0.00431269182539665, 0.005640066461673555, 0.006945066485586564, 0.008232508754276639, 0.009505531052511628, 0.010766337684274287, 0.012016560593707997, 0.013257455657955832]
+    @test Thermochron.equivalenttime.(1:10, 150+273.15, 100+273.15, am) ≈ [646.5878531291968, 1354.896862856624, 2088.5372542290797, 2839.1277381635086, 3602.579481389471, 4376.439427402521, 5159.063447504911, 5949.269302029918, 6746.164254698982, 7549.049388886254]
     
-    @test Thermochron.reltrackdensity(1, 0, am) ≈ 0.9599404903101693 
-    @test Thermochron.reltrackdensity(1, 10, am) ≈ 0.9523142502291065
-    @test Thermochron.reltrackdensity(1, 100, am) ≈ 0.8015837200610186
-    @test Thermochron.reltrackdensity(1, 200, am) ≈ 0.07551154545163152
-    @test Thermochron.reltrackdensity(1, 500, am) ≈ 0.0
+    @test Thermochron.reltrackdensity(1, 0+273.15, am) ≈ 0.9599404903101693 
+    @test Thermochron.reltrackdensity(1, 10+273.15, am) ≈ 0.9523142502291065
+    @test Thermochron.reltrackdensity(1, 100+273.15, am) ≈ 0.8015837200610186
+    @test Thermochron.reltrackdensity(1, 200+273.15, am) ≈ 0.07551154545163152
+    @test Thermochron.reltrackdensity(1, 500+273.15, am) ≈ 0.0
 
 ## --- Jones et al. 2021 Parallel Linear monazite
 
     am = Jones2021FA()
     @test am isa Thermochron.Jones2021FA{Float64}
 
-    @test Thermochron.reltracklength(1, 0, am) ≈ 0.7579417895276482
-    @test Thermochron.reltracklength(1, 10, am) ≈ 0.735387946933017
-    @test Thermochron.reltracklength(1, 100, am) ≈ 0.532403363581336
-    @test Thermochron.reltracklength(1, 200, am) ≈ 0.30686493763502365
-    @test Thermochron.reltracklength(1, 500, am) ≈ 0.0
+    @test Thermochron.reltracklength(1, 0+273.15, am) ≈ 0.7579417895276482
+    @test Thermochron.reltracklength(1, 10+273.15, am) ≈ 0.735387946933017
+    @test Thermochron.reltracklength(1, 100+273.15, am) ≈ 0.532403363581336
+    @test Thermochron.reltracklength(1, 200+273.15, am) ≈ 0.30686493763502365
+    @test Thermochron.reltracklength(1, 500+273.15, am) ≈ 0.0
 
-    @test Thermochron.equivalenttime.(1:10, 100, 100, am) ≈ 1:10
-    @test Thermochron.equivalenttime.(1:10, 50, 100, am) ≈ [0.0007407975532689652, 0.0013501847848567561, 0.0019181794368659146, 0.0024608598465454146, 0.0029854616491727447, 0.00349609239238555, 0.003995390180771109, 0.004485186955341078, 0.00496682573501881, 0.00544133127424477]
-    @test Thermochron.equivalenttime.(1:10, 150, 100, am) ≈ [1349.8964671079773, 2962.55745499635, 4691.948952755405, 6501.7924618751285, 8373.91430130319, 10297.210702556848, 12264.133860023401, 14269.193377499583, 16308.20252639552, 18377.855521005877]
+    @test Thermochron.equivalenttime.(1:10, 100+273.15, 100+273.15, am) ≈ 1:10
+    @test Thermochron.equivalenttime.(1:10, 50+273.15, 100+273.15, am) ≈ [0.0007407975532689652, 0.0013501847848567561, 0.0019181794368659146, 0.0024608598465454146, 0.0029854616491727447, 0.00349609239238555, 0.003995390180771109, 0.004485186955341078, 0.00496682573501881, 0.00544133127424477]
+    @test Thermochron.equivalenttime.(1:10, 150+273.15, 100+273.15, am) ≈ [1349.8964671079773, 2962.55745499635, 4691.948952755405, 6501.7924618751285, 8373.91430130319, 10297.210702556848, 12264.133860023401, 14269.193377499583, 16308.20252639552, 18377.855521005877]
 
-    @test Thermochron.reltrackdensity(1, 0, am) ≈ 0.5158835790552965
-    @test Thermochron.reltrackdensity(1, 10, am) ≈ 0.470775893866034
-    @test Thermochron.reltrackdensity(1, 100, am) ≈ 0.064806727162672
-    @test Thermochron.reltrackdensity(1, 200, am) ≈ 0.0
-    @test Thermochron.reltrackdensity(1, 500, am) ≈ 0.0
+    @test Thermochron.reltrackdensity(1, 0+273.15, am) ≈ 0.5158835790552965
+    @test Thermochron.reltrackdensity(1, 10+273.15, am) ≈ 0.470775893866034
+    @test Thermochron.reltrackdensity(1, 100+273.15, am) ≈ 0.064806727162672
+    @test Thermochron.reltrackdensity(1, 200+273.15, am) ≈ 0.0
+    @test Thermochron.reltrackdensity(1, 500+273.15, am) ≈ 0.0
 
 ## --- Yamada et al. 2007 Parallel Curvilinear zircon
 
     am = Yamada2007PC()
     @test am isa Thermochron.Yamada2007PC{Float64}
 
-    @test Thermochron.reltracklength(1, 0, am) ≈ 0.9993737756398484
-    @test Thermochron.reltracklength(1, 10, am) ≈ 0.9991309858749375
-    @test Thermochron.reltracklength(1, 100, am) ≈ 0.9892949897633997
-    @test Thermochron.reltracklength(1, 200, am) ≈ 0.9105200346451393
-    @test Thermochron.reltracklength(1, 300, am) ≈ 0.583752786143477
-    @test Thermochron.reltracklength(1, 500, am) ≈ 0.0002632949368671119
+    @test Thermochron.reltracklength(1, 0+273.15, am) ≈ 0.9993737756398484
+    @test Thermochron.reltracklength(1, 10+273.15, am) ≈ 0.9991309858749375
+    @test Thermochron.reltracklength(1, 100+273.15, am) ≈ 0.9892949897633997
+    @test Thermochron.reltracklength(1, 200+273.15, am) ≈ 0.9105200346451393
+    @test Thermochron.reltracklength(1, 300+273.15, am) ≈ 0.583752786143477
+    @test Thermochron.reltracklength(1, 500+273.15, am) ≈ 0.0002632949368671119
 
-    @test Thermochron.equivalenttime.(1:10, 100, 100, am) ≈ 1:10
-    @test Thermochron.equivalenttime.(1:10, 50, 100, am) ≈ [0.0020577410195178228, 0.0041154820390356525, 0.006173223058553454, 0.00823096407807132, 0.010288705097588996, 0.01234644611710693, 0.014404187136625298, 0.016461928156142672, 0.018519669175660315, 0.02057741019517803]
-    @test Thermochron.equivalenttime.(1:10, 150, 100, am) ≈ [222.98141544261495, 445.9628308852307, 668.9442463278432, 891.9256617704631, 1114.907077213062, 1337.8884926556889, 1560.8699080982742, 1783.8513235409293, 2006.8327389835247, 2229.814154426128] 
+    @test Thermochron.equivalenttime.(1:10, 100+273.15, 100+273.15, am) ≈ 1:10
+    @test Thermochron.equivalenttime.(1:10, 50+273.15, 100+273.15, am) ≈ [0.0020577410195178228, 0.0041154820390356525, 0.006173223058553454, 0.00823096407807132, 0.010288705097588996, 0.01234644611710693, 0.014404187136625298, 0.016461928156142672, 0.018519669175660315, 0.02057741019517803]
+    @test Thermochron.equivalenttime.(1:10, 150+273.15, 100+273.15, am) ≈ [222.98141544261495, 445.9628308852307, 668.9442463278432, 891.9256617704631, 1114.907077213062, 1337.8884926556889, 1560.8699080982742, 1783.8513235409293, 2006.8327389835247, 2229.814154426128] 
 
-    @test Thermochron.reltrackdensity(1, 0, am) ≈ 0.9992172195498106
-    @test Thermochron.reltrackdensity(1, 10, am) ≈ 0.998913732343672
-    @test Thermochron.reltrackdensity(1, 100, am) ≈ 0.9866187372042495
-    @test Thermochron.reltrackdensity(1, 200, am) ≈ 0.888150043306424
-    @test Thermochron.reltrackdensity(1, 300, am) ≈ 0.4796909826793435
-    @test Thermochron.reltrackdensity(1, 500, am) ≈ 0.0
+    @test Thermochron.reltrackdensity(1, 0+273.15, am) ≈ 0.9992172195498106
+    @test Thermochron.reltrackdensity(1, 10+273.15, am) ≈ 0.998913732343672
+    @test Thermochron.reltrackdensity(1, 100+273.15, am) ≈ 0.9866187372042495
+    @test Thermochron.reltrackdensity(1, 200+273.15, am) ≈ 0.888150043306424
+    @test Thermochron.reltrackdensity(1, 300+273.15, am) ≈ 0.4796909826793435
+    @test Thermochron.reltrackdensity(1, 500+273.15, am) ≈ 0.0
 
 ## --- Guenther 2013 Simplified Curvilinear zircon
 
     am = Guenthner2013FC()
     @test am isa Thermochron.Guenthner2013FC{Float64}
 
-    @test Thermochron.reltracklength(1, 0, am) ≈ 0.9987988651472297
-    @test Thermochron.reltracklength(1, 10, am) ≈ 0.998476438713864
-    @test Thermochron.reltracklength(1, 100, am) ≈ 0.9886125414156559
-    @test Thermochron.reltracklength(1, 200, am) ≈ 0.9156810748820664
-    @test Thermochron.reltracklength(1, 300, am) ≈ 0.5980310995551887
-    @test Thermochron.reltracklength(1, 500, am) ≈ 0.029152068246667134
+    @test Thermochron.reltracklength(1, 0+273.15, am) ≈ 0.9987988651472297
+    @test Thermochron.reltracklength(1, 10+273.15, am) ≈ 0.998476438713864
+    @test Thermochron.reltracklength(1, 100+273.15, am) ≈ 0.9886125414156559
+    @test Thermochron.reltracklength(1, 200+273.15, am) ≈ 0.9156810748820664
+    @test Thermochron.reltracklength(1, 300+273.15, am) ≈ 0.5980310995551887
+    @test Thermochron.reltracklength(1, 500+273.15, am) ≈ 0.029152068246667134
 
-    @test Thermochron.equivalenttime.(1:10, 100, 100, am) ≈ 1:10
-    @test Thermochron.equivalenttime.(1:10, 50, 100, am) ≈ [0.0028785665193461073, 0.005690055255432659, 0.008476770230793686, 0.011247518024086979, 0.014006452961030012, 0.016756010561736853, 0.01949779438472927, 0.022232940810438962, 0.02496229740141236, 0.02768652061547207]
-    @test Thermochron.equivalenttime.(1:10, 150, 100, am) ≈ [196.56951935291298, 397.32010926193027, 599.6796926328979, 803.0912917913217, 1007.2887605410821, 1212.114684837377, 1417.464714169357, 1623.2644860315188, 1829.4582748135415, 2036.0027420018664]
+    @test Thermochron.equivalenttime.(1:10, 100+273.15, 100+273.15, am) ≈ 1:10
+    @test Thermochron.equivalenttime.(1:10, 50+273.15, 100+273.15, am) ≈ [0.0028785665193461073, 0.005690055255432659, 0.008476770230793686, 0.011247518024086979, 0.014006452961030012, 0.016756010561736853, 0.01949779438472927, 0.022232940810438962, 0.02496229740141236, 0.02768652061547207]
+    @test Thermochron.equivalenttime.(1:10, 150+273.15, 100+273.15, am) ≈ [196.56951935291298, 397.32010926193027, 599.6796926328979, 803.0912917913217, 1007.2887605410821, 1212.114684837377, 1417.464714169357, 1623.2644860315188, 1829.4582748135415, 2036.0027420018664]
 
-    @test Thermochron.reltrackdensity(1, 0, am) ≈ 0.9984985814340372
-    @test Thermochron.reltrackdensity(1, 10, am) ≈ 0.9980955483923302
-    @test Thermochron.reltrackdensity(1, 100, am) ≈ 0.9857656767695699
-    @test Thermochron.reltrackdensity(1, 200, am) ≈ 0.8946013436025829
-    @test Thermochron.reltrackdensity(1, 300, am) ≈ 0.4975388744439859
-    @test Thermochron.reltrackdensity(1, 500, am) ≈ 0.0
+    @test Thermochron.reltrackdensity(1, 0+273.15, am) ≈ 0.9984985814340372
+    @test Thermochron.reltrackdensity(1, 10+273.15, am) ≈ 0.9980955483923302
+    @test Thermochron.reltrackdensity(1, 100+273.15, am) ≈ 0.9857656767695699
+    @test Thermochron.reltrackdensity(1, 200+273.15, am) ≈ 0.8946013436025829
+    @test Thermochron.reltrackdensity(1, 300+273.15, am) ≈ 0.4975388744439859
+    @test Thermochron.reltrackdensity(1, 500+273.15, am) ≈ 0.0
 
 ## --- Test "multikinetic" rmr0 model
 
@@ -121,7 +121,7 @@
     @test apatite_rmr0model.(F, Cl, OH) ≈ [0.8383413701463746, 0.8384864523714617, 0.8379064580367148, 0.837028827709466, 0.8379064580367148, 0.8390665126742223, 0.8379052205668548, 0.837613698368861, 0.8381973725669695, 0.837028827709466]
 
     rmr0 = apatite_rmr0model.(F, Cl, OH)
-    rmr = Thermochron.reltracklength.(1:10, 95, Ketcham2007FC())
+    rmr = Thermochron.reltracklength.(1:10, 95+273.15, Ketcham2007FC())
     @test Thermochron.rlr.(rmr, rmr0) ≈ [0.7769620100839816, 0.7427553656029127, 0.7198268222638269, 0.7025305928055717, 0.6824451061110656, 0.6616056711294463, 0.6513403125856504, 0.6383859899090678, 0.6210893164250876, 0.6145276486192635]
 
     @test apatite_rmr0fromcl.([0, 0.01, 0.1]) ≈ [0.840226804896754, 0.8368246680265121, 0.8027532902492818]

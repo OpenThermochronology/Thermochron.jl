@@ -119,21 +119,21 @@ end
 ## --- Fission track functions
 
 # Fanning Curvilinear
-function equivalenttime(t::Number, T::Number, Teq::Number, am::FanningCurvilinear)
-    exp(am.C2 + (log(t*SEC_MYR)-am.C2)*(log(1/(Teq+273.15))-am.C3)/(log(1/(T+273.15))-am.C3))/SEC_MYR
+function equivalenttime(t::Number, TK::Number, Teq::Number, am::FanningCurvilinear)
+    exp(am.C2 + (log(t*SEC_MYR)-am.C2)*(log(1/Teq)-am.C3)/(log(1/TK)-am.C3))/SEC_MYR
 end
 # Fanning Linear (Fanning Arrhenius)
-function equivalenttime(t::Number, T::Number, Teq::Number, am::Jones2021FA)
-    exp(am.C2 + (log(t*SEC_MYR)-am.C2)*((1/(Teq+273.15))-am.C3)/((1/(T+273.15))-am.C3))/SEC_MYR
+function equivalenttime(t::Number, TK::Number, Teq::Number, am::Jones2021FA)
+    exp(am.C2 + (log(t*SEC_MYR)-am.C2)*((1/Teq)-am.C3)/((1/TK)-am.C3))/SEC_MYR
 end
 # Parallel Curvilinear
-function equivalenttime(t::Number, T::Number, Teq::Number, am::Yamada2007PC)
-    exp(am.bp*log(1/(Teq+273.15)) + (log(t*SEC_MYR) - am.bp*log(1/(T+273.15))))/SEC_MYR
+function equivalenttime(t::Number, TK::Number, Teq::Number, am::Yamada2007PC)
+    exp(am.bp*log(1/Teq) + (log(t*SEC_MYR) - am.bp*log(1/TK)))/SEC_MYR
 end
 
 """
 ```julia
-reltracklength(t, T, am::AnnealingModel) 
+reltracklength(t, TK, am::AnnealingModel) 
 ```
 Calculate the relative track length `r` (equal to `l/l₀`) expected after 
 isothermal heating at `T` C for `t` Myr and annealing parameters `am`. 
@@ -147,29 +147,29 @@ which they respetively implement include
 See also: `reltrackdensity`.
 """
 # Fanning Curvilinear, Box-Cox
-function reltracklength(t::Number, T::Number, am::Ketcham1999FC{F}) where {F<:AbstractFloat}
-    g = am.C0 + am.C1*(log(t*SEC_MYR)-am.C2)/(log(1/(T+273.15))-am.C3)
+function reltracklength(t::Number, TK::Number, am::Ketcham1999FC{F}) where {F<:AbstractFloat}
+    g = am.C0 + am.C1*(log(t*SEC_MYR)-am.C2)/(log(1/TK)-am.C3)
     (1-am.beta * max(g*am.alpha+1, zero(F))^(1/am.alpha))^(1/am.beta)
 end
 # Fanning Curvilinear, simplified Box-Cox
-function reltracklength(t::Number, T::Number, am::Union{Ketcham2007FC, Guenthner2013FC})
-    g = am.C0 + am.C1*(log(t*SEC_MYR)-am.C2)/(log(1/(T+273.15))-am.C3)
+function reltracklength(t::Number, TK::Number, am::Union{Ketcham2007FC, Guenthner2013FC})
+    g = am.C0 + am.C1*(log(t*SEC_MYR)-am.C2)/(log(1/TK)-am.C3)
     r = 1/(g^(1/am.alpha) + 1)
 end
 # Fanning Linear (Fanning Arrhenius), no Box-Cox
-function reltracklength(t::Number, T::Number, am::Jones2021FA{F}) where {F<:AbstractFloat}
-    g = am.C0 + am.C1*(log(t*SEC_MYR)-am.C2)/((1/(T+273.15))-am.C3)
+function reltracklength(t::Number, TK::Number, am::Jones2021FA{F}) where {F<:AbstractFloat}
+    g = am.C0 + am.C1*(log(t*SEC_MYR)-am.C2)/((1/TK)-am.C3)
     r = max(min(g, one(F)), zero(F))
 end
 # Parallel Curvilinear, no Box-Cox
-function reltracklength(t::Number, T::Number, am::Yamada2007PC)
-    r = exp(-exp(am.c0p + am.c1p*(log(t*SEC_MYR) - am.bp*log(1/(T+273.15)))))
+function reltracklength(t::Number, TK::Number, am::Yamada2007PC)
+    r = exp(-exp(am.c0p + am.c1p*(log(t*SEC_MYR) - am.bp*log(1/TK))))
 end
 
 
 """
 ```julia
-reltrackdensity(t, T, am::AnnealingModel)
+reltrackdensity(t, TK, am::AnnealingModel)
 ```
 Calculate the relative track density `ρ` corresponding to a given 
 relative track length `r` 
@@ -179,9 +179,9 @@ for apatite and Tagami et al. (1999) for zircon
 
 See also: `reltracklength`.
 """
-reltrackdensity(t::Number, T::Number, am::ZirconAnnealingModel) = reltrackdensityzrn(reltracklength(t, T, am))
-reltrackdensity(t::Number, T::Number, am::MonaziteAnnealingModel) = reltrackdensitymnz(reltracklength(t, T, am))
-reltrackdensity(t::Number, T::Number, am::ApatiteAnnealingModel) = reltrackdensityap(reltracklength(t, T, am))
+reltrackdensity(t::Number, TK::Number, am::ZirconAnnealingModel) = reltrackdensityzrn(reltracklength(t, TK, am))
+reltrackdensity(t::Number, TK::Number, am::MonaziteAnnealingModel) = reltrackdensitymnz(reltracklength(t, TK, am))
+reltrackdensity(t::Number, TK::Number, am::ApatiteAnnealingModel) = reltrackdensityap(reltracklength(t, TK, am))
 function reltrackdensityzrn(r::T) where {T<:Number}
     Tf = float(T)
     if r < 0.2
@@ -402,11 +402,11 @@ which they respetively implement include
 function modelage(zircon::ZirconFT{T}, Tsteps::AbstractVector, am::ZirconAnnealingModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T <: AbstractFloat}
     agesteps = agediscretization(zircon)
     tsteps = timediscretization(zircon)
-    ΔT = temperatureoffset(zircon, rp)
+    ΔT = T(273.15) + temperatureoffset(zircon, rp)
     @assert issorted(tsteps)
     @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps)
     teq = dt = step_at(tsteps, lastindex(tsteps))
-    r = reltracklength(teq, Tsteps[end], am)
+    r = reltracklength(teq, Tsteps[end]+ΔT, am)
     ftobs = dt * reltrackdensityzrn(r) * exp(λ238U * agesteps[end])
     @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
         dt = step_at(tsteps, i)
@@ -419,11 +419,11 @@ end
 function modelage(monazite::MonaziteFT{T}, Tsteps::AbstractVector, am::MonaziteAnnealingModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T <: AbstractFloat}
     agesteps = agediscretization(monazite)
     tsteps = timediscretization(monazite)
-    ΔT = temperatureoffset(monazite, rp)
+    ΔT = T(273.15) + temperatureoffset(monazite, rp)
     @assert issorted(tsteps)
     @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps)
     teq = dt = step_at(tsteps, lastindex(tsteps))
-    r = reltracklength(teq, Tsteps[end], am)
+    r = reltracklength(teq, Tsteps[end]+ΔT, am)
     ftobs = dt * reltrackdensitymnz(r) * exp(λ238U * agesteps[end])
     @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
         dt = step_at(tsteps, i)
@@ -436,12 +436,12 @@ end
 function modelage(apatite::ApatiteFT{T}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T <: AbstractFloat}
     agesteps = agediscretization(apatite)
     tsteps = timediscretization(apatite)
-    ΔT = temperatureoffset(apatite, rp)
+    ΔT = T(273.15) + temperatureoffset(apatite, rp)
     @assert issorted(tsteps)
     @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps)
     rmr0 = apatite.rmr0::T
     teq = dt = step_at(tsteps, lastindex(tsteps))
-    r = rlr(reltracklength(teq, Tsteps[end], am), rmr0)
+    r = rlr(reltracklength(teq, Tsteps[end]+ΔT, am), rmr0)
     ftobs = dt * reltrackdensityap(r) * exp(λ238U * agesteps[end]) 
     @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
         dt = step_at(tsteps, i)
@@ -477,7 +477,7 @@ which they respetively implement include
 function modellength(track::Union{ApatiteTrackLength{T}, ApatiteTrackLengthOriented{T}}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T <: AbstractFloat}
     agesteps = agediscretization(track)
     tsteps = timediscretization(track)
-    ΔT = temperatureoffset(track, rp)
+    ΔT = T(273.15) + temperatureoffset(track, rp)
     rmr0 = track.rmr0::T
     r = track.r::Vector{T}
     pr = track.pr::Vector{T}
@@ -501,7 +501,7 @@ end
 function modellength(track::MonaziteTrackLength{T}, Tsteps::AbstractVector, am::MonaziteAnnealingModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T <: AbstractFloat}
     agesteps = agediscretization(track)
     tsteps = timediscretization(track)
-    ΔT = temperatureoffset(track, rp)
+    ΔT = T(273.15) + temperatureoffset(track, rp)
     r = track.r::Vector{T}
     pr = track.pr::Vector{T}
     @assert issorted(tsteps)
@@ -524,7 +524,7 @@ end
 function modellength(track::ZirconTrackLength{T}, Tsteps::AbstractVector, am::ZirconAnnealingModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T <: AbstractFloat}
     agesteps = agediscretization(track)
     tsteps = timediscretization(track)
-    ΔT = temperatureoffset(track, rp)
+    ΔT = T(273.15) + temperatureoffset(track, rp)
     r = track.r::Vector{T}
     pr = track.pr::Vector{T}
     @assert issorted(tsteps)
