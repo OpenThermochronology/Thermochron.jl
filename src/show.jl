@@ -56,7 +56,7 @@ function Base.show(io::IO, ::MIME"text/plain", x::C) where {T, C<:MultipleDomain
       fraction degassed : $(printshort(x.fraction_experimental))
       offset            : $(x.offset) C from the surface
       domains           : $(printshort(x.domains))
-      agesteps          : $(printshort(agediscretization(x))) Ma
+      agesteps          : $(printshort(agesteps_geol(x))) Ma
     """
     )
 end
@@ -67,7 +67,7 @@ function Base.show(io::IO, ::MIME"text/plain", x::C) where {T, C<:MultipleDomain
       fraction degassed : $(printshort(x.fraction_experimental))
       offset            : $(x.offset) C from the surface
       domains           : $(printshort(x.domains))
-      agesteps          : $(printshort(agediscretization(x))) Ma
+      agesteps          : $(printshort(agesteps_geol(x))) Ma
     """
     )
 end
@@ -78,7 +78,7 @@ function Base.show(io::IO, ::MIME"text/plain", x::C) where {T, C<:SingleDomain{T
       fraction degassed : $(printshort(x.fraction_experimental))
       offset            : $(x.offset) C from the surface
       domain            : $(x.domain)
-      agesteps          : $(printshort(agediscretization(x))) Ma
+      agesteps          : $(printshort(agesteps_geol(x))) Ma
     """
     )
 end
@@ -89,7 +89,7 @@ function Base.show(io::IO, ::MIME"text/plain", x::C) where {T, C<:SingleDomain{T
       fraction degassed : $(printshort(x.fraction_experimental))
       offset            : $(x.offset) C from the surface
       domain            : $(x.domain)
-      agesteps          : $(printshort(agediscretization(x))) Ma
+      agesteps          : $(printshort(agesteps_geol(x))) Ma
     """
     )
 end

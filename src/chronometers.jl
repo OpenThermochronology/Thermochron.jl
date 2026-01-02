@@ -1988,13 +1988,15 @@ function temperatureoffset(x::Chronometer{T}, rp::RegionalParameters{T}=Regional
     T(x.offset - x.height*rp.geotherm/1000)
 end
 
-# Retrive the temporal discretization of any Chronometer
-agediscretization(x::Chronometer{T}) where {T} = x.agesteps::AbstractVector{T}
-agediscretization(x::MultipleDomain) = agediscretization(first(x.domains))
-agediscretization(x::SingleDomain) = agediscretization(x.domain)
-timediscretization(x::Chronometer{T}) where {T} = x.tsteps::AbstractVector{T}
-timediscretization(x::MultipleDomain) = timediscretization(first(x.domains))
-timediscretization(x::SingleDomain) = timediscretization(x.domain)
+# Retrive the geological time discretization of any Chronometer
+# Absolute time
+agesteps_geol(x::Chronometer{T}) where {T} = x.agesteps::AbstractVector{T}
+agesteps_geol(x::MultipleDomain) = agesteps_geol(first(x.domains))
+agesteps_geol(x::SingleDomain) = agesteps_geol(x.domain)
+# Forward time
+tsteps_geol(x::Chronometer{T}) where {T} = x.tsteps::AbstractVector{T}
+tsteps_geol(x::MultipleDomain) = tsteps_geol(first(x.domains))
+tsteps_geol(x::SingleDomain) = tsteps_geol(x.domain)
 
 # Retrive the eU ("effective uranium") of any Chronometer
 eU(x::Chronometer{T}) where {T<:AbstractFloat} = T(NaN)

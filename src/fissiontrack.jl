@@ -400,8 +400,8 @@ which they respetively implement include
 
 """
 function modelage(zircon::ZirconFT{T}, Tsteps::AbstractVector, am::ZirconAnnealingModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T <: AbstractFloat}
-    agesteps = agediscretization(zircon)
-    tsteps = timediscretization(zircon)
+    agesteps = agesteps_geol(zircon)
+    tsteps = tsteps_geol(zircon)
     ΔT = T(273.15) + temperatureoffset(zircon, rp)
     @assert issorted(tsteps)
     @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps)
@@ -417,8 +417,8 @@ function modelage(zircon::ZirconFT{T}, Tsteps::AbstractVector, am::ZirconAnneali
     return newton_ft_age(ftobs)
 end
 function modelage(monazite::MonaziteFT{T}, Tsteps::AbstractVector, am::MonaziteAnnealingModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T <: AbstractFloat}
-    agesteps = agediscretization(monazite)
-    tsteps = timediscretization(monazite)
+    agesteps = agesteps_geol(monazite)
+    tsteps = tsteps_geol(monazite)
     ΔT = T(273.15) + temperatureoffset(monazite, rp)
     @assert issorted(tsteps)
     @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps)
@@ -434,8 +434,8 @@ function modelage(monazite::MonaziteFT{T}, Tsteps::AbstractVector, am::MonaziteA
     return newton_ft_age(ftobs)
 end
 function modelage(apatite::ApatiteFT{T}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T <: AbstractFloat}
-    agesteps = agediscretization(apatite)
-    tsteps = timediscretization(apatite)
+    agesteps = agesteps_geol(apatite)
+    tsteps = tsteps_geol(apatite)
     ΔT = T(273.15) + temperatureoffset(apatite, rp)
     @assert issorted(tsteps)
     @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps)
@@ -475,8 +475,8 @@ which they respetively implement include
   `Ketcham2007FC`       Fanning Curvilinear apatite model of Ketcham et al. 2007 (doi: 10.2138/am.2007.2281)
 """
 function modellength(track::Union{ApatiteTrackLength{T}, ApatiteTrackLengthOriented{T}}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T <: AbstractFloat}
-    agesteps = agediscretization(track)
-    tsteps = timediscretization(track)
+    agesteps = agesteps_geol(track)
+    tsteps = tsteps_geol(track)
     ΔT = T(273.15) + temperatureoffset(track, rp)
     rmr0 = track.rmr0::T
     r = track.r::Vector{T}
@@ -499,8 +499,8 @@ function modellength(track::Union{ApatiteTrackLength{T}, ApatiteTrackLengthOrien
     return μ, σ
 end
 function modellength(track::MonaziteTrackLength{T}, Tsteps::AbstractVector, am::MonaziteAnnealingModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T <: AbstractFloat}
-    agesteps = agediscretization(track)
-    tsteps = timediscretization(track)
+    agesteps = agesteps_geol(track)
+    tsteps = tsteps_geol(track)
     ΔT = T(273.15) + temperatureoffset(track, rp)
     r = track.r::Vector{T}
     pr = track.pr::Vector{T}
@@ -522,8 +522,8 @@ function modellength(track::MonaziteTrackLength{T}, Tsteps::AbstractVector, am::
     return μ, σ
 end
 function modellength(track::ZirconTrackLength{T}, Tsteps::AbstractVector, am::ZirconAnnealingModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T <: AbstractFloat}
-    agesteps = agediscretization(track)
-    tsteps = timediscretization(track)
+    agesteps = agesteps_geol(track)
+    tsteps = tsteps_geol(track)
     ΔT = T(273.15) + temperatureoffset(track, rp)
     r = track.r::Vector{T}
     pr = track.pr::Vector{T}

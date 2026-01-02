@@ -909,8 +909,8 @@
         # Last damodel is regional parameters
         rp = last(damodels)::RegionalParameters{T}
         # Ttime discretization
-        imax = argmax(i->length(timediscretization(chrons[i])), eachindex(chrons))
-        tsteps = timediscretization(chrons[imax])
+        imax = argmax(i->length(tsteps_geol(chrons[i])), eachindex(chrons))
+        tsteps = tsteps_geol(chrons[imax])
         @assert issorted(tsteps)
         if eachindex(tsteps) != eachindex(Tsteps)
             @info chrons[imax]
@@ -956,7 +956,7 @@
         ll = zero(T)
         for i in eachindex(chrons)
             c, dm = chrons[i], damodels[i]
-            first_index = firstindex(Tsteps) + length(tsteps) - length(timediscretization(c))
+            first_index = firstindex(Tsteps) + length(tsteps) - length(tsteps_geol(c))
             Tstepsᵢ = @views(Tsteps[first_index:end])
             if isa(c, SphericalAr) || isa(c, PlanarAr)
                 c::Union{SphericalAr{T}, PlanarAr{T}}

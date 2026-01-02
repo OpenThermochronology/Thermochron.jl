@@ -269,15 +269,15 @@ In-place version of `anneal`
 function anneal!(data::Vector{<:Chronometer{T}}, ::Type{C}, tsteps::AbstractVector{T}, Tsteps::AbstractVector{T}, dm::DiffusivityModel{T}) where {T<:AbstractFloat, C<:HeliumSample}
     @assert eachindex(tsteps) == eachindex(Tsteps)
     if any(x->isa(x, C), data)
-        im = argmax(i->(eltype(data[i]) <: C) ? length(timediscretization(data[i])) : 0, eachindex(data))
-        first_index = firstindex(Tsteps) + length(tsteps) - length(timediscretization(data[im]))
+        im = argmax(i->(eltype(data[i]) <: C) ? length(tsteps_geol(data[i])) : 0, eachindex(data))
+        first_index = firstindex(Tsteps) + length(tsteps) - length(tsteps_geol(data[im]))
         dₘ = if first_index > 1
             anneal!(data[im], @views(Tsteps[first_index:end]), dm)::C
         else
             anneal!(data[im], Tsteps, dm)::C
         end
         pr = dₘ.pr
-        @assert length(timediscretization(dₘ)) == length(axes(pr, 1)) == length(axes(pr, 2))
+        @assert length(tsteps_geol(dₘ)) == length(axes(pr, 1)) == length(axes(pr, 2))
         for i in eachindex(data)
             if i!=im && eltype(data[i]) <: C
                 anneal!(data[i], Tsteps, pr)
@@ -288,7 +288,7 @@ function anneal!(data::Vector{<:Chronometer{T}}, ::Type{C}, tsteps::AbstractVect
 end
 function anneal!(mineral::HeliumSample, Tsteps::AbstractVector, pr::AbstractMatrix)
     ntsteps = length(axes(pr, 1))
-    first_index = firstindex(pr) + ntsteps - length(timediscretization(mineral))
+    first_index = firstindex(pr) + ntsteps - length(tsteps_geol(mineral))
     if first_index > 1
         mul!(mineral.annealeddamage, @views(pr[first_index:end, first_index:end]), mineral.alphadamage)
     else
@@ -307,12 +307,12 @@ function anneal!(mineral::MultipleDomain, Tsteps::AbstractVector, prdm)
     return c₀
 end
 function anneal!(mineral::ZirconHe, Tsteps::AbstractVector, dm::ZRDAAM)
-    anneal!(mineral.pr, view(mineral.annealeddamage,:,1), mineral.tsteps, Tsteps, dm)
+    anneal!(mineral.pr, view(mineral.annealeddamage,:,1), tsteps_geol(mineral), Tsteps, dm)
     mul!(mineral.annealeddamage, mineral.pr, mineral.alphadamage)
     return mineral
 end
 function anneal!(mineral::ApatiteHe, Tsteps::AbstractVector, dm::RDAAM)
-    anneal!(mineral.pr, view(mineral.annealeddamage,:,1), mineral.tsteps, Tsteps, dm)
+    anneal!(mineral.pr, view(mineral.annealeddamage,:,1), tsteps_geol(mineral), Tsteps, dm)
     mul!(mineral.annealeddamage, mineral.pr, mineral.alphadamage)
     return mineral
 end
@@ -429,9 +429,9 @@ modelage(mineral::SphericalAr, Tsteps, dm::Diffusivity)
 modelage(mineral::PlanarAr, Tsteps, dm::Diffusivity)
 ```
 Calculate the predicted bulk age of a noble gas chronometer that has experienced a given 
-t-T path (specified by `mineral.tsteps` for time and `Tsteps` for temperature), 
-at a time resolution determined by `mineral.tsteps` using a Crank-Nicolson diffusion 
-solution for a spherical (or planar slab) grain of radius (or halfwidth ) `mineral.r` 
+t-T path (specified by `tsteps_geol(mineral)` for time and `Tsteps` for temperature), 
+at a time resolution determined by `tsteps_geol(mineral)` using a Crank-Nicolson diffusion 
+solution for a spherical (or planar slab) grain of radius (or halfwidth) `mineral.r` 
 at spatial resolution `mineral.dr`.
 
 Spherical implementation based on the the Crank-Nicolson solution for diffusion out of a
@@ -442,7 +442,7 @@ function modelage(mineral::NobleGasSample{T}, Tsteps::AbstractVector, dm::Diffus
     fill!(mineral.u, zero(T))
 
     # Run Crank-Nicolson solver
-    crank_nicolson_geol!(mineral, mineral.tsteps, Tsteps, dm, rp; partitiondaughter) 
+    crank_nicolson_geol!(mineral, tsteps_geol(mineral), Tsteps, dm, rp; partitiondaughter) 
 
     # Numerically solve for resulting observed age of the grain (i.e, as measured, "raw" in AHe/ZHe parlanc)
     return newton_age(mineral)::T
