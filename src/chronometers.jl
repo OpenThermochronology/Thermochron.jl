@@ -6,7 +6,8 @@ ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64;
     length::Number = NaN,                   # [um] fission track length
     angle::Number = NaN,                    # [degrees] track angle from the c-axis
     lcmod::Number = lcmod(length, angle),   # [um] model length of an equivalent c-axis parallel rack
-    offset::Number = zero(T),               # [C] temperature offset relative to other samples
+    offset::Number = zero(T),               # [C] temperature offset relative to other samples / surface (positive is warmer)
+    height::Number = zero(T),               # [m] height relative to other samples / surface (negative for depth)
     l0::Number = NaN,                       # [um] Initial track length
     l0_sigma::Number = NaN,                 # [um] Initial track length unertainty
     dpar::Number = NaN,                     # [um] diameter parallel to track
@@ -42,7 +43,8 @@ struct ApatiteTrackLengthOriented{T<:AbstractFloat, V<:AbstractVector{T}} <: Fis
     length::T               # [um] track length
     angle::T                # [degrees] track angle from the c-axis
     lcmod::T                # [um] model length of an equivalent c-axis parallel rack
-    offset::T               # [C] temperature offset relative to other samples
+    offset::T               # [C] temperature offset relative to other samples / the surface
+    height::T               # [m] height relative to other samples / the surface
     l0::T                   # [um] Initial track length
     l0_sigma::T             # [um] Initial track length unertainty
     rmr0::T                 # [unitless] relative resistance to annealing (0=most, 1=least)
@@ -60,6 +62,7 @@ function ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64;
         angle::Number = NaN, 
         lcmod::Number = lcmod(length, angle),
         offset::Number = zero(T),
+        height::Number = zero(T),
         l0::Number = NaN,
         l0_sigma::Number = NaN,
         dpar::Number = NaN, 
@@ -85,6 +88,7 @@ function ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64;
         T(angle),
         T(lcmod),
         T(offset),
+        T(height),
         T(l0),
         T(l0_sigma),
         T(rmr0),
@@ -104,7 +108,8 @@ end
 ```julia
 ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64; 
     length::Number = NaN,                   # [um] fission track length
-    offset::Number = zero(T),               # [C] temperature offset relative to other samples
+    offset::Number = zero(T),               # [C] temperature offset relative to other samples / surface (positive is warmer)
+    height::Number = zero(T),               # [m] height relative to other samples / surface (negative for depth)
     l0::Number = NaN,                       # [um] Initial track length
     l0_sigma::Number = NaN,                 # [um] Initial track length unertainty
     dpar::Number = NaN,                     # [um] diameter parallel to track
@@ -137,7 +142,8 @@ in increasing order.
 """
 struct ApatiteTrackLength{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTrackLength{T}
     length::T               # [um] track length
-    offset::T               # [C] temperature offset relative to other samples
+    offset::T               # [C] temperature offset relative to other samples / the surface
+    height::T               # [m] height relative to other samples / the surface
     l0::T                   # [um] Initial track length
     l0_sigma::T             # [um] Initial track length unertainty
     rmr0::T                 # [unitless] relative resistance to annealing (0=most, 1=least)
@@ -153,6 +159,7 @@ end
 function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64; 
         length::Number = NaN, 
         offset::Number = zero(T),
+        height::Number = zero(T),
         l0::Number = NaN,
         l0_sigma::Number = NaN,
         dpar::Number = NaN, 
@@ -177,6 +184,7 @@ function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
     ApatiteTrackLength(
         T(length),
         T(offset),
+        T(height),
         T(l0),
         T(l0_sigma),
         T(rmr0),
@@ -195,7 +203,8 @@ end
 ```julia
 ZirconTrackLength(T::Type{<:AbstractFloat}=Float64; 
     length::Number = NaN,                   # [um] fission track length
-    offset::Number = zero(T),               # [C] temperature offset relative to other samples
+    offset::Number = zero(T),               # [C] temperature offset relative to other samples / surface (positive is warmer)
+    height::Number = zero(T),               # [m] height relative to other samples / surface (negative for depth)
     l0::Number = 11.17,                     # [um] Initial track length
     l0_sigma::Number = 0.051,               # [um] Initial track length unertainty
     name::String = "",                      # Sample or grain name
@@ -213,7 +222,8 @@ in increasing order.
 """
 struct ZirconTrackLength{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTrackLength{T}
     length::T               # [um] track length
-    offset::T               # [C] temperature offset relative to other samples
+    offset::T               # [C] temperature offset relative to other samples / the surface
+    height::T               # [m] height relative to other samples / the surface
     l0::T                   # [um] initial track length
     l0_sigma::T             # [um] initial track length uncertainty
     r::Vector{T}            # [unitless] reduced track lengths for each timestep
@@ -228,6 +238,7 @@ end
 function ZirconTrackLength(T::Type{<:AbstractFloat}=Float64; 
         length::Number = NaN, 
         offset::Number = zero(T),
+        height::Number = zero(T),
         l0::Number = 11.17,
         l0_sigma::Number = 0.051,
         name::String = "",
@@ -252,6 +263,7 @@ function ZirconTrackLength(T::Type{<:AbstractFloat}=Float64;
     ZirconTrackLength(
         T(length),
         T(offset),
+        T(height),
         T(l0),
         T(l0_sigma),
         r,
@@ -270,7 +282,8 @@ end
 ```julia
 MonaziteTrackLength(T::Type{<:AbstractFloat} = Float64; 
     length::Number = NaN,                   # [um] fission track length
-    offset::Number = zero(T),               # [C] temperature offset relative to other samples
+    offset::Number = zero(T),               # [C] temperature offset relative to other samples / surface (positive is warmer)
+    height::Number = zero(T),               # [m] height relative to other samples / surface (negative for depth)
     l0::Number = 10.60,                     # [um] Initial track length
     l0_sigma::Number = 0.19,                # [um] Initial track length unertainty
     name::String = "",                      # Sample or grain name
@@ -288,7 +301,8 @@ in increasing order.
 """
 struct MonaziteTrackLength{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTrackLength{T}
     length::T               # [um] track length
-    offset::T               # [C] temperature offset relative to other samples
+    offset::T               # [C] temperature offset relative to other samples / the surface
+    height::T               # [m] height relative to other samples / the surface
     l0::T                   # [um] initial track length
     l0_sigma::T             # [um] initial track length uncertainty
     r::Vector{T}            # [unitless] reduced track lengths for each timestep
@@ -301,8 +315,9 @@ struct MonaziteTrackLength{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTra
     notes::String           # Sample notes
 end
 function MonaziteTrackLength(T::Type{<:AbstractFloat}=Float64; 
-        length::Number = NaN,
+        length::Number = T(NaN),
         offset::Number = zero(T),
+        height::Number = zero(T),
         l0::Number = 10.60,
         l0_sigma::Number = 0.19,
         name::String = "",
@@ -327,6 +342,7 @@ function MonaziteTrackLength(T::Type{<:AbstractFloat}=Float64;
     MonaziteTrackLength(
         T(length),
         T(offset),
+        T(height),
         T(l0),
         T(l0_sigma),
         r,
@@ -347,7 +363,8 @@ end
 ZirconFT(T::Type{<:AbstractFloat} = Float64; 
     age::Number = NaN,              # [Ma] fission track age
     age_sigma::Number = NaN,        # [Ma] fission track age uncertainty
-    offset::Number = zero(T),       # [C] temperature offset relative to other samples
+    offset::Number = zero(T),       # [C] temperature offset relative to other samples / surface (positive is warmer)
+    height::Number = zero(T),       # [m] height relative to other samples / surface (negative for depth)
     name::String = "",              # Sample or grain name
     notes::String = "",             # Sample notes
     agesteps::AbstracVector | tsteps::AbstracVector, # Temporal discretization
@@ -364,16 +381,18 @@ in increasing order.
 struct ZirconFT{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTrackSample{T}
     age::T                  # [Ma] fission track age
     age_sigma::T            # [Ma] fission track age uncertainty (one-sigma)
-    offset::T               # [C] temperature offset relative to other samples
+    offset::T               # [C] temperature offset relative to other samples / the surface
+    height::T               # [m] height relative to other samples / the surface
     agesteps::V             # [Ma] age in Ma relative to the present
     tsteps::V               # [Ma] forward time since crystallization
     name::String            # Sample or grain name
     notes::String           # Sample notes
 end
 function ZirconFT(T::Type{<:AbstractFloat}=Float64; 
-        age::Number = NaN,              # [Ma] fission track age
-        age_sigma::Number = NaN,        # [Ma] fission track age uncertainty
-        offset::Number = zero(T),       # [C] temperature offset relative to other samples
+        age::Number = T(NaN),
+        age_sigma::Number = T(NaN),
+        offset::Number = zero(T),
+        height::Number = zero(T),
         name::String = "",
         notes::String = "",
         agesteps = nothing,
@@ -385,6 +404,7 @@ function ZirconFT(T::Type{<:AbstractFloat}=Float64;
         T(age),
         T(age_sigma),
         T(offset),
+        T(height),
         agesteps,
         tsteps,
         name,
@@ -398,7 +418,8 @@ end
 MonaziteFT(T::Type{<:AbstractFloat} = Float64; 
     age::Number = NaN,              # [Ma] fission track age
     age_sigma::Number = NaN,        # [Ma] fission track age uncertainty
-    offset::Number = zero(T),       # [C] temperature offset relative to other samples
+    offset::Number = zero(T),       # [C] temperature offset relative to other samples / surface (positive is warmer)
+    height::Number = zero(T),       # [m] height relative to other samples / surface (negative for depth)
     name::String = "",              # Sample or grain name
     notes::String = "",             # Sample notes
     agesteps::AbstracVector | tsteps::AbstracVector, # Temporal discretization
@@ -415,16 +436,18 @@ in increasing order.
 struct MonaziteFT{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTrackSample{T}
     age::T                  # [Ma] fission track age
     age_sigma::T            # [Ma] fission track age uncertainty (one-sigma)
-    offset::T               # [C] temperature offset relative to other samples
+    offset::T               # [C] temperature offset relative to other samples / the surface
+    height::T               # [m] height relative to other samples / the surface
     agesteps::V             # [Ma] age in Ma relative to the present
     tsteps::V               # [Ma] forward time since crystallization
     name::String            # Sample or grain name
     notes::String           # Sample notes
 end
 function MonaziteFT(T::Type{<:AbstractFloat}=Float64; 
-        age::Number = NaN,              # [Ma] fission track age
-        age_sigma::Number = NaN,        # [Ma] fission track age uncertainty
-        offset::Number = zero(T),       # [C] temperature offset relative to other samples
+        age::Number = T(NaN),
+        age_sigma::Number = T(NaN),
+        offset::Number = zero(T),
+        height::Number = zero(T),
         name::String = "",
         notes::String = "",
         agesteps = nothing,
@@ -436,6 +459,7 @@ function MonaziteFT(T::Type{<:AbstractFloat}=Float64;
         T(age),
         T(age_sigma),
         T(offset),
+        T(height),
         agesteps,
         tsteps,
         name,
@@ -449,7 +473,8 @@ end
 ApatiteFT(T::Type{<:AbstractFloat} = Float64; 
     age::Number = NaN,              # [Ma] fission track age
     age_sigma::Number = NaN,        # [Ma] fission track age uncertainty
-    offset::Number = zero(T),       # [C] temperature offset relative to other samples
+    offset::Number = zero(T),       # [C] temperature offset relative to other samples / surface (positive is warmer)
+    height::Number = zero(T),       # [m] height relative to other samples / surface (negative for depth)
     dpar::Number = NaN,             # [um] diameter parallel to track
     F::Number = NaN,                # [APFU] F concentration, in atoms per formula unit
     Cl::Number = NaN,               # [APFU] Cl concentration, in atoms per formula unit
@@ -477,7 +502,8 @@ in increasing order.
 struct ApatiteFT{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTrackSample{T}
     age::T                  # [Ma] fission track age
     age_sigma::T            # [Ma] fission track age uncertainty (one-sigma)
-    offset::T               # [C] temperature offset relative to other samples
+    offset::T               # [C] temperature offset relative to other samples / the surface
+    height::T               # [m] height relative to other samples / the surface
     rmr0::T                 # [unitless] relative resistance to annealing (0=most, 1=least)
     agesteps::V             # [Ma] age in Ma relative to the present
     tsteps::V               # [Ma] forward time since crystallization
@@ -488,6 +514,7 @@ function ApatiteFT(T::Type{<:AbstractFloat}=Float64;
         age::Number = NaN, 
         age_sigma::Number = NaN, 
         offset::Number = zero(T),
+        height::Number = zero(T),
         dpar::Number = NaN,
         F::Number = NaN,
         Cl::Number = NaN,
@@ -517,6 +544,7 @@ function ApatiteFT(T::Type{<:AbstractFloat}=Float64;
         T(age),
         T(age_sigma),
         T(offset),
+        T(height),
         T(rmr0),
         agesteps,
         tsteps,
@@ -532,7 +560,8 @@ end
 ZirconHe(T=Float64;
     age::Number = T(NaN),                   # [Ma] raw helium age
     age_sigma::Number = T(NaN),             # [Ma] raw helium age uncertainty (one-sigma)
-    offset::Number = zero(T),               # [C] temperature offset relative to other samples
+    offset::Number = zero(T),               # [C] temperature offset relative to other samples / surface (positive is warmer)
+    height::Number = zero(T),               # [m] height relative to other samples / surface (negative for depth)
     r::Number,                              # [um] spherical radius 
     dr::Number = one(T),                    # [um] radial step size
     U238::Number,                           # [ppm] zircon U-238 concentration
@@ -561,7 +590,8 @@ must be sorted in increasing order.
 struct ZirconHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     age::T                      # [Ma] helium age
     age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
-    offset::T                   # [C] temperature offset relative to other samples
+    offset::T                   # [C] temperature offset relative to other samples / the surface
+    height::T                   # [m] height relative to other samples / the surface
     agesteps::V                 # [Ma] age in Ma relative to the present
     tsteps::V                   # [Ma] forward time since crystallization
     rsteps::FloatRange          # [um] radius bin centers
@@ -593,6 +623,7 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
         age::Number = T(NaN),
         age_sigma::Number = T(NaN),
         offset::Number = zero(T),
+        height::Number = zero(T),
         r::Number,
         dr::Number = one(T), 
         U238::Number,
@@ -718,6 +749,7 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
         T(age),
         T(age_sigma),
         T(offset),
+        T(height),
         agesteps,
         tsteps,
         rsteps,
@@ -753,7 +785,8 @@ end
 ApatiteHe(T=Float64;
     age::Number = T(NaN),                   # [Ma] raw helium age
     age_sigma::Number = T(NaN),             # [Ma] raw helium age uncertainty (one-sigma)
-    offset::Number = zero(T),               # [C] temperature offset relative to other samples
+    offset::Number = zero(T),               # [C] temperature offset relative to other samples / surface (positive is warmer)
+    height::Number = zero(T),               # [m] height relative to other samples / surface (negative for depth)
     r::Number,                              # [um] spherical radius 
     dr::Number = one(T),                    # [um] radial step size
     U238::Number,                           # [ppm] apatite U-238 concentration
@@ -782,7 +815,8 @@ must be sorted in increasing order.
 struct ApatiteHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     age::T                      # [Ma] helium age
     age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
-    offset::T                   # [C] temperature offset relative to other samples
+    offset::T                   # [C] temperature offset relative to other samples / the surface
+    height::T                   # [m] height relative to other samples / the surface
     agesteps::V                 # [Ma] age in Ma relative to the present
     tsteps::V                   # [Ma] forward time since crystallization
     rsteps::FloatRange          # [um] radius bin centers
@@ -814,6 +848,7 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
         age::Number = T(NaN),
         age_sigma::Number = T(NaN),
         offset::Number = zero(T),
+        height::Number = zero(T),
         r::Number, 
         dr::Number = one(T), 
         U238::Number, 
@@ -939,6 +974,7 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
         T(age),
         T(age_sigma),
         T(offset),
+        T(height),
         agesteps,
         tsteps,
         rsteps,
@@ -974,7 +1010,8 @@ end
 SphericalHe(T=Float64;
     age::Number = T(NaN),                   # [Ma] raw helium age
     age_sigma::Number = T(NaN),             # [Ma] raw helium age uncertainty (one-sigma)
-    offset::Number = zero(T),               # [C] temperature offset relative to other samples
+    offset::Number = zero(T),               # [C] temperature offset relative to other samples / surface (positive is warmer)
+    height::Number = zero(T),               # [m] height relative to other samples / surface (negative for depth)
     stoppingpower::Number = T(1.189),       # [unitless] alpha stopping power relative to apatite
     r::Number,                              # [um] spherical radius 
     dr::Number = one(T),                    # [um] radial step size
@@ -1004,7 +1041,8 @@ must be sorted in increasing order.
 struct SphericalHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     age::T                      # [Ma] helium age
     age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
-    offset::T                   # [C] temperature offset relative to other samples
+    offset::T                   # [C] temperature offset relative to other samples / the surface
+    height::T                   # [m] height relative to other samples / the surface
     agesteps::V                 # [Ma] age in Ma relative to the present
     tsteps::V                   # [Ma] forward time since crystallization
     rsteps::FloatRange          # [um] radius bin centers
@@ -1033,6 +1071,7 @@ function SphericalHe(T::Type{<:AbstractFloat}=Float64;
         age::Number = T(NaN),
         age_sigma::Number = T(NaN),
         offset::Number = zero(T),
+        height::Number = zero(T),
         stoppingpower::Number = T(1.189),
         r::Number, 
         dr::Number = one(T), 
@@ -1146,6 +1185,7 @@ function SphericalHe(T::Type{<:AbstractFloat}=Float64;
         T(age),
         T(age_sigma),
         T(offset),
+        T(height),
         agesteps,
         tsteps,
         rsteps,
@@ -1177,7 +1217,8 @@ end
 PlanarHe(T=Float64;
     age::Number = T(NaN),                   # [Ma] raw helium age
     age_sigma::Number = T(NaN),             # [Ma] raw helium age uncertainty (one-sigma)
-    offset::Number = zero(T),               # [C] temperature offset relative to other samples
+    offset::Number = zero(T),               # [C] temperature offset relative to other samples / surface (positive is warmer)
+    height::Number = zero(T),               # [m] height relative to other samples / surface (negative for depth)
     stoppingpower::Number = T(1.189),       # [unitless] alpha stopping power relative to apatite
     r::Number,                              # [um] planar half-width
     dr::Number = one(T),                    # [um] radial step size
@@ -1207,7 +1248,8 @@ must be sorted in increasing order.
 struct PlanarHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     age::T                      # [Ma] helium age
     age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
-    offset::T                   # [C] temperature offset relative to other samples
+    offset::T                   # [C] temperature offset relative to other samples / the surface
+    height::T                   # [m] height relative to other samples / the surface
     agesteps::V                 # [Ma] age in Ma relative to the present
     tsteps::V                   # [Ma] forward time since crystallization
     rsteps::FloatRange          # [um] halfwidth bin centers
@@ -1235,6 +1277,7 @@ function PlanarHe(T::Type{<:AbstractFloat}=Float64;
         age::Number = T(NaN),
         age_sigma::Number = T(NaN),
         offset::Number = zero(T),
+        height::Number = zero(T),
         stoppingpower::Number = T(1.189),
         r::Number, 
         dr::Number = one(T), 
@@ -1344,6 +1387,7 @@ function PlanarHe(T::Type{<:AbstractFloat}=Float64;
         T(age),
         T(age_sigma),
         T(offset),
+        T(height),
         agesteps,
         tsteps,
         rsteps,
@@ -1374,7 +1418,8 @@ end
 SphericalAr(T=Float64;
     age::Number = T(NaN),                   # [Ma] Ar-40/Ar-39 age
     age_sigma::Number = T(NaN),             # [Ma] Ar-40/Ar-39 age uncertainty (one-sigma)
-    offset::Number = zero(T),               # [C] temperature offset relative to other samples
+    offset::Number = zero(T),               # [C] temperature offset relative to other samples / surface (positive is warmer)
+    height::Number = zero(T),               # [m] height relative to other samples / surface (negative for depth)
     r::Number,                              # [um] equivalent spherical radius 
     dr::Number = one(T),                    # [um] radial step size
     K40::Number = 16.34,                    # [ppm] mineral K-40 concentration
@@ -1397,7 +1442,8 @@ must be sorted in increasing order.
 struct SphericalAr{T<:AbstractFloat, V<:AbstractVector{T}} <: ArgonSample{T}
     age::T                      # [Ma] Ar-40/Ar-39 age
     age_sigma::T                # [Ma] Ar-40/Ar-39 age uncertainty (one-sigma)
-    offset::T                   # [C] temperature offset relative to other samples
+    offset::T                   # [C] temperature offset relative to other samples / the surface
+    height::T                   # [m] height relative to other samples / the surface
     agesteps::V                 # [Ma] age in Ma relative to the present
     tsteps::V                   # [Ma] forward time since crystallization
     rsteps::FloatRange          # [um] radius bin centers
@@ -1423,6 +1469,7 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
         age::Number = T(NaN),
         age_sigma::Number = T(NaN),
         offset::Number = zero(T),
+        height::Number = zero(T),
         r::Number, 
         dr::Number = one(T), 
         K40::Number = 16.34, 
@@ -1501,6 +1548,7 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
         T(age),
         T(age_sigma),
         T(offset),
+        T(height),
         agesteps,
         tsteps,
         rsteps,
@@ -1529,7 +1577,8 @@ end
 PlanarAr(T=Float64;
     age::Number = T(NaN),                   # [Ma] Ar-40/Ar-39 age
     age_sigma::Number = T(NaN),             # [Ma] Ar-40/Ar-39 age uncertainty (one-sigma)
-    offset::Number = zero(T),               # [C] temperature offset relative to other samples
+    offset::Number = zero(T),               # [C] temperature offset relative to other samples / surface (positive is warmer)
+    height::Number = zero(T),               # [m] height relative to other samples / surface (negative for depth)
     r::Number,                              # [um] planar half-width
     dr::Number = one(T),                    # [um] radial step size
     K40::Number = 16.34,                    # [ppm] mineral K-40 concentration
@@ -1552,7 +1601,8 @@ must be sorted in increasing order.
 struct PlanarAr{T<:AbstractFloat, V<:AbstractVector{T}} <: ArgonSample{T}
     age::T                      # [Ma] Ar-40/Ar-39 age
     age_sigma::T                # [Ma] Ar-40/Ar-39 age uncertainty (one-sigma)
-    offset::T                   # [C] temperature offset relative to other samples
+    offset::T                   # [C] temperature offset relative to other samples / the surface
+    height::T                   # [m] height relative to other samples / the surface
     agesteps::V                 # [Ma] age in Ma relative to the present
     tsteps::V                   # [Ma] forward time since crystallization
     rsteps::FloatRange          # [um] halfwidth bin centers
@@ -1577,6 +1627,7 @@ function PlanarAr(T::Type{<:AbstractFloat}=Float64;
         age::Number = T(NaN),
         age_sigma::Number = T(NaN),
         offset::Number = zero(T),
+        height::Number = zero(T),
         r::Number, 
         dr::Number = one(T), 
         K40::Number = 16.34, 
@@ -1652,6 +1703,7 @@ function PlanarAr(T::Type{<:AbstractFloat}=Float64;
         T(age),
         T(age_sigma),
         T(offset),
+        T(height),
         agesteps,
         tsteps,
         rsteps,
@@ -1676,226 +1728,234 @@ end
 
 ## --- Single-domain diffusion chronometers (e.g. 4/3 He)
 
-    """
-    ```julia
-    SingleDomain(T=Float64, C=ApatiteHe;
-        step_age::AbstractVector,                       # [Ma] measured Ar-40/Ar-39 ages at each degassing step
-        step_age_sigma::AbstractVector,                 # [Ma] measured Ar-40/Ar-39 age uncertainties (one-sigma) at each degassing step
-        fraction_experimental::AbstractVector,          # [unitless] cumulative fraction of total Ar-39 released each degassing step
-        fraction_experimental_sigma=fill(T(0.005), size(fraction_experimental)),     # [unitless] uncertainty in degassing fraction
-        tsteps_experimental::AbstractVector,            # [s] time steps of experimental heating schedule
-        Tsteps_experimental::AbstractVector,            # [C] temperature steps of experimental heating schedule
-        fit::AbstractVector,                            # [Bool] Whether or not each degassing step should be used in inversion
-        offset::Number = zero(T),                       # [C] temperature offset relative to other samples
-        fuse::Bool = true,                              # [Bool] Treat the grain as having fused (released all remaining Ar)
-        name::String = "",                              # Sample or grain name
-        notes::String = "",                             # Sample notes
-        agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
-        kwargs...                                       # Any further keyword arguments are forwarded to the constructor for the domain `C`
+"""
+```julia
+SingleDomain(T=Float64, C=ApatiteHe;
+    step_age::AbstractVector,                       # [Ma] measured Ar-40/Ar-39 ages at each degassing step
+    step_age_sigma::AbstractVector,                 # [Ma] measured Ar-40/Ar-39 age uncertainties (one-sigma) at each degassing step
+    fraction_experimental::AbstractVector,          # [unitless] cumulative fraction of total Ar-39 released each degassing step
+    fraction_experimental_sigma=fill(T(0.005), size(fraction_experimental)),     # [unitless] uncertainty in degassing fraction
+    tsteps_experimental::AbstractVector,            # [s] time steps of experimental heating schedule
+    Tsteps_experimental::AbstractVector,            # [C] temperature steps of experimental heating schedule
+    fit::AbstractVector,                            # [Bool] Whether or not each degassing step should be used in inversion
+    offset::Number = zero(T),                       # [C] temperature offset relative to other samples / surface (positive is warmer)
+    height::Number = zero(T),                       # [m] height relative to other samples / surface (negative for depth)
+    fuse::Bool = true,                              # [Bool] Treat the grain as having fused (released all remaining Ar)
+    name::String = "",                              # Sample or grain name
+    notes::String = "",                             # Sample notes
+    agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
+    kwargs...                                       # Any further keyword arguments are forwarded to the constructor for the domain `C`
+)
+```
+Construct a `SingleDomain` diffusion chronometer given an observed 
+experimental release spectrum and degassing schedule, where the  
+single modelled domain is represented by a Chronometer object 
+(e.g. `ApatiteHe` for He-4/He-3).
+
+See also: `degas!`
+"""
+struct SingleDomain{T<:AbstractFloat, C<:NobleGasSample{T}} <: StepHeatingSample{T,C}
+    step_age::Vector{T}                     # [Ma or unitless] measured ages (for Ar-40/Ar-39) or Rstep/Rbulk ratios (for He-4/He-3) at each degassing step
+    step_age_sigma::Vector{T}               # [Ma or unitless] measured age (or ratio) uncertainties (one-sigma) at each degassing step
+    fraction_experimental::Vector{T}        # [unitless] cumulative fraction of total tracer (Ar-39 or He-3) released each degassing step
+    fraction_experimental_sigma::Vector{T}  # [unitless] uncertainty in degassing fraction
+    midpoint_experimental::Vector{T}        # [unitless] midpoint of fraction_experimental for each step
+    tsteps_experimental::Vector{T}          # [s] time steps of experimental heating schedule
+    Tsteps_experimental::Vector{T}          # [C] temperature steps of experimental heating schedule
+    fit::BitVector                          # [Bool] Whether or not each step should be used in inversion
+    offset::T                               # [C] temperature offset relative to other samples / the surface
+    height::T                               # [m] height relative to other samples / the surface
+    fuse::Bool                              # [Bool] Treat the grain as having fused (released all remaining Ar)
+    domain::C                               # Chronometer obect for diffusion domain
+    model_age::Vector{T}                    # [Ma or ratio] calculated age at each model degassing step
+    model_fraction::Vector{T}               # [unitless] cumulative fraction of tracer He-3 degasssed
+    tsteps_degassing::FloatRange            # [s] time steps of model heating schedule
+    Tsteps_degassing::Vector{T}             # [C] temperature steps of model heating schedule
+    name::String                            # Sample or grain name
+    notes::String                           # Sample notes
+end
+function SingleDomain(T=Float64, C=ApatiteHe;
+        step_age::AbstractVector,
+        step_age_sigma::AbstractVector,
+        fraction_experimental::AbstractVector,
+        fraction_experimental_sigma::AbstractVector = fill(T(0.005), size(fraction_experimental)),
+        tsteps_experimental::AbstractVector,
+        Tsteps_experimental::AbstractVector,
+        fit::AbstractVector,
+        offset::Number = zero(T),
+        height::Number = zero(T),
+        fuse::Bool = true,
+        name::String = "",
+        notes::String = "",
+        agesteps = nothing,
+        tsteps = nothing,
+        kwargs...
     )
-    ```
-    Construct a `SingleDomain` diffusion chronometer given an observed 
-    experimental release spectrum and degassing schedule, where the  
-    single modelled domain is represented by a Chronometer object 
-    (e.g. `ApatiteHe` for He-4/He-3).
+    # Temporal discretization
+    agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
+    
+    # Check input arrays are the right size and ordered properly
+    @assert eachindex(step_age) == eachindex(step_age_sigma) == eachindex(fraction_experimental) == eachindex(tsteps_experimental) == eachindex(Tsteps_experimental)
+    @assert issorted(tsteps_experimental, lt=<=) "Degassing time steps must be in strictly increasing order"
+    @assert all(x->0<=x<=1, fraction_experimental) "All \"fraction degassed\" values must be between 0 and 1"
 
-    See also: `degas!`
-    """
-    struct SingleDomain{T<:AbstractFloat, C<:NobleGasSample{T}} <: StepHeatingSample{T,C}
-        step_age::Vector{T}                     # [Ma or unitless] measured ages (for Ar-40/Ar-39) or Rstep/Rbulk ratios (for He-4/He-3) at each degassing step
-        step_age_sigma::Vector{T}               # [Ma or unitless] measured age (or ratio) uncertainties (one-sigma) at each degassing step
-        fraction_experimental::Vector{T}        # [unitless] cumulative fraction of total tracer (Ar-39 or He-3) released each degassing step
-        fraction_experimental_sigma::Vector{T}  # [unitless] uncertainty in degassing fraction
-        midpoint_experimental::Vector{T}        # [unitless] midpoint of fraction_experimental for each step
-        tsteps_experimental::Vector{T}          # [s] time steps of experimental heating schedule
-        Tsteps_experimental::Vector{T}          # [C] temperature steps of experimental heating schedule
-        fit::BitVector                          # [Bool] Whether or not each step should be used in inversion
-        offset::T                               # [C] temperature offset relative to other samples
-        fuse::Bool                              # [Bool] Treat the grain as having fused (released all remaining Ar)
-        domain::C                               # Chronometer obect for diffusion domain
-        model_age::Vector{T}                    # [Ma or ratio] calculated age at each model degassing step
-        model_fraction::Vector{T}               # [unitless] cumulative fraction of tracer He-3 degasssed
-        tsteps_degassing::FloatRange            # [s] time steps of model heating schedule
-        Tsteps_degassing::Vector{T}             # [C] temperature steps of model heating schedule
-        name::String                            # Sample or grain name
-        notes::String                           # Sample notes
-    end
-    function SingleDomain(T=Float64, C=ApatiteHe;
-            step_age::AbstractVector,
-            step_age_sigma::AbstractVector,
-            fraction_experimental::AbstractVector,
-            fraction_experimental_sigma::AbstractVector = fill(T(0.005), size(fraction_experimental)),
-            tsteps_experimental::AbstractVector,
-            Tsteps_experimental::AbstractVector,
-            fit::AbstractVector,
-            offset::Number = zero(T),
-            fuse::Bool = true,
-            name::String = "",
-            notes::String = "",
-            agesteps = nothing,
-            tsteps = nothing,
-            kwargs...
-        )
-        # Temporal discretization
-        agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
-        
-        # Check input arrays are the right size and ordered properly
-        @assert eachindex(step_age) == eachindex(step_age_sigma) == eachindex(fraction_experimental) == eachindex(tsteps_experimental) == eachindex(Tsteps_experimental)
-        @assert issorted(tsteps_experimental, lt=<=) "Degassing time steps must be in strictly increasing order"
-        @assert all(x->0<=x<=1, fraction_experimental) "All \"fraction degassed\" values must be between 0 and 1"
+    # Calculate midpoints of `fraction_experimental`
+    midpoint_experimental = @. T(fraction_experimental + [0; fraction_experimental[1:end-1]])/2
 
-        # Calculate midpoints of `fraction_experimental`
-        midpoint_experimental = @. T(fraction_experimental + [0; fraction_experimental[1:end-1]])/2
-
-        # Interpolate degassing t-T steps to the same resolution as the forward model
-        tsteps_degassing = floatrange(first(tsteps_experimental), last(tsteps_experimental), length=length(agesteps))
-        Tsteps_degassing = linterp1(tsteps_experimental, T.(Tsteps_experimental), tsteps_degassing) 
-        model_age = zeros(T, length(tsteps_degassing))
-        model_fraction = zeros(T, length(tsteps_degassing))
-        
-        # Allocate domain
-        domain = C(T; offset, agesteps, tsteps, kwargs...)
-        return SingleDomain(
-            T.(step_age),
-            T.(step_age_sigma),
-            T.(fraction_experimental),
-            T.(fraction_experimental_sigma),
-            midpoint_experimental,
-            tsteps_experimental,
-            Tsteps_experimental,
-            Bool.(fit),
-            T(offset),
-            fuse,
-            domain,
-            model_age,
-            model_fraction,
-            tsteps_degassing,
-            Tsteps_degassing,
-            name,
-            notes,
-        )
-    end
+    # Interpolate degassing t-T steps to the same resolution as the forward model
+    tsteps_degassing = floatrange(first(tsteps_experimental), last(tsteps_experimental), length=length(agesteps))
+    Tsteps_degassing = linterp1(tsteps_experimental, T.(Tsteps_experimental), tsteps_degassing) 
+    model_age = zeros(T, length(tsteps_degassing))
+    model_fraction = zeros(T, length(tsteps_degassing))
+    
+    # Allocate domain
+    domain = C(T; offset, agesteps, tsteps, kwargs...)
+    return SingleDomain(
+        T.(step_age),
+        T.(step_age_sigma),
+        T.(fraction_experimental),
+        T.(fraction_experimental_sigma),
+        midpoint_experimental,
+        tsteps_experimental,
+        Tsteps_experimental,
+        Bool.(fit),
+        T(offset),
+        T(height),
+        fuse,
+        domain,
+        model_age,
+        model_fraction,
+        tsteps_degassing,
+        Tsteps_degassing,
+        name,
+        notes,
+    )
+end
 
 ## --- Multiple domain diffusion chronometers!
 
-    """
-    ```julia
-    MultipleDomain(T=Float64, C=PlanarAr;
-        step_age::AbstractVector,                       # [Ma] measured Ar-40/Ar-39 ages at each degassing step
-        step_age_sigma::AbstractVector,                 # [Ma] measured Ar-40/Ar-39 age uncertainties (one-sigma) at each degassing step
-        fraction_experimental::AbstractVector,          # [unitless] cumulative fraction of total Ar-39 released each degassing step
-        fraction_experimental_sigma=fill(T(0.005), size(fraction_experimental)),     # [unitless] uncertainty in degassing fraction
-        tsteps_experimental::AbstractVector,            # [s] time steps of experimental heating schedule
-        Tsteps_experimental::AbstractVector,            # [C] temperature steps of experimental heating schedule
-        fit::AbstractVector,                            # [Bool] Whether or not each degassing step should be used in inversion
-        offset::Number = zero(T),                       # [C] temperature offset relative to other samples
-        fuse::Bool = true,                              # [Bool] Treat the grain as having fused (released all remaining Ar)
-        volume_fraction::AbstractVector,                # [unitless] fraction of total volume represented by each domain
-        r::Number = 100,                                # [um] model domain radius (spherical) or half-width (planar)
-        dr::Number = one(T),                            # [um] model domain radius step
-        name::String = "",                              # Sample or grain name
-        notes::String = "",                             # Sample notes
-        agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
-        kwargs...                                       # Any further keyword arguments are forwarded to the constructor for the domain `C`
+"""
+```julia
+MultipleDomain(T=Float64, C=PlanarAr;
+    step_age::AbstractVector,                       # [Ma] measured Ar-40/Ar-39 ages at each degassing step
+    step_age_sigma::AbstractVector,                 # [Ma] measured Ar-40/Ar-39 age uncertainties (one-sigma) at each degassing step
+    fraction_experimental::AbstractVector,          # [unitless] cumulative fraction of total Ar-39 released each degassing step
+    fraction_experimental_sigma=fill(T(0.005), size(fraction_experimental)),     # [unitless] uncertainty in degassing fraction
+    tsteps_experimental::AbstractVector,            # [s] time steps of experimental heating schedule
+    Tsteps_experimental::AbstractVector,            # [C] temperature steps of experimental heating schedule
+    fit::AbstractVector,                            # [Bool] Whether or not each degassing step should be used in inversion
+    offset::Number = zero(T),                       # [C] temperature offset relative to other samples / surface (positive is warmer)
+    height::Number = zero(T),                       # [m] height relative to other samples / surface (negative for depth)
+    fuse::Bool = true,                              # [Bool] Treat the grain as having fused (released all remaining Ar)
+    volume_fraction::AbstractVector,                # [unitless] fraction of total volume represented by each domain
+    r::Number = 100,                                # [um] model domain radius (spherical) or half-width (planar)
+    dr::Number = one(T),                            # [um] model domain radius step
+    name::String = "",                              # Sample or grain name
+    notes::String = "",                             # Sample notes
+    agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
+    kwargs...                                       # Any further keyword arguments are forwarded to the constructor for the domain `C`
+)
+```
+Construct a `MultipleDomain` diffusion chronometer given an observed
+release spectrum and degassing schedule, where each domain is in turn 
+represented by a Chronometer object (e.g. `PlanarAr`, `SphericalAr`).
+
+Domain diffusivity and volume parameters must be supplied as vectors
+`Ea` [kJ/mol], `lnD0a2` [log(1/s)], and `volume_fraction` [unitless]
+obtained by separately fitting the release spectrum (the former two
+as an `MDiffusivity` object).
+
+See also: `MDiffusivity`, `PlanarAr`, `SphericalAr`, `degas!`
+"""
+struct MultipleDomain{T<:AbstractFloat, C<:NobleGasSample{T}} <: StepHeatingSample{T,C}
+    step_age::Vector{T}                     # [Ma or unitless] measured ages (for Ar-40/Ar-39) or Rstep/Rbulk ratios (for He-4/He-3) at each degassing step
+    step_age_sigma::Vector{T}               # [Ma or unitless] measured age (or ratio) uncertainties at each degassing step
+    fraction_experimental::Vector{T}        # [unitless] cumulative fraction of total tracer (Ar-39 or He-3) released each degassing step
+    fraction_experimental_sigma::Vector{T}  # [unitless] uncertainty in degassing fraction
+    midpoint_experimental::Vector{T}        # [unitless] midpoint of fraction_experimental for each step
+    tsteps_experimental::Vector{T}          # [s] time steps of experimental heating schedule
+    Tsteps_experimental::Vector{T}          # [C] temperature steps of experimental heating schedule
+    fit::BitVector                          # [Bool] Whether or not each step should be used in inversion
+    offset::T                               # [C] temperature offset relative to other samples / the surface
+    height::T                               # [m] height relative to other samples / the surface
+    fuse::Bool                              # [Bool] Treat the grain as having fused (released all remaining Ar)
+    domains::Vector{C}                      # Vector of chronometer obects for each domain
+    model_age::Vector{T}                    # [Ma] calculated age at each model degassing step
+    model_tracer::Vector{T}                 # [atoms/g equivalent] parent tracer degassed
+    model_daughter::Vector{T}               # [atoms/g], converted from PPMw daughter degassed
+    model_fraction::Vector{T}               # [unitless] cumulative fraction of parent tracer degasssed
+    tsteps_degassing::FloatRange            # [s] time steps of model heating schedule
+    Tsteps_degassing::Vector{T}             # [C] temperature steps of model heating schedule
+    name::String                            # Sample or grain name
+    notes::String                           # Sample notes
+end
+function MultipleDomain(T=Float64, C=PlanarAr;
+        step_age::AbstractVector,
+        step_age_sigma::AbstractVector,
+        fraction_experimental::AbstractVector,
+        fraction_experimental_sigma::AbstractVector=fill(T(0.005), size(fraction_experimental)),
+        tsteps_experimental::AbstractVector,
+        Tsteps_experimental::AbstractVector,
+        fit::AbstractVector,
+        offset::Number = zero(T),
+        height::Number = zero(T),
+        fuse::Bool = true,
+        volume_fraction::AbstractVector,
+        r::Number = 100,
+        dr::Number = one(T),
+        name::String = "",
+        notes::String = "",
+        agesteps = nothing,
+        tsteps = nothing,
+        kwargs...
     )
-    ```
-    Construct a `MultipleDomain` diffusion chronometer given an observed
-    release spectrum and degassing schedule, where each domain is in turn 
-    represented by a Chronometer object (e.g. `PlanarAr`, `SphericalAr`).
+    # Temporal discretization
+    agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
+    
+    # Check input arrays are the right size and ordered properly
+    @assert eachindex(step_age) == eachindex(step_age_sigma) == eachindex(fraction_experimental) == eachindex(fraction_experimental_sigma) == eachindex(tsteps_experimental) == eachindex(Tsteps_experimental)
+    @assert issorted(tsteps_experimental, lt=<=) "Degassing time steps must be in strictly increasing order"
+    @assert all(x->0<=x<=1, fraction_experimental) "All \"fraction degassed\" values must be between 0 and 1"
 
-    Domain diffusivity and volume parameters must be supplied as vectors
-    `Ea` [kJ/mol], `lnD0a2` [log(1/s)], and `volume_fraction` [unitless]
-    obtained by separately fitting the release spectrum (the former two
-    as an `MDiffusivity` object).
+    # Calculate midpoints of `fraction_experimental`
+    midpoint_experimental = @. T(fraction_experimental + [0; fraction_experimental[1:end-1]])/2
+    @assert eachindex(midpoint_experimental) == eachindex(fraction_experimental)
 
-    See also: `MDiffusivity`, `PlanarAr`, `SphericalAr`, `degas!`
-    """
-    struct MultipleDomain{T<:AbstractFloat, C<:NobleGasSample{T}} <: StepHeatingSample{T,C}
-        step_age::Vector{T}                     # [Ma or unitless] measured ages (for Ar-40/Ar-39) or Rstep/Rbulk ratios (for He-4/He-3) at each degassing step
-        step_age_sigma::Vector{T}               # [Ma or unitless] measured age (or ratio) uncertainties at each degassing step
-        fraction_experimental::Vector{T}        # [unitless] cumulative fraction of total tracer (Ar-39 or He-3) released each degassing step
-        fraction_experimental_sigma::Vector{T}  # [unitless] uncertainty in degassing fraction
-        midpoint_experimental::Vector{T}        # [unitless] midpoint of fraction_experimental for each step
-        tsteps_experimental::Vector{T}          # [s] time steps of experimental heating schedule
-        Tsteps_experimental::Vector{T}          # [C] temperature steps of experimental heating schedule
-        fit::BitVector                          # [Bool] Whether or not each step should be used in inversion
-        offset::T                               # [C] temperature offset relative to other samples
-        fuse::Bool                              # [Bool] Treat the grain as having fused (released all remaining Ar)
-        domains::Vector{C}                      # Vector of chronometer obects for each domain
-        model_age::Vector{T}                    # [Ma] calculated age at each model degassing step
-        model_tracer::Vector{T}                 # [atoms/g equivalent] parent tracer degassed
-        model_daughter::Vector{T}               # [atoms/g], converted from PPMw daughter degassed
-        model_fraction::Vector{T}               # [unitless] cumulative fraction of parent tracer degasssed
-        tsteps_degassing::FloatRange            # [s] time steps of model heating schedule
-        Tsteps_degassing::Vector{T}             # [C] temperature steps of model heating schedule
-        name::String                            # Sample or grain name
-        notes::String                           # Sample notes
-    end
-    function MultipleDomain(T=Float64, C=PlanarAr;
-            step_age::AbstractVector,
-            step_age_sigma::AbstractVector,
-            fraction_experimental::AbstractVector,
-            fraction_experimental_sigma::AbstractVector=fill(T(0.005), size(fraction_experimental)),
-            tsteps_experimental::AbstractVector,
-            Tsteps_experimental::AbstractVector,
-            fit::AbstractVector,
-            offset::Number = zero(T),
-            fuse::Bool = true,
-            volume_fraction::AbstractVector,
-            r::Number = 100,
-            dr::Number = one(T),
-            name::String = "",
-            notes::String = "",
-            agesteps = nothing,
-            tsteps = nothing,
-            kwargs...
-        )
-        # Temporal discretization
-        agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
-        
-        # Check input arrays are the right size and ordered properly
-        @assert eachindex(step_age) == eachindex(step_age_sigma) == eachindex(fraction_experimental) == eachindex(fraction_experimental_sigma) == eachindex(tsteps_experimental) == eachindex(Tsteps_experimental)
-        @assert issorted(tsteps_experimental, lt=<=) "Degassing time steps must be in strictly increasing order"
-        @assert all(x->0<=x<=1, fraction_experimental) "All \"fraction degassed\" values must be between 0 and 1"
-
-        # Calculate midpoints of `fraction_experimental`
-        midpoint_experimental = @. T(fraction_experimental + [0; fraction_experimental[1:end-1]])/2
-        @assert eachindex(midpoint_experimental) == eachindex(fraction_experimental)
-
-        # Interpolate degassing t-T steps to the same resolution as the forward model
-        tsteps_degassing = floatrange(first(tsteps_experimental), last(tsteps_experimental), length=length(agesteps))
-        Tsteps_degassing = linterp1(tsteps_experimental, T.(Tsteps_experimental), tsteps_degassing) 
-        model_age = zeros(T, length(tsteps_degassing))
-        model_tracer = zeros(T, length(tsteps_degassing))
-        model_daughter = zeros(T, length(tsteps_degassing))
-        model_fraction = zeros(T, length(tsteps_degassing))
-        
-        # Allocate domains
-        bulk_age = nanmean(step_age, @.(fit./step_age_sigma^2))
-        bulk_age_sigma = nanstd(step_age, @.(fit./step_age_sigma^2))
-        domains = [C(T; age=bulk_age, age_sigma=bulk_age_sigma, offset, r, dr, agesteps, tsteps, kwargs...) for i in eachindex(volume_fraction)]
-        return MultipleDomain(
-            T.(step_age),
-            T.(step_age_sigma),
-            T.(fraction_experimental),
-            T.(fraction_experimental_sigma),
-            midpoint_experimental,
-            tsteps_experimental,
-            Tsteps_experimental,
-            Bool.(fit),
-            T(offset),
-            fuse,
-            domains,
-            model_age,
-            model_tracer,
-            model_daughter,
-            model_fraction,
-            tsteps_degassing,
-            Tsteps_degassing,
-            name,
-            notes,
-        )
-    end
+    # Interpolate degassing t-T steps to the same resolution as the forward model
+    tsteps_degassing = floatrange(first(tsteps_experimental), last(tsteps_experimental), length=length(agesteps))
+    Tsteps_degassing = linterp1(tsteps_experimental, T.(Tsteps_experimental), tsteps_degassing) 
+    model_age = zeros(T, length(tsteps_degassing))
+    model_tracer = zeros(T, length(tsteps_degassing))
+    model_daughter = zeros(T, length(tsteps_degassing))
+    model_fraction = zeros(T, length(tsteps_degassing))
+    
+    # Allocate domains
+    bulk_age = nanmean(step_age, @.(fit./step_age_sigma^2))
+    bulk_age_sigma = nanstd(step_age, @.(fit./step_age_sigma^2))
+    domains = [C(T; age=bulk_age, age_sigma=bulk_age_sigma, offset, r, dr, agesteps, tsteps, kwargs...) for i in eachindex(volume_fraction)]
+    return MultipleDomain(
+        T.(step_age),
+        T.(step_age_sigma),
+        T.(fraction_experimental),
+        T.(fraction_experimental_sigma),
+        midpoint_experimental,
+        tsteps_experimental,
+        Tsteps_experimental,
+        Bool.(fit),
+        T(offset),
+        T(height),
+        fuse,
+        domains,
+        model_age,
+        model_tracer,
+        model_daughter,
+        model_fraction,
+        tsteps_degassing,
+        Tsteps_degassing,
+        name,
+        notes,
+    )
+end
 
 ## --- Functions on Chronometers which require types to have been defined
 
@@ -1924,7 +1984,9 @@ function err(x::Chronometer)
 end
 
 # Retrive the temperature offset of any Chronometer
-temperatureoffset(x::Chronometer{T}) where {T} = x.offset::T
+function temperatureoffset(x::Chronometer{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T}
+    T(x.offset - x.height*rp.geotherm/1000)
+end
 
 # Retrive the temporal discretization of any Chronometer
 agediscretization(x::Chronometer{T}) where {T} = x.agesteps::AbstractVector{T}

@@ -402,7 +402,7 @@ which they respetively implement include
 function modelage(zircon::ZirconFT{T}, Tsteps::AbstractVector, am::ZirconAnnealingModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T <: AbstractFloat}
     agesteps = agediscretization(zircon)
     tsteps = timediscretization(zircon)
-    ΔT = temperatureoffset(zircon)
+    ΔT = temperatureoffset(zircon, rp)
     @assert issorted(tsteps)
     @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps)
     teq = dt = step_at(tsteps, lastindex(tsteps))
@@ -419,7 +419,7 @@ end
 function modelage(monazite::MonaziteFT{T}, Tsteps::AbstractVector, am::MonaziteAnnealingModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T <: AbstractFloat}
     agesteps = agediscretization(monazite)
     tsteps = timediscretization(monazite)
-    ΔT = temperatureoffset(monazite)
+    ΔT = temperatureoffset(monazite, rp)
     @assert issorted(tsteps)
     @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps)
     teq = dt = step_at(tsteps, lastindex(tsteps))
@@ -436,7 +436,7 @@ end
 function modelage(apatite::ApatiteFT{T}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T <: AbstractFloat}
     agesteps = agediscretization(apatite)
     tsteps = timediscretization(apatite)
-    ΔT = temperatureoffset(apatite)
+    ΔT = temperatureoffset(apatite, rp)
     @assert issorted(tsteps)
     @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps)
     rmr0 = apatite.rmr0::T
@@ -477,7 +477,7 @@ which they respetively implement include
 function modellength(track::Union{ApatiteTrackLength{T}, ApatiteTrackLengthOriented{T}}, Tsteps::AbstractVector, am::ApatiteAnnealingModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T <: AbstractFloat}
     agesteps = agediscretization(track)
     tsteps = timediscretization(track)
-    ΔT = temperatureoffset(track)
+    ΔT = temperatureoffset(track, rp)
     rmr0 = track.rmr0::T
     r = track.r::Vector{T}
     pr = track.pr::Vector{T}
@@ -501,7 +501,7 @@ end
 function modellength(track::MonaziteTrackLength{T}, Tsteps::AbstractVector, am::MonaziteAnnealingModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T <: AbstractFloat}
     agesteps = agediscretization(track)
     tsteps = timediscretization(track)
-    ΔT = temperatureoffset(track)
+    ΔT = temperatureoffset(track, rp)
     r = track.r::Vector{T}
     pr = track.pr::Vector{T}
     @assert issorted(tsteps)
@@ -524,7 +524,7 @@ end
 function modellength(track::ZirconTrackLength{T}, Tsteps::AbstractVector, am::ZirconAnnealingModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T <: AbstractFloat}
     agesteps = agediscretization(track)
     tsteps = timediscretization(track)
-    ΔT = temperatureoffset(track)
+    ΔT = temperatureoffset(track, rp)
     r = track.r::Vector{T}
     pr = track.pr::Vector{T}
     @assert issorted(tsteps)

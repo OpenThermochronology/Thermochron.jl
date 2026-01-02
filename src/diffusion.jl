@@ -200,7 +200,7 @@ function crank_nicolson_geol!(mineral::PlanarNobleGas{T}, tsteps::AbstractVector
     ) where {T <: AbstractFloat}
 
     # Temperature conversion
-    ΔT = T(273.15) + mineral.offset
+    ΔT = T(273.15) + temperatureoffset(mineral, rp)
 
     # Check time and radius discretization
     nrsteps = mineral.nrsteps::Int
@@ -359,7 +359,7 @@ function crank_nicolson_geol!(mineral::SphericalNobleGas{T}, tsteps::AbstractVec
     ) where {T <: AbstractFloat}
 
     # Temperature conversion
-    ΔT = T(273.15) + mineral.offset
+    ΔT = T(273.15) + temperatureoffset(mineral, rp)
 
     # Check time and radius discretization
     nrsteps = mineral.nrsteps::Int
