@@ -488,6 +488,8 @@ end
             h = plot(title = "$(c.name) $C degassing",
                 xlabel = "Time [s]",
                 ylabel = "Cumulative fraction released",
+                xlims = (0, maximum(c.tsteps_experimental)*1.005),
+                ylims = (0, 1),
                 framestyle = :box,
             )
             tmin = (findfirst(c.fit) > 1) ? c.tsteps_experimental[findfirst(c.fit)-1] : 0
@@ -518,12 +520,14 @@ end
             c = chrons[i]
             if c isa C  
                 agedist = tT.resultdist[i,:]
-                modelage = sort(agedist)
-                modelfraction = range(0, 1, length(modelage))
-                h = plot(modelfraction, modelage,
+                model_age = sort(agedist)
+                model_fraction = range(0, 1, length(model_age))
+                h = plot(model_fraction, model_age,
                     title = "$(c.name) $C step heating",
                     xlabel = "Fraction released",
                     ylabel = (eltype(c) <: Thermochron.HeliumSample) ? "Rstep/Rbulk" : "Age [Ma]",
+                    xlims = (0, 1),
+                    ylims = (first(model_age), last(model_age)),
                     label = "",
                     legend = :topleft,
                     framestyle = :box,
@@ -533,8 +537,8 @@ end
                 errorbox!(h, c, color=:black)
                 fmin = (findfirst(c.fit) > 1) ? c.fraction_experimental[findfirst(c.fit)-1] : 0
                 fmax = c.fraction_experimental[findlast(c.fit)]
-                t = fmin .<= modelfraction .<= fmax
-                plot!(h, modelfraction[t], modelage[t],
+                t = fmin .<= model_fraction .<= fmax
+                plot!(h, model_fraction[t], model_age[t],
                     label = "Model (average)",
                     seriestype = :line,
                     color = :mediumblue,
