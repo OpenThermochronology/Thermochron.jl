@@ -416,7 +416,7 @@
         norm_ll(log(rp.geotherm), rp.geotherm_logsigma, log(rpₚ.geotherm)) + 
         norm_ll(log(rp.K0_itm), rp.K0_itm_logsigma, log(rpₚ.K0_itm)) + 
         norm_ll(log(rp.Ea_itm), rp.Ea_itm_logsigma, log(rpₚ.Ea_itm)) + 
-        norm_ll(log(rp.λ_itm), rp.λ_itm_logsigma, log(rpₚ.λ_itm))
+        norm_ll(log(rp.Ea_lambda), rp.Ea_lambda_logsigma, log(rpₚ.Ea_lambda))
     end
     function kinetic_ll(dmₚ::ZRDAAM, dm::ZRDAAM)
         norm_ll(log(dm.DzD0), dm.DzD0_logsigma, log(dmₚ.DzD0)) + 
@@ -777,8 +777,8 @@
             K0_itm_logsigma = rp.K0_itm_logsigma,
             Ea_itm = (rand()<p) ? exp(log(rp.Ea_itm)+randn(T)*rp.Ea_itm_logsigma/4) : rp.Ea_itm,
             Ea_itm_logsigma = rp.Ea_itm_logsigma,
-            λ_itm = (rand()<p) ? exp(log(rp.λ_itm)+randn(T)*rp.λ_itm_logsigma/4) : rp.λ_itm,
-            λ_itm_logsigma = rp.λ_itm_logsigma,
+            Ea_lambda = (rand()<p) ? exp(log(rp.Ea_lambda)+randn(T)*rp.Ea_lambda_logsigma/4) : rp.Ea_lambda,
+            Ea_lambda_logsigma = rp.Ea_lambda_logsigma,
         )
     end
     function movekinetics(zdm::ZRDAAM{T}, p=0.5) where {T}

@@ -67,8 +67,8 @@ Base.@kwdef struct RegionalParameters{T} <: Model{T}
     K0_itm_logsigma::T = log(2)         # [unitless] log uncertainty, factor of 2 (one-sigma)
     Ea_itm::T = 26.815                  # [kJ/mol] Activation energy for for mineral-ITM/IGB noble gas partitioning
     Ea_itm_logsigma::T = log(2)/2       # [unitless] log uncertainty, factor of sqrt(2) (one-sigma)
-    λ_itm::T = 1/2000                   # [1/Ma] bulk loss rate
-    λ_itm_logsigma::T = log(10)         # [unitless] log uncertainty, factor of 10 (one-sigma)
+    Ea_lambda::T = 30.0                 # [kJ/mol] Effective activation energy associated with bulk loss rate λ [1/Ma]
+    Ea_lambda_logsigma::T = log(2)/2    # [unitless] log uncertainty, factor of sqrt(2) (one-sigma)
 end
 
 ## --- Types used in t-T path generation

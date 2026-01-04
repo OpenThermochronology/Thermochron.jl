@@ -257,7 +257,7 @@ function crank_nicolson_geol!(mineral::PlanarNobleGas{T}, tsteps::AbstractVector
         # grain and intragranular medium, following the partition coefficient measurements
         # of Baxter, Asimow, and Farley (2006) https://doi.org/10.1016/j.gca.2006.09.011
         if partitiondaughter
-            bulkdaughter *= fraction_retained(dt, mineral, rp)
+            bulkdaughter *= fraction_retained(dt, TK, mineral, rp)
             bulkdaughter += bulkdeposition[i]
             y[nrsteps] = bulkdaughter * partitioning_internal_bulk(TK, mineral, rp)
         end
@@ -418,7 +418,7 @@ function crank_nicolson_geol!(mineral::SphericalNobleGas{T}, tsteps::AbstractVec
         # grain and intragranular medium, following the partition coefficient measurements
         # of Baxter, Asimow, and Farley (2006) https://doi.org/10.1016/j.gca.2006.09.011
         if partitiondaughter
-            bulkdaughter *= fraction_retained(dt, mineral, rp)
+            bulkdaughter *= fraction_retained(dt, TK, mineral, rp)
             bulkdaughter += bulkdeposition[i]
             y[nrsteps] = bulkdaughter * partitioning_internal_bulk(TK, mineral, rp)
         end

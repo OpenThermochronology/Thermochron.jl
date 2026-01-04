@@ -122,18 +122,18 @@
 
     # Test kintetic_ll! and updatekinetics! on all chronometer types
     updatekinetics = falses(length(damodels))
-    @test Thermochron.kinetic_ll!(updatekinetics, damodels, damodels) ≈ 14.751635596600659
+    @test Thermochron.kinetic_ll!(updatekinetics, damodels, damodels) ≈ 16.645328142990223
     damodelsₚ = copy(damodels)
     Thermochron.movekinetics!(damodelsₚ, updatekinetics)
     Thermochron.movekinetics!(damodelsₚ, updatekinetics)
-    @test 0 < Thermochron.kinetic_ll!(updatekinetics, damodelsₚ, damodels) < 14.751635596600659
+    @test 0 < Thermochron.kinetic_ll!(updatekinetics, damodelsₚ, damodels) < 16.645328142990223
 
     # Test again with partitiondaughter=true
     chrons, damodels = chronometers(dsg, params, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; partitiondaughter=true, redegastracer=false) ≈ -121503.315298143
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; partitiondaughter=true, redegastracer=true) ≈ -127898.73848396086
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; partitiondaughter=true, redegastracer=true, stepwisetracerfraction=true) ≈ -121701.81774232106
-    @test round.(calc[1:18], sigdigits=7) ≈ [100.512, 196.5576, 110.1795, 199.4254, 195.6308, 868.0376, 969.4693, 962.8585, 286.9455, 289.8969, 242.1764, 276.2241, 1085.555, 304.6573, 95.84216, 149.8268, 297.8925, 262.766]
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; partitiondaughter=true, redegastracer=false) ≈ -121503.56019977928
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; partitiondaughter=true, redegastracer=true) ≈ -127898.98338811539
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; partitiondaughter=true, redegastracer=true, stepwisetracerfraction=true) ≈ -121702.06264400423
+    @test round.(calc[1:18], sigdigits=7) ≈ [100.512, 196.5576, 110.1778, 199.4246, 195.5172, 868.0376, 969.4693, 962.8585, 286.9455, 289.8957, 242.1764, 276.2153, 1085.555, 304.6573, 95.84216, 149.8261, 297.8883, 262.766]
     @test calc[19] ≈ 0.8 atol=0.5
     @test calc[20] ≈ 0.8 atol=0.5
     @test calc[21] ≈ 720 atol=100

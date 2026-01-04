@@ -98,9 +98,15 @@ function phi_boundary(grainsize_mm::Number; r_boundary=2e-9)
 end
 
 # Fraction of noble gas retained at the whole-rock scale in the IGB
-# over duration `dt` Ma
-fraction_retained(dt::Number, ::HeliumSample, rp::RegionalParameters) = exp(-rp.λ_itm*dt)
-fraction_retained(dt::Number, ::ArgonSample, rp::RegionalParameters) = exp(-0.660772*rp.λ_itm*dt) # Slower diffusive loss for Ar by a factor of sqrt(31/71)
+# over duration `dt` Ma at temperature `TK` Kelvin
+function fraction_retained(dt::Number, TK::Number, ::HeliumSample, rp::RegionalParameters)
+    λ = 1.0*exp(-rp.Ea_lambda/(0.008314472*TK)) # Slower diffusive loss for Ar by a factor of sqrt(31/71)
+    return exp(-λ*dt)
+end
+function fraction_retained(dt::Number, TK::Number, ::ArgonSample, rp::RegionalParameters)
+    λ = 0.660772*exp(-rp.Ea_lambda/(0.008314472*TK)) # Slower diffusive loss for Ar by a factor of sqrt(31/71)
+    return exp(-λ*dt)
+end
 
 ## --- Concrete types for damage and diffusivity models
 
