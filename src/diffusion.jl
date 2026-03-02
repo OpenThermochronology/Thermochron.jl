@@ -34,7 +34,7 @@ function updatebeta!(β::Vector{T}, mineral::ZirconHe{T}, dm::ZRDAAM{T}, dt::T, 
     DN17 = DN17D0 * exp(-DN17Ea / (R * TK)) * diffusivityratio # [micron^2/sec
 
     # Each radial step except first and latst
-    @turbo for k in Base.OneTo(nrsteps-2)
+    @turbo check_empty=true for k in Base.OneTo(nrsteps-2)
         dam = annealeddamage[damagestep,k]
         fₐ = 1-exp(-Bα*dam*Phi)
         τ = (lint0/(4.2 / ((1-exp(-Bα*dam)) * SV) - 2.5))^2
@@ -85,7 +85,7 @@ function updatebeta!(β::Vector{T}, mineral::ApatiteHe{T}, dm::RDAAM{T}, dt::T, 
     Dtrap = exp( EaTrap / (R * TK)) # [unitless]
 
     # Each radial step except first and latst
-    @turbo for k in Base.OneTo(nrsteps-2)
+    @turbo check_empty=true for k in Base.OneTo(nrsteps-2)
         track_density = annealeddamage[damagestep, k]*damage_conversion # [cm/cm3]
         trap = (psi*track_density + omega*track_density^3)*Dtrap
         De = DL/(trap+1) # [micron^2/t]
@@ -180,7 +180,7 @@ function crank_nicolson!(mineral::PlanarNobleGas{T}, tsteps::AbstractVector{T}, 
 
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham (2005) https://doi.org/10.2138/rmg.2005.58.11
-        @turbo for k = 2:nrsteps-1
+        @turbo check_empty=true for k = 2:nrsteps-1
             𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
             y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊    # No diffusant depositon on lab timescales
         end
@@ -264,7 +264,7 @@ function crank_nicolson_geol!(mineral::PlanarNobleGas{T}, tsteps::AbstractVector
 
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham (2005) https://doi.org/10.2138/rmg.2005.58.11
-        @turbo for k = 2:nrsteps-1
+        @turbo check_empty=true for k = 2:nrsteps-1
             𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
             y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - deposition[i, k-1]*β[k]
         end
@@ -339,7 +339,7 @@ function crank_nicolson!(mineral::SphericalNobleGas{T}, tsteps::AbstractVector{T
 
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham (2005) https://doi.org/10.2138/rmg.2005.58.11
-        @turbo for k = 2:nrsteps-1
+        @turbo check_empty=true for k = 2:nrsteps-1
             𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
             y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊    # No diffusant depositon on lab timescales
         end
@@ -425,7 +425,7 @@ function crank_nicolson_geol!(mineral::SphericalNobleGas{T}, tsteps::AbstractVec
 
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
         # From Ketcham (2005) https://doi.org/10.2138/rmg.2005.58.11
-        @turbo for k = 2:nrsteps-1
+        @turbo check_empty=true for k = 2:nrsteps-1
             𝑢ⱼ, 𝑢ⱼ₋, 𝑢ⱼ₊ = u[k, i], u[k-1, i], u[k+1, i]
             y[k] = (2.0-β[k])*𝑢ⱼ - 𝑢ⱼ₋ - 𝑢ⱼ₊ - rsteps[k-1]*deposition[i, k-1]*β[k]
         end

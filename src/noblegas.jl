@@ -339,13 +339,13 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::Abstr
         # Convert any existing track length reduction for damage from
         # all previous timestep to an equivalent annealing time at the
         # current temperature
-        @turbo for j in 1:i-1
+        @turbo check_empty=true for j in 1:i-1
             teq[j] = exp(dm.C2 + lᵢ * ((1/ρᵣ[i-1, j] - 1)^dm.beta - dm.C0) / dm.C1)
         end
 
         # Calculate the new reduced track lengths for all previous time steps
         # Accumulating annealing strictly in terms of reduced track length
-        @turbo for j in 1:i
+        @turbo check_empty=true for j in 1:i
             ρᵣ[i,j] = 1 / ((dm.C0 + dm.C1 * (log(dt + teq[j]) - dm.C2) / lᵢ)^(1/dm.beta) + 1)
         end
     end
@@ -387,13 +387,13 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::Abstr
         # Convert any existing track length reduction for ρᵣ from
         # all previous timestep to an equivalent annealing time at the
         # current temperature
-        @turbo for j in 1:i-1
+        @turbo check_empty=true for j in 1:i-1
             teq[j] = exp(dm.C2 + lᵢ * ((1/ρᵣ[i-1, j] - 1)^dm.beta - dm.C0) / dm.C1)
         end
 
         # Calculate the new reduced track lengths for all previous time steps
         # Accumulating annealing strictly in terms of reduced track length
-        @turbo for j in 1:i
+        @turbo check_empty=true for j in 1:i
             ρᵣ[i,j] = 1 / ((dm.C0 + dm.C1 * (log(dt + teq[j]) - dm.C2) / lᵢ)^(1/dm.beta) + 1)
         end
     end
