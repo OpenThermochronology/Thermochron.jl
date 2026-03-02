@@ -721,7 +721,7 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
     mul!(alphadamage, decay, r147Smdam', one(T), one(T))
 
     # Allocate additional variables that will be needed for Crank-Nicolson
-    annealeddamage = similar(alphadamage)
+    annealeddamage = copy(alphadamage)
     β = zeros(T, nrsteps)
 
     # Allocate output matrix for all timesteps
@@ -946,7 +946,7 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
     mul!(alphadamage, decay, r147Smdam', one(T), one(T))
 
     # Allocate additional variables that will be needed for Crank-Nicolson
-    annealeddamage = similar(alphadamage)
+    annealeddamage = copy(alphadamage)
     β = zeros(T, nrsteps)
 
     # Allocate output matrix for all timesteps

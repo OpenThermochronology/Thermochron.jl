@@ -450,6 +450,11 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                     grainsize_matrix,
                     agesteps, name, notes,
                 )
+                if haskey(ds, :dose_alpha_g) # Use observed dose from file, if applicable
+                    for domain in c.domains
+                        domain.annealeddamage .= ds.dose_alpha_g[i]
+                    end
+                end
                 dm = if mineral === "apatite"
                     MSDiffusivity{T,ndomains,typeof(adm)}(
                         model = adm,
@@ -492,6 +497,9 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                     grainsize_matrix,
                     agesteps, name, notes,
                 )
+                if haskey(ds, :dose_alpha_g) # Use observed dose from file, if applicable
+                    c.domain.annealeddamage .= ds.dose_alpha_g[i]
+                end
                 dm = if mineral === "apatite"
                     SDiffusivity(
                         model = adm,
