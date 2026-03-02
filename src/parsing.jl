@@ -101,6 +101,17 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
         He_step_heating_file = haskey(ds, :He_step_heating_file) ? ds.He_step_heating_file[i] : ""
         Ar_step_heating_file = haskey(ds, :Ar_step_heating_file) ? ds.Ar_step_heating_file[i] : haskey(ds, :mdd_file) ? ds.mdd_file[i] : ""
 
+        # Radiogenic elements and matrix properties
+        U238 = (haskey(ds, :U238_ppm) && !isnan(ds.U238_ppm[i])) ? ds.U238_ppm[i] : 0.0
+        Th232 = (haskey(ds, :Th232_ppm) && !isnan(ds.Th232_ppm[i])) ? ds.Th232_ppm[i] : 0.0
+        Sm147 = (haskey(ds, :Sm147_ppm) && !isnan(ds.Sm147_ppm[i])) ? ds.Sm147_ppm[i] : 0.0
+        K40 = (haskey(ds, :K40_ppm) && !isnan(ds.K40_ppm[i])) ? ds.K40_ppm[i] : 16.34
+        U238_matrix = (haskey(ds, :U238_matrix_ppm) && !isnan(ds.U238_matrix_ppm[i])) ? ds.U238_matrix_ppm[i] : 0.0
+        Th232_matrix = (haskey(ds, :Th232_matrix_ppm) && !isnan(ds.Th232_matrix_ppm[i])) ? ds.Th232_matrix_ppm[i] : 0.0
+        Sm147_matrix = (haskey(ds, :Sm147_matrix_ppm) && !isnan(ds.Sm147_matrix_ppm[i])) ? ds.Sm147_matrix_ppm[i] : 0.0
+        K40_matrix = (haskey(ds, :K40_matrix_ppm) && !isnan(ds.K40_matrix_ppm[i])) ? ds.K40_matrix_ppm[i] : 0.0
+        grainsize_matrix = (haskey(ds, :grainsize_matrix_mm) && !isnan(ds.grainsize_matrix_mm[i])) ? ds.grainsize_matrix_mm[i] : 1.0
+
         if mineral === "zircon"
             # Zircon helium
             if haskey(ds, :raw_He_age_Ma) && haskey(ds, :raw_He_age_sigma_Ma) && (0 < ds.raw_He_age_sigma_Ma[i]/ds.raw_He_age_Ma[i])
@@ -110,13 +121,9 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                     age_sigma = ds.raw_He_age_sigma_Ma[i],
                     r = ds.halfwidth_um[i],
                     dr, offset, height,
-                    U238 = (haskey(ds, :U238_ppm) && !isnan(ds.U238_ppm[i])) ? ds.U238_ppm[i] : 0,
-                    Th232 = (haskey(ds, :Th232_ppm) && !isnan(ds.Th232_ppm[i])) ? ds.Th232_ppm[i] : 0,
-                    Sm147 = (haskey(ds, :Sm147_ppm) && !isnan(ds.Sm147_ppm[i])) ? ds.Sm147_ppm[i] : 0,
-                    U238_matrix = (haskey(ds, :U238_matrix_ppm) && !isnan(ds.U238_matrix_ppm[i])) ? ds.U238_matrix_ppm[i] : 0,
-                    Th232_matrix = (haskey(ds, :Th232_matrix_ppm) && !isnan(ds.Th232_matrix_ppm[i])) ? ds.Th232_matrix_ppm[i] : 0,
-                    Sm147_matrix = (haskey(ds, :Sm147_matrix_ppm) && !isnan(ds.Sm147_matrix_ppm[i])) ? ds.Sm147_matrix_ppm[i] : 0,
-                    grainsize_matrix = (haskey(ds, :grainsize_matrix_mm) && !isnan(ds.grainsize_matrix_mm[i])) ? ds.grainsize_matrix_mm[i] : 1,
+                    U238, Th232, Sm147,
+                    U238_matrix, Th232_matrix, Sm147_matrix,
+                    grainsize_matrix,
                     agesteps, name, notes,
                     volumeweighting = zirconvolumeweighting,
                 )
@@ -193,13 +200,9 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                     age_sigma = ds.raw_He_age_sigma_Ma[i],
                     r = ds.halfwidth_um[i],
                     dr, offset, height,
-                    U238 = (haskey(ds, :U238_ppm) && !isnan(ds.U238_ppm[i])) ? ds.U238_ppm[i] : 0,
-                    Th232 = (haskey(ds, :Th232_ppm) && !isnan(ds.Th232_ppm[i])) ? ds.Th232_ppm[i] : 0,
-                    Sm147 = (haskey(ds, :Sm147_ppm) && !isnan(ds.Sm147_ppm[i])) ? ds.Sm147_ppm[i] : 0,
-                    U238_matrix = (haskey(ds, :U238_matrix_ppm) && !isnan(ds.U238_matrix_ppm[i])) ? ds.U238_matrix_ppm[i] : 0,
-                    Th232_matrix = (haskey(ds, :Th232_matrix_ppm) && !isnan(ds.Th232_matrix_ppm[i])) ? ds.Th232_matrix_ppm[i] : 0,
-                    Sm147_matrix = (haskey(ds, :Sm147_matrix_ppm) && !isnan(ds.Sm147_matrix_ppm[i])) ? ds.Sm147_matrix_ppm[i] : 0,
-                    grainsize_matrix = (haskey(ds, :grainsize_matrix_mm) && !isnan(ds.grainsize_matrix_mm[i])) ? ds.grainsize_matrix_mm[i] : 1,
+                    U238, Th232, Sm147,
+                    U238_matrix, Th232_matrix, Sm147_matrix,
+                    grainsize_matrix,
                     agesteps, name, notes,
                     volumeweighting = apatitevolumeweighting,
                 )
@@ -290,13 +293,9 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                     stoppingpower = alphastoppingpower(ds.mineral[i]),
                     r = ds.halfwidth_um[i],
                     dr, offset, height,
-                    U238 = (haskey(ds, :U238_ppm) && !isnan(ds.U238_ppm[i])) ? ds.U238_ppm[i] : 0,
-                    Th232 = (haskey(ds, :Th232_ppm) && !isnan(ds.Th232_ppm[i])) ? ds.Th232_ppm[i] : 0,
-                    Sm147 = (haskey(ds, :Sm147_ppm) && !isnan(ds.Sm147_ppm[i])) ? ds.Sm147_ppm[i] : 0,
-                    U238_matrix = (haskey(ds, :U238_matrix_ppm) && !isnan(ds.U238_matrix_ppm[i])) ? ds.U238_matrix_ppm[i] : 0,
-                    Th232_matrix = (haskey(ds, :Th232_matrix_ppm) && !isnan(ds.Th232_matrix_ppm[i])) ? ds.Th232_matrix_ppm[i] : 0,
-                    Sm147_matrix = (haskey(ds, :Sm147_matrix_ppm) && !isnan(ds.Sm147_matrix_ppm[i])) ? ds.Sm147_matrix_ppm[i] : 0,
-                    grainsize_matrix = (haskey(ds, :grainsize_matrix_mm) && !isnan(ds.grainsize_matrix_mm[i])) ? ds.grainsize_matrix_mm[i] : 1,
+                    U238, Th232, Sm147,
+                    U238_matrix, Th232_matrix, Sm147_matrix,
+                    grainsize_matrix,
                     agesteps, name, notes,
                 )
                 push!(chrons, c)
@@ -316,9 +315,8 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                     age_sigma = ds.raw_Ar_age_sigma_Ma[i],
                     r = ds.halfwidth_um[i],
                     dr, offset, height,
-                    K40 = (haskey(ds, :K40_ppm) && !isnan(ds.K40_ppm[i])) ? ds.K40_ppm[i] : 16.34,
-                    K40_matrix = (haskey(ds, :K40_matrix_ppm) && !isnan(ds.K40_matrix_ppm[i])) ? ds.K40_matrix_ppm[i] : 0,
-                    grainsize_matrix = (haskey(ds, :grainsize_matrix_mm) && !isnan(ds.grainsize_matrix_mm[i])) ? ds.grainsize_matrix_mm[i] : 1,
+                    K40, K40_matrix,
+                    grainsize_matrix,
                     agesteps, name, notes,
                 )
                 push!(chrons, c)
@@ -352,9 +350,8 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                     fit = dds.fit,
                     offset, height, r, dr,
                     volume_fraction,
-                    K40 = (haskey(ds, :K40_ppm) && !isnan(ds.K40_ppm[i])) ? ds.K40_ppm[i] : 16.34,
-                    K40_matrix = (haskey(ds, :K40_matrix_ppm) && !isnan(ds.K40_matrix_ppm[i])) ? ds.K40_matrix_ppm[i] : 0,
-                    grainsize_matrix = (haskey(ds, :grainsize_matrix_mm) && !isnan(ds.grainsize_matrix_mm[i])) ? ds.grainsize_matrix_mm[i] : 1,
+                    K40, K40_matrix,
+                    grainsize_matrix,
                     agesteps, name, notes,
                 )
                 tdomains = .!isnan.(dds.volume_fraction)
@@ -407,7 +404,12 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                 @warn "Geometry \"$geometry\" not recognized in row $i, defaulting to spherical"
                 SphericalHe
             end
+            # Radius of modeled grain (nominal for MDD)
             r = (haskey(ds, :halfwidth_um) && !isnan(ds.halfwidth_um[i])) ? ds.halfwidth_um[i] : 100
+            # Allow age to be not reported for degassing-profile-only inversions
+            age = (haskey(ds, :raw_He_age_Ma) && !isnan(ds.raw_He_age_Ma[i])) ? ds.raw_He_age_Ma[i] : NaN
+            age_sigma = (haskey(ds, :raw_He_age_sigma_Ma) && !isnan(ds.raw_He_age_sigma_Ma[i])) ? ds.raw_He_age_sigma_Ma[i] : NaN
+            # Ensure experimental time steps are cumulatibve
             tsteps_experimental = issorted(dds.time_s, lt=<=) ? dds.time_s : cumsum(dds.time_s)
             if haskey(dds, :He_4_He_3) # He ratio format
                 Rstep = dds.He_4_He_3
@@ -442,15 +444,10 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                     Tsteps_experimental = dds.temperature_C,
                     fit = dds.fit,
                     r, dr, volume_fraction,
-                    age = ds.raw_He_age_Ma[i],
-                    age_sigma = ds.raw_He_age_sigma_Ma[i],
-                    U238 = ds.U238_ppm[i],
-                    Th232 = ds.Th232_ppm[i],
-                    Sm147 = ds.Sm147_ppm[i],
-                    U238_matrix = (haskey(ds, :U238_matrix_ppm) && !isnan(ds.U238_matrix_ppm[i])) ? ds.U238_matrix_ppm[i] : 0,
-                    Th232_matrix = (haskey(ds, :Th232_matrix_ppm) && !isnan(ds.Th232_matrix_ppm[i])) ? ds.Th232_matrix_ppm[i] : 0,
-                    Sm147_matrix = (haskey(ds, :Sm147_matrix_ppm) && !isnan(ds.Sm147_matrix_ppm[i])) ? ds.Sm147_matrix_ppm[i] : 0,
-                    grainsize_matrix = (haskey(ds, :grainsize_matrix_mm) && !isnan(ds.grainsize_matrix_mm[i])) ? ds.grainsize_matrix_mm[i] : 1,
+                    age, age_sigma,
+                    U238, Th232, Sm147,
+                    U238_matrix, Th232_matrix, Sm147_matrix,
+                    grainsize_matrix,
                     agesteps, name, notes,
                 )
                 dm = if mineral === "apatite"
@@ -489,15 +486,10 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                     Tsteps_experimental = dds.temperature_C,
                     fit = dds.fit,
                     r, dr,
-                    age = ds.raw_He_age_Ma[i],
-                    age_sigma = ds.raw_He_age_sigma_Ma[i],
-                    U238 = ds.U238_ppm[i],
-                    Th232 = ds.Th232_ppm[i],
-                    Sm147 = ds.Sm147_ppm[i],
-                    U238_matrix = (haskey(ds, :U238_matrix_ppm) && !isnan(ds.U238_matrix_ppm[i])) ? ds.U238_matrix_ppm[i] : 0,
-                    Th232_matrix = (haskey(ds, :Th232_matrix_ppm) && !isnan(ds.Th232_matrix_ppm[i])) ? ds.Th232_matrix_ppm[i] : 0,
-                    Sm147_matrix = (haskey(ds, :Sm147_matrix_ppm) && !isnan(ds.Sm147_matrix_ppm[i])) ? ds.Sm147_matrix_ppm[i] : 0,
-                    grainsize_matrix = (haskey(ds, :grainsize_matrix_mm) && !isnan(ds.grainsize_matrix_mm[i])) ? ds.grainsize_matrix_mm[i] : 1,
+                    age, age_sigma,
+                    U238, Th232, Sm147,
+                    U238_matrix, Th232_matrix, Sm147_matrix,
+                    grainsize_matrix,
                     agesteps, name, notes,
                 )
                 dm = if mineral === "apatite"
