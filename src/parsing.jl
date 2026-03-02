@@ -423,7 +423,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                 fraction_experimental = dds.fraction_degassed
                 fraction_experimental_sigma = haskey(dds, :fraction_degassed_sigma) ? dds.fraction_degassed_sigma : fill(0.005, size(fraction_experimental))
                 step_age = haskey(dds, :Rstep_Rbulk) ? dds.Rstep_Rbulk : fill(NaN, size(fraction_experimental))
-                step_age_sigma = haskey(dds, Rstep_Rbulk_sigma) ? dds.Rstep_Rbulk_sigma : fill(NaN, size(fraction_experimental))
+                step_age_sigma = haskey(dds, :Rstep_Rbulk_sigma) ? dds.Rstep_Rbulk_sigma : fill(NaN, size(fraction_experimental))
             end
             if haskey(dds, :volume_fraction) && count(!isnan, dds.volume_fraction) > 0
                 # Ensure volume fractions sums to one
