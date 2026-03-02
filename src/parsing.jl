@@ -338,7 +338,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
             end
             r = (haskey(ds, :halfwidth_um) && !isnan(ds.halfwidth_um[i])) ? ds.halfwidth_um[i] : 100
             fraction_experimental = dds.fraction_degassed
-            fraction_experimental_sigma = haskey(dds, :fraction_experimental_sigma) ? dds.fraction_experimental_sigma : fill(0.005, size(fraction_experimental))
+            fraction_experimental_sigma = haskey(dds, :fraction_degassed_sigma) ? dds.fraction_degassed_sigma : fill(0.005, size(fraction_experimental))
             tsteps_experimental = issorted(dds.time_s, lt=<=) ? dds.time_s : cumsum(dds.time_s)
             if haskey(dds, :volume_fraction) && count(!isnan, dds.volume_fraction) > 0
                 volume_fraction = dds.volume_fraction[.!isnan.(dds.volume_fraction)]
@@ -408,14 +408,23 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                 SphericalHe
             end
             r = (haskey(ds, :halfwidth_um) && !isnan(ds.halfwidth_um[i])) ? ds.halfwidth_um[i] : 100
-            Rstep = dds.He_4_He_3
-            Rstep_sigma = dds.He_4_He_3_sigma
-            Rbulk = nanmean(dds.He_4_He_3, dds.He_3)
-            fraction_experimental = cumsum(dds.He_3)
-            total_He_3 = last(fraction_experimental)
-            fraction_experimental ./= total_He_3 # Rescale from 0-1
-            fraction_experimental_sigma = haskey(dds, :He_3_sigma) ? dds.He_3_sigma./total_He_3 : fill(0.005, size(fraction_experimental))
             tsteps_experimental = issorted(dds.time_s, lt=<=) ? dds.time_s : cumsum(dds.time_s)
+            if haskey(dds, :He_4_He_3) # He ratio format
+                Rstep = dds.He_4_He_3
+                Rstep_sigma = dds.He_4_He_3_sigma
+                Rbulk = nanmean(dds.He_4_He_3, dds.He_3)
+                fraction_experimental = cumsum(dds.He_3)
+                total_He_3 = last(fraction_experimental)
+                step_age = Rstep./Rbulk
+                step_age_sigma = Rstep_sigma./Rbulk
+                fraction_experimental ./= total_He_3 # Rescale from 0-1
+                fraction_experimental_sigma = haskey(dds, :He_3_sigma) ? dds.He_3_sigma./total_He_3 : fill(0.005, size(fraction_experimental))
+            else # Rstep_Rbulk format
+                fraction_experimental = dds.fraction_degassed
+                fraction_experimental_sigma = haskey(dds, :fraction_degassed_sigma) ? dds.fraction_degassed_sigma : fill(0.005, size(fraction_experimental))
+                step_age = haskey(dds, :Rstep_Rbulk) ? dds.Rstep_Rbulk : fill(NaN, size(fraction_experimental))
+                step_age_sigma = haskey(dds, Rstep_Rbulk_sigma) ? dds.Rstep_Rbulk_sigma : fill(NaN, size(fraction_experimental))
+            end
             if haskey(dds, :volume_fraction) && count(!isnan, dds.volume_fraction) > 0
                 # Ensure volume fractions sums to one
                 volume_fraction = dds.volume_fraction[.!isnan.(dds.volume_fraction)]
@@ -425,8 +434,8 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                 end
                 ndomains = length(volume_fraction)
                 c = MultipleDomain(T, DomainType;
-                    step_age = Rstep./Rbulk,
-                    step_age_sigma = Rstep_sigma./Rbulk,
+                    step_age,
+                    step_age_sigma,
                     fraction_experimental,
                     fraction_experimental_sigma,
                     tsteps_experimental,
@@ -472,8 +481,8 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                 push!(damodels, dm)
             else
                 c = SingleDomain(T, DomainType;
-                    step_age = Rstep./Rbulk,
-                    step_age_sigma = Rstep_sigma./Rbulk,
+                    step_age,
+                    step_age_sigma,
                     fraction_experimental,
                     fraction_experimental_sigma,
                     tsteps_experimental,
