@@ -243,13 +243,14 @@ function stepwise_degassing_ll(dd::Union{SingleDomain{T},MultipleDomain{T}}; res
     last_fraction_experimentalᵢ = zero(T)
     @inbounds for i in eachindex(dd.tsteps_experimental, dd.fraction_experimental, dd.fraction_experimental_sigma, dd.fit)
         model_fractionᵢ = linterp1(dd.tsteps_degassing, dd.model_fraction, dd.tsteps_experimental[i])
+        fraction_experimentalᵢ = dd.fraction_experimental[i]
         if dd.fit[i]
             δmodel = model_fractionᵢ - last_model_fractionᵢ
-            δexperimental = dd.fraction_experimental[i] - last_fraction_experimentalᵢ
+            δexperimental = fraction_experimentalᵢ - last_fraction_experimentalᵢ
             ll += norm_ll(δexperimental, dd.fraction_experimental_sigma[i], δmodel)
         end
         last_model_fractionᵢ = model_fractionᵢ
-        last_fraction_experimentalᵢ = dd.fraction_experimental[i]
+        last_fraction_experimentalᵢ = fraction_experimentalᵢ
     end
     rescale && (ll /= sqrt(count(dd.fit)))
     return ll
