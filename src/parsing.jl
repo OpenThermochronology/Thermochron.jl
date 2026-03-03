@@ -81,6 +81,10 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
     # Default regional parameters
     rp = (haskey(params, :rp) ? params.rp : RegionalParameters{T}())::RegionalParameters{T}
 
+    # Default uncertainty for scaled diffusivity models
+    sdiffusivity_logsigma = (haskey(params, :sdiffusivity_logsigma) ? params.sdiffusivity_logsigma : T(log(2)/2))::T
+    uniquedomains = (haskey(params, :uniquedomains) ? params.uniquedomains : true)::Bool
+
     # Dictionaries to store reused `r` and `pr` vectors for fission track length chronometers
     # These will be indexed by hash, such that identical tracks can reuse the same `r` and `pr`
     rdict = Dict{UInt64,Vector{T}}()
@@ -435,6 +439,9 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                     volume_fraction ./=sum(volume_fraction)
                 end
                 ndomains = length(volume_fraction)
+                scale = haskey(dds, :scale) ? dds.scale[.!isnan.(dds.scale)] : [exp(1-i) for i in 1:ndomains]
+                uniquedomains && (scale .*= (1 .+ randn.()./1e9))
+                scale_logsigma = haskey(dds, :scale_logsigma) ? dds.scale_logsigma[.!isnan.(dds.scale_logsigma)] : fill(sdiffusivity_logsigma, ndomains)
                 c = MultipleDomain(T, DomainType;
                     step_age,
                     step_age_sigma,
@@ -458,15 +465,15 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                 dm = if mineral === "apatite"
                     MSDiffusivity{T,ndomains,typeof(adm)}(
                         model = adm,
-                        scale = ntuple(i->exp(1-i), ndomains) .* (1 .+ randn.()./1e9),  # Twiddle to ensure uniqueness 
-                        scale_logsigma = ntuple(i->1.0, ndomains),
+                        scale = (scale...,),
+                        scale_logsigma = (scale_logsigma...,),
                         volume_fraction = (volume_fraction...,),
                     )
                 elseif mineral === "zircon"
                     MSDiffusivity{T,ndomains,typeof(zdm)}(
                         model = zdm,
-                        scale = ntuple(i->exp(1-i), ndomains) .* (1 .+ randn.()./1e9),  # Twiddle to ensure uniqueness 
-                        scale_logsigma = ntuple(i->1.0, ndomains),
+                        scale = (scale...,),
+                        scale_logsigma = (scale_logsigma...,),
                         volume_fraction = (volume_fraction...,),
                     )
                 else # Custom diffusivity
@@ -482,6 +489,9 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                 push!(chrons, c)
                 push!(damodels, dm)
             else
+                scale = one(T)
+                uniquedomains && (scale += randn()/1e9)
+                scale_logsigma = sdiffusivity_logsigma
                 c = SingleDomain(T, DomainType;
                     step_age,
                     step_age_sigma,

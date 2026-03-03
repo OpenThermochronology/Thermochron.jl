@@ -5,6 +5,10 @@ using Test
 const GROUP = get(ENV, "GROUP", "All")
 liveplot = GROUP == "All" || GROUP == "Plot"
 
+# Ensure reproducible results
+using Random
+Random.seed!(12345)
+
 @testset "Utilities" begin include("testutilities.jl") end
 @testset "Fission Track" begin include("testfissiontrack.jl") end
 @testset "Generic Helium" begin include("testhelium.jl") end

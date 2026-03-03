@@ -206,7 +206,7 @@
         end
         finish!(bprogress)
 
-        # distributions to populate
+        # Distributions to populate
         tpointdist = fill(T(NaN), totalpoints, nsteps)
         Tpointdist = fill(T(NaN), totalpoints, nsteps)
         resultdist = fill(T(NaN), length(chrons), nsteps)
@@ -216,6 +216,7 @@
         ndist = zeros(Int, nsteps)
         acceptancedist = falses(nsteps)
 
+        # Prepare and run collection
         progress = Progress(nsteps, desc="MCMC collection ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
         plot_interval = max(progress_interval, ceil(Int, nsteps/maxplotscollection)) # Cap number of plots
@@ -564,7 +565,7 @@
         end
         finish!(bprogress)
 
-        # distributions to populate
+        # Distributions to populate
         tpointdist = fill(T(NaN), totalpoints, nsteps)
         Tpointdist = fill(T(NaN), totalpoints, nsteps)
         resultdist = fill(T(NaN), length(chrons), nsteps)
@@ -575,6 +576,7 @@
         ndist = zeros(Int, nsteps)
         acceptancedist = falses(nsteps)
 
+        # Prepare and run collection
         progress = Progress(nsteps, desc="MCMC collection ($(nsteps) steps):")
         progress_interval = ceil(Int,sqrt(nsteps))
         plot_interval = max(progress_interval, ceil(Int, nsteps/maxplotscollection)) # Cap number of plots
