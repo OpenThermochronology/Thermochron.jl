@@ -902,7 +902,7 @@
             rescale::Bool=false,
             rescalestepheating::Bool=true,  
             redegastracer::Bool=false, 
-            stepwisetracerfraction::Bool=false,
+            stepwisetracerfraction::Bool=true,
             partitiondaughter::Bool=false, 
         ) where {T<:AbstractFloat}
         @assert eachindex(chrons) == eachindex(μcalc) == eachindex(σcalc) == (eachindex(damodels)[1:end-1])
