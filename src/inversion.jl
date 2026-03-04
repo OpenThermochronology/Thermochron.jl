@@ -389,7 +389,7 @@
         dynamicjumping = (haskey(params, :dynamicjumping) ? params.dynamicjumping : false)::Bool
         rescale = (haskey(params, :rescale) ? params.rescale : false)::Bool
         rescalestepheating = (haskey(params, :rescalestepheating) ? params.rescalestepheating : true)::Bool
-        stepwisetracerfraction = (haskey(params, :stepwisetracerfraction) ? params.stepwisetracerfraction : false)::Bool
+        stepwisetracerfraction = (haskey(params, :stepwisetracerfraction) ? params.stepwisetracerfraction : true)::Bool
         partitiondaughter = (haskey(params, :partitiondaughter) ? params.partitiondaughter : false)::Bool
         dTmax = T(haskey(params, :dTmax) ? params.dTmax : 10)::T
         dTmax_sigma = T(haskey(params, :dTmax_sigma) ? params.dTmax_sigma : dTmax/4)::T
