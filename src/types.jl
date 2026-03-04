@@ -43,6 +43,32 @@ function Base.:(==)(x::T, y::T) where {T<:Model}
     end
     return true
 end
+Base.isapprox(x::Model, y::Model) = false
+function Base.isapprox(x::T, y::T; kwargs...) where {T<:Model}
+    for n in fieldnames(T)
+        isapprox(getfield(x, n), getfield(y, n), kwargs...) || return false
+    end
+    return true
+end
+
+# Methods to allow averaging of models
+@generated function Base.:+(x::M, y::M) where {M<:Model}
+    result = :($M())
+    for e in fieldnames(M)
+        push!(result.args, :(x.$e + y.$e))
+    end
+    return result
+end
+@generated function Base.:*(x::M, n::Number) where {M<:Model}
+    result = :($M())
+    for e in fieldnames(M)
+        push!(result.args, :(x.$e * n))
+    end
+    return result
+end
+Base.:*(n::Number, x::Model) = x * n          # Scalar multiplication is commutative
+Base.:/(x::Model, n::Number) = x * inv(n)     # Division by a scalar is multiplciation by multiplicative inverse
+
 
 # AnnealingModel types
 abstract type AnnealingModel{T} <: Model{T} end
