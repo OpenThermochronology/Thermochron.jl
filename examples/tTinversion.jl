@@ -82,7 +82,7 @@
         minpoints = 15,                 # [n] Minimum allowed number of model t-T points (nodes)
         maxpoints = 50,                 # [n] Maximum allowed number of model t-T points (nodes)
         dynamicjumping = true,          # Update the t and T jumping (proposal) distributions based on previously accepted jumps
-        stepwisetracerfraction = false, # Calculate degassing ll based on stepwise fraction degassed (rather than cumulative)
+        stepwisetracerfraction = true,  # Calculate degassing ll based on stepwise fraction degassed (rather than cumulative)
         # Damage and annealing models for diffusivity (specify custom kinetics if desired)
         adm = RDAAM(),                  # Flowers et al. 2009 (doi: 10.1016/j.gca.2009.01.015) apatite diffusivity model
         zdm = ZRDAAM(),                 # Guenthner et al. 2013 (doi: 10.2475/03.2013.01) zircon diffusivity model
