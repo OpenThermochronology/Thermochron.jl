@@ -91,6 +91,13 @@
     @test get_age(chrons) ≈ [150.37, 263.92, 150.37, 263.92, 263.92, 917.84, 1023.73, 1023.73, 380., 380., 120., 120., 1080., 300., 100., 150., 180., 4.1, 0.9194109843673132, 0.9194109843673132, 808.3268143245239, 808.3268143245239,] 
     @test get_age_sigma(chrons) ≈ [5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,0.53,0.20877153500779683,0.20877153500779683,28.52408719185519,28.52408719185519,]
 
+    # Test properties of Chronometers
+    @test chrons[1] == chrons[1]
+    @test !(chrons[1] == chrons[2])
+    # Test broadcasting
+    @test typeof.(chrons) isa Vector{DataType} 
+    @test length.(chrons) == ones(length(chrons))
+    
     # Test model calculations
     calc, calcuncert, ll = model!(chrons, damodels, Tsteps; redegastracer=false)
     @test ll ≈ -121504.198902584

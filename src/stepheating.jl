@@ -71,29 +71,6 @@ end
 
 ## --- Initialize and degas tracer isotopes
 
-function degas_tracer!(mdd::MultipleDomain{T}, dm::MDiffusivity{T}) where {T<:AbstractFloat}
-    fraction = fill!(mdd.model_fraction, zero(T))
-    tracer = fill!(mdd.model_tracer, zero(T))
-    # Degas
-    for i in eachindex(mdd.domains, dm.volume_fraction)
-        domain = mdd.domains[i]
-        degas_tracer!(domain, one(T), mdd.tsteps_degassing, mdd.Tsteps_degassing, dm; fuse=mdd.fuse)
-        @. tracer += domain.step_tracer * dm.volume_fraction[i]
-    end
-    # Cumulative fraction of tracer degassed
-    cumsum!(fraction, tracer)
-    fraction ./= last(fraction)
-    return fraction
-end
-function degas_tracer!(sdd::SingleDomain{T}, dm::DiffusivityModel{T}) where {T<:AbstractFloat}
-    fraction = fill!(sdd.model_fraction, zero(T))
-    # Degas
-    degas_tracer!(sdd.domain, one(T), sdd.tsteps_degassing, sdd.Tsteps_degassing, dm; fuse=sdd.fuse)
-    # Cumulative fraction of tracer degassed
-    cumsum!(fraction, sdd.domain.step_tracer)
-    fraction ./= last(fraction)
-    return fraction
-end
 function degas_tracer!(mineral::PlanarNobleGas{T}, initial_tracer, tsteps_degassing, Tsteps_degassing, dm; fuse::Bool=true)  where {T}
     # Erase previous diffusion profiles
     u = fill!(mineral.u, zero(T))
@@ -116,6 +93,31 @@ function degas_tracer!(mineral::SphericalNobleGas{T}, initial_tracer, tsteps_deg
     diffusivityratio = tracerdiffusivityratio(mineral)
     crank_nicolson!(mineral, tsteps_degassing, Tsteps_degassing, dm; fuse, diffusivityratio)
     return diffusant_lost!(mineral.step_tracer, mineral; fuse)
+end
+
+# Convenience methods for step-heating chronometers
+function degas_tracer!(mdd::MultipleDomain{T}, dm::MultipleDiffusivity{T}) where {T<:AbstractFloat}
+    fraction = fill!(mdd.model_fraction, zero(T))
+    tracer = fill!(mdd.model_tracer, zero(T))
+    # Degas
+    for i in eachindex(mdd.domains)
+        domain = mdd.domains[i]
+        degas_tracer!(domain, one(T), mdd.tsteps_degassing, mdd.Tsteps_degassing, dm[i]; fuse=mdd.fuse)
+        @. tracer += domain.step_tracer * dm.volume_fraction[i]
+    end
+    # Cumulative fraction of tracer degassed
+    cumsum!(fraction, tracer)
+    fraction ./= last(fraction)
+    return fraction
+end
+function degas_tracer!(sdd::SingleDomain{T}, dm::DiffusivityModel{T}) where {T<:AbstractFloat}
+    fraction = fill!(sdd.model_fraction, zero(T))
+    # Degas
+    degas_tracer!(sdd.domain, one(T), sdd.tsteps_degassing, sdd.Tsteps_degassing, dm; fuse=sdd.fuse)
+    # Cumulative fraction of tracer degassed
+    cumsum!(fraction, sdd.domain.step_tracer)
+    fraction ./= last(fraction)
+    return fraction
 end
 
 
