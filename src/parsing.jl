@@ -81,6 +81,9 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
     # Default regional parameters
     rp = (haskey(params, :rp) ? params.rp : RegionalParameters{T}())::RegionalParameters{T}
 
+    # Default degassing uncertainty
+    degassing_relsigma = (haskey(params, :degassing_relsigma) ? params.degassing_relsigma : T(0.1))::T
+
     # Default uncertainty for scaled diffusivity models
     sdiffusivity_logsigma = (haskey(params, :sdiffusivity_logsigma) ? params.sdiffusivity_logsigma : T(log(2)/2))::T
     uniquedomains = (haskey(params, :uniquedomains) ? params.uniquedomains : true)::Bool
@@ -340,7 +343,8 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
             end
             r = (haskey(ds, :halfwidth_um) && !isnan(ds.halfwidth_um[i])) ? ds.halfwidth_um[i] : 100
             fraction_experimental = dds.fraction_degassed
-            fraction_experimental_sigma = haskey(dds, :fraction_degassed_sigma) ? dds.fraction_degassed_sigma : fill(0.005, size(fraction_experimental))
+            fraction_stepwise = diff([0; fraction_experimental])
+            fraction_experimental_sigma = haskey(dds, :fraction_degassed_sigma) ? dds.fraction_degassed_sigma : degassing_relsigma*fraction_stepwise
             tsteps_experimental = issorted(dds.time_s, lt=<=) ? dds.time_s : cumsum(dds.time_s)
             if haskey(dds, :volume_fraction) && count(!isnan, dds.volume_fraction) > 0
                 volume_fraction = dds.volume_fraction[.!isnan.(dds.volume_fraction)]
@@ -421,13 +425,15 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                 Rbulk = nanmean(dds.He_4_He_3, dds.He_3)
                 fraction_experimental = cumsum(dds.He_3)
                 total_He_3 = last(fraction_experimental)
+                fraction_experimental ./= total_He_3 # Rescale from 0-1
+                fraction_stepwise = diff([0; fraction_experimental])
+                fraction_experimental_sigma = haskey(dds, :He_3_sigma) ? dds.He_3_sigma./total_He_3 : degassing_relsigma*fraction_stepwise
                 step_age = Rstep./Rbulk
                 step_age_sigma = Rstep_sigma./Rbulk
-                fraction_experimental ./= total_He_3 # Rescale from 0-1
-                fraction_experimental_sigma = haskey(dds, :He_3_sigma) ? dds.He_3_sigma./total_He_3 : fill(0.005, size(fraction_experimental))
             else # Rstep_Rbulk format
                 fraction_experimental = dds.fraction_degassed
-                fraction_experimental_sigma = haskey(dds, :fraction_degassed_sigma) ? dds.fraction_degassed_sigma : fill(0.005, size(fraction_experimental))
+                fraction_stepwise = diff([0; fraction_experimental])
+                fraction_experimental_sigma = haskey(dds, :fraction_degassed_sigma) ? dds.fraction_degassed_sigma : degassing_relsigma*fraction_stepwise
                 step_age = haskey(dds, :Rstep_Rbulk) ? dds.Rstep_Rbulk : fill(NaN, size(fraction_experimental))
                 step_age_sigma = haskey(dds, :Rstep_Rbulk_sigma) ? dds.Rstep_Rbulk_sigma : fill(NaN, size(fraction_experimental))
             end

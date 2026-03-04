@@ -247,7 +247,8 @@ function stepwise_degassing_ll(dd::Union{SingleDomain{T},MultipleDomain{T}}; res
         if dd.fit[i]
             δmodel = model_fractionᵢ - last_model_fractionᵢ
             δexperimental = fraction_experimentalᵢ - last_fraction_experimentalᵢ
-            ll += norm_ll(δexperimental, dd.fraction_experimental_sigma[i], δmodel)
+            σrel = dd.fraction_experimental_sigma[i] / δexperimental
+            ll += norm_ll(log(δexperimental), log1p(σrel), log(max(δmodel, zero(T))))
         end
         last_model_fractionᵢ = model_fractionᵢ
         last_fraction_experimentalᵢ = fraction_experimentalᵢ
@@ -273,7 +274,7 @@ function cumulative_fraction_uncertainty(sigma, i::Int)
     i₋ = firstindex(sigma)
     i₊ = lastindex(sigma)
     σ²₋ = sum(abs2, view(sigma, i₋:i))
-    σ²₊ = sum(abs2, view(sigma,(i+1):i₊))
+    σ²₊ = sum(abs2, view(sigma, i:i₊))
     σ = sqrt(1/(1/σ²₋ + 1/σ²₊))
 end
 
