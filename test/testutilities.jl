@@ -59,6 +59,21 @@
     @test round.(Thermochron.slabsphereintersectiondensity(redges,ralpha,40.), sigdigits=6) ≈ [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0206711, 0.0299581]    
     @test round.(Thermochron.slabsphereintersectiondensity(redges,ralpha,60.), sigdigits=6) ≈ zeros(25)
 
+## --- Test properties of models and arrays of models
+
+    # Test equality
+    @test ZRDAAM() == ZRDAAM()
+    @test ZRDAAM() != RDAAM()
+
+    # Test isapprox
+    @test ZRDAAM() ≈ ZRDAAM()
+    @test !(ZRDAAM() ≈ RDAAM())
+
+    mdls = [ZRDAAM(), ZRDAAM(), ZRDAAM(), ZRDAAM(), ZRDAAM()]
+    @test mean(mdls) ≈ ZRDAAM()         # Test averaging
+    @test mean(2 .* mdls)/2 ≈ ZRDAAM()  # Test broadcasting
+
+
 ## --- Test basic linear algebra
     dl = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
     d = [1.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, 1.0]
