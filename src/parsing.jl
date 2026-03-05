@@ -342,9 +342,21 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                 SphericalAr
             end
             r = (haskey(ds, :halfwidth_um) && !isnan(ds.halfwidth_um[i])) ? ds.halfwidth_um[i] : 100
-            fraction_experimental = dds.fraction_degassed
-            fraction_stepwise = diff([0; fraction_experimental])
-            fraction_experimental_sigma = haskey(dds, :fraction_degassed_sigma) ? dds.fraction_degassed_sigma : degassing_relsigma*fraction_stepwise
+            # Determine if reported degassing is cumulative or not
+            if issorted(dds.fraction_degassed)
+                fraction_experimental = dds.fraction_degassed
+                fraction_stepwise = diff([0; fraction_experimental])
+            else
+                fraction_stepwise = dds.fraction_degassed
+                fraction_experimental = cumsum(fraction_stepwise)
+            end
+            # Ensure fractions are normalized to 1
+            total_experimental = last(fraction_experimental)
+            fraction_experimental ./= total_experimental
+            fraction_stepwise ./= total_experimental
+            # Fraction uncertainty
+            fraction_experimental_sigma = haskey(dds, :fraction_degassed_sigma) ? dds.fraction_degassed_sigma./total_experimental : degassing_relsigma*fraction_stepwise
+            # Ensure experimental time steps are cumulatibve
             tsteps_experimental = issorted(dds.time_s, lt=<=) ? dds.time_s : cumsum(dds.time_s)
             if haskey(dds, :volume_fraction) && count(!isnan, dds.volume_fraction) > 0
                 volume_fraction = dds.volume_fraction[.!isnan.(dds.volume_fraction)]
@@ -423,17 +435,39 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                 Rstep = dds.He_4_He_3
                 Rstep_sigma = dds.He_4_He_3_sigma
                 Rbulk = nanmean(dds.He_4_He_3, dds.He_3)
-                fraction_experimental = cumsum(dds.He_3)
-                total_He_3 = last(fraction_experimental)
-                fraction_experimental ./= total_He_3 # Rescale from 0-1
-                fraction_stepwise = diff([0; fraction_experimental])
-                fraction_experimental_sigma = haskey(dds, :He_3_sigma) ? dds.He_3_sigma./total_He_3 : degassing_relsigma*fraction_stepwise
+                # Determine if reported degassing is cumulative or not
+                if issorted(dds.He_3)
+                    fraction_experimental = dds.He_3
+                    fraction_stepwise = diff([0; fraction_experimental])
+                else
+                    fraction_stepwise = dds.He_3
+                    fraction_experimental = cumsum(fraction_stepwise)
+                end
+                # Ensure fractions are normalized to 1
+                total_experimental = last(fraction_experimental)
+                fraction_experimental ./= total_experimental
+                fraction_stepwise ./= total_experimental
+                # Fraction uncertainty
+                fraction_experimental_sigma = haskey(dds, :He_3_sigma) ? dds.He_3_sigma./total_experimental : degassing_relsigma*fraction_stepwise
+                # Rstep/Rbulk in place of age
                 step_age = Rstep./Rbulk
                 step_age_sigma = Rstep_sigma./Rbulk
             else # Rstep_Rbulk format
-                fraction_experimental = dds.fraction_degassed
-                fraction_stepwise = diff([0; fraction_experimental])
-                fraction_experimental_sigma = haskey(dds, :fraction_degassed_sigma) ? dds.fraction_degassed_sigma : degassing_relsigma*fraction_stepwise
+                # Determine if reported degassing is cumulative or not
+                if issorted(dds.fraction_degassed)
+                    fraction_experimental = dds.fraction_degassed
+                    fraction_stepwise = diff([0; fraction_experimental])
+                else
+                    fraction_stepwise = dds.fraction_degassed
+                    fraction_experimental = cumsum(fraction_stepwise)
+                end
+                # Ensure fractions are normalized to 1
+                total_experimental = last(fraction_experimental)
+                fraction_experimental ./= total_experimental
+                fraction_stepwise ./= total_experimental
+                # Fraction uncertainty
+                fraction_experimental_sigma = haskey(dds, :fraction_degassed_sigma) ? dds.fraction_degassed_sigma./total_experimental : degassing_relsigma*fraction_stepwise
+                # Rstep/Rbulk in place of age
                 step_age = haskey(dds, :Rstep_Rbulk) ? dds.Rstep_Rbulk : fill(NaN, size(fraction_experimental))
                 step_age_sigma = haskey(dds, :Rstep_Rbulk_sigma) ? dds.Rstep_Rbulk_sigma : fill(NaN, size(fraction_experimental))
             end
