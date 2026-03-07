@@ -292,7 +292,7 @@ function anneal!(data::Vector{<:Chronometer{T}}, ::Type{C}, tsteps::AbstractVect
     end
     return data
 end
-function anneal!(mineral::HeliumSample, Tsteps::AbstractVector, pr::AbstractMatrix)
+function anneal!(mineral::Union{ZirconHe, ApatiteHe}, Tsteps::AbstractVector, pr::AbstractMatrix)
     ntsteps = length(axes(pr, 1))
     first_index = firstindex(pr) + ntsteps - length(tsteps_geol(mineral))
     if first_index > 1
