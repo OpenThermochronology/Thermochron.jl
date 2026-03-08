@@ -903,6 +903,7 @@
             rescalestepheating::Bool=true,  
             redegastracer::Bool=false, 
             stepwisetracerfraction::Bool=true,
+            stepagebytime::Bool=true,
             partitiondaughter::Bool=false, 
         ) where {T<:AbstractFloat}
         @assert eachindex(chrons) == eachindex(μcalc) == eachindex(σcalc) == (eachindex(damodels)[1:end-1])
@@ -1034,7 +1035,11 @@
                     end
                 end
                 μcalc[i] = draw_from_population(stepage, fraction)
-                ll += model_ll(c, σcalc[i]; rescale=rescalestepheating)/scalesdd
+                if stepagebytime
+                    ll += model_ll_bytime(c, σcalc[i]; rescale=rescalestepheating)/scalesdd
+                else
+                    ll += model_ll_byfraction(c, σcalc[i]; rescale=rescalestepheating)/scalesdd
+                end
             elseif isa(c, MultipleDomain)
                 c::MultipleDomain{T, <:Union{ArgonSample{T}, HeliumSample{T}}}
                 stepage, fraction = modelage(c, Tstepsᵢ, dm::MultipleDiffusivity{T}, rp; redegastracer, partitiondaughter)
@@ -1047,7 +1052,11 @@
                     end
                 end
                 μcalc[i] = draw_from_population(stepage, fraction)
-                ll += model_ll(c, σcalc[i]; rescale=rescalestepheating)/scalemdd
+                if stepagebytime
+                    ll += model_ll_bytime(c, σcalc[i]; rescale=rescalestepheating)/scalemdd
+                else
+                    ll += model_ll_byfraction(c, σcalc[i]; rescale=rescalestepheating)/scalemdd
+                end
             else
                 # NaN if not calculated
                 μcalc[i] = σcalc[i] = T(NaN)

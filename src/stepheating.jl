@@ -286,7 +286,17 @@ function modelage(mdd::MultipleDomain{T,<:ArgonSample}, Tsteps::AbstractVector, 
     return age, fraction
 end
 
-function model_ll(dd::Union{SingleDomain{T},MultipleDomain{T}}, σ::T=zero(T); rescale=false) where {T<:AbstractFloat}
+function model_ll_bytime(dd::Union{SingleDomain{T},MultipleDomain{T}}, σ::T=zero(T); rescale=false) where {T<:AbstractFloat}
+    ll = zero(T)
+    @inbounds for i in eachindex(dd.step_age, dd.step_age_sigma, dd.model_step_age, dd.fit)
+        if dd.fit[i]
+            ll += norm_ll(dd.step_age[i], dd.step_age_sigma[i], dd.model_step_age[i], σ)
+        end
+    end
+    rescale && (ll /= sqrt(count(dd.fit)))
+    return ll
+end
+function model_ll_byfraction(dd::Union{SingleDomain{T},MultipleDomain{T}}, σ::T=zero(T); rescale=false) where {T<:AbstractFloat}
     ll = zero(T)
     fstart = zero(T)
     @inbounds for i in eachindex(dd.step_age, dd.step_age_sigma, dd.fraction_experimental, dd.fit)
@@ -300,6 +310,7 @@ function model_ll(dd::Union{SingleDomain{T},MultipleDomain{T}}, σ::T=zero(T); r
     rescale && (ll /= sqrt(count(dd.fit)))
     return ll
 end
+model_ll(dd::Union{SingleDomain{T},MultipleDomain{T}}, σ::T=zero(T); rescale=false) where {T<:AbstractFloat} = model_ll_bytime(dd, σ; rescale)
 
 function stepwise_degassing_ll(dd::Union{SingleDomain{T},MultipleDomain{T}}; rescale=false) where {T<:AbstractFloat}
     ll = zero(T)
