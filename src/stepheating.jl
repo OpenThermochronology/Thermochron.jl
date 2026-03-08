@@ -229,11 +229,14 @@ end
 
 function model_ll(dd::Union{SingleDomain{T},MultipleDomain{T}}, σ::T=zero(T); rescale=false) where {T<:AbstractFloat}
     ll = zero(T)
-    @inbounds for i in eachindex(dd.step_age, dd.step_age_sigma, dd.midpoint_experimental, dd.fit)
+    fstart = zero(T)
+    @inbounds for i in eachindex(dd.step_age, dd.step_age_sigma, dd.fraction_experimental, dd.fit)
         if dd.fit[i]
-            model_ageᵢ = linterp1(dd.model_fraction, dd.model_age, dd.midpoint_experimental[i])
+            midpoint_experimental = (fstart + dd.fraction_experimental[i])/2
+            model_ageᵢ = linterp1(dd.model_fraction, dd.model_age, midpoint_experimental)
             ll += norm_ll(dd.step_age[i], dd.step_age_sigma[i], model_ageᵢ, σ)
         end
+        fstart = dd.fraction_experimental[i]
     end
     rescale && (ll /= sqrt(count(dd.fit)))
     return ll

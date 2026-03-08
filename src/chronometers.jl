@@ -1759,7 +1759,6 @@ struct SingleDomain{T<:AbstractFloat, C<:NobleGasSample{T}} <: StepHeatingSample
     step_age_sigma::Vector{T}               # [Ma or unitless] measured age (or ratio) uncertainties (one-sigma) at each degassing step
     fraction_experimental::Vector{T}        # [unitless] cumulative fraction of total tracer (Ar-39 or He-3) released each degassing step
     fraction_experimental_sigma::Vector{T}  # [unitless] uncertainty in degassing fraction
-    midpoint_experimental::Vector{T}        # [unitless] midpoint of fraction_experimental for each step
     tsteps_experimental::Vector{T}          # [s] time steps of experimental heating schedule
     Tsteps_experimental::Vector{T}          # [C] temperature steps of experimental heating schedule
     fit::BitVector                          # [Bool] Whether or not each step should be used in inversion
@@ -1799,9 +1798,6 @@ function SingleDomain(T=Float64, C=ApatiteHe;
     @assert issorted(tsteps_experimental, lt=<=) "Degassing time steps must be in strictly increasing order"
     @assert all(x->0<=x<=1, fraction_experimental) "All \"fraction degassed\" values must be between 0 and 1"
 
-    # Calculate midpoints of `fraction_experimental`
-    midpoint_experimental = @. T(fraction_experimental + [0; fraction_experimental[1:end-1]])/2
-
     # Interpolate degassing t-T steps to the same resolution as the forward model
     tsteps_degassing = floatrange(first(tsteps_experimental), last(tsteps_experimental), length=length(agesteps))
     Tsteps_degassing = linterp1(tsteps_experimental, T.(Tsteps_experimental), tsteps_degassing) 
@@ -1815,7 +1811,6 @@ function SingleDomain(T=Float64, C=ApatiteHe;
         T.(step_age_sigma),
         T.(fraction_experimental),
         T.(fraction_experimental_sigma),
-        midpoint_experimental,
         tsteps_experimental,
         Tsteps_experimental,
         Bool.(fit),
@@ -1872,7 +1867,6 @@ struct MultipleDomain{T<:AbstractFloat, C<:NobleGasSample{T}} <: StepHeatingSamp
     step_age_sigma::Vector{T}               # [Ma or unitless] measured age (or ratio) uncertainties at each degassing step
     fraction_experimental::Vector{T}        # [unitless] cumulative fraction of total tracer (Ar-39 or He-3) released each degassing step
     fraction_experimental_sigma::Vector{T}  # [unitless] uncertainty in degassing fraction
-    midpoint_experimental::Vector{T}        # [unitless] midpoint of fraction_experimental for each step
     tsteps_experimental::Vector{T}          # [s] time steps of experimental heating schedule
     Tsteps_experimental::Vector{T}          # [C] temperature steps of experimental heating schedule
     fit::BitVector                          # [Bool] Whether or not each step should be used in inversion
@@ -1917,10 +1911,6 @@ function MultipleDomain(T=Float64, C=PlanarAr;
     @assert issorted(tsteps_experimental, lt=<=) "Degassing time steps must be in strictly increasing order"
     @assert all(x->0<=x<=1, fraction_experimental) "All \"fraction degassed\" values must be between 0 and 1"
 
-    # Calculate midpoints of `fraction_experimental`
-    midpoint_experimental = @. T(fraction_experimental + [0; fraction_experimental[1:end-1]])/2
-    @assert eachindex(midpoint_experimental) == eachindex(fraction_experimental)
-
     # Interpolate degassing t-T steps to the same resolution as the forward model
     tsteps_degassing = floatrange(first(tsteps_experimental), last(tsteps_experimental), length=length(agesteps))
     Tsteps_degassing = linterp1(tsteps_experimental, T.(Tsteps_experimental), tsteps_degassing) 
@@ -1938,7 +1928,6 @@ function MultipleDomain(T=Float64, C=PlanarAr;
         T.(step_age_sigma),
         T.(fraction_experimental),
         T.(fraction_experimental_sigma),
-        midpoint_experimental,
         tsteps_experimental,
         Tsteps_experimental,
         Bool.(fit),
