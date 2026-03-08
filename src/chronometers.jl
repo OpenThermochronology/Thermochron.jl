@@ -1770,6 +1770,7 @@ struct SingleDomain{T<:AbstractFloat, C<:NobleGasSample{T}} <: StepHeatingSample
     model_fraction::Vector{T}               # [unitless] cumulative fraction of tracer He-3 degasssed
     tsteps_degassing::FloatRange            # [s] time steps of model heating schedule
     Tsteps_degassing::Vector{T}             # [C] temperature steps of model heating schedule
+    model_step_age::Vector{T}               # [Ma or ratio] calculated model age for each experimental degassing step
     name::String                            # Sample or grain name
     notes::String                           # Sample notes
 end
@@ -1803,7 +1804,8 @@ function SingleDomain(T=Float64, C=ApatiteHe;
     Tsteps_degassing = linterp1(tsteps_experimental, T.(Tsteps_experimental), tsteps_degassing) 
     model_age = zeros(T, length(tsteps_degassing))
     model_fraction = zeros(T, length(tsteps_degassing))
-    
+    model_step_age = zeros(T, length(tsteps_experimental))
+
     # Allocate domain
     domain = C(T; offset, agesteps, tsteps, kwargs...)
     return SingleDomain(
@@ -1822,6 +1824,7 @@ function SingleDomain(T=Float64, C=ApatiteHe;
         model_fraction,
         tsteps_degassing,
         Tsteps_degassing,
+        model_step_age,
         name,
         notes,
     )
@@ -1880,6 +1883,7 @@ struct MultipleDomain{T<:AbstractFloat, C<:NobleGasSample{T}} <: StepHeatingSamp
     model_fraction::Vector{T}               # [unitless] cumulative fraction of parent tracer degasssed
     tsteps_degassing::FloatRange            # [s] time steps of model heating schedule
     Tsteps_degassing::Vector{T}             # [C] temperature steps of model heating schedule
+    model_step_age::Vector{T}               # [Ma] calculated model age for each experimental degassing step
     name::String                            # Sample or grain name
     notes::String                           # Sample notes
 end
@@ -1918,7 +1922,8 @@ function MultipleDomain(T=Float64, C=PlanarAr;
     model_tracer = zeros(T, length(tsteps_degassing))
     model_daughter = zeros(T, length(tsteps_degassing))
     model_fraction = zeros(T, length(tsteps_degassing))
-    
+    model_step_age = zeros(T, length(tsteps_experimental))
+
     # Allocate domains
     bulk_age = nanmean(step_age, @.(fit./step_age_sigma^2))
     bulk_age_sigma = nanstd(step_age, @.(fit./step_age_sigma^2))
@@ -1941,6 +1946,7 @@ function MultipleDomain(T=Float64, C=PlanarAr;
         model_fraction,
         tsteps_degassing,
         Tsteps_degassing,
+        model_step_age,
         name,
         notes,
     )

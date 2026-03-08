@@ -144,27 +144,56 @@ end
 ## --- Age and likelihood functions for step heating data
 
 function modelage(sdd::SingleDomain{T,<:HeliumSample}, Tsteps::AbstractVector, dm::DiffusivityModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}(); redegastracer::Bool=true, partitiondaughter::Bool=false) where {T<:AbstractFloat}
-    stepratio = fill!(sdd.model_age, zero(T))
+    ratio = fill!(sdd.model_age, zero(T))
     fraction = fill!(sdd.model_fraction, zero(T))
+    model_step_age = fill!(sdd.model_step_age, zero(T))
+
     # Degas
     age = modelage(sdd.domain, Tsteps, dm, rp; partitiondaughter)
     tracer, daughter = degas!(sdd.domain, sdd.tsteps_degassing, sdd.Tsteps_degassing, dm; sdd.fuse, redegastracer)
-    # Calculate Rstep/Rbulk for each degassing step
-    @inbounds for i in eachindex(tracer, daughter)
-        stepratio[i] = daughter[i]/tracer[i]
+
+    # Calculate Rstep/Rbulk for each experimental degassing step
+    i = firstindex(sdd.tsteps_degassing)
+    for j in eachindex(model_step_age)
+        t = d = zero(T)
+        while (i <= lastindex(sdd.tsteps_degassing)) && (sdd.tsteps_degassing[i] <= sdd.tsteps_experimental[j])
+            t += tracer[i]
+            d += daughter[i]
+            i += 1
+        end
+        model_step_age[j] = d/t
+    end
+
+    # Calculate Rstep/Rbulk for each model degassing step
+    for i in eachindex(tracer, daughter)
+        ratio[i] = daughter[i]/tracer[i]
     end
     # Cumulative fraction of tracer degassed
     cumsum!(fraction, tracer)
     fraction ./= last(fraction)
 
-    return age, stepratio, fraction
+    return age, ratio, fraction
 end
 function modelage(sdd::SingleDomain{T,<:ArgonSample}, Tsteps::AbstractVector, dm::DiffusivityModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}(); redegastracer::Bool=true, partitiondaughter::Bool=false) where {T<:AbstractFloat}
     stepage = fill!(sdd.model_age, zero(T))
     fraction = fill!(sdd.model_fraction, zero(T))
+    model_step_age = fill!(sdd.model_step_age, zero(T))
+
     # Degas
     age = modelage(sdd.domain, Tsteps, dm, rp; partitiondaughter)
     tracer, daughter = degas!(sdd.domain, sdd.tsteps_degassing, sdd.Tsteps_degassing, dm; sdd.fuse, redegastracer)
+
+    # Calculate ages for each experimental degassing step
+    i = firstindex(sdd.tsteps_degassing)
+    for j in eachindex(model_step_age)
+        t = d = zero(T)
+        while (i <= lastindex(sdd.tsteps_degassing)) && (sdd.tsteps_degassing[i] <= sdd.tsteps_experimental[j])
+            t += tracer[i]
+            d += daughter[i]
+            i += 1
+        end
+        model_step_age[j] = newton_ar_age(d, t)
+    end
 
     # Calculate ages for each degassing step
     for i in eachindex(tracer, daughter)
@@ -177,11 +206,13 @@ function modelage(sdd::SingleDomain{T,<:ArgonSample}, Tsteps::AbstractVector, dm
     return age, stepage, fraction
 end
 function modelage(mdd::MultipleDomain{T,<:HeliumSample}, Tsteps::AbstractVector, dm::MultipleDiffusivity{T}, rp::RegionalParameters{T}=RegionalParameters{T}(); redegastracer::Bool=true, partitiondaughter::Bool=false) where {T<:AbstractFloat}
+    fuse = mdd.fuse::Bool
     ratio = fill!(mdd.model_age, zero(T))
     tracer = fill!(mdd.model_tracer, zero(T))
     daughter = fill!(mdd.model_daughter, zero(T))
     fraction = fill!(mdd.model_fraction, zero(T))
-    fuse = mdd.fuse::Bool
+    model_step_age = fill!(mdd.model_step_age, zero(T))
+    
     # Degas
     @assert eachindex(mdd.domains) == eachindex(dm.volume_fraction)
     for i in eachindex(mdd.domains)
@@ -191,6 +222,19 @@ function modelage(mdd::MultipleDomain{T,<:HeliumSample}, Tsteps::AbstractVector,
         @. tracer += p * dm.volume_fraction[i]
         @. daughter += d * dm.volume_fraction[i]
     end
+
+    # Calculate Rstep/Rbulk for each experimental degassing step
+    i = firstindex(mdd.tsteps_degassing)
+    for j in eachindex(model_step_age)
+        t = d = zero(T)
+        while (i <= lastindex(mdd.tsteps_degassing)) && (mdd.tsteps_degassing[i] <= mdd.tsteps_experimental[j])
+            t += tracer[i]
+            d += daughter[i]
+            i += 1
+        end
+        model_step_age[j] = d/t
+    end
+
     # Calculate Rstep/Rbulk for each degassing step
     @inbounds for i in eachindex(tracer, daughter)
         ratio[i] = daughter[i]/tracer[i]
@@ -202,11 +246,13 @@ function modelage(mdd::MultipleDomain{T,<:HeliumSample}, Tsteps::AbstractVector,
     return ratio, fraction
 end
 function modelage(mdd::MultipleDomain{T,<:ArgonSample}, Tsteps::AbstractVector, dm::MultipleDiffusivity{T}, rp::RegionalParameters{T}=RegionalParameters{T}(); redegastracer::Bool=true, partitiondaughter::Bool=false) where {T<:AbstractFloat}
+    fuse = mdd.fuse::Bool
     age = fill!(mdd.model_age, zero(T))
     tracer = fill!(mdd.model_tracer, zero(T))
     daughter = fill!(mdd.model_daughter, zero(T))
     fraction = fill!(mdd.model_fraction, zero(T))
-    fuse = mdd.fuse::Bool
+    model_step_age = fill!(mdd.model_step_age, zero(T))
+
     # Degas
     @assert eachindex(mdd.domains) == eachindex(dm.volume_fraction)
     for i in eachindex(mdd.domains)
@@ -216,6 +262,19 @@ function modelage(mdd::MultipleDomain{T,<:ArgonSample}, Tsteps::AbstractVector, 
         @. tracer += p * dm.volume_fraction[i]
         @. daughter += d * dm.volume_fraction[i]
     end
+
+    # Calculate ages for each experimental degassing step
+    i = firstindex(mdd.tsteps_degassing)
+    for j in eachindex(model_step_age)
+        t = d = zero(T)
+        while (i <= lastindex(mdd.tsteps_degassing)) && (mdd.tsteps_degassing[i] <= mdd.tsteps_experimental[j])
+            t += tracer[i]
+            d += daughter[i]
+            i += 1
+        end
+        model_step_age[j] = newton_ar_age(d, t)
+    end
+
     # Calculate ages for each degassing step
     for i in eachindex(tracer, daughter)
         age[i] = newton_ar_age(daughter[i], tracer[i])
