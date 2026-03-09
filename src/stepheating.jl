@@ -13,7 +13,7 @@ One diffusivity, rescaled
 Base.@kwdef struct SDiffusivity{T,D<:DiffusivityModel{T}} <: DiffusivityModel{T}
     model::D                        # Underlying (wrapped) diffusivity model
     scale::T=1.0                    # [unitless] relative domain size (default = 1.0)
-    scale_logsigma::T=1.0           # [unitless] log uncertainty (default = 1.0 = a factor of ℯ, one-sigma)
+    scale_logsigma::T=log(2)/2      # [unitless] log uncertainty (default = log(2)/2 = a factor of 2, two-sigma)
 end
 
 """
@@ -28,10 +28,10 @@ MSDiffusivity(
 One diffusivity, rescaled multiple times
 """
 Base.@kwdef struct MSDiffusivity{T,N,D<:DiffusivityModel{T}} <: MultipleDiffusivity{T}
-    model::D                                        # Underlying (wrapped) diffusivity model
-    scale::NTuple{N,T}=ntuple(i->1.0, N)            # [unitless] relative domain size 
-    scale_logsigma::NTuple{N,T}=ntuple(i->1.0, N)   # [unitless] log uncertainty 
-    volume_fraction::NTuple{N,T}=ntuple(i->1/N, N)  # [unitless] Volume fraction of each domain
+    model::D                                            # Underlying (wrapped) diffusivity model
+    scale::NTuple{N,T}=ntuple(i->1.0, N)                # [unitless] relative domain size 
+    scale_logsigma::NTuple{N,T}=ntuple(i->log(2)/2, N)  # [unitless] log uncertainty 
+    volume_fraction::NTuple{N,T}=ntuple(i->1/N, N)      # [unitless] Volume fraction of each domain
 end
 Base.getindex(d::MSDiffusivity{T,N,D}, i::Int) where {T,N,D} = SDiffusivity{T,D}(d.model, d.scale[i], d.scale_logsigma[i])
 

@@ -503,14 +503,14 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                     end
                 end
                 dm = if mineral === "apatite"
-                    MSDiffusivity{T,ndomains,typeof(adm)}(
+                    MSDiffusivity{T,ndomains,typeof(adm)}(;
                         model = adm,
                         scale = (scale...,),
                         scale_logsigma = (scale_logsigma...,),
                         volume_fraction = (volume_fraction...,),
                     )
                 elseif mineral === "zircon"
-                    MSDiffusivity{T,ndomains,typeof(zdm)}(
+                    MSDiffusivity{T,ndomains,typeof(zdm)}(;
                         model = zdm,
                         scale = (scale...,),
                         scale_logsigma = (scale_logsigma...,),
@@ -518,7 +518,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                     )
                 else # Custom diffusivity
                     tdomains = .!isnan.(dds.volume_fraction)
-                    MDiffusivity(
+                    MDiffusivity{T}(;
                         D0 = (T.(exp.(dds.lnD0_a_2[tdomains]).*(r/10000)^2)...,),
                         D0_logsigma = (T.(haskey(dds, :lnD0_a_2_sigma) ? dds.lnD0_a_2_sigma[tdomains] : fill(log(2)/2, count(tdomains)))...,),
                         Ea = (T.(dds.Ea_kJ_mol[tdomains])...,),
@@ -551,19 +551,17 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                     c.domain.annealeddamage .= ds.dose_alpha_g[i]
                 end
                 dm = if mineral === "apatite"
-                    SDiffusivity(
+                    SDiffusivity{T, typeof(adm)}(;
                         model = adm,
-                        scale = 1.0 + randn()/1e9,   # Twiddle to establish uniqueness 
-                        scale_logsigma = 1.0,
+                        scale, scale_logsigma,
                     )
                 elseif mineral === "zircon"
-                    SDiffusivity(
+                    SDiffusivity{T, typeof(zdm)}(;
                         model = zdm,
-                        scale = 1.0 + randn()/1e9,   # Twiddle to establish uniqueness 
-                        scale_logsigma = 1.0,
+                        scale, scale_logsigma,
                     )
                 else # Custom diffusivity
-                    Diffusivity(
+                    Diffusivity{T}(;
                         D0 = T(ds.D0_cm_2_s[i]),
                         D0_logsigma = T((haskey(ds, :D0_logsigma) && !isnan(ds.D0_logsigma[i])) ? ds.D0_logsigma[i] : log(2)/2),
                         Ea = T(ds.Ea_kJ_mol[i]),
