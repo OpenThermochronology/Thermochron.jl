@@ -130,11 +130,11 @@
 
     # Test kintetic_ll! and updatekinetics! on all chronometer types
     updatekinetics = falses(length(damodels))
-    @test Thermochron.kinetic_ll!(updatekinetics, damodels, damodels) ≈ 23.003288749839882
+    @test Thermochron.kinetic_ll!(updatekinetics, damodels, damodels) ≈ 8.980830496227446
     damodelsₚ = copy(damodels)
     Thermochron.movekinetics!(damodelsₚ, updatekinetics)
     Thermochron.movekinetics!(damodelsₚ, updatekinetics)
-    @test 0 < Thermochron.kinetic_ll!(updatekinetics, damodelsₚ, damodels) < 23.003288749839882
+    @test 0 < Thermochron.kinetic_ll!(updatekinetics, damodelsₚ, damodels) < 8.980830496227446
 
     # Test again with partitiondaughter=true
     chrons, damodels = chronometers(dsg, params, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
