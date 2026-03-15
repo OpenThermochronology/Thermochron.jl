@@ -36,9 +36,9 @@ function updatebeta!(β::Vector{T}, mineral::ZirconHe{T}, dm::ZRDAAM{T}, dt::T, 
     # Each radial step except first and latst
     @turbo check_empty=true for k in Base.OneTo(nrsteps-2)
         dam = annealeddamage[damagestep,k]
-        fₐ = 1-exp(-Bα*dam*Phi)
-        τ = (lint0/(4.2 / ((1-exp(-Bα*dam)) * SV) - 2.5))^2
-        De = 1 / ((1-fₐ)^3 / (Dz/τ) + fₐ^3 / DN17)  # Effetive diffusivity
+        fₐ = 1-exp(-Bα*dam*Phi)                             # Fraction amorphous
+        τ = (lint0/(4.2 / ((1-exp(-Bα*dam)) * SV) - 2.5))^2 # Tortuosity
+        De = 1 / ((1-fₐ)^3 / (Dz/τ) + fₐ^3 / DN17)          # Effective diffusivity
         β[k+1] = 2 * dr^2 / (De*dt) # Shifted by 1 because β[1] is implicit point at negative radius
     end
     # First and last radial step

@@ -420,15 +420,15 @@
     end
     function kinetic_ll(dmₚ::ZRDAAM, dm::ZRDAAM)
         norm_ll(log(dm.DzD0), dm.DzD0_logsigma, log(dmₚ.DzD0)) + 
-        norm_ll(log(dm.DzEa), dm.DzEa_logsigma, log(dmₚ.DzEa)) + 
+        norm_ll(dm.DzEa, dm.DzEa_sigma, dmₚ.DzEa) + 
         norm_ll(log(dm.DN17D0), dm.DN17D0_logsigma, log(dmₚ.DN17D0)) + 
-        norm_ll(log(dm.DN17Ea), dm.DN17Ea_logsigma, log(dmₚ.DN17Ea)) +
+        norm_ll(dm.DN17Ea, dm.DN17Ea_sigma, dmₚ.DN17Ea) +
         norm_ll(dm.rmin, dm.rmin_sigma, dmₚ.rmin)
     end
     function kinetic_ll(dmₚ::RDAAM, dm::RDAAM)
         norm_ll(log(dm.D0L), dm.D0L_logsigma, log(dmₚ.D0L)) + 
-        norm_ll(log(dm.EaL), dm.EaL_logsigma, log(dmₚ.EaL)) + 
-        norm_ll(log(dm.EaTrap), dm.EaTrap_logsigma, log(dmₚ.EaTrap))+
+        norm_ll(dm.EaL, dm.EaL_sigma, dmₚ.EaL) + 
+        norm_ll(dm.EaTrap, dm.EaTrap_sigma, dmₚ.EaTrap)+
         norm_ll(dm.rmr0, dm.rmr0_sigma, dmₚ.rmr0)
     end
     function kinetic_ll(dmₚ::Diffusivity, dm::Diffusivity)
@@ -783,12 +783,12 @@
     end
     function movekinetics(zdm::ZRDAAM{T}, p=0.5) where {T}
         ZRDAAM(;
-            DzEa = (rand()<p) ? exp(log(zdm.DzEa)+randn(T)*zdm.DzEa_logsigma/2) : zdm.DzEa,
-            DzEa_logsigma = zdm.DzEa_logsigma,
+            DzEa = (rand()<p) ? zdm.DzEa+randn(T)*zdm.DzEa_sigma/2 : zdm.DzEa,
+            DzEa_sigma = zdm.DzEa_sigma,
             DzD0 = (rand()<p) ? exp(log(zdm.DzD0)+randn(T)*zdm.DzD0_logsigma/2) : zdm.DzD0,
             DzD0_logsigma = zdm.DzD0_logsigma,
-            DN17Ea = (rand()<p) ? exp(log(zdm.DN17Ea)+randn(T)*zdm.DN17Ea_logsigma/2) : zdm.DN17Ea,
-            DN17Ea_logsigma = zdm.DN17Ea_logsigma,
+            DN17Ea = (rand()<p) ? zdm.DN17Ea+randn(T)*zdm.DN17Ea_sigma/2 : zdm.DN17Ea,
+            DN17Ea_sigma = zdm.DN17Ea_sigma,
             DN17D0 = (rand()<p) ? exp(log(zdm.DN17D0)+randn(T)*zdm.DN17D0_logsigma/2) : zdm.DN17D0,
             DN17D0_logsigma = zdm.DN17D0_logsigma,
             rmin = (rand()<p) ? reflecting(zdm.rmin + randn(T)*zdm.rmin_sigma/2, 0, 1) : zdm.rmin,
@@ -800,10 +800,10 @@
         RDAAM(;
             D0L = (rand()<p) ? exp(log(adm.D0L)+randn(T)*adm.D0L_logsigma/2) : adm.D0L,
             D0L_logsigma = adm.D0L_logsigma,
-            EaL = (rand()<p) ? exp(log(adm.EaL)+randn(T)*adm.EaL_logsigma/2) : adm.EaL,
-            EaL_logsigma = adm.EaL_logsigma,
-            EaTrap = (rand()<p) ? exp(log(adm.EaTrap)+randn(T)*adm.EaTrap_logsigma/2) : adm.EaTrap,
-            EaTrap_logsigma = adm.EaTrap_logsigma,
+            EaL = (rand()<p) ? adm.EaL+randn(T)*adm.EaL_sigma/2 : adm.EaL,
+            EaL_sigma = adm.EaL_sigma,
+            EaTrap = (rand()<p) ? adm.EaTrap+randn(T)*adm.EaTrap_sigma/2 : adm.EaTrap,
+            EaTrap_sigma = adm.EaTrap_sigma,
             rmr0 = rmr0,
             rmr0_sigma = adm.rmr0_sigma,
             kappa = adm.kappa_rmr0 - rmr0,
