@@ -7,20 +7,20 @@ function updatebeta!(β::Vector{T}, mineral::ZirconHe{T}, dm::ZRDAAM{T}, dt::T, 
     annealeddamage = mineral.annealeddamage::Matrix{T}
 
     # Damage and annealing constants
-    DzEa = dm.DzEa::T                           # [kJ/mol]
-    DN17Ea = dm.DN17Ea::T                       # [kJ/mol]
+    Ea_z = dm.Ea_z::T                           # [kJ/mol]
+    Ea_N17 = dm.Ea_N17::T                       # [kJ/mol]
     lint0 = dm.lint0::T                         # [nm]
     SV = dm.SV::T                               # [1/nm]
-    Bα = dm.Bα::T                               # [g/alpha] mass of amorphous material produced per alpha decay
-    Phi = dm.Phi::T                             # [unitless]
+    Ba = dm.Ba::T                               # [g/alpha] mass of amorphous material produced per alpha decay
+    ϕ = dm.phi::T                               # [unitless]
     R = 0.008314472                             # [kJ/(K*mol)]
     if setting === :laboratory
-        DzD0 = (dm.DzD0*10000^2)::T             # [micron^2/sec], converted from [cm^2/sec]
-        DN17D0 = (dm.DN17D0*10000^2)::T         # [micron^2/sec], converted from [cm^2/sec]
+        D0_z = (dm.D0_z*10000^2)::T             # [micron^2/sec], converted from [cm^2/sec]
+        D0_N17 = (dm.D0_N17*10000^2)::T         # [micron^2/sec], converted from [cm^2/sec]
         damagestep = lastindex(annealeddamage, 1)
     else
-        DzD0 = (dm.DzD0*10000^2*SEC_MYR)::T     # [micron^2/Myr], converted from [cm^2/sec]
-        DN17D0 = (dm.DN17D0*10000^2*SEC_MYR)::T # [micron^2/Myr], converted from [cm^2/sec]
+        D0_z = (dm.D0_z*10000^2*SEC_MYR)::T     # [micron^2/Myr], converted from [cm^2/sec]
+        D0_N17 = (dm.D0_N17*10000^2*SEC_MYR)::T # [micron^2/Myr], converted from [cm^2/sec]
         damagestep = tstep
     end
 
@@ -30,15 +30,15 @@ function updatebeta!(β::Vector{T}, mineral::ZirconHe{T}, dm::ZRDAAM{T}, dt::T, 
     @assert eachindex(β) == Base.OneTo(nrsteps)
 
     # Endmember diffusion constants
-    Dz = DzD0 * exp(-DzEa / (R * TK)) * diffusivityratio # [micron^2/sec]
-    DN17 = DN17D0 * exp(-DN17Ea / (R * TK)) * diffusivityratio # [micron^2/sec
+    Dz = D0_z * exp(-Ea_z / (R * TK)) * diffusivityratio # [micron^2/sec]
+    DN17 = D0_N17 * exp(-Ea_N17 / (R * TK)) * diffusivityratio # [micron^2/sec
 
     # Each radial step except first and latst
     @turbo check_empty=true for k in Base.OneTo(nrsteps-2)
-        dam = annealeddamage[damagestep,k]
-        fₐ = 1-exp(-Bα*dam*Phi)                             # Fraction amorphous
-        τ = (lint0/(4.2 / ((1-exp(-Bα*dam)) * SV) - 2.5))^2 # Tortuosity
-        De = 1 / ((1-fₐ)^3 / (Dz/τ) + fₐ^3 / DN17)          # Effective diffusivity
+        bα = Ba * annealeddamage[damagestep,k]          # Alpha damage
+        fₐ = 1-exp(-bα*ϕ)                               # Fraction amorphous
+        τ = (lint0/(4.2 / ((1-exp(-bα)) * SV) - 2.5))^2 # Tortuosity
+        De = 1 / ((1-fₐ)^3 / (Dz/τ) + fₐ^3 / DN17)      # Effective diffusivity
         β[k+1] = 2 * dr^2 / (De*dt) # Shifted by 1 because β[1] is implicit point at negative radius
     end
     # First and last radial step
@@ -54,8 +54,8 @@ function updatebeta!(β::Vector{T}, mineral::ApatiteHe{T}, dm::RDAAM{T}, dt::T, 
     annealeddamage = mineral.annealeddamage::Matrix{T}
 
     # Damage and annealing constants
-    EaL = dm.EaL::T                         # [kJ/mol]
-    EaTrap = dm.EaTrap::T                   # [kJ/mol]
+    Ea_L = dm.Ea_L::T                         # [kJ/mol]
+    Ea_trap = dm.Ea_trap::T                   # [kJ/mol]
     etaq = dm.etaq::T                       # Durango ηq
     psi = dm.psi::T                         # [unitless]
     omega = dm.omega::T                     # [unitless]
@@ -65,10 +65,10 @@ function updatebeta!(β::Vector{T}, mineral::ApatiteHe{T}, dm::RDAAM{T}, dt::T, 
     lambdaD = dm.lambdaD::T                 # [1/time]
     R = 0.008314472                         # [kJ/(K*mol)]
     if setting === :laboratory
-        D0L = (dm.D0L*10000^2)::T           # [micron^2/sec], converted from [cm^2/sec]  
+        D0_L = (dm.D0_L*10000^2)::T           # [micron^2/sec], converted from [cm^2/sec]  
         damagestep = lastindex(annealeddamage, 1)
     else
-        D0L = (dm.D0L*10000^2*SEC_MYR)::T   # [micron^2/Myr], converted from [cm^2/sec]  
+        D0_L = (dm.D0_L*10000^2*SEC_MYR)::T   # [micron^2/Myr], converted from [cm^2/sec]  
         damagestep = tstep
     end
 
@@ -81,8 +81,8 @@ function updatebeta!(β::Vector{T}, mineral::ApatiteHe{T}, dm::RDAAM{T}, dt::T, 
     damage_conversion = rhoap*(lambdaf/lambdaD)*etaq*L
 
     # Normal and trapping diffusivities
-    DL = D0L * exp(-EaL / (R * TK)) * diffusivityratio # [micron^2/t]
-    Dtrap = exp( EaTrap / (R * TK)) # [unitless]
+    DL = D0_L * exp(-Ea_L / (R * TK)) * diffusivityratio # [micron^2/t]
+    Dtrap = exp( Ea_trap / (R * TK)) # [unitless]
 
     # Each radial step except first and latst
     @turbo check_empty=true for k in Base.OneTo(nrsteps-2)

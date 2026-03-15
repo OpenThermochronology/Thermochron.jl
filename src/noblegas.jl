@@ -132,18 +132,18 @@ end
 """
 ```julia
 ZRDAAM(
-    DzD0::T = 193188.0          # [cm^2/sec] Maximum diffusivity, crystalline endmember
-    DzD0_logsigma::T=log(2)/2   # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
-    DzEa::T=165.0               # [kJ/mol] Activation energy, crystalline endmember
-    DzEa_sigma::T=16.5          # [kJ/mol] uncertainty 
-    DN17D0::T = 6.367E-3        # [cm^2/sec] Maximum diffusivity, amorphous endmember
-    DN17D0_logsigma::T=log(2)/2 # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
-    DN17Ea::T=71.0              # [kJ/mol] Activation energy, amorphous endmember
-    DN17Ea_sigma::T=7.1         # [kJ/mol] uncertainty 
+    D0_z::T = 193188.0          # [cm^2/sec] Maximum diffusivity, crystalline endmember
+    D0_z_logsigma::T=log(2)/2   # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    Ea_z::T=165.0               # [kJ/mol] Activation energy, crystalline endmember
+    Ea_z_sigma::T=16.5          # [kJ/mol] uncertainty 
+    D0_N17::T = 6.367E-3        # [cm^2/sec] Maximum diffusivity, amorphous endmember
+    D0_N17_logsigma::T=log(2)/2 # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    Ea_N17::T=71.0              # [kJ/mol] Activation energy, amorphous endmember
+    Ea_N17_sigma::T=7.1         # [kJ/mol] uncertainty 
     lint0::T=45920.0            # [nm]
     SV::T=1.669                 # [1/nm]
-    Bα::T=5.48E-19              # Amorphous material produced per alpha decay [g/alpha]
-    Phi::T=3.0                  # [unitless]
+    Ba::T=5.48E-19              # Amorphous material produced per alpha decay [g/alpha]
+    phi::T=3.0                  # [unitless]
     beta::T=-0.05721            # Zircon anealing parameter
     C0::T=6.24534               # Zircon anealing parameter
     C1::T=-0.11977              # Zircon anealing parameter
@@ -157,18 +157,18 @@ Zircon Radiation Damage Accumulation and Annealing Model (ZRDAAM) of
 Guenthner et al. 2013 (doi: 10.2475/03.2013.01)
 """
 Base.@kwdef struct ZRDAAM{T<:AbstractFloat} <: ZirconHeliumModel{T} 
-    DzD0::T = 193188.0          # [cm^2/sec] Maximum diffusivity, crystalline endmember
-    DzD0_logsigma::T=log(2)/2   # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
-    DzEa::T=165.0               # [kJ/mol] Activation energy, crystalline endmember
-    DzEa_sigma::T=16.5          # [kJ/mol] uncertainty 
-    DN17D0::T = 6.367E-3        # [cm^2/sec] Maximum diffusivity, amorphous endmember
-    DN17D0_logsigma::T=log(2)/2 # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
-    DN17Ea::T=71.0              # [kJ/mol] Activation energy, amorphous endmember
-    DN17Ea_sigma::T=7.1         # [kJ/mol] uncertainty 
+    D0_z::T = 193188.0          # [cm^2/sec] Maximum diffusivity, crystalline endmember
+    D0_z_logsigma::T=log(2)/2   # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    Ea_z::T=165.0               # [kJ/mol] Activation energy, crystalline endmember
+    Ea_z_sigma::T=16.5          # [kJ/mol] uncertainty 
+    D0_N17::T = 6.367E-3        # [cm^2/sec] Maximum diffusivity, amorphous endmember
+    D0_N17_logsigma::T=log(2)/2 # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    Ea_N17::T=71.0              # [kJ/mol] Activation energy, amorphous endmember
+    Ea_N17_sigma::T=7.1         # [kJ/mol] uncertainty 
     lint0::T=45920.0            # [nm]
     SV::T=1.669                 # [1/nm]
-    Bα::T=5.48E-19              # Amorphous material produced per alpha decay [g/alpha]
-    Phi::T=3.0                  # [unitless]
+    Ba::T=5.48E-19              # Amorphous material produced per alpha decay [g/alpha]
+    phi::T=3.0                  # [unitless]
     beta::T=-0.05721            # Zircon anealing parameter
     C0::T=6.24534               # Zircon anealing parameter
     C1::T=-0.11977              # Zircon anealing parameter
@@ -181,12 +181,12 @@ end
 """
 ```julia
 RDAAM(
-    D0L::T=0.6071               # [cm^2/sec] Maximum diffusivity
-    D0L_logsigma::T=log(2)/2    # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
-    EaL::T=122.3                # [kJ/mol] Activation energy
-    EaL_sigma::T=12.23          # [kJ/mol] uncertainty
-    EaTrap::T=34.0              # [kJ/mol] Activation energy
-    EaTrap_sigma::T=3.4         # [kJ/mol] uncertainty
+    D0_L::T=0.6071               # [cm^2/sec] Maximum diffusivity
+    D0_L_logsigma::T=log(2)/2    # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    Ea_L::T=122.3                # [kJ/mol] Activation energy
+    Ea_L_sigma::T=12.23          # [kJ/mol] uncertainty
+    Ea_trap::T=34.0              # [kJ/mol] Activation energy
+    Ea_trap_sigma::T=3.4         # [kJ/mol] uncertainty
     psi::T=1e-13                # empirical polynomial coefficient
     omega::T=1e-22              # empirical polynomial coefficient
     etaq::T=0.91                # Durango ηq
@@ -209,12 +209,12 @@ Apatite Radiation Damage Accumulation and Annealing Model (RDAAM) of
 Flowers et al. 2009 (doi: 10.1016/j.gca.2009.01.015)
 """
 Base.@kwdef struct RDAAM{T<:AbstractFloat} <: ApatiteHeliumModel{T} 
-    D0L::T=0.6071               # [cm^2/sec] Maximum diffusivity
-    D0L_logsigma::T=log(2)/2    # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
-    EaL::T=122.3                # [kJ/mol] Activation energy
-    EaL_sigma::T=12.23          # [kJ/mol] uncertainty
-    EaTrap::T=34.0              # [kJ/mol] Activation energy
-    EaTrap_sigma::T=3.4         # [kJ/mol] uncertainty    psi::T=1e-13                # empirical polynomial coefficient
+    D0_L::T=0.6071              # [cm^2/sec] Maximum diffusivity
+    D0_L_logsigma::T=log(2)/2   # [unitless] log uncertainty (default = log(2)/2 = a factor of 2 two-sigma)
+    Ea_L::T=122.3               # [kJ/mol] Activation energy
+    Ea_L_sigma::T=12.23         # [kJ/mol] uncertainty
+    Ea_trap::T=34.0             # [kJ/mol] Activation energy
+    Ea_trap_sigma::T=3.4        # [kJ/mol] uncertainty    psi::T=1e-13                # empirical polynomial coefficient
     psi::T=1e-13                # empirical polynomial coefficient
     omega::T=1e-22              # empirical polynomial coefficient
     etaq::T=0.91                # Durango ηq

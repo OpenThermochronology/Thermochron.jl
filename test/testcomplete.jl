@@ -444,32 +444,32 @@
 
     # Kinetics
     admdist = kinetics.dmdist[2, :]
-    D0Lmean = mean(admdist .|> x-> x.D0L)
-    @test 0 < D0Lmean
-    @info "Mean apatite D0L: $D0Lmean"
-    EaLmean = mean(admdist .|> x-> x.EaL)
-    @test 0 < EaLmean 
-    @info "Mean apatite EaL: $EaLmean"
-    EaTrapmean = mean(admdist .|> x-> x.EaTrap)
-    @test 0 < EaTrapmean 
-    @info "Mean apatite EaTrap: $EaTrapmean"
+    D0_Lmean = mean(admdist .|> x-> x.D0_L)
+    @test 0 < D0_Lmean
+    @info "Mean apatite D0_L: $D0_Lmean"
+    Ea_Lmean = mean(admdist .|> x-> x.Ea_L)
+    @test 0 < Ea_Lmean 
+    @info "Mean apatite Ea_L: $Ea_Lmean"
+    Ea_trapmean = mean(admdist .|> x-> x.Ea_trap)
+    @test 0 < Ea_trapmean 
+    @info "Mean apatite Ea_trap: $Ea_trapmean"
     rmr0mean = mean(admdist .|> x-> x.rmr0)
     @test 0 < rmr0mean < 1
     @info "Mean apatite rmr0: $rmr0mean"
 
     zdmdist = kinetics.dmdist[1, :]
-    DzD0mean = mean(zdmdist .|> x-> x.DzD0)
-    @test 0 < DzD0mean
-    @info "Mean zircon DzD0: $DzD0mean"
-    DzEamean = mean(zdmdist .|> x-> x.DzEa)
-    @test 0 < DzEamean
-    @info "Mean zircon DzEa: $DzEamean"
-    DN17D0mean = mean(zdmdist .|> x-> x.DN17D0)
-    @test 0 < DN17D0mean
-    @info "Mean zircon DN17D0: $DN17D0mean"
-    DN17Eamean = mean(zdmdist .|> x-> x.DN17Ea)
-    @test 0 < DN17Eamean
-    @info "Mean zircon DN17Ea: $DN17Eamean"
+    D0zmean = mean(zdmdist .|> x-> x.D0_z)
+    @test 0 < D0zmean
+    @info "Mean zircon D0_z: $D0zmean"
+    Eazmean = mean(zdmdist .|> x-> x.Ea_z)
+    @test 0 < Eazmean
+    @info "Mean zircon Ea_z: $Eazmean"
+    D0N17mean = mean(zdmdist .|> x-> x.D0_N17)
+    @test 0 < D0N17mean
+    @info "Mean zircon D0_N17: $D0N17mean"
+    EaN17mean = mean(zdmdist .|> x-> x.Ea_N17)
+    @test 0 < EaN17mean
+    @info "Mean zircon Ea_N17: $EaN17mean"
     rminmean = mean(zdmdist .|> x-> x.rmin)
     @test 0 < rminmean < 1
     @info "Mean zircon rmin: $rminmean"
@@ -555,31 +555,31 @@
 
     # Kinetics
     admdist = kinetics.dmdist[2, :]
-    D0Lmean = mean(admdist .|> x-> x.D0L)
-    @test 0 < D0Lmean
-    @info "Mean apatite D0L: $D0Lmean"
-    EaLmean = mean(admdist .|> x-> x.EaL)
-    @test 0 < EaLmean 
-    @info "Mean apatite EaL: $EaLmean"
-    EaTrapmean = mean(admdist .|> x-> x.EaTrap)
-    @test 0 < EaTrapmean 
-    @info "Mean apatite EaTrap: $EaTrapmean"
+    D0_Lmean = mean(admdist .|> x-> x.D0_L)
+    @test 0 < D0_Lmean
+    @info "Mean apatite D0_L: $D0_Lmean"
+    Ea_Lmean = mean(admdist .|> x-> x.Ea_L)
+    @test 0 < Ea_Lmean 
+    @info "Mean apatite Ea_L: $Ea_Lmean"
+    Ea_trapmean = mean(admdist .|> x-> x.Ea_trap)
+    @test 0 < Ea_trapmean 
+    @info "Mean apatite Ea_trap: $Ea_trapmean"
     rmr0mean = mean(admdist .|> x-> x.rmr0)
     @test 0 < rmr0mean < 1
     @info "Mean apatite rmr0: $rmr0mean"
     zdmdist = kinetics.dmdist[1, :]
-    DzD0mean = mean(zdmdist .|> x-> x.DzD0)
-    @test 0 < DzD0mean
-    @info "Mean zircon DzD0: $DzD0mean"
-    DzEamean = mean(zdmdist .|> x-> x.DzEa)
-    @test 0 < DzEamean
-    @info "Mean zircon DzEa: $DzEamean"
-    DN17D0mean = mean(zdmdist .|> x-> x.DN17D0)
-    @test 0 < DN17D0mean
-    @info "Mean zircon DN17D0: $DN17D0mean"
-    DN17Eamean = mean(zdmdist .|> x-> x.DN17Ea)
-    @test 0 < DN17Eamean
-    @info "Mean zircon DN17Ea: $DN17Eamean"
+    D0zmean = mean(zdmdist .|> x-> x.D0_z)
+    @test 0 < D0zmean
+    @info "Mean zircon D0_z: $D0zmean"
+    Eazmean = mean(zdmdist .|> x-> x.Ea_z)
+    @test 0 < Eazmean
+    @info "Mean zircon Ea_z: $Eazmean"
+    D0N17mean = mean(zdmdist .|> x-> x.D0_N17)
+    @test 0 < D0N17mean
+    @info "Mean zircon D0_N17: $D0N17mean"
+    EaN17mean = mean(zdmdist .|> x-> x.Ea_N17)
+    @test 0 < EaN17mean
+    @info "Mean zircon Ea_N17: $EaN17mean"
     rminmean = mean(zdmdist .|> x-> x.rmin)
     @test 0 < rminmean < 1
     @info "Mean zircon rmin: $rminmean"
@@ -668,31 +668,31 @@
 
     # Kinetics
     admdist = kinetics.dmdist[2, :]
-    D0Lmean = mean(admdist .|> x-> x.D0L)
-    @test 0 < D0Lmean
-    @info "Mean apatite D0L: $D0Lmean"
-    EaLmean = mean(admdist .|> x-> x.EaL)
-    @test 0 < EaLmean 
-    @info "Mean apatite EaL: $EaLmean"
-    EaTrapmean = mean(admdist .|> x-> x.EaTrap)
-    @test 0 < EaTrapmean 
-    @info "Mean apatite EaTrap: $EaTrapmean"
+    D0_Lmean = mean(admdist .|> x-> x.D0_L)
+    @test 0 < D0_Lmean
+    @info "Mean apatite D0_L: $D0_Lmean"
+    Ea_Lmean = mean(admdist .|> x-> x.Ea_L)
+    @test 0 < Ea_Lmean 
+    @info "Mean apatite Ea_L: $Ea_Lmean"
+    Ea_trapmean = mean(admdist .|> x-> x.Ea_trap)
+    @test 0 < Ea_trapmean 
+    @info "Mean apatite Ea_trap: $Ea_trapmean"
     rmr0mean = mean(admdist .|> x-> x.rmr0)
     @test 0 < rmr0mean < 1
     @info "Mean apatite rmr0: $rmr0mean"
     zdmdist = kinetics.dmdist[1, :]
-    DzD0mean = mean(zdmdist .|> x-> x.DzD0)
-    @test 0 < DzD0mean
-    @info "Mean zircon DzD0: $DzD0mean"
-    DzEamean = mean(zdmdist .|> x-> x.DzEa)
-    @test 0 < DzEamean
-    @info "Mean zircon DzEa: $DzEamean"
-    DN17D0mean = mean(zdmdist .|> x-> x.DN17D0)
-    @test 0 < DN17D0mean
-    @info "Mean zircon DN17D0: $DN17D0mean"
-    DN17Eamean = mean(zdmdist .|> x-> x.DN17Ea)
-    @test 0 < DN17Eamean
-    @info "Mean zircon DN17Ea: $DN17Eamean"
+    D0zmean = mean(zdmdist .|> x-> x.D0_z)
+    @test 0 < D0zmean
+    @info "Mean zircon D0_z: $D0zmean"
+    Eazmean = mean(zdmdist .|> x-> x.Ea_z)
+    @test 0 < Eazmean
+    @info "Mean zircon Ea_z: $Eazmean"
+    D0N17mean = mean(zdmdist .|> x-> x.D0_N17)
+    @test 0 < D0N17mean
+    @info "Mean zircon D0_N17: $D0N17mean"
+    EaN17mean = mean(zdmdist .|> x-> x.Ea_N17)
+    @test 0 < EaN17mean
+    @info "Mean zircon Ea_N17: $EaN17mean"
     rminmean = mean(zdmdist .|> x-> x.rmin)
     @test 0 < rminmean < 1
     @info "Mean zircon rmin: $rminmean"

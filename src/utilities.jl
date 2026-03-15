@@ -419,16 +419,16 @@
         norm_ll(log(rp.Ea_lambda), rp.Ea_lambda_logsigma, log(rpₚ.Ea_lambda))
     end
     function kinetic_ll(dmₚ::ZRDAAM, dm::ZRDAAM)
-        norm_ll(log(dm.DzD0), dm.DzD0_logsigma, log(dmₚ.DzD0)) + 
-        norm_ll(dm.DzEa, dm.DzEa_sigma, dmₚ.DzEa) + 
-        norm_ll(log(dm.DN17D0), dm.DN17D0_logsigma, log(dmₚ.DN17D0)) + 
-        norm_ll(dm.DN17Ea, dm.DN17Ea_sigma, dmₚ.DN17Ea) +
+        norm_ll(log(dm.D0_z), dm.D0_z_logsigma, log(dmₚ.D0_z)) + 
+        norm_ll(dm.Ea_z, dm.Ea_z_sigma, dmₚ.Ea_z) + 
+        norm_ll(log(dm.D0_N17), dm.D0_N17_logsigma, log(dmₚ.D0_N17)) + 
+        norm_ll(dm.Ea_N17, dm.Ea_N17_sigma, dmₚ.Ea_N17) +
         norm_ll(dm.rmin, dm.rmin_sigma, dmₚ.rmin)
     end
     function kinetic_ll(dmₚ::RDAAM, dm::RDAAM)
-        norm_ll(log(dm.D0L), dm.D0L_logsigma, log(dmₚ.D0L)) + 
-        norm_ll(dm.EaL, dm.EaL_sigma, dmₚ.EaL) + 
-        norm_ll(dm.EaTrap, dm.EaTrap_sigma, dmₚ.EaTrap)+
+        norm_ll(log(dm.D0_L), dm.D0_L_logsigma, log(dmₚ.D0_L)) + 
+        norm_ll(dm.Ea_L, dm.Ea_L_sigma, dmₚ.Ea_L) + 
+        norm_ll(dm.Ea_trap, dm.Ea_trap_sigma, dmₚ.Ea_trap)+
         norm_ll(dm.rmr0, dm.rmr0_sigma, dmₚ.rmr0)
     end
     function kinetic_ll(dmₚ::Diffusivity, dm::Diffusivity)
@@ -783,14 +783,14 @@
     end
     function movekinetics(zdm::ZRDAAM{T}, p=0.5) where {T}
         ZRDAAM(;
-            DzEa = (rand()<p) ? zdm.DzEa+randn(T)*zdm.DzEa_sigma/2 : zdm.DzEa,
-            DzEa_sigma = zdm.DzEa_sigma,
-            DzD0 = (rand()<p) ? exp(log(zdm.DzD0)+randn(T)*zdm.DzD0_logsigma/2) : zdm.DzD0,
-            DzD0_logsigma = zdm.DzD0_logsigma,
-            DN17Ea = (rand()<p) ? zdm.DN17Ea+randn(T)*zdm.DN17Ea_sigma/2 : zdm.DN17Ea,
-            DN17Ea_sigma = zdm.DN17Ea_sigma,
-            DN17D0 = (rand()<p) ? exp(log(zdm.DN17D0)+randn(T)*zdm.DN17D0_logsigma/2) : zdm.DN17D0,
-            DN17D0_logsigma = zdm.DN17D0_logsigma,
+            Ea_z = (rand()<p) ? zdm.Ea_z+randn(T)*zdm.Ea_z_sigma/2 : zdm.Ea_z,
+            Ea_z_sigma = zdm.Ea_z_sigma,
+            D0_z = (rand()<p) ? exp(log(zdm.D0_z)+randn(T)*zdm.D0_z_logsigma/2) : zdm.D0_z,
+            D0_z_logsigma = zdm.D0_z_logsigma,
+            Ea_N17 = (rand()<p) ? zdm.Ea_N17+randn(T)*zdm.Ea_N17_sigma/2 : zdm.Ea_N17,
+            Ea_N17_sigma = zdm.Ea_N17_sigma,
+            D0_N17 = (rand()<p) ? exp(log(zdm.D0_N17)+randn(T)*zdm.D0_N17_logsigma/2) : zdm.D0_N17,
+            D0_N17_logsigma = zdm.D0_N17_logsigma,
             rmin = (rand()<p) ? reflecting(zdm.rmin + randn(T)*zdm.rmin_sigma/2, 0, 1) : zdm.rmin,
             rmin_sigma = zdm.rmin_sigma,
         )
@@ -798,12 +798,12 @@
     function movekinetics(adm::RDAAM{T}, p=0.5) where {T}
         rmr0 = (rand()<p) ? reflecting(adm.rmr0 + randn(T)*adm.rmr0_sigma/2, 0, 1) : adm.rmr0
         RDAAM(;
-            D0L = (rand()<p) ? exp(log(adm.D0L)+randn(T)*adm.D0L_logsigma/2) : adm.D0L,
-            D0L_logsigma = adm.D0L_logsigma,
-            EaL = (rand()<p) ? adm.EaL+randn(T)*adm.EaL_sigma/2 : adm.EaL,
-            EaL_sigma = adm.EaL_sigma,
-            EaTrap = (rand()<p) ? adm.EaTrap+randn(T)*adm.EaTrap_sigma/2 : adm.EaTrap,
-            EaTrap_sigma = adm.EaTrap_sigma,
+            D0_L = (rand()<p) ? exp(log(adm.D0_L)+randn(T)*adm.D0_L_logsigma/2) : adm.D0_L,
+            D0_L_logsigma = adm.D0_L_logsigma,
+            Ea_L = (rand()<p) ? adm.Ea_L+randn(T)*adm.Ea_L_sigma/2 : adm.Ea_L,
+            Ea_L_sigma = adm.Ea_L_sigma,
+            Ea_trap = (rand()<p) ? adm.Ea_trap+randn(T)*adm.Ea_trap_sigma/2 : adm.Ea_trap,
+            Ea_trap_sigma = adm.Ea_trap_sigma,
             rmr0 = rmr0,
             rmr0_sigma = adm.rmr0_sigma,
             kappa = adm.kappa_rmr0 - rmr0,

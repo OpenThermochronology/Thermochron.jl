@@ -69,10 +69,10 @@
 
 ## --- Test integrated age program for ZirconHe
     dm = ZRDAAM(
-        DzEa = 165.0,       # kJ/mol
-        DzD0 = 193188.0,    # cm^2/sec
-        DN17Ea = 71.0,      # kJ/mol
-        DN17D0 = 3.4E-3,    # 6.367e-3 cm^2/sec
+        Ea_z = 165.0,       # kJ/mol
+        D0_z = 193188.0,    # cm^2/sec
+        Ea_N17 = 71.0,      # kJ/mol
+        D0_N17 = 3.4E-3,    # 6.367e-3 cm^2/sec
         rmin=0.0,           # unitless
     )
     pr, Teq = Thermochron.anneal(tsteps, Tsteps, dm)
@@ -128,10 +128,10 @@
     @test mean(pr) ≈ 0.38342687162656836
 
     dm = ZRDAAM(
-        DzEa = 165.0, # kJ/mol
-        DzD0 = 193188.0, # cm^2/sec
-        DN17Ea = 71.0, # kJ/mol
-        DN17D0 = 0.0034, #6.367E-3 # cm^2/sec
+        Ea_z = 165.0, # kJ/mol
+        D0_z = 193188.0, # cm^2/sec
+        Ea_N17 = 71.0, # kJ/mol
+        D0_N17 = 0.0034, #6.367E-3 # cm^2/sec
         rmin=0.0,
     )
 
