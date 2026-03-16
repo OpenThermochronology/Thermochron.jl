@@ -326,32 +326,37 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::Abstr
     @assert eachindex(tsteps) == eachindex(Tsteps) == eachindex(teq) == axes(ρᵣ, 1) == axes(ρᵣ,2) == Base.OneTo(length(tsteps))
     ntsteps = length(tsteps)
     fill!(teq, zero(T))
+    C₀ = dm.C0::T
+    C₁ = dm.C1::T
+    C₂ = dm.C2::T
+    C₃ = dm.C3::T
+    β = dm.beta::T
 
     # First timestep
     dt = step_at(tsteps, 1)
-    ρᵣ[1,1] = 1 / ((dm.C0 + dm.C1*(log(dt)-dm.C2)/(log(1 / (Tsteps[1]+273.15))-dm.C3))^(1/dm.beta)+1)
+    ρᵣ[1,1] = 1 / ((C₀ + C₁*(log(dt)-C₂)/(log(1 / (Tsteps[1]+273.15))-C₃))^(1/β)+1)
 
     # All subsequent timesteps
-    @inbounds for i=2:ntsteps
+    @inbounds for i ∈ 2:ntsteps
         dt = step_at(tsteps, i)
-        lᵢ = log(1 / (Tsteps[i]+273.15)) - dm.C3
+        lᵢ = log(1 / (Tsteps[i]+273.15)) - C₃
 
         # Convert any existing track length reduction for damage from
         # all previous timestep to an equivalent annealing time at the
         # current temperature
-        @turbo check_empty=true for j in 1:i-1
-            teq[j] = exp(dm.C2 + lᵢ * ((1/ρᵣ[i-1, j] - 1)^dm.beta - dm.C0) / dm.C1)
+        @turbo check_empty=true for j ∈ 1:i-1
+            teq[j] = exp(C₂ + lᵢ * ((1/ρᵣ[i-1, j] - 1)^β - C₀) / C₁)
         end
 
         # Calculate the new reduced track lengths for all previous time steps
         # Accumulating annealing strictly in terms of reduced track length
-        @turbo check_empty=true for j in 1:i
-            ρᵣ[i,j] = 1 / ((dm.C0 + dm.C1 * (log(dt + teq[j]) - dm.C2) / lᵢ)^(1/dm.beta) + 1)
+        @turbo check_empty=true for j ∈ 1:i
+            ρᵣ[i,j] = 1 / ((C₀ + C₁ * (log(dt + teq[j]) - C₂) / lᵢ)^(1/β) + 1)
         end
     end
 
     # Guenthner et al volume-length conversion
-    rmin = dm.rmin
+    rmin = dm.rmin::T
     scale = 1/(1-rmin)
     @inbounds for j ∈ 1:ntsteps
         for i ∈ j:ntsteps
@@ -369,44 +374,48 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::Abstr
     return ρᵣ
 end
 function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::AbstractVector, Tsteps::AbstractVector, dm::RDAAM{T}) where T <: AbstractFloat
-
+    @assert eachindex(tsteps) == eachindex(Tsteps) == eachindex(teq) == axes(ρᵣ, 1) == axes(ρᵣ,2) == Base.OneTo(length(tsteps))
     ntsteps = length(tsteps)
     @assert size(ρᵣ) === (ntsteps, ntsteps)
     @assert size(teq) === (ntsteps,)
     fill!(teq, zero(T))
+    C₀ = dm.C0::T
+    C₁ = dm.C1::T
+    C₂ = dm.C2::T
+    C₃ = dm.C3::T
+    β = dm.beta::T
 
     # First timestep
     dt = step_at(tsteps, 1)
-    ρᵣ[1,1] = 1 / ((dm.C0 + dm.C1*(log(dt)-dm.C2)/(log(1 / (Tsteps[1]+273.15))-dm.C3))^(1/dm.beta)+1)
+    ρᵣ[1,1] = 1 / ((C₀ + C₁*(log(dt)-C₂)/(log(1 / (Tsteps[1]+273.15))-C₃))^(1/β)+1)
 
     # All subsequent timesteps
-    @inbounds for i=2:ntsteps
+    @inbounds for i ∈ 2:ntsteps
         dt = step_at(tsteps, i)
-        lᵢ = log(1 / (Tsteps[i]+273.15)) - dm.C3
+        lᵢ = log(1 / (Tsteps[i]+273.15)) - C₃
 
         # Convert any existing track length reduction for ρᵣ from
         # all previous timestep to an equivalent annealing time at the
         # current temperature
-        @turbo check_empty=true for j in 1:i-1
-            teq[j] = exp(dm.C2 + lᵢ * ((1/ρᵣ[i-1, j] - 1)^dm.beta - dm.C0) / dm.C1)
+        @turbo check_empty=true for j ∈ 1:i-1
+            teq[j] = exp(C₂ + lᵢ * ((1/ρᵣ[i-1, j] - 1)^β - C₀) / C₁)
         end
 
         # Calculate the new reduced track lengths for all previous time steps
         # Accumulating annealing strictly in terms of reduced track length
-        @turbo check_empty=true for j in 1:i
-            ρᵣ[i,j] = 1 / ((dm.C0 + dm.C1 * (log(dt + teq[j]) - dm.C2) / lᵢ)^(1/dm.beta) + 1)
+        @turbo check_empty=true for j ∈ 1:i
+            ρᵣ[i,j] = 1 / ((C₀ + C₁ * (log(dt + teq[j]) - C₂) / lᵢ)^(1/β) + 1)
         end
     end
 
     # Corrections to ρᵣ 
-    rmr0 = dm.rmr0
-    kappa = dm.kappa
-    scale = 1/(1-rmr0)
+    rmr₀ = dm.rmr0::T
+    κ = dm.kappa::T
+    scale = 1/(1-rmr₀)
     @inbounds for j ∈ 1:ntsteps
         for i ∈ j:ntsteps
-            # rmr0 correction
-            ρᵣ[i,j] = if ρᵣ[i,j] >= rmr0
-                ((ρᵣ[i,j]-rmr0)*scale)^kappa
+            ρᵣ[i,j] = if ρᵣ[i,j] >= rmr₀
+                ((ρᵣ[i,j]-rmr₀)*scale)^κ
             else
                 zero(T)
             end
