@@ -154,16 +154,16 @@ end
 # Fanning Curvilinear, simplified Box-Cox
 function reltracklength(t::Number, TK::Number, am::Union{Ketcham2007FC, Guenthner2013FC})
     g = am.C0 + am.C1*(log(t*SEC_MYR)-am.C2)/(log(1/TK)-am.C3)
-    r = 1/(g^(1/am.alpha) + 1)
+    1/(g^(1/am.alpha) + 1)
 end
 # Fanning Linear (Fanning Arrhenius), no Box-Cox
 function reltracklength(t::Number, TK::Number, am::Jones2021FA{F}) where {F<:AbstractFloat}
     g = am.C0 + am.C1*(log(t*SEC_MYR)-am.C2)/((1/TK)-am.C3)
-    r = max(min(g, one(F)), zero(F))
+    max(min(g, one(F)), zero(F))
 end
 # Parallel Curvilinear, no Box-Cox
 function reltracklength(t::Number, TK::Number, am::Yamada2007PC)
-    r = exp(-exp(am.c0p + am.c1p*(log(t*SEC_MYR) - am.bp*log(1/TK))))
+    exp(-exp(am.c0p + am.c1p*(log(t*SEC_MYR) - am.bp*log(1/TK))))
 end
 
 
@@ -229,8 +229,9 @@ Calculate the model c-axis equivalent length ("lc,mod") given a measured
 """
 lcmod(x::ApatiteTrackLengthOriented) = x.lcmod
 function lcmod(l, θ)
-    x = l*cos(deg2rad(θ))
-    y = l*sin(deg2rad(θ))
+    θrad = deg2rad(θ)
+    x = l*cos(θrad)
+    y = l*sin(θrad)
     
     fobj = curve_fit(ellipse, Float64[x], Float64[y], Float64[l])
     lcm = only(fobj.param)
@@ -253,14 +254,14 @@ export lcmod
 ```julia
 apatite_rmr0model(F, Cl, OH, Mn=0, Fe=0, others=0)
 ```
-Calculate rmr0 as a function of composition (specified in terms of
+Calculate rmr₀ as a function of composition (specified in terms of
 atoms per fomula unit, or APFU) for "multikinetic" apatite fission 
 track thermochronology.
 
 Implements equation 11 from Ketcham et al. 2007 
 (doi: 10.2138/am.2007.2281)
 ```
-rmr0 = (-0.0495 -0.0348F +0.3528|Cl - 1| +0.0701|OH - 1| 
+rmr₀ = (-0.0495 -0.0348F +0.3528|Cl - 1| +0.0701|OH - 1| 
         -0.8592Mn -1.2252Fe -0.1721Others)^0.1433
 ```
 """
@@ -276,11 +277,11 @@ export apatite_rmr0model
 ```julia
 apatite_rmr0fromcl(Cl)
 ```
-Calculate `rmr0` as a function of chlorine content `Cl` [APFU] for 
+Calculate `rmr₀` as a function of chlorine content `Cl` [APFU] for 
 "multikinetic" apatite fission track following the relation (Fig. 7a) 
 of Ketcham et al. 1999 (doi: 10.2138/am-1999-0903)
 ```
-rmr0 = 1 - exp(2.107(1 - abs(Cl - 1)) - 1.834)
+rmr₀ = 1 - exp(2.107(1 - abs(Cl - 1)) - 1.834)
 ```
 """
 apatite_rmr0fromcl(Cl) = 1 - exp(2.107*(1 - abs(Cl - 1)) - 1.834)
@@ -290,11 +291,11 @@ export apatite_rmr0fromcl
 ```julia
 apatite_rmr0fromdpar(dpar)
 ```
-Calculate `rmr0` as a function of `dpar` for "multikinetic" apatite 
+Calculate `rmr₀` as a function of `dpar` for "multikinetic" apatite 
 fission track following the relation (Fig. 7b) of Ketcham et al. 1999
 (doi: 10.2138/am-1999-0903)
 ```
-rmr0 = 1 - exp(0.647(dpar-1.75) - 1.834)
+rmr₀ = 1 - exp(0.647(dpar-1.75) - 1.834)
 ```
 """
 apatite_rmr0fromdpar(dpar) = 1 - exp(0.647(dpar-1.75) - 1.834)
@@ -302,23 +303,19 @@ export apatite_rmr0fromdpar
 
 """
 ```julia
-apatite_dparfromrmr0(rmr0)
+apatite_dparfromrmr0(rmr₀)
 ```
-Calculate `dpar` as a function of `rmr0` for "multikinetic" apatite 
+Calculate `dpar` as a function of `rmr₀` for "multikinetic" apatite 
 fission track following the relation (Fig. 7b) of Ketcham et al. 1999
 (doi: 10.2138/am-1999-0903)
 ```
-dpar = (log(1 - rmr0) + 1.834)/0.647 + 1.75
+dpar = (log(1 - rmr₀) + 1.834)/0.647 + 1.75
 ```
 """
-apatite_dparfromrmr0(rmr0) = (log(1 - rmr0) + 1.834)/0.647 + 1.75
+apatite_dparfromrmr0(rmr₀) = (log(1 - rmr₀) + 1.834)/0.647 + 1.75
 export apatite_dparfromrmr0
 
 
-# dpar = [1.5851, 1.6458, 1.7066, 1.8646, 1.9497, 1.8767, 1.8403, 2.0469, 2.1441, 2.3385, 2.4236, 2.4358, 2.9948, 4.5625, 4.9757]
-# l0 = [15.7784, 16.2913, 16.0571, 15.9679, 16.2969, 16.2077, 16.2077, 16.1463, 16.1408, 16.4195, 16.3805, 16.4474, 16.3805, 16.9882, 16.9268]
-# l0m = 15.63 .+ 0.283.*dpar
-# nanstd(l0 - l0m)
 """
 ```julia
 l0 = apatite_l0fromdpar(dpar)
@@ -335,9 +332,6 @@ appropriate line in Figure 1 of Carlson et al. 1999.
 apatite_l0fromdpar(dpar) = 15.63 + 0.283*dpar
 export apatite_l0fromdpar
 
-# dpar = [1.5894, 1.6402, 1.7012, 1.8333, 1.8638, 1.8841, 1.9451, 2.0569, 2.1484, 2.3415, 2.4329, 2.4431, 2.9919, 4.5772, 4.9837]
-# l0 = [16.189, 16.5693, 16.4301, 16.5183, 16.3606, 16.5229, 16.5507, 16.4487, 16.4394, 16.6481, 16.6342, 16.6759, 16.6064, 17.0701, 17.0377]
-# l0mod = 16.10 .+ 0.205.*dpar
 """
 ```julia
 l0 = apatite_l0modfromdpar(dpar)
@@ -356,13 +350,13 @@ export apatite_l0modfromdpar
 
 ## --- Track length conversion for "multikinetic" fission track
 
-function rlr(rmr::T, rmr0::T, kappa=1.04-rmr0) where {T<:AbstractFloat}
-    if rmr < rmr0
+function rlr(rmr::T, rmr₀::T, kappa=1.04-rmr₀) where {T<:AbstractFloat}
+    if rmr < rmr₀
         zero(T)
-    elseif rmr0 == 0
+    elseif rmr₀ == 0
         rmr
     else
-        ((rmr-rmr0)/(1-rmr0))^min(kappa, one(T))
+        ((rmr-rmr₀)/(1-rmr₀))^min(kappa, one(T))
     end
 end
 
@@ -439,14 +433,14 @@ function modelage(apatite::ApatiteFT{T}, Tsteps::AbstractVector, am::ApatiteAnne
     ΔT = T(273.15) + temperatureoffset(apatite, rp)
     @assert issorted(tsteps)
     @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps)
-    rmr0 = apatite.rmr0::T
+    rmr₀ = apatite.rmr0::T
     teq = dt = step_at(tsteps, lastindex(tsteps))
-    r = rlr(reltracklength(teq, Tsteps[end]+ΔT, am), rmr0)
+    r = rlr(reltracklength(teq, Tsteps[end]+ΔT, am), rmr₀)
     ftobs = dt * reltrackdensityap(r) * exp(λ238U * agesteps[end]) 
     @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
         dt = step_at(tsteps, i)
         teq = equivalenttime(teq, Tsteps[i+1]+ΔT, Tsteps[i]+ΔT, am) + dt
-        r = rlr(reltracklength(teq, Tsteps[i]+ΔT, am), rmr0)
+        r = rlr(reltracklength(teq, Tsteps[i]+ΔT, am), rmr₀)
         ftobs += dt * reltrackdensityap(r) * exp(λ238U * agesteps[i])
     end
     return newton_ft_age(ftobs)
@@ -478,18 +472,18 @@ function modellength(track::Union{ApatiteTrackLength{T}, ApatiteTrackLengthOrien
     agesteps = agesteps_geol(track)
     tsteps = tsteps_geol(track)
     ΔT = T(273.15) + temperatureoffset(track, rp)
-    rmr0 = track.rmr0::T
+    rmr₀ = track.rmr0::T
     r = track.r::Vector{T}
     pr = track.pr::Vector{T}
     @assert issorted(tsteps)
     @assert eachindex(agesteps) == eachindex(tsteps) == eachindex(Tsteps) == eachindex(pr) == eachindex(r)
     teq = dt = step_at(tsteps, lastindex(tsteps))
-    r[end] = rlr(reltracklength(teq, Tsteps[end]+ΔT, am), rmr0)
+    r[end] = rlr(reltracklength(teq, Tsteps[end]+ΔT, am), rmr₀)
     pr[end] = reltrackdensityap(r[end]) * exp(λ238U * agesteps[end]) * dt # * dt to account for variable timestep duration when averaging
     @inbounds for i in Iterators.drop(reverse(eachindex(Tsteps)),1)
         dt = step_at(tsteps, i)
         teq = equivalenttime(teq, Tsteps[i+1]+ΔT, Tsteps[i]+ΔT, am) + dt
-        r[i] = rlr(reltracklength(teq, Tsteps[i]+ΔT, am), rmr0)
+        r[i] = rlr(reltracklength(teq, Tsteps[i]+ΔT, am), rmr₀)
         pr[i] = reltrackdensityap(r[i]) * exp(λ238U * agesteps[i]) * dt # * dt to account for variable timestep duration when averaging
     end
     r .*= track.l0 # Convert from reduced length to length
