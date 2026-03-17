@@ -69,9 +69,10 @@
     @test ZRDAAM() ≈ ZRDAAM()
     @test !(ZRDAAM() ≈ RDAAM())
 
-    mdls = [ZRDAAM(), ZRDAAM(), ZRDAAM(), ZRDAAM(), ZRDAAM()]
-    @test mean(mdls) ≈ ZRDAAM()         # Test averaging
-    @test mean(2 .* mdls)/2 ≈ ZRDAAM()  # Test broadcasting
+    mdls = fill(ZRDAAM(), 5, 5)
+    @test mean(mdls) ≈ ZRDAAM()                                             # Test averaging
+    @test mean(mean(mdls, dims=1)) ≈  mean(mean(mdls, dims=2)) ≈ ZRDAAM()   # Test averaging
+    @test mean(2 .* mdls)/2 ≈ ZRDAAM()                                      # Test broadcasting
 
 
 ## --- Test basic linear algebra

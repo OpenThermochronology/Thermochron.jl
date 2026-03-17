@@ -52,6 +52,14 @@ function Base.isapprox(x::T, y::T; kwargs...) where {T<:Model}
 end
 
 # Methods to allow averaging of models
+Base.zero(::M) where {M<:Model} = zero(M)
+@generated function Base.zero(::Type{M}) where {T, M<:Model{T}}
+    result = :($M())
+    for e in fieldnames(M)
+        push!(result.args, :(zero(T)))
+    end
+    return result
+end
 @generated function Base.:+(x::M, y::M) where {M<:Model}
     result = :($M())
     for e in fieldnames(M)
