@@ -80,12 +80,14 @@ module PlotsExt
         histogram!(he, Ea; normalized=true, lw=0, color=lines[1], label="posterior", bins=(minimum(Ea)-0.01):0.01:(maximum(Ea)+0.01), alpha, kwargs...)
         Ea₀ = Normal(d.Ea_z, d.Ea_z_sigma)
         x = range(mean(Ea₀)-5std(Ea₀), mean(Ea₀)+5std(Ea₀), length=100)
-        plot!(he, log10.(x), pdf.(Ea₀,x), color=lines[1], label="prior", kwargs...)
+        c = diff(x)./diff(log10.(x))
+        plot!(he, log10.(cntr(x)), pdf.(Ea₀,cntr(x)).*c, color=lines[1], label="prior", kwargs...)
         Ea = dms .|> x->log10(x.Ea_N17)
         histogram!(he, Ea; normalized=true, lw=0, color=lines[2], label="", bins=(minimum(Ea)-0.01):0.01:(maximum(Ea)+0.01), alpha, kwargs...)
         Ea₀ = Normal(d.Ea_N17, d.Ea_N17_sigma)
         x = range(mean(Ea₀)-5std(Ea₀), mean(Ea₀)+5std(Ea₀), length=100)
-        plot!(he, log10.(x), pdf.(Ea₀,x), color=lines[2], label="", kwargs...)
+        c = diff(x)./diff(log10.(x))
+        plot!(he, log10.(cntr(x)), pdf.(Ea₀,cntr(x)).*c, color=lines[2], label="", kwargs...)
 
         return plot(hd, he; layout, size, kwargs...)
     end
@@ -102,13 +104,14 @@ module PlotsExt
         histogram!(he, Ea; normalized=true, lw=0, color=lines[1], label="Ea_L posterior", bins=(minimum(Ea)-0.02):0.02:(maximum(Ea)+0.02), alpha, kwargs...)
         Ea₀ = Normal(d.Ea_L, d.Ea_L_sigma)
         x = range(mean(Ea₀)-3std(Ea₀), mean(Ea₀)+3std(Ea₀), length=100)
-        plot!(he, log10.(x), pdf.(Ea₀,x), color=lines[1], label="Ea_L prior", kwargs...)
-        Ea = dms .|> x->log10(x.EaTrap)
-        histogram!(he, Ea; normalized=true, lw=0, color=lines[2], label="EaTrap posterior", bins=(minimum(Ea)-0.02):0.02:(maximum(Ea)+0.02), alpha, kwargs...)
-        Ea₀ = Normal(d.EaTrap, d.EaTrap_sigma)
+        c = diff(x)./diff(log10.(x))
+        plot!(he, log10.(cntr(x)), pdf.(Ea₀,cntr(x)).*c, color=lines[1], label="Ea_L prior", kwargs...)
+        Ea = dms .|> x->log10(x.Ea_trap)
+        histogram!(he, Ea; normalized=true, lw=0, color=lines[2], label="Ea_trap posterior", bins=(minimum(Ea)-0.02):0.02:(maximum(Ea)+0.02), alpha, kwargs...)
+        Ea₀ = Normal(d.Ea_trap, d.Ea_trap_sigma)
         x = range(mean(Ea₀)-3std(Ea₀), mean(Ea₀)+3std(Ea₀), length=100)
-        plot!(he, log10.(x), pdf.(Ea₀,x), color=lines[2], label="EaTrap prior", kwargs...)
-
+        c = diff(x)./diff(log10.(x))
+        plot!(he, log10.(cntr(x)), pdf.(Ea₀,cntr(x)).*c, color=lines[2], label="Ea_trap prior", kwargs...)
         return plot(hd, he; layout, size, kwargs...)
     end
 
