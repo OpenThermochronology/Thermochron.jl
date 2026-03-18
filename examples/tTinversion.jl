@@ -29,34 +29,36 @@
     # Literature samples from McDannell et al. 2022 (doi: 10.1130/G50315.1), Manitoba
     # (12 ZirconHe, 5 ApatiteHe, 47 ApatiteFT, 269 ApatiteTrackLengthOriented)
     name = "Manitoba"
-    datafile = joinpath("exampledata", "manitoba.csv")
+    ds = importdataset(joinpath("exampledata", "manitoba.csv"), ',', importas=:Tuple)
 
     # # Literature samples from Guenthner 2013 (doi: 10.2475/03.2013.01), Minnesota
     # # (23 ZirconHe, 11 ApatiteHe)
     # name = "Minnesota"
-    # datafile = joinpath("exampledata", "minnesota.csv")
+    # ds = importdataset(joinpath("exampledata", "minnesota.csv"), ',', importas=:Tuple)
 
     # # Literature samples from Valla et al. 2011 (doi: 10.1038/NGEO1242), Visp, Switzerland
     # # (23 ApatiteHe, 4 He-4/He-3)
     # name = "VIS"
-    # datafile = joinpath("exampledata", "vis.csv")
+    # ds = importdataset(joinpath("exampledata", "vis.csv"), ',', importas=:Tuple)
+    # ds.crystallization_age_Ma .= 32.0 # Pretend samples are younger than they are to avoid modelling pre-Alpine history
 
     # # Literature sample from McDannell et al. 2018 (doi: 10.1016/j.epsl.2018.03.012), Quebec
     # # (1 MDD)
     # name = "OL13"
-    # datafile = joinpath("exampledata", "ol13.csv")
+    # ds = importdataset(joinpath("exampledata", "ol13.csv"), ',', importas=:Tuple)
 
-    ds = importdataset(datafile, ',', importas=:Tuple)
 
 ## --- Prepare problem
 
+    # Approximate number of model timesteps (more is slower but more accurate)  
+    resolution = 300 
+
     # Option A: Linear timesteps
-    dt = 8 # [Ma] Average model timestep (smaller is slower but more accurate)
+    dt = round(maximum(ds.crystallization_age_Ma)/resolution, sigdigits=2) # [Ma] Average model timestep
     tinit = ceil(maximum(ds.crystallization_age_Ma)/dt) * dt # [Ma] Model start time
     agesteps = cntr(tinit:-dt:0)
 
     # # Option B: Logarithmic timesteps
-    # resolution = 300 # Approximate number of model timesteps (more is slower but more accurate)
     # dt = maximum(ds.crystallization_age_Ma)/resolution # [Ma] Average model timestep
     # tinit = maximum(ds.crystallization_age_Ma) # [Ma] Model start time
     # agesteps = cntr(logrange(tinit+2dt, 2dt, length=Int(tinit÷dt+1)) .- 2dt)
@@ -598,7 +600,7 @@ end
 ## --- (Optional) Plot a zoomed-in version of the posterior path image
 
     # xrange = (0, 10)    # time [Ma]
-    # yrange = (0, 400)   # Temperature [C]
+    # yrange = (0, 100)   # Temperature [C]
     # @time (tTimageZoom, xcZoom, ycZoom) = image_from_paths!(tT; xresolution=1800, yresolution=1200, method=:nearest, xrange, yrange)
 
     # # Prepare axes
