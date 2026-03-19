@@ -900,7 +900,8 @@
     end
     function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::AbstractVector{<:Chronometer{T}}, damodels::AbstractVector{<:Model{T}}, Tsteps::AbstractVector{T}; 
             rescale::Bool=false,
-            rescalestepheating::Bool=true,  
+            rescalesdd::Bool=false,
+            rescalemdd::Bool=false,
             redegastracer::Bool=false, 
             stepwisetracerfraction::Bool=true,
             stepagebytime::Bool=true,
@@ -939,19 +940,22 @@
         end
 
         # Optionally rescale log likelihoods to avoid one chronometer type from dominating the inversion
-        scalegar = rescale ? sqrt(count(x->(isa(x, SphericalAr)||isa(x, PlanarAr)), chrons)) : 1
-        scaleghe = rescale ? sqrt(count(x->(isa(x, SphericalHe)||isa(x, PlanarHe)), chrons)) : 1
-        scalezhe = rescale ? sqrt(count(x->isa(x, ZirconHe), chrons)) : 1
-        scaleahe = rescale ? sqrt(count(x->isa(x, ApatiteHe), chrons)) : 1
-        scalezft = rescale ? sqrt(count(x->isa(x, ZirconFT), chrons)) : 1
-        scalemft = rescale ? sqrt(count(x->isa(x, MonaziteFT), chrons)) : 1
-        scaleaft = rescale ? sqrt(count(x->isa(x, ApatiteFT), chrons)) : 1
-        scaleztl = rescale ? sqrt(count(x->isa(x, ZirconTrackLength), chrons)) : 1
-        scalemtl = rescale ? sqrt(count(x->isa(x, MonaziteTrackLength), chrons)) : 1
-        scaleatl = rescale ? sqrt(count(x->isa(x, ApatiteTrackLength), chrons)) : 1
-        scaleato = rescale ? sqrt(count(x->isa(x, ApatiteTrackLengthOriented), chrons)) : 1
-        scalesdd = rescale ? sqrt(count(x->isa(x, SingleDomain), chrons)) : 1
-        scalemdd = rescale ? sqrt(count(x->isa(x, MultipleDomain), chrons)) : 1
+        scalegar = rescale ? sqrt(count(x->(isa(x, SphericalAr) || isa(x, PlanarAr)), chrons)) : 1.0
+        scaleghe = rescale ? sqrt(count(x->(isa(x, SphericalHe) || isa(x, PlanarHe)), chrons)) : 1.0
+        scalezhe = rescale ? sqrt(count(x->isa(x, ZirconHe), chrons)) : 1.0
+        scaleahe = rescale ? sqrt(count(x->isa(x, ApatiteHe), chrons)) : 1.0
+        scalezft = rescale ? sqrt(count(x->isa(x, ZirconFT), chrons)) : 1.0
+        scalemft = rescale ? sqrt(count(x->isa(x, MonaziteFT), chrons)) : 1.0
+        scaleaft = rescale ? sqrt(count(x->isa(x, ApatiteFT), chrons)) : 1.0
+        scaleztl = rescale ? sqrt(count(x->isa(x, ZirconTrackLength), chrons)) : 1.0
+        scalemtl = rescale ? sqrt(count(x->isa(x, MonaziteTrackLength), chrons)) : 1.0
+        scaleatl = rescale ? sqrt(count(x->isa(x, ApatiteTrackLength), chrons)) : 1.0
+        scaleato = rescale ? sqrt(count(x->isa(x, ApatiteTrackLengthOriented), chrons)) : 1.0
+        # Rescale step heating chronometers if either rescale OR rescalesdd/rescalemdd is set
+        nsdd = sum(x->(isa(x, SingleDomain) ? count(x.fit) : 0), chrons)
+        scalesdd = (rescale | rescalesdd) ? sqrt(nsdd) : 1.0
+        nmdd = sum(x->(isa(x, MultipleDomain) ? count(x.fit) : 0), chrons)
+        scalemdd = (rescale | rescalemdd) ? sqrt(nmdd) : 1.0
 
         # Cycle through each Chronometer, model and calculate log likelihood
         ll = zero(T)
@@ -1029,16 +1033,16 @@
                 @assert issorted(fraction) "Degassing fraction is not properly cumulative"
                 if redegastracer
                     if stepwisetracerfraction
-                        ll += stepwise_degassing_ll(c; rescale=rescalestepheating)/scalesdd
+                        ll += stepwise_degassing_ll(c)/scalesdd
                     else
-                        ll += cumulative_degassing_ll(c; rescale=rescalestepheating)/scalesdd
+                        ll += cumulative_degassing_ll(c)/scalesdd
                     end
                 end
                 μcalc[i] = draw_from_population(stepage, fraction)
                 if stepagebytime
-                    ll += model_ll_bytime(c, σcalc[i]; rescale=rescalestepheating)/scalesdd
+                    ll += model_ll_bytime(c, σcalc[i])/scalesdd
                 else
-                    ll += model_ll_byfraction(c, σcalc[i]; rescale=rescalestepheating)/scalesdd
+                    ll += model_ll_byfraction(c, σcalc[i])/scalesdd
                 end
             elseif isa(c, MultipleDomain)
                 c::MultipleDomain{T, <:Union{ArgonSample{T}, HeliumSample{T}}}
@@ -1046,16 +1050,16 @@
                 @assert issorted(fraction) "Degassing fraction is not properly cumulative"
                 if redegastracer
                     if stepwisetracerfraction
-                        ll += stepwise_degassing_ll(c; rescale=rescalestepheating)/scalemdd
+                        ll += stepwise_degassing_ll(c)/scalemdd
                     else
-                        ll += cumulative_degassing_ll(c; rescale=rescalestepheating)/scalemdd
+                        ll += cumulative_degassing_ll(c)/scalemdd
                     end
                 end
                 μcalc[i] = draw_from_population(stepage, fraction)
                 if stepagebytime
-                    ll += model_ll_bytime(c, σcalc[i]; rescale=rescalestepheating)/scalemdd
+                    ll += model_ll_bytime(c, σcalc[i])/scalemdd
                 else
-                    ll += model_ll_byfraction(c, σcalc[i]; rescale=rescalestepheating)/scalemdd
+                    ll += model_ll_byfraction(c, σcalc[i])/scalemdd
                 end
             else
                 # NaN if not calculated

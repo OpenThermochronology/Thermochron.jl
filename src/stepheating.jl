@@ -286,17 +286,16 @@ function modelage(mdd::MultipleDomain{T,<:ArgonSample}, Tsteps::AbstractVector, 
     return age, fraction
 end
 
-function model_ll_bytime(dd::Union{SingleDomain{T},MultipleDomain{T}}, σ::T=zero(T); rescale=false) where {T<:AbstractFloat}
+function model_ll_bytime(dd::Union{SingleDomain{T},MultipleDomain{T}}, σ::T=zero(T)) where {T<:AbstractFloat}
     ll = zero(T)
     @inbounds for i in eachindex(dd.step_age, dd.step_age_sigma, dd.model_step_age, dd.fit)
         if dd.fit[i]
             ll += norm_ll(dd.step_age[i], dd.step_age_sigma[i], dd.model_step_age[i], σ)
         end
     end
-    rescale && (ll /= sqrt(count(dd.fit)))
     return ll
 end
-function model_ll_byfraction(dd::Union{SingleDomain{T},MultipleDomain{T}}, σ::T=zero(T); rescale=false) where {T<:AbstractFloat}
+function model_ll_byfraction(dd::Union{SingleDomain{T},MultipleDomain{T}}, σ::T=zero(T)) where {T<:AbstractFloat}
     ll = zero(T)
     fstart = zero(T)
     @inbounds for i in eachindex(dd.step_age, dd.step_age_sigma, dd.fraction_experimental, dd.fit)
@@ -307,12 +306,11 @@ function model_ll_byfraction(dd::Union{SingleDomain{T},MultipleDomain{T}}, σ::T
         end
         fstart = dd.fraction_experimental[i]
     end
-    rescale && (ll /= sqrt(count(dd.fit)))
     return ll
 end
-model_ll(dd::Union{SingleDomain{T},MultipleDomain{T}}, σ::T=zero(T); rescale=false) where {T<:AbstractFloat} = model_ll_bytime(dd, σ; rescale)
+model_ll(dd::Union{SingleDomain{T},MultipleDomain{T}}, σ::T=zero(T)) where {T<:AbstractFloat} = model_ll_bytime(dd, σ)
 
-function stepwise_degassing_ll(dd::Union{SingleDomain{T},MultipleDomain{T}}; rescale=false) where {T<:AbstractFloat}
+function stepwise_degassing_ll(dd::Union{SingleDomain{T},MultipleDomain{T}}) where {T<:AbstractFloat}
     ll = zero(T)
     last_model_fractionᵢ = zero(T)
     last_fraction_experimentalᵢ = zero(T)
@@ -328,10 +326,9 @@ function stepwise_degassing_ll(dd::Union{SingleDomain{T},MultipleDomain{T}}; res
         last_model_fractionᵢ = model_fractionᵢ
         last_fraction_experimentalᵢ = fraction_experimentalᵢ
     end
-    rescale && (ll /= sqrt(count(dd.fit)))
     return ll
 end
-function cumulative_degassing_ll(dd::Union{SingleDomain{T},MultipleDomain{T}}; rescale=false) where {T<:AbstractFloat}
+function cumulative_degassing_ll(dd::Union{SingleDomain{T},MultipleDomain{T}}) where {T<:AbstractFloat}
     ll = zero(T)
     fit_until = findlast(dd.fit)
     @inbounds for i in eachindex(dd.tsteps_experimental, dd.fraction_experimental, dd.fraction_experimental_sigma, dd.fit)
@@ -342,7 +339,6 @@ function cumulative_degassing_ll(dd::Union{SingleDomain{T},MultipleDomain{T}}; r
             ll += norm_ll(dd.fraction_experimental[i], σ, model_fractionᵢ)
         end
     end
-    rescale && (ll /= sqrt(fit_until))
     return ll
 end
 function cumulative_fraction_uncertainty(sigma, i::Int)
