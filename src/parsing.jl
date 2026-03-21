@@ -230,10 +230,15 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                     agesteps, name, notes,
                 )
                 push!(chrons, c)
-                push!(damodels, aftm)
+                if haskey(ds, :track_oriented) ? (ds.track_oriented[i] != 0) : true
+                    push!(damodels, aftm)
+                else
+                    push!(damodels, uaftm)
+                end
             end
             # Apatite fission track length
             if haskey(ds, :track_length_um) && (0 < ds.track_length_um[i])
+                oriented = haskey(ds, :track_angle_degrees) && !isnan(ds.track_angle_degrees[i]) && (haskey(ds, :track_oriented) ? (ds.track_oriented[i] != 0) : true)
                 l0 = haskey(ds, :l0_um) ? ds.l0_um[i] : NaN
                 l0_sigma = haskey(ds, :l0_sigma_um) ? ds.l0_sigma_um[i] : NaN
                 dpar = haskey(ds, :dpar_um) ? ds.dpar_um[i] : NaN
@@ -241,7 +246,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                 Cl = haskey(ds, :Cl_apfu) ? ds.Cl_apfu[i] : NaN
                 OH = haskey(ds, :OH_apfu) ? ds.OH_apfu[i] : NaN
                 rmr0 = haskey(ds, :rmr0) ? ds.rmr0[i] : NaN
-                if haskey(ds, :track_angle_degrees) && !isnan(ds.track_angle_degrees[i])
+                if oriented
                     l0, l0_sigma, rmr0 = parseaftparams(;l0, l0_sigma, dpar, F, Cl, OH, rmr0, oriented=true)
                     h = hash((ApatiteTrackLengthOriented, offset, height, agesteps, l0, l0_sigma, rmr0))
                     haskey(rdict, h) || (rdict[h] = zeros(T, length(agesteps)))
