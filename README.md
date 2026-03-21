@@ -14,7 +14,9 @@ Currently, this package supports the inversion of mineral helium and argon ages 
 
 Apatite fission track age and fission track length data are supported with the annealing models of [Ketcham et al. 1999](https://doi.org/10.2138/am-1999-0903) and [Ketcham et al. 2007](https://doi.org/10.2138/am.2007.2281), while zircon fission track data are supported with the annealing model of [Yamada et al. 2007](https://doi.org/10.1016/j.chemgeo.2006.09.002) and the simultaneous-fit fanning curvilinear ZFT annealing model from [Guenthner et al. 2013](https://doi.org/10.2475/03.2013.01), discussed further by [Ketcham 2019](https://doi.org/10.1007/978-3-319-89421-8_3) (sec. 3.8, pgs. 65-67). Monazite fission track is also included with the re-fit annealing model of [Jones et al. 2021](https://doi.org/10.5194/gchron-3-89-2021). 
 
-Diffusion-based chronometers:
+Supported chronometers include:
+
+Diffusion-based chronometers
 | Chronometer                  | Mineral  | System         | Geometry   | Diffusion and/or annealing model(s)   |
 | :---                         | :---     | :---           | :---       | :---                                  |
 | [`ZirconHe`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.ZirconHe) | zircon | helium | spherical  | [`ZRDAAM`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.ZRDAAM) |
@@ -23,9 +25,15 @@ Diffusion-based chronometers:
 | [`PlanarHe`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.PlanarHe) | any | helium | slab | [`Diffusivity`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Diffusivity) (user-specified D₀, Eₐ) |
 | [`SphericalAr`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.SphericalAr) | any | argon | spherical | [`Diffusivity`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Diffusivity) (user-specified D₀, Eₐ) |
 | [`PlanarAr`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.PlanarAr) | any | argon | slab | [`Diffusivity`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Diffusivity) (user-specified D₀, Eₐ) |
-| [`MultipleDomain`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.MultipleDomain) | feldspar | argon | slab/sphere| [`MDDiffusivity`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.MDDiffusivity) |
+| [`SingleDomain{<:Chronometer}`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.MultipleDomain) | any | as wrapped | as wrapped | [`SDiffusivity`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Siffusivity) |
+| [`MultipleDomain{<:Chronometer}`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.MultipleDomain) | any | as wrapped | as wrapped| [`MDiffusivity`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.MDiffusivity), [`MSDiffusivity`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.MSDiffusivity) |
 
-Fission track chronometers:
+Of these, 
+the last two types can be used to wrap any of the previous diffusive (He or Ar) 
+chronometer types for the purpose of modelling step heating data, 
+particularly including 4He/3He and 40Ar/39Ar degassing curves.
+
+Fission track chronometers
 | Chronometer                  | Mineral  | System            | Annealing model(s)                  |
 | :---                         | :---     | :---              | :---                                |
 | [`ZirconFT`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.ZirconFT) | zircon | fission track age | [`Yamada2007PC`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Yamada2007PC),[`Guenthner2013FC`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Guenthner2013FC) |
