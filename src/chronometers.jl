@@ -2012,7 +2012,7 @@ radius(x::MultipleDomain) = radius(first(x.domains))
 ## -- Utility functions related to age and age uncertinty of absolute chronometers
 
 # Get age and age sigma from a vector of chronometers
-function get_age(x::AbstractArray{<:Chronometer{T}}, ::Type{C}=AbsoluteChronometer{T}) where {T<:AbstractFloat, C<:AbsoluteChronometer}
+function get_age(x::AbstractVector{<:Chronometer{T}}, ::Type{C}=AbsoluteChronometer{T}) where {T<:AbstractFloat, C<:AbsoluteChronometer}
     result = sizehint!(T[], length(x))
     for xᵢ in x
         if isa(xᵢ, C)
@@ -2021,7 +2021,7 @@ function get_age(x::AbstractArray{<:Chronometer{T}}, ::Type{C}=AbsoluteChronomet
     end
     return result
 end
-function get_age_sigma(x::AbstractArray{<:Chronometer{T}}, ::Type{C}=AbsoluteChronometer{T}) where {T<:AbstractFloat, C<:AbsoluteChronometer}
+function get_age_sigma(x::AbstractVector{<:Chronometer{T}}, ::Type{C}=AbsoluteChronometer{T}) where {T<:AbstractFloat, C<:AbsoluteChronometer}
     result = sizehint!(T[], length(x))
     for xᵢ in x
         if isa(xᵢ, C)

@@ -1,6 +1,6 @@
     """
     ```julia
-    MCMC(chrons::Vector{<:Chronometer}, params::NamedTuple, npoints::Int, path.agepoints::Vector, path.Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval];
+    MCMC(chrons::AbstractVector{<:Chronometer}, params::NamedTuple, npoints::Int, path.agepoints::Vector, path.Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval];
         rp::RegionalParameters = RegionalParameters(),
         rng::AbstractRNG = Random.default_rng(),
         liveplot::Bool = false, 
@@ -27,7 +27,7 @@
         chrons, damodels = chronometers(T, dataset, params)
         MCMC(chrons, damodels, params, boundary, constraint, detail; kwargs...)
     end
-    function MCMC(chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, params::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T); 
+    function MCMC(chrons::AbstractVector{<:Chronometer{T}}, damodels::AbstractVector{<:Model{T}}, params::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T); 
             rp::RegionalParameters{T} = RegionalParameters{T}(),
             rng::AbstractRNG = Random.default_rng(),
             liveplot::Bool = false, 
@@ -351,7 +351,7 @@
 
     """
     ```julia
-    MCMC_varkinetics(chrons::Vector{<:Chronometer}, params::NamedTuple, npoints::Int, path.agepoints::Vector, path.Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval];
+    MCMC_varkinetics(chrons::AbstractVector{<:Chronometer}, params::NamedTuple, npoints::Int, path.agepoints::Vector, path.Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval];
         rp::RegionalParameters{T} = RegionalParameters{T}(),
         rng::AbstractRNG = Random.default_rng(),
         liveplot::Bool = false, 
@@ -379,7 +379,7 @@
         chrons, damodels = chronometers(T, dataset, params)
         MCMC_varkinetics(chrons, damodels, params, boundary, constraint, detail; kwargs...)
     end
-    function MCMC_varkinetics(chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, params::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T); 
+    function MCMC_varkinetics(chrons::AbstractVector{<:Chronometer{T}}, damodels::AbstractVector{<:Model{T}}, params::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T); 
             rp::RegionalParameters{T} = RegionalParameters{T}(),
             rng::AbstractRNG = Random.default_rng(),
             liveplot::Bool = false, 

@@ -458,7 +458,7 @@
         @assert dmₚ == dm
         return zero(T)
     end
-    function kinetic_ll!(updatekinetics::BitVector, damodelsₚ::Vector{<:Model{T}}, damodels::Vector{<:Model{T}}) where {T}
+    function kinetic_ll!(updatekinetics::BitVector, damodelsₚ::AbstractVector{<:Model{T}}, damodels::AbstractVector{<:Model{T}}) where {T}
         fill!(updatekinetics, true)
         ll = zero(T)
         # Count each unique kinetic model exactly once towards the kinetic log likelihood
@@ -849,7 +849,7 @@
             volume_fraction,
         )
     end
-    function movekinetics!(rng::AbstractRNG, damodels::Vector{<:Model}, updatekinetics::BitVector, p=0.5)
+    function movekinetics!(rng::AbstractRNG, damodels::AbstractVector{<:Model}, updatekinetics::BitVector, p=0.5)
         fill!(updatekinetics, true)
         for i in eachindex(damodels)
             if updatekinetics[i]
@@ -880,9 +880,10 @@
 
     # Adjust model uncertainties of chronometers
     function movesigma!(rng, σcalc::AbstractVector{T}, chrons::AbstractVector{<:Chronometer}) where {T<:AbstractFloat}
+        @assert eachindex(σcalc) == eachindex(chrons)
         for C in (ZirconFT, MonaziteFT, ApatiteFT, ZirconHe, ApatiteHe, SphericalHe, PlanarHe, SphericalAr, PlanarAr, MultipleDomain)
             r = abs(randn(rng, T))
-            for i in eachindex(σcalc, chrons)
+            for i in eachindex(chrons)
                 if chrons[i] isa C
                     σcalc[i] *= r
                 end

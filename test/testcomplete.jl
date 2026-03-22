@@ -70,7 +70,7 @@
 
     dsg = importdataset(joinpath(datapath, "generic.csv"), ',', importas=:Tuple)
     chrons, damodels = chronometers(dsg, params, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
-    @test chrons isa Vector{<:Chronometer}
+    @test chrons isa AbstractVector{<:Chronometer}
     @test length(chrons) == 28
     const FloatRange = typeof(1.0:1.0:10.0)
     @test count(x->isa(x,SphericalHe{Float64, FloatRange}), chrons) == 4
@@ -95,7 +95,7 @@
     @test chrons[1] == chrons[1]
     @test !(chrons[1] == chrons[2])
     # Test broadcasting
-    @test typeof.(chrons) isa Vector{DataType} 
+    @test collect(typeof.(chrons)) isa Vector{DataType} 
     @test length.(chrons) == ones(length(chrons))
     
     # Test model calculations
@@ -164,7 +164,7 @@
     params = (params..., agesteps = agesteps, tsteps = tsteps)
 
     chrons, damodels = chronometers(ds, params, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
-    @test chrons isa Vector{<:Chronometer}
+    @test chrons isa AbstractVector{<:Chronometer}
     @test length(chrons) == length(ds.mineral)
     @test get_age(chrons) ≈ [770, 659, 649, 638, 620, 557, 545, 500, 493, 357, 329, 253, 241, 225, 225, 217, 193, 190, 72, 57, 42, 29, 11, 234, 98, 233, 339, 378, 258, 158, 269, 313, 309, 392]
     @test get_age_sigma(chrons) ≈ [15.0, 51.0, 13.0, 12.6, 18.4, 10.0, 12.0, 10.0, 43.0, 7.0, 7.0, 5.2, 4.6, 4.6, 6.0, 5.0, 4.0, 4.0, 2.0, 1.1, 1.1, 0.8, 0.2, 9.4, 2.0, 5.0, 6.0, 9.3, 5.0, 3.3, 8.1, 5.8, 6.0, 8.0]
@@ -193,7 +193,7 @@
 
     dsm = importdataset(joinpath(datapath, "exampledata", "manitoba.csv"), ',', importas=:Tuple)
     chrons, damodels = chronometers(dsm, params, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
-    @test chrons isa Vector{<:Chronometer}
+    @test chrons isa AbstractVector{<:Chronometer}
     @test length(chrons) == 333
     calc = zeros(length(chrons))
     calcuncert = zeros(length(chrons))
@@ -207,7 +207,7 @@
     params = (params..., agesteps=agesteps, tsteps=tsteps)
 
     chrons, damodels = chronometers(dsg, params, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
-    @test chrons isa Vector{<:Chronometer}
+    @test chrons isa AbstractVector{<:Chronometer}
     @test count(x->isa(x,SphericalHe{Float64, Vector{Float64}}), chrons) == 4
     @test count(x->isa(x,PlanarHe{Float64, Vector{Float64}}), chrons) == 1
     @test count(x->isa(x,SphericalAr{Float64, Vector{Float64}}), chrons) == 2
@@ -257,7 +257,7 @@
     params = (params..., agesteps=agesteps, tsteps=tsteps)
 
     chrons, damodels = chronometers(ds, params, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
-    @test chrons isa Vector{<:Chronometer}
+    @test chrons isa AbstractVector{<:Chronometer}
     @test length(chrons) == length(ds.mineral)
     @test get_age(chrons) ≈ [770, 659, 649, 638, 620, 557, 545, 500, 493, 357, 329, 253, 241, 225, 225, 217, 193, 190, 72, 57, 42, 29, 11, 234, 98, 233, 339, 378, 258, 158, 269, 313, 309, 392]
     @test get_age_sigma(chrons) ≈ [15.0, 51.0, 13.0, 12.6, 18.4, 10.0, 12.0, 10.0, 43.0, 7.0, 7.0, 5.2, 4.6, 4.6, 6.0, 5.0, 4.0, 4.0, 2.0, 1.1, 1.1, 0.8, 0.2, 9.4, 2.0, 5.0, 6.0, 9.3, 5.0, 3.3, 8.1, 5.8, 6.0, 8.0]
@@ -326,7 +326,7 @@
     params = (params..., agesteps = agesteps, tsteps = tsteps)
 
     chrons, damodels = chronometers(dsg, params, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
-    @test chrons isa Vector{<:Chronometer}
+    @test chrons isa AbstractVector{<:Chronometer}
     @test length(chrons) == 28
     @test count(x->isa(x,SphericalHe{Float64, Vector{Float64}}), chrons) == 4
     @test count(x->isa(x,PlanarHe{Float64, Vector{Float64}}), chrons) == 1
@@ -378,7 +378,7 @@
     params = (params..., agesteps = agesteps, tsteps = tsteps)
 
     chrons, damodels = chronometers(ds, params, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
-    @test chrons isa Vector{<:Chronometer}
+    @test chrons isa AbstractVector{<:Chronometer}
     @test length(chrons) == length(ds.mineral)
     @test get_age(chrons) ≈ [770, 659, 649, 638, 620, 557, 545, 500, 493, 357, 329, 253, 241, 225, 225, 217, 193, 190, 72, 57, 42, 29, 11, 234, 98, 233, 339, 378, 258, 158, 269, 313, 309, 392]
     @test get_age_sigma(chrons) ≈ [15.0, 51.0, 13.0, 12.6, 18.4, 10.0, 12.0, 10.0, 43.0, 7.0, 7.0, 5.2, 4.6, 4.6, 6.0, 5.0, 4.0, 4.0, 2.0, 1.1, 1.1, 0.8, 0.2, 9.4, 2.0, 5.0, 6.0, 9.3, 5.0, 3.3, 8.1, 5.8, 6.0, 8.0]
