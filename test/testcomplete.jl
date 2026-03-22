@@ -130,7 +130,7 @@
 
     # Test kintetic_ll! and updatekinetics! on all chronometer types
     updatekinetics = falses(length(damodels))
-    @test Thermochron.kinetic_ll!(updatekinetics, damodels, damodels) ≈ -6.965626812689954
+    @test Thermochron.kinetic_ll!(updatekinetics, damodels, damodels) + Thermochron.kinetic_ll(RegionalParameters(), RegionalParameters()) ≈ -6.965626812689954
     damodelsₚ = copy(damodels)
     Thermochron.movekinetics!(Random.default_rng(), damodelsₚ, updatekinetics)
     Thermochron.movekinetics!(Random.default_rng(), damodelsₚ, updatekinetics)

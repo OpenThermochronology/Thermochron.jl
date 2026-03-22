@@ -1,10 +1,12 @@
     """
     ```julia
     MCMC(chrons::Vector{<:Chronometer}, params::NamedTuple, npoints::Int, path.agepoints::Vector, path.Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval];
-        liveplot::Bool=false, 
-        maxplots::Int=256, 
-        maxplotsburnin::Int=maxplots÷2, 
-        maxplotscollection::Int=maxplots÷2
+        rp::RegionalParameters = RegionalParameters(),
+        rng::AbstractRNG = Random.default_rng(),
+        liveplot::Bool = false, 
+        maxplots::Int = 512, 
+        maxplotsburnin::Int = maxplots÷2, 
+        maxplotscollection::Int = maxplots÷2
     )
     ```
     Markov chain Monte Carlo time-Temperature inversion of the thermochronometric chrons 
@@ -26,11 +28,12 @@
         MCMC(chrons, damodels, params, boundary, constraint, detail; kwargs...)
     end
     function MCMC(chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, params::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T); 
+            rp::RegionalParameters{T} = RegionalParameters{T}(),
             rng::AbstractRNG = Random.default_rng(),
-            liveplot::Bool=false, 
-            maxplots::Int=256, 
-            maxplotsburnin::Int=maxplots÷2, 
-            maxplotscollection::Int=maxplots÷2
+            liveplot::Bool = false, 
+            maxplots::Int = 512, 
+            maxplotsburnin::Int = maxplots÷2, 
+            maxplotscollection::Int = maxplots÷2, 
         ) where T <: AbstractFloat
         # Process inputs
         burnin = (haskey(params, :burnin) ? params.burnin : 5*10^5)::Int
@@ -89,7 +92,8 @@
         initialproposal!(rng, path, npoints) 
 
         # Log-likelihood for initial proposal
-        ll = llₚ = model!(rng, μcalc, σcalc, chrons, damodels, path.Tsteps; rescale, rescalesdd, rescalemdd, redegastracer, partitiondaughter) + 
+        ll = llₚ = model!(rng, μcalc, σcalc, chrons, damodels, path.Tsteps, rp; 
+            rescale, rescalesdd, rescalemdd, redegastracer, partitiondaughter) + 
             diff_ll(path.Tsteps, dTmax, dTmax_sigma) + (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
 
         # Proposal probabilities (must sum to 1)
@@ -123,21 +127,21 @@
             k = rand(rng, Base.OneTo(npoints))
 
             # Adjust the proposal
-            if r < p_move
+            if r <= p_move
                 # Move one t-T point
                 movepoint!(rng, path, k, npointsₚ)
 
-            elseif (r < p_move+p_birth) && (npoints < maxpoints)
+            elseif (r <= p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point
                 k = npointsₚ = npoints + 1
                 addpoint!(rng, path, k, npointsₚ)
 
-            elseif (r < p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
+            elseif (r <= p_move+p_birth+p_death) && (r > p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
                 replacepoint!(path, k, npointsₚ)
                 npointsₚ -= 1
 
-            elseif (r < p_move+p_birth+p_death+p_bounds)
+            elseif (r <= p_move+p_birth+p_death+p_bounds)
                 # Move the temperatures of the starting and ending boundaries
                 # If there's an imposed unconformity or other t-T constraint, adjust within bounds
                 movebounds!(rng, path)
@@ -156,7 +160,7 @@
             collectproposal!(path, npointsₚ)
 
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(rng, μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps; rescale, rescalesdd, rescalemdd, redegastracer, partitiondaughter)
+            llₚ = model!(rng, μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps, rp; rescale, rescalesdd, rescalemdd, redegastracer, partitiondaughter)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
@@ -211,11 +215,11 @@
         # Distributions to populate
         tpointdist = fill(T(NaN), totalpoints, nsteps)
         Tpointdist = fill(T(NaN), totalpoints, nsteps)
+        ndist = zeros(Int, nsteps)
         resultdist = fill(T(NaN), length(chrons), nsteps)
         σⱼtdist = zeros(T, nsteps)
         σⱼTdist = zeros(T, nsteps)
         lldist = zeros(T, nsteps)
-        ndist = zeros(Int, nsteps)
         acceptancedist = falses(nsteps)
 
         # Prepare and run collection
@@ -245,7 +249,7 @@
                 k = npointsₚ = npoints + 1
                 addpoint!(rng, path, k, npointsₚ)
 
-            elseif (r <= p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
+            elseif (r <= p_move+p_birth+p_death) && (r > p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
                 replacepoint!(path, k, npointsₚ)
                 npointsₚ -= 1
@@ -269,7 +273,7 @@
             collectproposal!(path, npointsₚ)
 
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(rng, μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps; rescale, rescalesdd, rescalemdd, redegastracer, partitiondaughter)
+            llₚ = model!(rng, μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps, rp; rescale, rescalesdd, rescalemdd, redegastracer, partitiondaughter)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
@@ -348,9 +352,10 @@
     """
     ```julia
     MCMC_varkinetics(chrons::Vector{<:Chronometer}, params::NamedTuple, npoints::Int, path.agepoints::Vector, path.Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval];
+        rp::RegionalParameters{T} = RegionalParameters{T}(),
         rng::AbstractRNG = Random.default_rng(),
         liveplot::Bool = false, 
-        maxplots::Int = 256, 
+        maxplots::Int = 512, 
         maxplotsburnin::Int = maxplots÷2, 
         maxplotscollection::Int = maxplots÷2
     )
@@ -375,11 +380,12 @@
         MCMC_varkinetics(chrons, damodels, params, boundary, constraint, detail; kwargs...)
     end
     function MCMC_varkinetics(chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, params::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T); 
+            rp::RegionalParameters{T} = RegionalParameters{T}(),
             rng::AbstractRNG = Random.default_rng(),
-            liveplot::Bool=false, 
-            maxplots::Int=512, 
-            maxplotsburnin::Int=maxplots÷2, 
-            maxplotscollection::Int=maxplots÷2
+            liveplot::Bool = false, 
+            maxplots::Int = 512, 
+            maxplotsburnin::Int = maxplots÷2, 
+            maxplotscollection::Int = maxplots÷2, 
         ) where T <: AbstractFloat
         # Process inputs
         burnin = (haskey(params, :burnin) ? params.burnin : 5*10^5)::Int
@@ -437,14 +443,18 @@
         damodels₀ = damodels
         damodels = copy(damodels)
         damodelsₚ = copy(damodels)
+        rpₚ = rp
         updatekinetics = falses(size(damodels))
 
         # Initial propopsal
         initialproposal!(rng, path, npoints)
 
         # Log-likelihood for initial proposal
-        ll = llₚ = model!(rng, μcalc, σcalc, chrons, damodels, path.Tsteps; rescale, rescalesdd, rescalemdd, redegastracer, stepwisetracerfraction, partitiondaughter) + 
-            diff_ll(path.Tsteps, dTmax, dTmax_sigma) + kinetic_ll!(updatekinetics, damodelsₚ, damodels₀) + (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
+        ll = llₚ = model!(rng, μcalc, σcalc, chrons, damodels, path.Tsteps, rp; 
+            rescale, rescalesdd, rescalemdd, redegastracer, stepwisetracerfraction, partitiondaughter) + 
+            diff_ll(path.Tsteps, dTmax, dTmax_sigma) + 
+            kinetic_ll!(updatekinetics, damodelsₚ, damodels₀) + kinetic_ll(rpₚ, rp) + 
+            (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
         
         # Proposal probabilities (must sum to 1)
         p_move = 0.6
@@ -470,9 +480,10 @@
 
             # Copy proposal from last accepted solution
             resetproposal!(path)
-            copyto!(damodelsₚ, damodels)
             npointsₚ = npoints
             copyto!(σcalcₚ, σcalc)
+            copyto!(damodelsₚ, damodels)
+            rpₚ = rp
 
             # Randomly choose an option and point (if applicable) to adjust
             r = rand(rng)
@@ -488,7 +499,7 @@
                 k = npointsₚ = npoints + 1
                 addpoint!(rng, path, k, npointsₚ)
 
-            elseif (r <= p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
+            elseif (r <= p_move+p_birth+p_death) && (r > p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
                 replacepoint!(path, k, npointsₚ)
                 npointsₚ -= 1
@@ -504,6 +515,7 @@
             elseif (r <= p_move+p_birth+p_death+p_bounds+p_kinetics)
                 # Adjust kinetic parameters, one at a time
                 movekinetics!(rng, damodelsₚ, updatekinetics)
+                rpₚ = movekinetics(rng, rpₚ)
 
             end
 
@@ -516,9 +528,9 @@
             end
                
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(rng, μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps; rescale, rescalesdd, rescalemdd, redegastracer, stepwisetracerfraction, partitiondaughter)
+            llₚ = model!(rng, μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps, rpₚ; rescale, rescalesdd, rescalemdd, redegastracer, stepwisetracerfraction, partitiondaughter)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
-            llₚ += kinetic_ll!(updatekinetics, damodelsₚ, damodels₀)
+            llₚ += kinetic_ll!(updatekinetics, damodelsₚ, damodels₀) + kinetic_ll(rpₚ, rp)
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
             # Accept or reject proposal based on likelihood
@@ -526,11 +538,14 @@
                 # Update the currently accepted proposal
                 dynamicjumping && r < p_move && updatejumping!(path, k)
                 acceptproposal!(path)
-                copyto!(damodels, damodelsₚ)
-                ll = llₚ
                 npoints = npointsₚ
                 copyto!(μcalc, μcalcₚ)
                 copyto!(σcalc, σcalcₚ)
+                ll = llₚ
+
+                # Kinetics
+                copyto!(damodels, damodelsₚ)
+                rp = rpₚ
             end
 
             # Update progress meter every `progress_interval` steps
@@ -574,12 +589,13 @@
         tpointdist = fill(T(NaN), totalpoints, nsteps)
         Tpointdist = fill(T(NaN), totalpoints, nsteps)
         resultdist = fill(T(NaN), length(chrons), nsteps)
-        dmdist = similar(damodels, length(unique(damodels)), nsteps)
+        ndist = zeros(Int, nsteps)
         σⱼtdist = zeros(T, nsteps)
         σⱼTdist = zeros(T, nsteps)
         lldist = zeros(T, nsteps)
-        ndist = zeros(Int, nsteps)
         acceptancedist = falses(nsteps)
+        dmdist = similar(damodels, length(unique(damodels)), nsteps)
+        rpdist = fill(rp, nsteps)
 
         # Prepare and run collection
         progress = Progress(nsteps, desc="MCMC collection ($(nsteps) steps):")
@@ -591,30 +607,31 @@
 
             # Copy proposal from last accepted solution
             resetproposal!(path)
-            copyto!(damodelsₚ, damodels)
             npointsₚ = npoints
             copyto!(σcalcₚ, σcalc)
+            copyto!(damodelsₚ, damodels)
+            rpₚ = rp
 
             # Randomly choose an option and point (if applicable) to adjust
             r = rand(rng)
             k = rand(rng, Base.OneTo(npoints))
 
             # Adjust the proposal
-            if r < p_move
+            if r <= p_move
                 # Move one t-T point
                 movepoint!(rng, path, k, npointsₚ)
 
-            elseif (r < p_move+p_birth) && (npoints < maxpoints)
+            elseif (r <= p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point
                 k = npointsₚ = npoints + 1
                 addpoint!(rng, path, k, npointsₚ)
 
-            elseif (r < p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
+            elseif (r <= p_move+p_birth+p_death) && (r > p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
                 replacepoint!(path, k, npointsₚ)
                 npointsₚ -= 1
 
-            elseif (r < p_move+p_birth+p_death+p_bounds)
+            elseif (r <= p_move+p_birth+p_death+p_bounds)
                 # Move the temperatures of the starting and ending boundaries
                 # If there's an imposed unconformity or other t-T constraint, adjust within bounds
                 movebounds!(rng, path)
@@ -622,9 +639,10 @@
                 # Move uncertainties
                 dynamicsigma && movesigma!(rng, σcalcₚ, chrons)
 
-            elseif (r < p_move+p_birth+p_death+p_bounds+p_kinetics)
+            elseif (r <= p_move+p_birth+p_death+p_bounds+p_kinetics)
                 # Adjust kinetic parameters, one at a time
                 movekinetics!(rng, damodelsₚ, updatekinetics)
+                rpₚ = movekinetics(rng, rpₚ)
 
             end
 
@@ -637,9 +655,9 @@
             end
 
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(rng, μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps; rescale, rescalesdd, rescalemdd, redegastracer, stepwisetracerfraction, partitiondaughter)
+            llₚ = model!(rng, μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps, rpₚ; rescale, rescalesdd, rescalemdd, redegastracer, stepwisetracerfraction, partitiondaughter)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
-            llₚ += kinetic_ll!(updatekinetics, damodelsₚ, damodels₀)
+            llₚ += kinetic_ll!(updatekinetics, damodelsₚ, damodels₀) + kinetic_ll(rpₚ, rp)
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
             # Accept or reject proposal based on likelihood
@@ -647,14 +665,17 @@
                 # Update the currently accepted proposal
                 dynamicjumping && r < p_move && updatejumping!(path, k)
                 acceptproposal!(path)
-                copyto!(damodels, damodelsₚ)
-                ll = llₚ
                 npoints = npointsₚ
                 copyto!(μcalc, μcalcₚ)
                 copyto!(σcalc, σcalcₚ)
+                ll = llₚ
 
                 # Not critical to the function of the MCMC loop, but critical for recording stationary distribution!
                 acceptancedist[n] = true
+
+                # Kinetics
+                copyto!(damodels, damodelsₚ)
+                rp = rpₚ
             end
 
             # Record results for analysis and troubleshooting
@@ -664,6 +685,7 @@
             σⱼTdist[n] = path.σⱼT[k]
             resultdist[:,n] .= μcalc # distribution of He ages
             copyunique!(@views(dmdist[:,n]), damodels)
+            rpdist[n] = rp
 
             # This is the actual output we want -- the distribution of t-T paths (t path is always identical)
             collectto!(view(tpointdist, :, n), view(path.agepoints, Base.OneTo(npoints)), path.boundary.agepoints, path.constraint.agepoints)
@@ -714,6 +736,7 @@
         )
         kineticresult = KineticResult(
             dmdist,
+            rpdist,
         )
         return ttresult, kineticresult
     end

@@ -99,7 +99,7 @@
     # Copy only unique points from `source` to `dest`
     function copyunique!(dest, source)
         isempty(source) && return dest
-        id = firstindex(dest)
+        id = firstindex(dest) - 1
         for i in eachindex(source)
             sᵢ = source[i]
             add = true
@@ -110,8 +110,8 @@
                 end
             end
             if add
-                dest[id] = sᵢ
                 id += 1
+                dest[id] = sᵢ
             end
         end
         return dest
@@ -768,7 +768,7 @@
     wrap(x::DiffusivityModel, y::MSDiffusivity) = MSDiffusivity(x, y.scale, y.scale_logsigma, y.volume_fraction)
 
     # Adjust kinetic models
-    movekinetics(rng, dm::Model, p=0.5) = dm
+    movekinetics(rng::AbstractRNG, dm::Model, p=0.5) = dm
     function movekinetics(rng::AbstractRNG, rp::RegionalParameters{T}, p=0.5) where {T}
         RegionalParameters(;
             geotherm = (rand(rng)<p) ? exp(log(rp.geotherm)+randn(rng, T)*rp.geotherm_logsigma/4) : rp.geotherm,
@@ -892,14 +892,14 @@
     end
 
     # Utility functions to calculate model ages for all chronometers at once
-    function model!(chrons::AbstractVector{<:Chronometer{T}}, damodels::AbstractVector{<:Model{T}}, Tsteps::AbstractVector{T}; kwargs...) where {T}
+    function model!(chrons::AbstractVector{<:Chronometer{T}}, damodels::AbstractVector{<:Model{T}}, Tsteps::AbstractVector{T}, rp::RegionalParameters{T}=RegionalParameters{T}(); kwargs...) where {T}
         μcalc = zeros(T, size(chrons))
         σcalc =  zeros(T, size(chrons))
-        ll = model!(μcalc, σcalc, chrons, damodels, Tsteps; kwargs...)
+        ll = model!(μcalc, σcalc, chrons, damodels, Tsteps, rp; kwargs...)
         return μcalc, σcalc, ll
     end
-    model!(μcalc::AbstractVector, σcalc::AbstractVector, chrons::AbstractVector{<:Chronometer}, damodels::AbstractVector{<:Model}, Tsteps::AbstractVector; kwargs...) = model!(Random.default_rng(), μcalc, σcalc, chrons, damodels, Tsteps; kwargs...)
-    function model!(rng::AbstractRNG, μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::AbstractVector{<:Chronometer{T}}, damodels::AbstractVector{<:Model{T}}, Tsteps::AbstractVector{T}; 
+    model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::AbstractVector{<:Chronometer{T}}, damodels::AbstractVector{<:Model{T}}, Tsteps::AbstractVector{T}, rp::RegionalParameters{T}=RegionalParameters{T}(); kwargs...) where {T} = model!(Random.default_rng(), μcalc, σcalc, chrons, damodels, Tsteps, rp; kwargs...)
+    function model!(rng::AbstractRNG, μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::AbstractVector{<:Chronometer{T}}, damodels::AbstractVector{<:Model{T}}, Tsteps::AbstractVector{T}, rp::RegionalParameters{T}=RegionalParameters{T}(); 
             rescale::Bool=false,
             rescalesdd::Bool=false,
             rescalemdd::Bool=false,
@@ -908,9 +908,7 @@
             stepagebytime::Bool=true,
             partitiondaughter::Bool=false, 
         ) where {T<:AbstractFloat}
-        @assert eachindex(chrons) == eachindex(μcalc) == eachindex(σcalc) == (eachindex(damodels)[1:end-1])
-        # Last damodel is regional parameters
-        rp = last(damodels)::RegionalParameters{T}
+        @assert eachindex(chrons) == eachindex(μcalc) == eachindex(σcalc) == eachindex(damodels)
         # Ttime discretization
         imax = argmax(i->length(tsteps_geol(chrons[i])), eachindex(chrons))
         tsteps = tsteps_geol(chrons[imax])

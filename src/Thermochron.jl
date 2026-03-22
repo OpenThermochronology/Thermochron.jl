@@ -36,7 +36,7 @@ module Thermochron
     export κ40K
     
     include("types.jl")
-    export Constraint, Boundary, DetailInterval                         # Types used to pass information to MCMC functions
+    export Constraint, Boundary, DetailInterval, RegionalParameters     # Types used to pass information to MCMC functions
     export Diffusivity, SDiffusivity                                    # Types for generic and scaled diffusivities
     export MDiffusivity, MSDiffusivity, MultipleDiffusivity             # Types for multiple diffusivities
     

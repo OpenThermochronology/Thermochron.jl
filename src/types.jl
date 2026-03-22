@@ -257,6 +257,7 @@ end
 
 struct KineticResult{T<:AbstractFloat, M<:Model{T}} <: AbstractVector{SubArray{M, 1, Matrix{M}, Tuple{Base.Slice{Base.OneTo{Int}}, Int}, true}}
     dmdist::Matrix{M}
+    rpdist::Vector{RegionalParameters{T}}
 end
 Base.size(k::KineticResult) = (size(k.dmdist, 2),)
 Base.getindex(k::KineticResult, i::Int) = view(k.dmdist, :, i)

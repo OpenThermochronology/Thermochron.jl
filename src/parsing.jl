@@ -78,9 +78,6 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
     aftm = (haskey(params, :aftm) ? params.aftm : Ketcham2007FC())::ApatiteAnnealingModel{T}
     uaftm = (haskey(params, :uaftm) ? params.uaftm : Ketcham1999FC(:unoriented))::ApatiteAnnealingModel{T}
 
-    # Default regional parameters
-    rp = (haskey(params, :rp) ? params.rp : RegionalParameters{T}())::RegionalParameters{T}
-
     # Default degassing uncertainty
     degassing_relsigma = (haskey(params, :degassing_relsigma) ? params.degassing_relsigma : T(0.1))::T
 
@@ -578,7 +575,6 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
             end
         end
     end
-    push!(damodels, rp) # Regional parameters go in last position, independent of any chronometers
 
     isempty(chrons) && @error "No chronometers found"
     return unionize(chrons), unionize(damodels)
