@@ -478,9 +478,9 @@
     end
 
     # Draw a random length from a fission track sample
-    function draw_from_population(track::FissionTrackLength{T}, bandwidth::T) where {T<:AbstractFloat}
+    function draw_from_population(rng::AbstractRNG, track::FissionTrackLength{T}, bandwidth::T) where {T<:AbstractFloat}
         pr = track.pr::Vector{T}
-        rΣ = sum(pr)*rand()
+        rΣ = sum(pr)*rand(rng)
         rΣ > 0 || return T(NaN)
         Σ = zero(T)
         i = firstindex(pr)
@@ -492,12 +492,12 @@
                 break
             end
         end
-        return rand(Normal{T}(track.r[i], bandwidth))
+        return rand(rng, Normal{T}(track.r[i], bandwidth))
     end
-    function draw_from_population(x::AbstractVector, cumulative_fraction::AbstractVector)
+    function draw_from_population(rng::AbstractRNG, x::AbstractVector, cumulative_fraction::AbstractVector)
         @assert eachindex(x) == eachindex(cumulative_fraction)
         i = 0
-        r = last(cumulative_fraction) * rand()
+        r = last(cumulative_fraction) * rand(rng)
         for f in cumulative_fraction
             i += 1
             f > r && break
@@ -580,12 +580,12 @@
     end
 
     # Move a t-T point and apply boundary conditions
-    function movepoint!(path::TTPath{T}, k::Int, npoints::Int) where {T}
+    function movepoint!(rng::AbstractRNG, path::TTPath{T}, k::Int, npoints::Int) where {T}
         # Move the age of one model point
-        path.agepointsₚ[k] += rand(Normal{T}(zero(T), path.σⱼtₚ[k]))
+        path.agepointsₚ[k] += rand(rng, Normal{T}(zero(T), path.σⱼtₚ[k]))
 
         # Move the Temperature of one model point
-        path.Tpointsₚ[k] += rand(Normal{T}(zero(T), path.σⱼTₚ[k]))
+        path.Tpointsₚ[k] += rand(rng, Normal{T}(zero(T), path.σⱼTₚ[k]))
 
         # Apply time boundary conditions
         path.agepointsₚ[k] = boundtime(path.agepointsₚ[k], path.boundary)
@@ -595,7 +595,7 @@
 
         # Ensure uniqueness
         while !isdistinct(path.agepointsₚ, k, path.agesteps, npoints)
-            path.agepointsₚ[k] += rand(Normal{T}(zero(T), path.σⱼtₚ[k]))
+            path.agepointsₚ[k] += rand(rng, Normal{T}(zero(T), path.σⱼtₚ[k]))
             path.agepointsₚ[k] = boundtime(path.agepointsₚ[k], path.boundary)
         end
 
@@ -603,14 +603,14 @@
     end
 
     # Add a t-T point
-    function addpoint!(path::TTPath{T}, k::Int, npoints::Int) where {T}
+    function addpoint!(rng, path::TTPath{T}, k::Int, npoints::Int) where {T}
         @assert eachindex(path.agepointsₚ) == eachindex(path.Tpointsₚ) == eachindex(path.σⱼtₚ) == eachindex(path.σⱼTₚ)
 
         tmin, tmax = textrema(path.boundary)
         Tmin, Tmax = Textrema(path.boundary)
 
         # Pick an age uniformly from the model age domain
-        path.agepointsₚ[k] = rand(path.agesteps)
+        path.agepointsₚ[k] = rand(rng, path.agesteps)
 
         # Find the closest existing points (if any)
         ages = view(path.agepointsₚ, Base.OneTo(k-1))
@@ -639,7 +639,7 @@
         path.σⱼTₚ[k] = f*σⱼT₊ + (1-f)*σⱼT₋
 
         # Move the point from the interpolated value
-        return movepoint!(path, k, npoints)
+        return movepoint!(rng, path, k, npoints)
     end
 
     # Remove a t-T point
@@ -652,48 +652,48 @@
     end
 
     # Adjust initial and final t-T boundaries
-    function movebounds!(boundary::Boundary)
+    function movebounds!(rng::AbstractRNG, boundary::Boundary)
         @inbounds for i in eachindex(boundary.Tpointsₚ)
-            boundary.Tpointsₚ[i] = boundary.T₀[i] + rand()*boundary.ΔT[i]
+            boundary.Tpointsₚ[i] = boundary.T₀[i] + rand(rng)*boundary.ΔT[i]
         end
         return boundary
     end
-    function movebounds!(constraint::Constraint, boundary::Boundary)
+    function movebounds!(rng::AbstractRNG, constraint::Constraint, boundary::Boundary)
         @inbounds for i in eachindex(constraint.agepointsₚ, constraint.Tpointsₚ)
-            constraint.agepointsₚ[i] = boundtime(rand(constraint.agedist[i]), boundary)
-            constraint.Tpointsₚ[i] = boundtemp(rand(constraint.Tdist[i]), boundary)
+            constraint.agepointsₚ[i] = boundtime(rand(rng, constraint.agedist[i]), boundary)
+            constraint.Tpointsₚ[i] = boundtemp(rand(rng, constraint.Tdist[i]), boundary)
         end
         return constraint
     end
-    function movebounds!(path::TTPath)
-        movebounds!(path.constraint, path.boundary)
-        movebounds!(path.boundary)
+    function movebounds!(rng::AbstractRNG, path::TTPath)
+        movebounds!(rng, path.constraint, path.boundary)
+        movebounds!(rng, path.boundary)
         return path
     end
     
     # Generate an initial proposal, respecting any boundary conditions and constraint boxes
-    function randomize!(boundary::Boundary)
+    function randomize!(rng::AbstractRNG, boundary::Boundary)
         @inbounds for i in eachindex(boundary.Tpoints)
-            boundary.Tpoints[i] = boundary.T₀[i] + rand()*boundary.ΔT[i]
+            boundary.Tpoints[i] = boundary.T₀[i] + rand(rng)*boundary.ΔT[i]
         end
         return boundary
     end
-    function randomize!(constraint::Constraint, boundary::Boundary)
+    function randomize!(rng::AbstractRNG, constraint::Constraint, boundary::Boundary)
         @inbounds for i in eachindex(constraint.agepoints, constraint.Tpoints)
-            constraint.agepoints[i] = boundtime(rand(constraint.agedist[i]), boundary)
-            constraint.Tpoints[i] = boundtemp(rand(constraint.Tdist[i]), boundary)
+            constraint.agepoints[i] = boundtime(rand(rng, constraint.agedist[i]), boundary)
+            constraint.Tpoints[i] = boundtemp(rand(rng, constraint.Tdist[i]), boundary)
         end
         return constraint
     end
-    function initialproposal!(path::TTPath, npoints::Int)
-        randomize!(path.boundary)
-        randomize!(path.constraint, path.boundary)
+    function initialproposal!(rng::AbstractRNG, path::TTPath, npoints::Int)
+        randomize!(rng, path.boundary)
+        randomize!(rng, path.constraint, path.boundary)
         collectaccepted!(path, 0)
         for i in eachindex(path.agepoints, path.Tpoints)
             if (i-firstindex(path.agepoints)) < path.detail.minpoints
-                path.agepoints[i] = rand(Uniform(path.detail.agemin, path.detail.agemax)) # Uniformly from the detail interval
+                path.agepoints[i] = rand(rng, Uniform(path.detail.agemin, path.detail.agemax)) # Uniformly from the detail interval
             else
-                path.agepoints[i] = rand(path.agesteps) # Uniformly from the model age domain
+                path.agepoints[i] = rand(rng, path.agesteps) # Uniformly from the model age domain
             end
             path.Tpoints[i] = linterp1(reverse(path.agesteps), path.Tsteps, first(path.agesteps)-path.agepoints[i])
         end
@@ -768,93 +768,93 @@
     wrap(x::DiffusivityModel, y::MSDiffusivity) = MSDiffusivity(x, y.scale, y.scale_logsigma, y.volume_fraction)
 
     # Adjust kinetic models
-    movekinetics(dm::Model, p=0.5) = dm
-    function movekinetics(rp::RegionalParameters{T}, p=0.5) where {T}
+    movekinetics(rng, dm::Model, p=0.5) = dm
+    function movekinetics(rng::AbstractRNG, rp::RegionalParameters{T}, p=0.5) where {T}
         RegionalParameters(;
-            geotherm = (rand()<p) ? exp(log(rp.geotherm)+randn(T)*rp.geotherm_logsigma/4) : rp.geotherm,
+            geotherm = (rand(rng)<p) ? exp(log(rp.geotherm)+randn(rng, T)*rp.geotherm_logsigma/4) : rp.geotherm,
             geotherm_logsigma = rp.geotherm_logsigma,
-            K0_itm = (rand()<p) ? exp(log(rp.K0_itm)+randn(T)*rp.K0_itm_logsigma/4) : rp.K0_itm,
+            K0_itm = (rand(rng)<p) ? exp(log(rp.K0_itm)+randn(rng, T)*rp.K0_itm_logsigma/4) : rp.K0_itm,
             K0_itm_logsigma = rp.K0_itm_logsigma,
-            Ea_itm = (rand()<p) ? exp(log(rp.Ea_itm)+randn(T)*rp.Ea_itm_logsigma/4) : rp.Ea_itm,
+            Ea_itm = (rand(rng)<p) ? exp(log(rp.Ea_itm)+randn(rng, T)*rp.Ea_itm_logsigma/4) : rp.Ea_itm,
             Ea_itm_logsigma = rp.Ea_itm_logsigma,
-            Ea_lambda = (rand()<p) ? exp(log(rp.Ea_lambda)+randn(T)*rp.Ea_lambda_logsigma/4) : rp.Ea_lambda,
+            Ea_lambda = (rand(rng)<p) ? exp(log(rp.Ea_lambda)+randn(rng, T)*rp.Ea_lambda_logsigma/4) : rp.Ea_lambda,
             Ea_lambda_logsigma = rp.Ea_lambda_logsigma,
         )
     end
-    function movekinetics(zdm::ZRDAAM{T}, p=0.5) where {T}
+    function movekinetics(rng::AbstractRNG, zdm::ZRDAAM{T}, p=0.5) where {T}
         ZRDAAM(;
-            Ea_z = (rand()<p) ? zdm.Ea_z+randn(T)*zdm.Ea_z_sigma/2 : zdm.Ea_z,
+            Ea_z = (rand(rng)<p) ? zdm.Ea_z+randn(rng, T)*zdm.Ea_z_sigma/2 : zdm.Ea_z,
             Ea_z_sigma = zdm.Ea_z_sigma,
-            D0_z = (rand()<p) ? exp(log(zdm.D0_z)+randn(T)*zdm.D0_z_logsigma/2) : zdm.D0_z,
+            D0_z = (rand(rng)<p) ? exp(log(zdm.D0_z)+randn(rng, T)*zdm.D0_z_logsigma/2) : zdm.D0_z,
             D0_z_logsigma = zdm.D0_z_logsigma,
-            Ea_N17 = (rand()<p) ? zdm.Ea_N17+randn(T)*zdm.Ea_N17_sigma/2 : zdm.Ea_N17,
+            Ea_N17 = (rand(rng)<p) ? zdm.Ea_N17+randn(rng, T)*zdm.Ea_N17_sigma/2 : zdm.Ea_N17,
             Ea_N17_sigma = zdm.Ea_N17_sigma,
-            D0_N17 = (rand()<p) ? exp(log(zdm.D0_N17)+randn(T)*zdm.D0_N17_logsigma/2) : zdm.D0_N17,
+            D0_N17 = (rand(rng)<p) ? exp(log(zdm.D0_N17)+randn(rng, T)*zdm.D0_N17_logsigma/2) : zdm.D0_N17,
             D0_N17_logsigma = zdm.D0_N17_logsigma,
-            rmin = (rand()<p) ? reflecting(zdm.rmin + randn(T)*zdm.rmin_sigma/2, 0, 1) : zdm.rmin,
+            rmin = (rand(rng)<p) ? reflecting(zdm.rmin + randn(rng, T)*zdm.rmin_sigma/2, 0, 1) : zdm.rmin,
             rmin_sigma = zdm.rmin_sigma,
         )
     end
-    function movekinetics(adm::RDAAM{T}, p=0.5) where {T}
-        rmr0 = (rand()<p) ? reflecting(adm.rmr0 + randn(T)*adm.rmr0_sigma/2, 0, 1) : adm.rmr0
+    function movekinetics(rng::AbstractRNG, adm::RDAAM{T}, p=0.5) where {T}
+        rmr0 = (rand(rng)<p) ? reflecting(adm.rmr0 + randn(rng, T)*adm.rmr0_sigma/2, 0, 1) : adm.rmr0
         RDAAM(;
-            D0_L = (rand()<p) ? exp(log(adm.D0_L)+randn(T)*adm.D0_L_logsigma/2) : adm.D0_L,
+            D0_L = (rand(rng)<p) ? exp(log(adm.D0_L)+randn(rng, T)*adm.D0_L_logsigma/2) : adm.D0_L,
             D0_L_logsigma = adm.D0_L_logsigma,
-            Ea_L = (rand()<p) ? adm.Ea_L+randn(T)*adm.Ea_L_sigma/2 : adm.Ea_L,
+            Ea_L = (rand(rng)<p) ? adm.Ea_L+randn(rng, T)*adm.Ea_L_sigma/2 : adm.Ea_L,
             Ea_L_sigma = adm.Ea_L_sigma,
-            Ea_trap = (rand()<p) ? adm.Ea_trap+randn(T)*adm.Ea_trap_sigma/2 : adm.Ea_trap,
+            Ea_trap = (rand(rng)<p) ? adm.Ea_trap+randn(rng, T)*adm.Ea_trap_sigma/2 : adm.Ea_trap,
             Ea_trap_sigma = adm.Ea_trap_sigma,
             rmr0 = rmr0,
             rmr0_sigma = adm.rmr0_sigma,
             kappa = adm.kappa_rmr0 - rmr0,
         )
     end
-    function movekinetics(dm::Diffusivity{T}, p=0.5) where {T}
+    function movekinetics(rng::AbstractRNG, dm::Diffusivity{T}, p=0.5) where {T}
         Diffusivity(;
-            D0 = (rand()<p) ? exp(log(dm.D0)+randn(T)*dm.D0_logsigma/2) : dm.D0,
+            D0 = (rand(rng)<p) ? exp(log(dm.D0)+randn(rng, T)*dm.D0_logsigma/2) : dm.D0,
             D0_logsigma = dm.D0_logsigma,
-            Ea = (rand()<p) ? exp(log(dm.Ea)+randn(T)*dm.Ea_logsigma/2) : dm.Ea,
+            Ea = (rand(rng)<p) ? exp(log(dm.Ea)+randn(rng, T)*dm.Ea_logsigma/2) : dm.Ea,
             Ea_logsigma = dm.Ea_logsigma,
         )
     end
-    function movekinetics(dm::MDiffusivity{T,N}, p=0.5) where {T,N}
+    function movekinetics(rng::AbstractRNG, dm::MDiffusivity{T,N}, p=0.5) where {T,N}
         MDiffusivity(;
-            D0 = ((rand()<p) ? @.(exp(log(dm.D0)+(rand()<2/N)*randn(T)*dm.D0_logsigma/4)) : dm.D0),
+            D0 = ((rand(rng)<p) ? @.(exp(log(dm.D0)+(rand(rng)<2/N)*randn(rng, T)*dm.D0_logsigma/4)) : dm.D0),
             D0_logsigma = dm.D0_logsigma,
-            Ea = ((rand()<p) ? @.(exp(log(dm.Ea)+(rand()<2/N)*randn(T)*dm.Ea_logsigma/10)) : dm.Ea),
+            Ea = ((rand(rng)<p) ? @.(exp(log(dm.Ea)+(rand(rng)<2/N)*randn(rng, T)*dm.Ea_logsigma/10)) : dm.Ea),
             Ea_logsigma = dm.Ea_logsigma,
             volume_fraction = dm.volume_fraction,
         )
     end
-    movekinetics(dm::Union{SDiffusivity,MSDiffusivity}, p=0.05) = wrap(movekinetics(unwrap(dm),p), movewrapperkinetics(dm, p))
-    movewrapperkinetics(dm::Model, p=0.5) = dm
-    function movewrapperkinetics(dm::SDiffusivity{T}, p=0.5) where {T}
+    movekinetics(rng::AbstractRNG, dm::Union{SDiffusivity,MSDiffusivity}, p=0.05) = wrap(movekinetics(rng, unwrap(dm),p), movewrapperkinetics(rng, dm, p))
+    movewrapperkinetics(rng::AbstractRNG, dm::Model, p=0.5) = dm
+    function movewrapperkinetics(rng::AbstractRNG, dm::SDiffusivity{T}, p=0.5) where {T}
         SDiffusivity(;
             model = dm.model,
-            scale = (rand()<p) ? exp(log(dm.scale)+randn(T)*dm.scale_logsigma/2) : dm.scale,
+            scale = (rand(rng)<p) ? exp(log(dm.scale)+randn(rng, T)*dm.scale_logsigma/2) : dm.scale,
             scale_logsigma = dm.scale_logsigma,
         )
     end
-    function movewrapperkinetics(dm::MSDiffusivity{T,N}, p=0.5) where {T,N}
-        volume_fraction = if rand()<p
-            vf = @. abs(dm.volume_fraction + (rand()<2/N)*randn(T)/N)
+    function movewrapperkinetics(rng::AbstractRNG, dm::MSDiffusivity{T,N}, p=0.5) where {T,N}
+        volume_fraction = if rand(rng)<p
+            vf = @. abs(dm.volume_fraction + (rand(rng)<2/N)*randn(rng, T)/N)
             vf ./ sum(vf)
         else
             dm.volume_fraction
         end
         MSDiffusivity(;
             model = dm.model,
-            scale = ((rand()<p) ? @.(exp(log(dm.scale)+(rand()<2/N)*randn(T)*dm.scale_logsigma/4)) : dm.scale),
+            scale = ((rand(rng)<p) ? @.(exp(log(dm.scale)+(rand(rng)<2/N)*randn(rng, T)*dm.scale_logsigma/4)) : dm.scale),
             scale_logsigma = dm.scale_logsigma,
             volume_fraction,
         )
     end
-    function movekinetics!(damodels::Vector{<:Model}, updatekinetics::BitVector, p=0.5)
+    function movekinetics!(rng::AbstractRNG, damodels::Vector{<:Model}, updatekinetics::BitVector, p=0.5)
         fill!(updatekinetics, true)
         for i in eachindex(damodels)
             if updatekinetics[i]
                 dm = damodels[i]
-                dmₚ = movekinetics(dm, p)
+                dmₚ = movekinetics(rng, dm, p)
                 # Keep diffusivity models which start identical, identical
                 for j in eachindex(damodels)
                     if updatekinetics[j]
@@ -868,7 +868,7 @@
                             updatekinetics[j] = false 
                         elseif unwrap(damodels[j]) == unwrap(dm)
                             # Model that wraps us (or that wraps same thing as us)
-                            damodels[j] = wrap(unwrap(dmₚ), movewrapperkinetics(damodels[j], p))
+                            damodels[j] = wrap(unwrap(dmₚ), movewrapperkinetics(rng, damodels[j], p))
                             updatekinetics[j] = false 
                         end
                     end
@@ -879,9 +879,9 @@
     end
 
     # Adjust model uncertainties of chronometers
-    function movesigma!(σcalc::AbstractVector{T}, chrons::AbstractVector{<:Chronometer}) where {T<:AbstractFloat}
+    function movesigma!(rng, σcalc::AbstractVector{T}, chrons::AbstractVector{<:Chronometer}) where {T<:AbstractFloat}
         for C in (ZirconFT, MonaziteFT, ApatiteFT, ZirconHe, ApatiteHe, SphericalHe, PlanarHe, SphericalAr, PlanarAr, MultipleDomain)
-            r = abs(randn(T))
+            r = abs(randn(rng, T))
             for i in eachindex(σcalc, chrons)
                 if chrons[i] isa C
                     σcalc[i] *= r
@@ -898,7 +898,8 @@
         ll = model!(μcalc, σcalc, chrons, damodels, Tsteps; kwargs...)
         return μcalc, σcalc, ll
     end
-    function model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::AbstractVector{<:Chronometer{T}}, damodels::AbstractVector{<:Model{T}}, Tsteps::AbstractVector{T}; 
+    model!(μcalc::AbstractVector, σcalc::AbstractVector, chrons::AbstractVector{<:Chronometer}, damodels::AbstractVector{<:Model}, Tsteps::AbstractVector; kwargs...) = model!(Random.default_rng(), μcalc, σcalc, chrons, damodels, Tsteps; kwargs...)
+    function model!(rng::AbstractRNG, μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::AbstractVector{<:Chronometer{T}}, damodels::AbstractVector{<:Model{T}}, Tsteps::AbstractVector{T}; 
             rescale::Bool=false,
             rescalesdd::Bool=false,
             rescalemdd::Bool=false,
@@ -998,7 +999,7 @@
                 else
                     μ, σcalc[i] = c.calc
                 end
-                μcalc[i] = max(draw_from_population(c, σcalc[i]), zero(T)) # Draw from dist, but cannot be negative
+                μcalc[i] = max(draw_from_population(rng, c, σcalc[i]), zero(T)) # Draw from dist, but cannot be negative
                 ll += model_ll(c, σcalc[i])/scaleztl
             elseif isa(c, MonaziteTrackLength)
                 c::MonaziteTrackLength{T}
@@ -1007,7 +1008,7 @@
                 else
                     μ, σcalc[i] = c.calc
                 end
-                μcalc[i] = max(draw_from_population(c, σcalc[i]), zero(T)) # Draw from dist, but cannot be negative
+                μcalc[i] = max(draw_from_population(rng, c, σcalc[i]), zero(T)) # Draw from dist, but cannot be negative
                 ll += model_ll(c, σcalc[i])/scalemtl
             elseif isa(c, ApatiteTrackLength)
                 c::ApatiteTrackLength{T}
@@ -1016,7 +1017,7 @@
                 else
                     μ, σcalc[i] = c.calc
                 end
-                μcalc[i] = max(draw_from_population(c, σcalc[i]), zero(T)) # Draw from dist, but cannot be negative
+                μcalc[i] = max(draw_from_population(rng, c, σcalc[i]), zero(T)) # Draw from dist, but cannot be negative
                 ll += model_ll(c, σcalc[i])/scaleatl
             elseif isa(c, ApatiteTrackLengthOriented)
                 c::ApatiteTrackLengthOriented{T}
@@ -1025,7 +1026,7 @@
                 else
                     μ, σcalc[i] = c.calc
                 end
-                μcalc[i] = max(draw_from_population(c, σcalc[i]), zero(T)) # Draw from dist, but cannot be negative
+                μcalc[i] = max(draw_from_population(rng, c, σcalc[i]), zero(T)) # Draw from dist, but cannot be negative
                 ll += model_ll(c, σcalc[i])/scaleato
             elseif isa(c, SingleDomain)
                 c::SingleDomain{T, <:Union{ArgonSample{T}, HeliumSample{T}}}
@@ -1038,7 +1039,7 @@
                         ll += cumulative_degassing_ll(c)/scalesdd
                     end
                 end
-                μcalc[i] = draw_from_population(stepage, fraction)
+                μcalc[i] = draw_from_population(rng, stepage, fraction)
                 if stepagebytime
                     ll += model_ll_bytime(c, σcalc[i])/scalesdd
                 else
@@ -1055,7 +1056,7 @@
                         ll += cumulative_degassing_ll(c)/scalemdd
                     end
                 end
-                μcalc[i] = draw_from_population(stepage, fraction)
+                μcalc[i] = draw_from_population(rng, stepage, fraction)
                 if stepagebytime
                     ll += model_ll_bytime(c, σcalc[i])/scalemdd
                 else

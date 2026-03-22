@@ -26,6 +26,7 @@
         MCMC(chrons, damodels, params, boundary, constraint, detail; kwargs...)
     end
     function MCMC(chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, params::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T); 
+            rng::AbstractRNG = Random.default_rng(),
             liveplot::Bool=false, 
             maxplots::Int=256, 
             maxplotsburnin::Int=maxplots÷2, 
@@ -85,10 +86,10 @@
         σcalcₚ = copy(σcalc)::Vector{T}
         
         # Initial propopsal
-        initialproposal!(path, npoints) 
+        initialproposal!(rng, path, npoints) 
 
         # Log-likelihood for initial proposal
-        ll = llₚ = model!(μcalc, σcalc, chrons, damodels, path.Tsteps; rescale, rescalesdd, rescalemdd, redegastracer, partitiondaughter) + 
+        ll = llₚ = model!(rng, μcalc, σcalc, chrons, damodels, path.Tsteps; rescale, rescalesdd, rescalemdd, redegastracer, partitiondaughter) + 
             diff_ll(path.Tsteps, dTmax, dTmax_sigma) + (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
 
         # Proposal probabilities (must sum to 1)
@@ -118,18 +119,18 @@
             copyto!(σcalcₚ, σcalc)
 
             # Randomly choose an option and point (if applicable) to adjust
-            r = rand()
-            k = rand(Base.OneTo(npoints))
+            r = rand(rng)
+            k = rand(rng, Base.OneTo(npoints))
 
             # Adjust the proposal
             if r < p_move
                 # Move one t-T point
-                movepoint!(path, k, npointsₚ)
+                movepoint!(rng, path, k, npointsₚ)
 
             elseif (r < p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point
                 k = npointsₚ = npoints + 1
-                addpoint!(path, k, npointsₚ)
+                addpoint!(rng, path, k, npointsₚ)
 
             elseif (r < p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
@@ -139,10 +140,10 @@
             elseif (r < p_move+p_birth+p_death+p_bounds)
                 # Move the temperatures of the starting and ending boundaries
                 # If there's an imposed unconformity or other t-T constraint, adjust within bounds
-                movebounds!(path)
+                movebounds!(rng, path)
 
                 # Move uncertainties
-                dynamicsigma && movesigma!(σcalcₚ, chrons)
+                dynamicsigma && movesigma!(rng, σcalcₚ, chrons)
 
             end
 
@@ -155,12 +156,12 @@
             collectproposal!(path, npointsₚ)
 
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps; rescale, rescalesdd, rescalemdd, redegastracer, partitiondaughter)
+            llₚ = model!(rng, μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps; rescale, rescalesdd, rescalemdd, redegastracer, partitiondaughter)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
             # Accept or reject proposal based on likelihood
-            if log(rand()) < (llₚ - ll) / simannealT(n, T0annealing, λannealing)
+            if log(rand(rng)) < (llₚ - ll) / simannealT(n, T0annealing, λannealing)
                 # Update the currently accepted proposal
                 dynamicjumping && r < p_move && updatejumping!(path, k)
                 acceptproposal!(path)
@@ -231,31 +232,31 @@
             copyto!(σcalcₚ, σcalc)
 
             # Randomly choose an option and point (if applicable) to adjust
-            r = rand()
-            k = rand(Base.OneTo(npoints))
+            r = rand(rng)
+            k = rand(rng, Base.OneTo(npoints))
 
             # Adjust the proposal
-            if r < p_move
+            if r <= p_move
                 # Move one t-T point
-                movepoint!(path, k, npointsₚ)
+                movepoint!(rng, path, k, npointsₚ)
 
-            elseif (r < p_move+p_birth) && (npoints < maxpoints)
+            elseif (r <= p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point
                 k = npointsₚ = npoints + 1
-                addpoint!(path, k, npointsₚ)
+                addpoint!(rng, path, k, npointsₚ)
 
-            elseif (r < p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
+            elseif (r <= p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
                 replacepoint!(path, k, npointsₚ)
                 npointsₚ -= 1
 
-            elseif (r < p_move+p_birth+p_death+p_bounds)
+            elseif (r <= p_move+p_birth+p_death+p_bounds)
                 # Move the temperatures of the starting and ending boundaries
                 # If there's an imposed unconformity or other t-T constraint, adjust within bounds
-                movebounds!(path)
+                movebounds!(rng, path)
 
                 # Move uncertainties
-                dynamicsigma && movesigma!(σcalcₚ, chrons)
+                dynamicsigma && movesigma!(rng, σcalcₚ, chrons)
 
             end
             
@@ -268,12 +269,12 @@
             collectproposal!(path, npointsₚ)
 
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps; rescale, rescalesdd, rescalemdd, redegastracer, partitiondaughter)
+            llₚ = model!(rng, μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps; rescale, rescalesdd, rescalemdd, redegastracer, partitiondaughter)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
             # Accept or reject proposal based on likelihood
-            if log(rand()) < (llₚ - ll)
+            if log(rand(rng)) < (llₚ - ll)
                 # Update the currently accepted proposal
                 dynamicjumping && r < p_move && updatejumping!(path, k)
                 acceptproposal!(path)
@@ -347,10 +348,11 @@
     """
     ```julia
     MCMC_varkinetics(chrons::Vector{<:Chronometer}, params::NamedTuple, npoints::Int, path.agepoints::Vector, path.Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval];
-        liveplot::Bool=false, 
-        maxplots::Int=256, 
-        maxplotsburnin::Int=maxplots÷2, 
-        maxplotscollection::Int=maxplots÷2
+        rng::AbstractRNG = Random.default_rng(),
+        liveplot::Bool = false, 
+        maxplots::Int = 256, 
+        maxplotsburnin::Int = maxplots÷2, 
+        maxplotscollection::Int = maxplots÷2
     )
     ```
     Markov chain Monte Carlo time-Temperature inversion of the thermochronometric chrons 
@@ -373,6 +375,7 @@
         MCMC_varkinetics(chrons, damodels, params, boundary, constraint, detail; kwargs...)
     end
     function MCMC_varkinetics(chrons::Vector{<:Chronometer{T}}, damodels::Vector{<:Model{T}}, params::NamedTuple, boundary::Boundary{T}, constraint::Constraint{T}=Constraint(T), detail::DetailInterval{T}=DetailInterval(T); 
+            rng::AbstractRNG = Random.default_rng(),
             liveplot::Bool=false, 
             maxplots::Int=512, 
             maxplotsburnin::Int=maxplots÷2, 
@@ -437,10 +440,10 @@
         updatekinetics = falses(size(damodels))
 
         # Initial propopsal
-        initialproposal!(path, npoints)
+        initialproposal!(rng, path, npoints)
 
         # Log-likelihood for initial proposal
-        ll = llₚ = model!(μcalc, σcalc, chrons, damodels, path.Tsteps; rescale, rescalesdd, rescalemdd, redegastracer, stepwisetracerfraction, partitiondaughter) + 
+        ll = llₚ = model!(rng, μcalc, σcalc, chrons, damodels, path.Tsteps; rescale, rescalesdd, rescalemdd, redegastracer, stepwisetracerfraction, partitiondaughter) + 
             diff_ll(path.Tsteps, dTmax, dTmax_sigma) + kinetic_ll!(updatekinetics, damodelsₚ, damodels₀) + (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
         
         # Proposal probabilities (must sum to 1)
@@ -472,35 +475,35 @@
             copyto!(σcalcₚ, σcalc)
 
             # Randomly choose an option and point (if applicable) to adjust
-            r = rand()
-            k = rand(Base.OneTo(npoints))
+            r = rand(rng)
+            k = rand(rng, Base.OneTo(npoints))
 
             # Adjust the proposal
-            if r < p_move
+            if r <= p_move
                 # Move one t-T point
-                movepoint!(path, k, npointsₚ)
+                movepoint!(rng, path, k, npointsₚ)
 
-            elseif (r < p_move+p_birth) && (npoints < maxpoints)
+            elseif (r <= p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point
                 k = npointsₚ = npoints + 1
-                addpoint!(path, k, npointsₚ)
+                addpoint!(rng, path, k, npointsₚ)
 
-            elseif (r < p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
+            elseif (r <= p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
                 replacepoint!(path, k, npointsₚ)
                 npointsₚ -= 1
 
-            elseif (r < p_move+p_birth+p_death+p_bounds)
+            elseif (r <= p_move+p_birth+p_death+p_bounds)
                 # Move the temperatures of the starting and ending boundaries
                 # If there's an imposed unconformity or other t-T constraint, adjust within bounds
-                movebounds!(path)
+                movebounds!(rng, path)
 
                 # Move uncertainties
-                dynamicsigma && movesigma!(σcalcₚ, chrons)
+                dynamicsigma && movesigma!(rng, σcalcₚ, chrons)
 
-            elseif (r < p_move+p_birth+p_death+p_bounds+p_kinetics)
+            elseif (r <= p_move+p_birth+p_death+p_bounds+p_kinetics)
                 # Adjust kinetic parameters, one at a time
-                movekinetics!(damodelsₚ, updatekinetics)
+                movekinetics!(rng, damodelsₚ, updatekinetics)
 
             end
 
@@ -513,13 +516,13 @@
             end
                
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps; rescale, rescalesdd, rescalemdd, redegastracer, stepwisetracerfraction, partitiondaughter)
+            llₚ = model!(rng, μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps; rescale, rescalesdd, rescalemdd, redegastracer, stepwisetracerfraction, partitiondaughter)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             llₚ += kinetic_ll!(updatekinetics, damodelsₚ, damodels₀)
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
             # Accept or reject proposal based on likelihood
-            if log(rand()) < (llₚ - ll) / simannealT(n, T0annealing, λannealing) 
+            if log(rand(rng)) < (llₚ - ll) / simannealT(n, T0annealing, λannealing) 
                 # Update the currently accepted proposal
                 dynamicjumping && r < p_move && updatejumping!(path, k)
                 acceptproposal!(path)
@@ -593,18 +596,18 @@
             copyto!(σcalcₚ, σcalc)
 
             # Randomly choose an option and point (if applicable) to adjust
-            r = rand()
-            k = rand(Base.OneTo(npoints))
+            r = rand(rng)
+            k = rand(rng, Base.OneTo(npoints))
 
             # Adjust the proposal
             if r < p_move
                 # Move one t-T point
-                movepoint!(path, k, npointsₚ)
+                movepoint!(rng, path, k, npointsₚ)
 
             elseif (r < p_move+p_birth) && (npoints < maxpoints)
                 # Birth: add a new model point
                 k = npointsₚ = npoints + 1
-                addpoint!(path, k, npointsₚ)
+                addpoint!(rng, path, k, npointsₚ)
 
             elseif (r < p_move+p_birth+p_death) && (r >= p_move+p_birth) && (npoints > max(minpoints, detail.minpoints))
                 # Death: remove a model point
@@ -614,14 +617,14 @@
             elseif (r < p_move+p_birth+p_death+p_bounds)
                 # Move the temperatures of the starting and ending boundaries
                 # If there's an imposed unconformity or other t-T constraint, adjust within bounds
-                movebounds!(path)
+                movebounds!(rng, path)
 
                 # Move uncertainties
-                dynamicsigma && movesigma!(σcalcₚ, chrons)
+                dynamicsigma && movesigma!(rng, σcalcₚ, chrons)
 
             elseif (r < p_move+p_birth+p_death+p_bounds+p_kinetics)
                 # Adjust kinetic parameters, one at a time
-                movekinetics!(damodelsₚ, updatekinetics)
+                movekinetics!(rng, damodelsₚ, updatekinetics)
 
             end
 
@@ -634,13 +637,13 @@
             end
 
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps; rescale, rescalesdd, rescalemdd, redegastracer, stepwisetracerfraction, partitiondaughter)
+            llₚ = model!(rng, μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps; rescale, rescalesdd, rescalemdd, redegastracer, stepwisetracerfraction, partitiondaughter)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             llₚ += kinetic_ll!(updatekinetics, damodelsₚ, damodels₀)
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
             # Accept or reject proposal based on likelihood
-            if log(rand()) < (llₚ - ll)
+            if log(rand(rng)) < (llₚ - ll)
                 # Update the currently accepted proposal
                 dynamicjumping && r < p_move && updatejumping!(path, k)
                 acceptproposal!(path)

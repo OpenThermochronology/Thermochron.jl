@@ -132,8 +132,8 @@
     updatekinetics = falses(length(damodels))
     @test Thermochron.kinetic_ll!(updatekinetics, damodels, damodels) ≈ -6.965626812689954
     damodelsₚ = copy(damodels)
-    Thermochron.movekinetics!(damodelsₚ, updatekinetics)
-    Thermochron.movekinetics!(damodelsₚ, updatekinetics)
+    Thermochron.movekinetics!(Random.default_rng(), damodelsₚ, updatekinetics)
+    Thermochron.movekinetics!(Random.default_rng(), damodelsₚ, updatekinetics)
     @test -16.965626812689954 < Thermochron.kinetic_ll!(updatekinetics, damodelsₚ, damodels) < -6.965626812689954
 
     # Test again with partitiondaughter=true

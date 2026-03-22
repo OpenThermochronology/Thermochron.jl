@@ -73,7 +73,7 @@
     @test path.Tpoints == path.Tpointsₚ == zeros(50)
     @test path.Tsteps == zeros(100)
 
-    Thermochron.initialproposal!(path, 10)
+    Thermochron.initialproposal!(Random.default_rng(), path, 10)
     @test path.agepoints != path.agepointsₚ
     @test path.Tpoints != path.Tpointsₚ
     a,T = copy(path.agepoints), copy(path.Tpoints)
@@ -82,7 +82,7 @@
     @test path.agepoints == path.agepointsₚ == a
     @test path.Tpoints == path.Tpointsₚ == T
 
-    Thermochron.initialproposal!(path, 10)
+    Thermochron.initialproposal!(Random.default_rng(),path, 10)
     @test path.agepoints != path.agepointsₚ
     @test path.Tpoints != path.Tpointsₚ
     a,T = copy(path.agepointsₚ), copy(path.Tpointsₚ)
