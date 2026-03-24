@@ -97,24 +97,61 @@
     end
 
     # Copy only unique points from `source` to `dest`
-    function copyunique!(dest, source)
-        isempty(source) && return dest
-        id = firstindex(dest) - 1
-        for i in eachindex(source)
-            sᵢ = source[i]
-            add = true
-            for j in firstindex(dest):id
-                if dest[j] == sᵢ
-                    add = false
-                    break
+    @generated function copyunique!(dest, source::AbstractArray{T}) where {T}
+        if T isa Union
+            # Split the union with if-elseif.. block
+            ifblock = Expr(:block)
+            current = ifblock
+            for Tᵢ in Base.uniontypes(T)
+                contents = quote
+                    sᵢ::$Tᵢ
+                    add = true
+                    for j in firstindex(dest):id
+                        if dest[j] == sᵢ
+                            add = false
+                            break
+                        end
+                    end
+                    if add
+                        id += 1
+                        dest[id] = sᵢ
+                    end
                 end
+                next_branch = Expr(:if, :(sᵢ isa $Tᵢ), contents)
+                push!(current.args, next_branch)
+                current = next_branch
             end
-            if add
-                id += 1
-                dest[id] = sᵢ
+            return quote 
+                isempty(source) && return dest
+                id = firstindex(dest) - 1
+                for i in eachindex(source)
+                    sᵢ = source[i]
+                    $ifblock
+                end
+                return dest
+            end
+        else
+            # Fall back to generic approach
+            return quote
+                isempty(source) && return dest
+                id = firstindex(dest) - 1
+                for i in eachindex(source)
+                    sᵢ = source[i]
+                    add = true
+                    for j in firstindex(dest):id
+                        if dest[j] == sᵢ
+                            add = false
+                            break
+                        end
+                    end
+                    if add
+                        id += 1
+                        dest[id] = sᵢ
+                    end
+                end
+                return dest
             end
         end
-        return dest
     end
 
     # Relative volume fractions for different potential mineral shapes
@@ -458,23 +495,59 @@
         @assert dmₚ == dm
         return zero(T)
     end
-    function kinetic_ll!(updatekinetics::BitVector, damodelsₚ::AbstractVector{<:Model{T}}, damodels::AbstractVector{<:Model{T}}) where {T}
-        fill!(updatekinetics, true)
-        ll = zero(T)
-        # Count each unique kinetic model exactly once towards the kinetic log likelihood
-        for i in eachindex(damodelsₚ, damodels)
-            if updatekinetics[i]
-                dm = damodels[i]
-                dmₚ = damodelsₚ[i]
-                ll += kinetic_ll(dmₚ, dm)
-                for j in eachindex(damodelsₚ, damodels)
-                    if updatekinetics[j] && (damodels[j] == dm) && (damodelsₚ[i] == dmₚ)
-                        updatekinetics[j] = false
+    @generated function kinetic_ll!(updatekinetics::BitVector, damodelsₚ::AbstractVector{M}, damodels::AbstractVector{M})  where {T,M<:Model{T}}
+        if M isa Union
+            # Split the union with if-elseif.. block
+            ifblock = Expr(:block)
+            current = ifblock
+            for Mᵢ in Base.uniontypes(M)
+                contents = quote
+                    dm::$Mᵢ
+                    dmₚ = damodelsₚ[i]::$Mᵢ
+                    ll += kinetic_ll(dmₚ, dm)
+                    for j in eachindex(damodelsₚ, damodels)
+                        if updatekinetics[j] && (damodels[j] == dm) && (damodelsₚ[i] == dmₚ)
+                            updatekinetics[j] = false
+                        end
                     end
                 end
+                next_branch = Expr(:if, :(dm isa $Mᵢ), contents)
+                push!(current.args, next_branch)
+                current = next_branch
+            end
+            return quote
+                fill!(updatekinetics, true)
+                ll = zero(T)
+                # Count each unique kinetic model exactly once towards the kinetic log likelihood
+                for i in eachindex(damodelsₚ, damodels)
+                    if updatekinetics[i]
+                        dm = damodels[i]
+                        $ifblock
+                    end
+                end
+                return ll
+            end
+        else
+            # Fall back to generic approach
+            return quote
+                fill!(updatekinetics, true)
+                ll = zero(T)
+                # Count each unique kinetic model exactly once towards the kinetic log likelihood
+                for i in eachindex(damodelsₚ, damodels)
+                    if updatekinetics[i]
+                        dm = damodels[i]
+                        dmₚ = damodelsₚ[i]
+                        ll += kinetic_ll(dmₚ, dm)
+                        for j in eachindex(damodelsₚ, damodels)
+                            if updatekinetics[j] && (damodels[j] == dm) && (damodelsₚ[i] == dmₚ)
+                                updatekinetics[j] = false
+                            end
+                        end
+                    end
+                end
+                return ll
             end
         end
-        return ll
     end
 
     # Draw a random length from a fission track sample
@@ -849,33 +922,79 @@
             volume_fraction,
         )
     end
-    function movekinetics!(rng::AbstractRNG, damodels::AbstractVector{<:Model}, updatekinetics::BitVector, p=0.5)
-        fill!(updatekinetics, true)
-        for i in eachindex(damodels)
-            if updatekinetics[i]
-                dm = damodels[i]
-                dmₚ = movekinetics(rng, dm, p)
-                # Keep diffusivity models which start identical, identical
-                for j in eachindex(damodels)
-                    if updatekinetics[j]
-                        if damodels[j] == dm
-                            # Identical models
-                            damodels[j] = dmₚ
-                            updatekinetics[j] = false
-                        elseif damodels[j] == unwrap(dm)
-                            # Model that we wrap
-                            damodels[j] = unwrap(dmₚ)
-                            updatekinetics[j] = false 
-                        elseif unwrap(damodels[j]) == unwrap(dm)
-                            # Model that wraps us (or that wraps same thing as us)
-                            damodels[j] = wrap(unwrap(dmₚ), movewrapperkinetics(rng, damodels[j], p))
-                            updatekinetics[j] = false 
+    @generated function movekinetics!(rng::AbstractRNG, damodels::AbstractVector{M}, updatekinetics::BitVector, p=0.5) where {M<:Model}
+        if M isa Union
+            # Split the union with if-elseif.. block
+            ifblock = Expr(:block)
+            current = ifblock
+            for Mᵢ in Base.uniontypes(M)
+                contents = quote
+                    dm::$Mᵢ
+                    dmₚ = movekinetics(rng, dm, p)::$Mᵢ
+                    # Keep diffusivity models which start identical, identical
+                    for j in eachindex(damodels)
+                        if updatekinetics[j]
+                            if damodels[j] == dm
+                                # Identical models
+                                damodels[j] = dmₚ
+                                updatekinetics[j] = false
+                            elseif damodels[j] == unwrap(dm)
+                                # Model that we wrap
+                                damodels[j] = unwrap(dmₚ)
+                                updatekinetics[j] = false 
+                            elseif unwrap(damodels[j]) == unwrap(dm)
+                                # Model that wraps us (or that wraps same thing as us)
+                                damodels[j] = wrap(unwrap(dmₚ), movewrapperkinetics(rng, damodels[j], p))
+                                updatekinetics[j] = false 
+                            end
                         end
                     end
                 end
+                next_branch = Expr(:if, :(dm isa $Mᵢ), contents)
+                push!(current.args, next_branch)
+                current = next_branch
+            end
+            return quote
+                fill!(updatekinetics, true)
+                for i in eachindex(damodels)
+                    if updatekinetics[i]
+                        dm = damodels[i]
+                        $ifblock
+                    end
+                end
+                return damodels
+            end
+        else
+            # Fall back to generic approach
+            return quote
+                fill!(updatekinetics, true)
+                for i in eachindex(damodels)
+                    if updatekinetics[i]
+                        dm = damodels[i]
+                        dmₚ = movekinetics(rng, dm, p)
+                        # Keep diffusivity models which start identical, identical
+                        for j in eachindex(damodels)
+                            if updatekinetics[j]
+                                if damodels[j] == dm
+                                    # Identical models
+                                    damodels[j] = dmₚ
+                                    updatekinetics[j] = false
+                                elseif damodels[j] == unwrap(dm)
+                                    # Model that we wrap
+                                    damodels[j] = unwrap(dmₚ)
+                                    updatekinetics[j] = false 
+                                elseif unwrap(damodels[j]) == unwrap(dm)
+                                    # Model that wraps us (or that wraps same thing as us)
+                                    damodels[j] = wrap(unwrap(dmₚ), movewrapperkinetics(rng, damodels[j], p))
+                                    updatekinetics[j] = false 
+                                end
+                            end
+                        end
+                    end
+                end
+                return damodels
             end
         end
-        return damodels
     end
 
     # Adjust model uncertainties of chronometers
