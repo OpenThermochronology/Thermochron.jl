@@ -9,13 +9,15 @@ liveplot = GROUP == "All" || GROUP == "Plot"
 using Random
 Random.seed!(12345)
 
-@testset "Utilities" begin include("testutilities.jl") end
-@testset "Fission Track" begin include("testfissiontrack.jl") end
-@testset "Generic Helium" begin include("testhelium.jl") end
-@testset "Apatite Helium" begin include("testheliumap.jl") end
-@testset "Zircon Helium" begin include("testheliumzrn.jl") end
-@testset "Argon" begin include("testargon.jl") end
-@testset "Step Heating" begin include("teststepheating.jl") end
-@testset "Inversion" begin include("testinversion.jl") end
-@testset "Integrated Examples (zrn)" begin include("testcompletezrn.jl") end
-@testset "Integrated Examples (all)" begin include("testcomplete.jl") end
+@testset "Thermochron" begin
+    @testset "Utilities" begin include("testutilities.jl") end
+    @testset "Fission Track" begin include("testfissiontrack.jl") end
+    @testset "Generic Helium" begin include("testhelium.jl") end
+    @testset "Apatite Helium" begin include("testheliumap.jl") end
+    @testset "Zircon Helium" begin include("testheliumzrn.jl") end
+    @testset "Argon" begin include("testargon.jl") end
+    @testset "Step Heating" begin include("teststepheating.jl") end
+    @testset "Inversion" begin include("testinversion.jl") end
+    @testset "Integrated Examples (zrn)" begin include("testcompletezrn.jl") end
+    @testset "Integrated Examples (all)" begin include("testcomplete.jl") end
+end
