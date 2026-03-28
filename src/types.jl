@@ -90,8 +90,9 @@ const FanningCurvilinear{T} = Union{FanningCurvilinearZircon{T}, FanningCurvilin
 # DiffusivityModel types
 abstract type DiffusivityModel{T} <: Model{T} end
 abstract type MultipleDiffusivity{T} <: DiffusivityModel{T} end
-abstract type ZirconHeliumModel{T} <: DiffusivityModel{T} end
-abstract type ApatiteHeliumModel{T} <: DiffusivityModel{T} end
+abstract type DamageDiffusivityModel{T} <: DiffusivityModel{T} end
+abstract type ZirconHeliumModel{T} <: DamageDiffusivityModel{T} end
+abstract type ApatiteHeliumModel{T} <: DamageDiffusivityModel{T} end
 
 # Other model types
 Base.@kwdef struct RegionalParameters{T} <: Model{T}

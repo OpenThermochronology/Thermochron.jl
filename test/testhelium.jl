@@ -14,6 +14,9 @@
     Tsteps = collect(range(650, 0, length=length(tsteps)))
 
     dm = Diffusivity(;D0, Ea)
+    @test diffusivity(dm, 273.15) ≈ 2.490234017956834e-24
+    @test diffusivity(dm, 473.15) ≈ 1.9138530313638705e-14
+
     mineral = SphericalHe(r=r,dr=dr,U238=U,Th232=Th,stoppingpower=stoppingpower,agesteps=reverse(tsteps))
     @test isa(mineral, SphericalHe)
     show(mineral)

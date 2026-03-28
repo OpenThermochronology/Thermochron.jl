@@ -1,3 +1,12 @@
+## ---  Test RDAAM
+
+    dm = RDAAM()
+    @test diffusivity(dm, 273.15, 0.0) ≈ 2.490234017956834e-24
+    @test diffusivity(dm, 273.15, 1e17) ≈ 3.6517333772153235e-33
+    @test diffusivity(dm, 473.15, 0.0) ≈ 1.9138530313638705e-14
+    @test diffusivity(dm, 473.15, 1e17) ≈ 1.5719236502270326e-20
+
+
 ## --- Test damage annealing function for RDAAM
 
     dm = RDAAM(rmr0=0.0, kappa=1.0) # RDAAM, without rmr0 correction

@@ -1,3 +1,13 @@
+## ---  Test ZRDAAM
+
+    dm = ZRDAAM()
+    @test diffusivity(dm, 273.15, 0.0) ≈ Inf
+    @test diffusivity(dm, 273.15, 1e17) ≈ 8.398644469969161e-33
+    @test diffusivity(dm, 273.15, 1e20) ≈ 1.6859405220140654e-16
+    @test diffusivity(dm, 473.15, 0.0) ≈ Inf
+    @test diffusivity(dm, 473.15, 1e17) ≈ 1.8254682389807342e-19
+    @test diffusivity(dm, 473.15, 1e20) ≈ 9.244103523640941e-11
+
 ## --- Test damage annealing function for ZRDAAM
 
     tCryst = 3000.0 # Crystallization age [Myr]

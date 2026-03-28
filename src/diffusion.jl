@@ -1,5 +1,74 @@
+## --- Calculate diffusivities at a given temeprature given a diffusion model (and accumulated damage)
+
+# Plain diffusivity
+diffusivity(dm::Diffusivity, TK) = dm.D0 * exp(-dm.Ea / (0.008314472 * TK)) # [cm^2/sec]
+# ZRDAAM
+function diffusivity(dm::ZRDAAM{T}, TK::T, damage::T) where {T}
+    # Damage and annealing constants
+    Ea_z = dm.Ea_z::T                           # [kJ/mol]
+    Ea_N17 = dm.Ea_N17::T                       # [kJ/mol]
+    lint₀ = dm.lint0::T                         # [nm]
+    SV = dm.SV::T                               # [1/nm]
+    Ba = dm.Ba::T                               # [g/alpha] mass of amorphous material produced per alpha decay
+    ϕ = dm.phi::T                               # [unitless]
+    R = T(0.008314472)::T                       # [kJ/(K*mol)]
+    D0_z = dm.D0_z::T                           # [cm^2/sec]
+    D0_N17 = dm.D0_N17::T                       # [cm^2/sec]
+    # Endmember diffusion constants
+    Dz = D0_z * exp(-Ea_z / (R * TK))           # [cm^2/sec]
+    DN17 = D0_N17 * exp(-Ea_N17 / (R * TK))     # [cm^2/sec]
+    # Diffusivity at current damage and temperature
+    bα = Ba * damage                                # Alpha damage
+    fₐ = 1-exp(-bα*ϕ)                               # Fraction amorphous
+    τ = (lint₀/(4.2 / ((1-exp(-bα)) * SV) - 2.5))^2 # Tortuosity
+    return 1 / ((1-fₐ)^3 / (Dz/τ) + fₐ^3 / DN17)    # Effective diffusivity
+end
+# RDAAM
+function diffusivity(dm::RDAAM{T}, TK::T, damage::T) where {T}
+    # Damage and annealing constants
+    Ea_L = dm.Ea_L::T                           # [kJ/mol]
+    Ea_trap = dm.Ea_trap::T                     # [kJ/mol]
+    ηq = dm.etaq::T                             # Durango ηq
+    Ψ = dm.psi::T                               # [unitless]
+    Ω = dm.omega::T                             # [unitless]
+    ρap = dm.rhoap::T                           # [g/cm^3]
+    L = dm.L::T                                 # [cm]
+    λf = dm.lambdaf::T                          # [1/time]
+    λD = dm.lambdaD::T                          # [1/time]
+    R = T(0.008314472)::T                       # [kJ/(K*mol)]
+    D0_L = dm.D0_L::T                           # [cm^2/sec]  
+    # Conversion factor from alphas/g to track length cm/cm^3
+    damage_conversion = ρap*(λf/λD)*ηq*L
+    # Normal and trapping diffusivities
+    DL = D0_L * exp(-Ea_L / (R * TK))           # [cm^2/sec]  
+    Dtrap = exp( Ea_trap / (R * TK))            # [unitless]
+    # Diffusivity at current damage and temperature
+    track_density = damage*damage_conversion    # [cm/cm3]
+    trap = (Ψ*track_density + Ω*track_density^3)*Dtrap
+    return DL/(trap+1)                          # [cm^2/sec]  
+end
+# Scaled diffusivity
+diffusivity(dm::SDiffusivity, args...) = diffusivity(dm.model, args...)/abs2(dm.scale)
+
+
 ## --- Calculate β parameters in-place with current diffusivity information
 
+# Generic damage-independent Diffusivity
+function updatebeta!(β::Vector{T}, mineral::NobleGasSample{T}, dm::Diffusivity{T}, dt::T, TK::T, ::Int, diffusivityratio=one(T); setting::Symbol=:laboratory) where {T}
+    # Radial step size
+    dr = step(mineral.rsteps)::T
+
+    # Diffusivity
+    De = diffusivity(dm, TK) * 10000^2 * diffusivityratio # [micron^2/sec], converted from [cm^2/sec]
+    if setting !== :laboratory
+        De *= SEC_MYR                                     # [micron^2/myr], converted from [micron^2/sec]
+    end
+
+    # Update β for current temperature
+    fill!(β, 2 * dr^2 / (De*dt))
+    return β
+end
+# ZRDAAM
 function updatebeta!(β::Vector{T}, mineral::ZirconHe{T}, dm::ZRDAAM{T}, dt::T, TK::T, tstep::Int, diffusivityratio=one(T); setting::Symbol=:laboratory) where {T}
     # The annealed damage matrix
     # We will use the last timestep of the geological annealed damage matrix,
@@ -13,7 +82,7 @@ function updatebeta!(β::Vector{T}, mineral::ZirconHe{T}, dm::ZRDAAM{T}, dt::T, 
     SV = dm.SV::T                               # [1/nm]
     Ba = dm.Ba::T                               # [g/alpha] mass of amorphous material produced per alpha decay
     ϕ = dm.phi::T                               # [unitless]
-    R = 0.008314472                             # [kJ/(K*mol)]
+    R = T(0.008314472)::T                       # [kJ/(K*mol)]
     if setting === :laboratory
         D0_z = (dm.D0_z*10000^2)::T             # [micron^2/sec], converted from [cm^2/sec]
         D0_N17 = (dm.D0_N17*10000^2)::T         # [micron^2/sec], converted from [cm^2/sec]
@@ -47,6 +116,7 @@ function updatebeta!(β::Vector{T}, mineral::ZirconHe{T}, dm::ZRDAAM{T}, dt::T, 
 
     return β
 end
+# RDAAM
 function updatebeta!(β::Vector{T}, mineral::ApatiteHe{T}, dm::RDAAM{T}, dt::T, TK::T, tstep::Int, diffusivityratio=one(T); setting::Symbol=:laboratory) where {T}
     # The annealed damage matrix
     # We will use the last timestep of the geological annealed damage matrix,
@@ -63,7 +133,7 @@ function updatebeta!(β::Vector{T}, mineral::ApatiteHe{T}, dm::RDAAM{T}, dt::T, 
     L = dm.L::T                                 # [cm]
     λf = dm.lambdaf::T                          # [1/time]
     λD = dm.lambdaD::T                          # [1/time]
-    R = 0.008314472                             # [kJ/(K*mol)]
+    R = T(0.008314472)::T                       # [kJ/(K*mol)]
     if setting === :laboratory
         D0_L = (dm.D0_L*10000^2)::T             # [micron^2/sec], converted from [cm^2/sec]  
         damagestep = lastindex(annealeddamage, 1)
@@ -97,27 +167,7 @@ function updatebeta!(β::Vector{T}, mineral::ApatiteHe{T}, dm::RDAAM{T}, dt::T, 
 
     return β
 end
-function updatebeta!(β::Vector{T}, mineral::NobleGasSample{T}, dm::Diffusivity{T}, dt::T, TK::T, ::Int, diffusivityratio=one(T); setting::Symbol=:laboratory) where {T}
-    # Constants
-    Ea = dm.Ea::T                           # [kJ/mol]
-    R = 0.008314472                         # [kJ/(K*mol)]
-    if setting === :laboratory
-        D0 = (dm.D0*10000^2)::T             # [micron^2/sec], converted from [cm^2/sec]
-    else
-        D0 = (dm.D0*10000^2*SEC_MYR)::T     # [micron^2/Myr], converted from [cm^2/sec]
-    end
-
-    # Radial step size
-    dr = step(mineral.rsteps)::T
-
-    # Diffusivity
-    De = D0 * exp(-Ea / (R * TK)) * diffusivityratio # [micron^2/t]
-
-    # Update β for current temperature
-    fill!(β, 2 * dr^2 / (De*dt))
-
-    return β
-end
+# Scaled diffusivity
 function updatebeta!(β::Vector{T}, mineral::NobleGasSample{T}, dm::SDiffusivity{T}, dt::T, TK::T, tstep::Int, diffusivityratio=one(T); setting::Symbol=:laboratory) where {T}
     updatebeta!(β, mineral, dm.model, dt, TK, tstep, diffusivityratio/abs2(dm.scale); setting)
 end

@@ -12,6 +12,8 @@
     Tsteps = collect(range(650, 0, length=length(tsteps)))
 
     dm = Diffusivity(;D0, Ea)
+    @test diffusivity(dm, 273.15) ≈ 2.497221805297018e-38
+    @test diffusivity(dm, 473.15) ≈ 1.1055318096833655e-21
     SphericalAr(r=r,dr=dr,K40=K40,agesteps=reverse(tsteps))
     @time "Allocating a mineral" mineral = SphericalAr(r=r,dr=dr,K40=K40,agesteps=reverse(tsteps))
     @test isa(mineral, SphericalAr)
