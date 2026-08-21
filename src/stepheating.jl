@@ -15,6 +15,7 @@ Base.@kwdef struct SDiffusivity{T,D<:DiffusivityModel{T}} <: DiffusivityModel{T}
     scale::T=1.0                    # [unitless] relative domain size (default = 1.0)
     scale_logsigma::T=log(2)/2      # [unitless] log uncertainty (default = log(2)/2 = a factor of 2, two-sigma)
 end
+Base.zero(::Type{SDiffusivity{T,D}}) where {T,D} = SDiffusivity{T,D}(zero(D), zero(T), zero(T))
 
 """
 ```julia
@@ -33,6 +34,7 @@ Base.@kwdef struct MSDiffusivity{T,N,D<:DiffusivityModel{T}} <: MultipleDiffusiv
     scale_logsigma::NTuple{N,T}=ntuple(i->log(2)/2, N)  # [unitless] log uncertainty 
     volume_fraction::NTuple{N,T}=ntuple(i->1/N, N)      # [unitless] Volume fraction of each domain
 end
+Base.zero(::Type{MSDiffusivity{T,N,D}}) where {T,N,D} = MSDiffusivity{T,N,D}(zero(D), ntuple(i->zero(T),N), ntuple(i->zero(T),N), ntuple(i->zero(T),N))
 Base.getindex(d::MSDiffusivity{T,N,D}, i::Int) where {T,N,D} = SDiffusivity{T,D}(d.model, d.scale[i], d.scale_logsigma[i])
 
 """
@@ -54,6 +56,7 @@ Base.@kwdef struct MDiffusivity{T<:AbstractFloat, N} <: MultipleDiffusivity{T}
     Ea_logsigma::NTuple{N,T}        # [unitless] log uncertainty 
     volume_fraction::NTuple{N,T}    # [unitless] Volume fraction of each domain
 end
+Base.zero(::Type{MDiffusivity{T,N}}) where {T,N} = MDiffusivity{T,N}(ntuple(i->zero(T),N), ntuple(i->zero(T),N), ntuple(i->zero(T),N), ntuple(i->zero(T),N), ntuple(i->zero(T),N))
 Base.getindex(d::MDiffusivity{T}, i::Int) where {T} = Diffusivity{T}(d.D0[i], d.D0_logsigma[i], d.Ea[i], d.Ea_logsigma[i])
 
 

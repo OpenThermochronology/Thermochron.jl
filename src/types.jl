@@ -52,6 +52,7 @@ function Base.isapprox(x::T, y::T; kwargs...) where {T<:Model}
 end
 
 # Methods to allow averaging of models
+# General fallback methods that may need to be overloaded for more complicated types
 Base.zero(::M) where {M<:Model} = zero(M)
 @generated function Base.zero(::Type{M}) where {T, M<:Model{T}}
     result = :($M())
