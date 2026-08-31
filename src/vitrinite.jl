@@ -1,5 +1,7 @@
 ## --- Vitrinite reflectance kinetic model
 
+# note that VR predictions for rapid thermal excursions are sensitive to agesteps density in that interval
+
 Base.@kwdef struct NielsenBasinRo{T<:AbstractFloat} <: VitriniteReflectanceModel{T}
     logA::T = 60.9856   # ln(1/Ma), Nielsen et al. 2017 Table 3
     Ea::Vector{T} = T[34.,36.,38.,40.,42.,44.,46.,48.,50.,52.,54.,56.,58.,60.,62.,64.,66.,68.,70.,72.] .* 4184.0  # J/mol
