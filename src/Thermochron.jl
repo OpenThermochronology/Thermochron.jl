@@ -44,6 +44,7 @@ module Thermochron
     export Chronometer, AbsoluteChronometer                             # Abstract types
     export ZirconTrackLength, MonaziteTrackLength, ApatiteTrackLength, ApatiteTrackLengthOriented   # Concrete fission track length types
     export ZirconFT, MonaziteFT, ApatiteFT                              # Concrete fission track types
+    export VitriniteRo                                                  # Concrete vitrinite reflectance types
     export SphericalHe, PlanarHe, ZirconHe, ApatiteHe                   # Concrete U-Th/He types
     export SphericalAr, PlanarAr                                        # Concrete K/Ar types
     export get_age, get_age_sigma, empiricaluncertainty!, eU, radius    # Functions
@@ -62,6 +63,8 @@ module Thermochron
     export Yamada2007PC, Guenthner2013FC                                # Zircon fission track annealing models
     export Jones2021FA                                                  # Other mineral annealing models
     export modelage, modellength, anneal!                               # Functions
+    include("vitrinite.jl")
+    export NielsenBasinRo
 
     include("parsing.jl")
     export chronometers, checktimediscretization                        # Parse datasets into Chronometer objects
