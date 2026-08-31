@@ -2006,6 +2006,7 @@ value(x::AbsoluteChronometer{T}) where {T} = x.age::T
 value(x::StepHeatingSample{T}) where {T} = nanmean(x.step_age, @.(x.fit/x.step_age_sigma^2))::T
 value(x::FissionTrackLength{T}) where {T} = x.length::T
 value(x::ApatiteTrackLengthOriented{T}) where {T} = x.lcmod::T
+value(x::VitriniteRo{T}) where {T} = x.Ro::T
 function val(x::Chronometer)
     @warn "Thermochron.val has been deprecated in favor of Thermochron.value"
     value(x)
@@ -2015,6 +2016,7 @@ end
 stdev(x::AbsoluteChronometer{T}) where {T} = x.age_sigma::T
 stdev(x::StepHeatingSample{T}) where {T} = nanstd(x.step_age, @.(x.fit/x.step_age_sigma^2))::T
 stdev(x::FissionTrackLength{T}) where {T} = zero(T)
+stdev(x::VitriniteRo{T}) where {T} = x.Ro_sigma::T
 function err(x::Chronometer)
     @warn "Thermochron.err has been deprecated in favor of Thermochron.stdev"
     stdev(x)
