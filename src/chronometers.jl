@@ -553,6 +553,48 @@ function ApatiteFT(T::Type{<:AbstractFloat}=Float64;
     )
 end
 
+# --- Vitrinite Reflectance (VRo%) struct ---
+
+"""
+```julia
+VitriniteRo(T::Type{<:AbstractFloat} = Float64;
+    Ro::Number = NaN,                # [%] measured vitrinite reflectance
+    Ro_sigma::Number = NaN,          # [%] measured Ro uncertainty (one-sigma)
+    offset::Number = zero(T),
+    height::Number = zero(T),
+    name::String = "",
+    notes::String = "",
+    agesteps::AbstracVector | tsteps::AbstracVector,
+)
+```
+Construct a `VitriniteRo` chronometer representing a measured vitrinite
+reflectance of `Ro` ± `Ro_sigma` [%Ro], predicted from a t-T path via a
+kinetic model such as `NielsenBasinRo`.
+"""
+struct VitriniteRo{T<:AbstractFloat, V<:AbstractVector{T}} <: AbsoluteChronometer{T}
+    Ro::T
+    Ro_sigma::T
+    offset::T
+    height::T
+    agesteps::V
+    tsteps::V
+    name::String
+    notes::String
+end
+function VitriniteRo(T::Type{<:AbstractFloat}=Float64;
+        Ro::Number = T(NaN),
+        Ro_sigma::Number = T(NaN),
+        offset::Number = zero(T),
+        height::Number = zero(T),
+        name::String = "",
+        notes::String = "",
+        agesteps = nothing,
+        tsteps = nothing,
+    )
+    agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
+    VitriniteRo(T(Ro), T(Ro_sigma), T(offset), T(height), agesteps, tsteps, name, notes)
+end
+
 ## --- Helium sample types
 
 """
