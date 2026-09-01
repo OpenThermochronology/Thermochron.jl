@@ -1070,6 +1070,7 @@
         scalemtl = rescale ? sqrt(count(x->isa(x, MonaziteTrackLength), chrons)) : 1.0
         scaleatl = rescale ? sqrt(count(x->isa(x, ApatiteTrackLength), chrons)) : 1.0
         scaleato = rescale ? sqrt(count(x->isa(x, ApatiteTrackLengthOriented), chrons)) : 1.0
+        
         # Rescale step heating chronometers if either rescale OR rescalesdd/rescalemdd is set
         nsdd = sum(x->(isa(x, SingleDomain) ? count(x.fit) : 0), chrons)
         scalesdd = (rescale | rescalesdd) ? sqrt(nsdd) : 1.0
