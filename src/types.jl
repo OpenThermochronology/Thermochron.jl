@@ -253,8 +253,8 @@ struct TTResult{T<:AbstractFloat, V<:AbstractVector{T}} <: AbstractVector{Vector
 end
 Base.size(tT::TTResult) = (size(tT.tpointdist, 2),)
 function Base.getindex(tT::TTResult{T}, i::Int) where {T}
-    ages = view(tT.tpointdist, 1:(tT.ndist[i]+2))
-    temperatures = view(tT.Tpointdist, 1:(tT.ndist[i]+2))
+    ages = view(tT.tpointdist, 1:(tT.ndist[i]+2), i)
+    temperatures = view(tT.Tpointdist, 1:(tT.ndist[i]+2), i)
     return linterp1s(ages, temperatures, tT.agesteps) # Tsteps
 end
 
