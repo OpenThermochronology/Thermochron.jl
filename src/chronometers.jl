@@ -576,6 +576,7 @@ struct VitriniteRo{T<:AbstractFloat, V<:AbstractVector{T}} <: AbsoluteChronomete
     Ro_sigma::T
     offset::T
     height::T
+    xi::Vector{T}            # [unitless] scratch buffer for reaction-fraction bookkeeping, reused across modelage calls
     agesteps::V
     tsteps::V
     name::String
@@ -590,9 +591,10 @@ function VitriniteRo(T::Type{<:AbstractFloat}=Float64;
         notes::String = "",
         agesteps = nothing,
         tsteps = nothing,
+        xi::Vector = zeros(T, 20),   # length must match NielsenBasinRo's Ea/stoich (20 bins)
     )
     agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
-    VitriniteRo(T(Ro), T(Ro_sigma), T(offset), T(height), agesteps, tsteps, name, notes)
+    VitriniteRo(T(Ro), T(Ro_sigma), T(offset), T(height), xi, agesteps, tsteps, name, notes)
 end
 
 ## --- Helium sample types
