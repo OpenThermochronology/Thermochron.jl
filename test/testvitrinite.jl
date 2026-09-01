@@ -1,6 +1,3 @@
-using Test
-using Thermochron
-
 @testset "VitriniteRo construction" begin
     agesteps = collect(50.0:-1.0:0.0)
     vro = VitriniteRo(Float64; Ro=0.6, Ro_sigma=0.05, agesteps=agesteps)
