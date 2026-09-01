@@ -21,7 +21,6 @@ end
 # Abstract subtypes for Chronometers that include an absolute age and age uncertainty
 abstract type AbsoluteChronometer{T} <:Chronometer{T} end  
 abstract type FissionTrackSample{T} <: AbsoluteChronometer{T} end   # Any absolute chronometer based on the annealing of fission tracks
-abstract type VitriniteReflectanceModel{T} <: AnnealingModel{T} end
 abstract type StepHeatingSample{T,C} <: AbsoluteChronometer{T} end  # A chronometer recording laboratory step heating. Wraps one or more diffusive (typically noble gas) chronometers
 abstract type NobleGasSample{T} <: AbsoluteChronometer{T} end       # Any chronometer based on diffusion of noble gasses
 abstract type HeliumSample{T} <: NobleGasSample{T} end              # Any chronometer based on the diffusion of radiogenic He
@@ -87,6 +86,7 @@ abstract type MonaziteAnnealingModel{T} <: AnnealingModel{T} end
 abstract type ApatiteAnnealingModel{T} <: AnnealingModel{T} end
 abstract type FanningCurvilinearZircon{T} <: ZirconAnnealingModel{T} end
 abstract type FanningCurvilinearApatite{T} <: ApatiteAnnealingModel{T} end
+abstract type VitriniteReflectanceModel{T} <: AnnealingModel{T} end
 const FanningCurvilinear{T} = Union{FanningCurvilinearZircon{T}, FanningCurvilinearApatite{T}}
 
 # DiffusivityModel types
