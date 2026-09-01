@@ -45,7 +45,7 @@ function modelage(vro::VitriniteRo{T}, Tsteps::AbstractVector, model::NielsenBas
         end
     end
     X = sum(xi)
-    return model.Ro0 * exp(3.7 * (-log(max(X, T(1e-10)))))
+    return X < T(1e-10) ? model.Ro0 * exp(T(37)) : model.Ro0 * exp(3.7 * (-log(X)))
 end
 
 model_ll(vro::VitriniteRo, Tsteps::AbstractVector, model::VitriniteReflectanceModel, rp::RegionalParameters=RegionalParameters()) =
