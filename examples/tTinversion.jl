@@ -363,6 +363,33 @@ end
         end
     end
 
+## -- Plot calculated and observed vitrinite reflectance
+
+    t = isa.(chrons, VitriniteRo)
+    if any(t)
+        μobs = Thermochron.value.(chrons[t])
+        σobs = Thermochron.stdev.(chrons[t])
+        h = plot(μobs, yerror=2σobs,
+            title = "VitriniteRo",
+            xlabel = "Sample number", ylabel = "%Ro",
+            label = "Data (2σ)",
+            framestyle = :box,
+            shape = :hexagon,
+            color = :black,
+        )
+        rodist = tT.resultdist[t,:]
+        m = nanmean(rodist, dim=2)
+        l = nanpctile(rodist, 2.5, dim=2)
+        u = nanpctile(rodist, 97.5, dim=2)
+        scatter!(h, m, yerror=(m-l, u-m),
+            label = "Model (95%CI)",
+            color = :saddlebrown,
+            msc = :saddlebrown,
+        )
+        savefig(h, "$(name)_VitriniteRo_predicted.pdf")
+        display(h)
+    end
+
 ## -- Fission track length histograms (apatite, zircon, monazite)
     # Use HypothesisTests package for testing equivalence of distributions a posteriori (K-S test)
     using HypothesisTests
