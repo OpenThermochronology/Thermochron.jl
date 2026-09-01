@@ -34,10 +34,11 @@ function modelage(vro::VitriniteRo{T}, Tsteps::AbstractVector, model::NielsenBas
     @assert issorted(tsteps)
     @assert eachindex(tsteps) == eachindex(Tsteps)
     A = exp(model.logA) / SEC_MYR
-    xi = copy(model.stoich)
+    xi = vro.xi::Vector{T}
+    copyto!(xi, model.stoich)   # reset in place, no allocation
     @inbounds for i in eachindex(tsteps, Tsteps)
         Tavg = Tsteps[i] + ΔT
-        dt = abs(step_at(tsteps, i)) * SEC_MYR   # dt is a duration -- must be positive
+        dt = abs(step_at(tsteps, i)) * SEC_MYR
         for j in eachindex(xi, model.Ea)
             k = A * exp(-model.Ea[j] / (8.3143 * Tavg))
             xi[j] *= exp(-k*dt)
