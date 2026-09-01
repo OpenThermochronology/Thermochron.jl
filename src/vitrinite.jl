@@ -2,7 +2,7 @@
 
 # note that VR predictions for rapid thermal excursions are sensitive to agesteps density in that interval
 
-Base.@kwdef struct NielsenBasinRo{T<:AbstractFloat} <: VitriniteReflectanceModel{T}
+struct NielsenBasinRo{T<:AbstractFloat} <: VitriniteReflectanceModel{T}
     logA::T
     Ea::Vector{T}
     stoich::Vector{T}
