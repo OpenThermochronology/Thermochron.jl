@@ -86,6 +86,7 @@ abstract type MonaziteAnnealingModel{T} <: AnnealingModel{T} end
 abstract type ApatiteAnnealingModel{T} <: AnnealingModel{T} end
 abstract type FanningCurvilinearZircon{T} <: ZirconAnnealingModel{T} end
 abstract type FanningCurvilinearApatite{T} <: ApatiteAnnealingModel{T} end
+abstract type VitriniteReflectanceModel{T} <: AnnealingModel{T} end
 const FanningCurvilinear{T} = Union{FanningCurvilinearZircon{T}, FanningCurvilinearApatite{T}}
 
 # DiffusivityModel types
@@ -252,8 +253,8 @@ struct TTResult{T<:AbstractFloat, V<:AbstractVector{T}} <: AbstractVector{Vector
 end
 Base.size(tT::TTResult) = (size(tT.tpointdist, 2),)
 function Base.getindex(tT::TTResult{T}, i::Int) where {T}
-    ages = view(tT.tpointdist, 1:(tT.ndist[i]+2))
-    temperatures = view(tT.Tpointdist, 1:(tT.ndist[i]+2))
+    ages = view(tT.tpointdist, 1:(tT.ndist[i]+2), i)
+    temperatures = view(tT.Tpointdist, 1:(tT.ndist[i]+2), i)
     return linterp1s(ages, temperatures, tT.agesteps) # Tsteps
 end
 

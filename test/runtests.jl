@@ -12,6 +12,7 @@ Random.seed!(12345)
 @testset "Thermochron" begin
     @testset "Utilities" begin include("testutilities.jl") end
     @testset "Fission Track" begin include("testfissiontrack.jl") end
+    @testset "Vitrinite Reflectance" begin include("testvitrinite.jl") end
     @testset "Generic Helium" begin include("testhelium.jl") end
     @testset "Apatite Helium" begin include("testheliumap.jl") end
     @testset "Zircon Helium" begin include("testheliumzrn.jl") end

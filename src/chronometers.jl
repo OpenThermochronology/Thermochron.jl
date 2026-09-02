@@ -553,6 +553,50 @@ function ApatiteFT(T::Type{<:AbstractFloat}=Float64;
     )
 end
 
+# --- Vitrinite Reflectance (VRo%) struct ---
+
+"""
+```julia
+VitriniteRo(T::Type{<:AbstractFloat} = Float64;
+    Ro::Number = NaN,                # [%] measured vitrinite reflectance
+    Ro_sigma::Number = NaN,          # [%] measured Ro uncertainty (one-sigma)
+    offset::Number = zero(T),
+    height::Number = zero(T),
+    name::String = "",
+    notes::String = "",
+    agesteps::AbstracVector | tsteps::AbstracVector,
+)
+```
+Construct a `VitriniteRo` chronometer representing a measured vitrinite
+reflectance of `Ro` ± `Ro_sigma` [%Ro], predicted from a t-T path via a
+kinetic model such as `NielsenBasinRo`.
+"""
+struct VitriniteRo{T<:AbstractFloat, V<:AbstractVector{T}} <: AbsoluteChronometer{T}
+    Ro::T
+    Ro_sigma::T
+    offset::T
+    height::T
+    xi::Vector{T}            # [unitless] scratch buffer for reaction-fraction bookkeeping, reused across modelage calls
+    agesteps::V
+    tsteps::V
+    name::String
+    notes::String
+end
+function VitriniteRo(T::Type{<:AbstractFloat}=Float64;
+        Ro::Number = T(NaN),
+        Ro_sigma::Number = T(NaN),
+        offset::Number = zero(T),
+        height::Number = zero(T),
+        name::String = "",
+        notes::String = "",
+        agesteps = nothing,
+        tsteps = nothing,
+        xi::Vector = zeros(T, 20),   # length must match NielsenBasinRo's Ea/stoich (20 bins)
+    )
+    agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
+    VitriniteRo(T(Ro), T(Ro_sigma), T(offset), T(height), xi, agesteps, tsteps, name, notes)
+end
+
 ## --- Helium sample types
 
 """
@@ -1964,6 +2008,7 @@ value(x::AbsoluteChronometer{T}) where {T} = x.age::T
 value(x::StepHeatingSample{T}) where {T} = nanmean(x.step_age, @.(x.fit/x.step_age_sigma^2))::T
 value(x::FissionTrackLength{T}) where {T} = x.length::T
 value(x::ApatiteTrackLengthOriented{T}) where {T} = x.lcmod::T
+value(x::VitriniteRo{T}) where {T} = x.Ro::T
 function val(x::Chronometer)
     @warn "Thermochron.val has been deprecated in favor of Thermochron.value"
     value(x)
@@ -1973,6 +2018,7 @@ end
 stdev(x::AbsoluteChronometer{T}) where {T} = x.age_sigma::T
 stdev(x::StepHeatingSample{T}) where {T} = nanstd(x.step_age, @.(x.fit/x.step_age_sigma^2))::T
 stdev(x::FissionTrackLength{T}) where {T} = zero(T)
+stdev(x::VitriniteRo{T}) where {T} = x.Ro_sigma::T
 function err(x::Chronometer)
     @warn "Thermochron.err has been deprecated in favor of Thermochron.stdev"
     stdev(x)

@@ -279,6 +279,17 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                 end
             end
         end
+        # Vitrinite reflectance (not mineral-specific — check regardless of `mineral` column)
+        if haskey(ds, :Ro_percent) && haskey(ds, :Ro_sigma_percent) && !isnan(ds.Ro_percent[i])
+            c = VitriniteRo(T;
+                Ro = ds.Ro_percent[i],
+                Ro_sigma = ds.Ro_sigma_percent[i],
+                offset, height,
+                agesteps, name, notes,
+            )
+            push!(chrons, c)
+            push!(damodels, NielsenBasinRo())
+        end
         if haskey(ds, :D0_cm_2_s) && haskey(ds, :Ea_kJ_mol) && (0 < ds.D0_cm_2_s[i]) && (0 < ds.Ea_kJ_mol[i])
             geometry = haskey(ds, :geometry) ? lowercase(string(ds.geometry[i])) : ""
             dm = Diffusivity(
