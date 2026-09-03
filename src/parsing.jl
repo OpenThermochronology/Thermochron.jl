@@ -356,7 +356,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
             end
         end
         if !isempty(Ar_step_heating_file) && Ar_step_heating_file==Ar_step_heating_file
-            dds = importdataset(Ar_step_heating_file, importas=:Tuple)
+            dds = importdataset(abspath(Ar_step_heating_file), importas=:Tuple)
             DomainType = if (geometry == "slab") || (geometry == "planar")
                 PlanarAr
             elseif (geometry === "spherical")
@@ -434,7 +434,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
             end
         end
         if !isempty(He_step_heating_file) && He_step_heating_file==He_step_heating_file
-            dds = importdataset(He_step_heating_file, importas=:Tuple)
+            dds = importdataset(abspath(He_step_heating_file), importas=:Tuple)
             DomainType = if mineral === "apatite"
                 ApatiteHe
             elseif mineral === "zircon"
