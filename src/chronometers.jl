@@ -51,7 +51,7 @@ struct ApatiteTrackLengthOriented{T<:AbstractFloat, V<:AbstractVector{T}} <: Fis
     r::Vector{T}            # [unitless] reduced track lengths for each timestep
     pr::Vector{T}           # [unitless] reduced track densities for each timestep
     calc::Vector{T}         # [um] last calculated mean and standard deviation
-    agesteps::V             # [Ma] age in Ma relative to the present
+    agesteps::V             # [Ma] sample age in millions of years before the present day
     tsteps::V               # [Ma] forward time since crystallization
     hash::UInt64            # [unitless] unique ID for linking track lengths with the same offset, agesteps, l0, etc.
     name::String            # Sample or grain name
@@ -150,7 +150,7 @@ struct ApatiteTrackLength{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTrac
     r::Vector{T}            # [unitless] reduced track lengths for each timestep
     pr::Vector{T}           # [unitless] reduced track densities for each timestep
     calc::Vector{T}         # [um] last calculated mean and standard deviation
-    agesteps::V             # [Ma] age in Ma relative to the present
+    agesteps::V             # [Ma] sample age in millions of years before the present day
     tsteps::V               # [Ma] forward time since crystallization
     hash::UInt64            # [unitless] unique ID for linking track lengths with the same offset, agesteps, l0, etc.
     name::String            # Sample or grain name
@@ -229,7 +229,7 @@ struct ZirconTrackLength{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTrack
     r::Vector{T}            # [unitless] reduced track lengths for each timestep
     pr::Vector{T}           # [unitless] reduced track densities for each timestep
     calc::Vector{T}         # [um] last calculated mean and standard deviation
-    agesteps::V             # [Ma] age in Ma relative to the present
+    agesteps::V             # [Ma] sample age in millions of years before the present day
     tsteps::V               # [Ma] forward time since crystallization
     hash::UInt64            # [unitless] unique ID for linking track lengths with the same offset, agesteps, l0, etc.
     name::String            # Sample or grain name
@@ -308,7 +308,7 @@ struct MonaziteTrackLength{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTra
     r::Vector{T}            # [unitless] reduced track lengths for each timestep
     pr::Vector{T}           # [unitless] reduced track densities for each timestep
     calc::Vector{T}         # [um] last calculated mean and standard deviation
-    agesteps::V             # [Ma] age in Ma relative to the present
+    agesteps::V             # [Ma] sample age in millions of years before the present day
     tsteps::V               # [Ma] forward time since crystallization
     hash::UInt64            # [unitless] unique ID for linking track lengths with the same offset, agesteps, l0, etc.
     name::String            # Sample or grain name
@@ -383,7 +383,7 @@ struct ZirconFT{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTrackSample{T}
     age_sigma::T            # [Ma] fission track age uncertainty (one-sigma)
     offset::T               # [C] temperature offset relative to other samples / the surface
     height::T               # [m] height relative to other samples / the surface
-    agesteps::V             # [Ma] age in Ma relative to the present
+    agesteps::V             # [Ma] sample age in millions of years before the present day
     tsteps::V               # [Ma] forward time since crystallization
     name::String            # Sample or grain name
     notes::String           # Sample notes
@@ -438,7 +438,7 @@ struct MonaziteFT{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTrackSample{
     age_sigma::T            # [Ma] fission track age uncertainty (one-sigma)
     offset::T               # [C] temperature offset relative to other samples / the surface
     height::T               # [m] height relative to other samples / the surface
-    agesteps::V             # [Ma] age in Ma relative to the present
+    agesteps::V             # [Ma] sample age in millions of years before the present day
     tsteps::V               # [Ma] forward time since crystallization
     name::String            # Sample or grain name
     notes::String           # Sample notes
@@ -505,7 +505,7 @@ struct ApatiteFT{T<:AbstractFloat, V<:AbstractVector{T}} <: FissionTrackSample{T
     offset::T               # [C] temperature offset relative to other samples / the surface
     height::T               # [m] height relative to other samples / the surface
     rmr0::T                 # [unitless] relative resistance to annealing (0=most, 1=least)
-    agesteps::V             # [Ma] age in Ma relative to the present
+    agesteps::V             # [Ma] sample age in millions of years before the present day
     tsteps::V               # [Ma] forward time since crystallization
     name::String            # Sample or grain name
     notes::String           # Sample notes
@@ -553,17 +553,17 @@ function ApatiteFT(T::Type{<:AbstractFloat}=Float64;
     )
 end
 
-# --- Vitrinite Reflectance (VRo%) struct ---
+## --- Vitrinite Reflectance sample types
 
 """
 ```julia
 VitriniteRo(T::Type{<:AbstractFloat} = Float64;
     Ro::Number = NaN,                # [%] measured vitrinite reflectance
     Ro_sigma::Number = NaN,          # [%] measured Ro uncertainty (one-sigma)
-    offset::Number = zero(T),
-    height::Number = zero(T),
-    name::String = "",
-    notes::String = "",
+    offset::Number = zero(T),        # [C] temperature offset relative to other samples / the surface
+    height::Number = zero(T),        # [m] height relative to other samples / the surface
+    name::String = "",               # Sample or grain name
+    notes::String = "",              # Sample notes
     agesteps::AbstracVector | tsteps::AbstracVector,
 )
 ```
@@ -572,15 +572,15 @@ reflectance of `Ro` ± `Ro_sigma` [%Ro], predicted from a t-T path via a
 kinetic model such as `NielsenBasinRo`.
 """
 struct VitriniteRo{T<:AbstractFloat, V<:AbstractVector{T}} <: AbsoluteChronometer{T}
-    Ro::T
-    Ro_sigma::T
-    offset::T
-    height::T
-    xi::Vector{T}            # [unitless] scratch buffer for reaction-fraction bookkeeping, reused across modelage calls
-    agesteps::V
-    tsteps::V
-    name::String
-    notes::String
+    Ro::T                   # [%] measured vitrinite reflectance
+    Ro_sigma::T             # [%] measured Ro uncertainty (one-sigma)
+    offset::T               # [C] temperature offset relative to other samples / the surface
+    height::T               # [m] height relative to other samples / the surface
+    xi::Vector{T}           # [unitless] scratch buffer for reaction-fraction bookkeeping, reused across modelage calls
+    agesteps::V             # [Ma] sample age in millions of years before the present day
+    tsteps::V               # [Ma] forward time since crystallization
+    name::String            # Sample or grain name
+    notes::String           # Sample notes
 end
 function VitriniteRo(T::Type{<:AbstractFloat}=Float64;
         Ro::Number = T(NaN),
@@ -636,7 +636,7 @@ struct ZirconHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
     offset::T                   # [C] temperature offset relative to other samples / the surface
     height::T                   # [m] height relative to other samples / the surface
-    agesteps::V                 # [Ma] age in Ma relative to the present
+    agesteps::V                 # [Ma] sample age in millions of years before the present day
     tsteps::V                   # [Ma] forward time since crystallization
     rsteps::FloatRange          # [um] radius bin centers
     redges::FloatRange          # [um] radius bin edges
@@ -823,6 +823,222 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
     )
 end
 
+"""
+```julia
+PlanarZirconHe(T=Float64;
+    age::Number = T(NaN),                   # [Ma] raw helium age
+    age_sigma::Number = T(NaN),             # [Ma] raw helium age uncertainty (one-sigma)
+    offset::Number = zero(T),               # [C] temperature offset relative to other samples / surface (positive is warmer)
+    height::Number = zero(T),               # [m] height relative to other samples / surface (negative for depth)
+    r::Number,                              # [um] planar half-width
+    dr::Number = one(T),                    # [um] radial step size
+    U238::Number,                           # [ppm] zircon U-238 concentration
+    Th232::Number,                          # [ppm] zircon Th-232 concentration
+    Sm147::Number = zero(T),                # [ppm] zircon Sm-147 concentration
+    U238_matrix::Number = zero(T),          # [ppm] matrix U-238 concentration
+    Th232_matrix::Number = zero(T),         # [ppm] matrix Th-232 concentration
+    Sm147_matrix::Number = zero(T),         # [ppm] matrix Sm-147 concentration
+    grainsize_matrix::Number = one(T),      # [mm] average grain size of matrix rock
+    name::String = "",                      # Sample or grain name
+    notes::String = "",                     # Sample notes
+    agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
+)
+```
+Construct a `PlanarZirconHe` chronometer representing a zircon with a raw 
+helium age of `age` ± `age_sigma` [Ma], a spherical radius of `r` [μm], and  
+uniform U, Th and Sm concentrations specified by `U238`, `Th232`, and `Sm147` [PPMw]. 
+A present day U-235/U-238 ratio of 1/137.818 is assumed.
+
+Spatial discretization follows a halfwidth step of `dr` [μm], while temporal 
+discretization  follows the age steps specified by `agesteps` (age before present)
+and/or `tsteps` (forward time since crystallization), in Ma, where `tsteps` 
+must be sorted in increasing order.
+"""
+struct PlanarZirconHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
+    age::T                      # [Ma] helium age
+    age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
+    offset::T                   # [C] temperature offset relative to other samples / the surface
+    height::T                   # [m] height relative to other samples / the surface
+    agesteps::V                 # [Ma] sample age in millions of years before the present day
+    tsteps::V                   # [Ma] forward time since crystallization
+    rsteps::FloatRange          # [um] halfwidth bin centers
+    redges::FloatRange          # [um] halfwidth bin edges
+    nrsteps::Int                # [n] number of spatial steps, including both implicit points at each side
+    r238U::Vector{T}            # [atoms/g] radial U-238 concentrations
+    r235U::Vector{T}            # [atoms/g] radial U-235 concentrations
+    r232Th::Vector{T}           # [atoms/g] radial Th-232 concentrations
+    r147Sm::Vector{T}           # [atoms/g] radial Sm-147 concentrations
+    bulkgrainsize::T            # [mm] average grain size of the whole-rock matrix
+    bulkdeposition::Vector{T}   # [atoms/g] alpha (helium) production outside grain
+    deposition::Matrix{T}       # [atoms/g] alpha (helium) deposition matrix within grain
+    alphadamage::Matrix{T}      # [decays/g] initial damage matrix
+    pr::Matrix{T}               # [unitless] reduced damage density matrix
+    annealeddamage::Matrix{T}   # [decays/g] annealed damage matrix
+    u::Matrix{T}                # Diffusion profiles, coordinate transform'd, including boundary conditions
+    vfinal::Vector{T}           # Final diffusion profile
+    β::Vector{T}                # Radial vector of inverse diffusivity (2 * dr^2 / (D*dt)) for Crank-Nicolson
+    A::Tridiagonal{T, Vector{T}}# Tridiagonal matrix for Crank-Nicolson
+    F::LU{T, Tridiagonal{T, Vector{T}}, Vector{Int64}} # LU factorization object for Crank-Nicolson
+    y::Vector{T}                # RHS vector for Crank-Nicolson
+    step_tracer::Vector{T}      # [atoms/g] buffer for degassed He-3 when modelling experimental heating schedule
+    step_daughter::Vector{T}    # [atoms/g] buffer for degassed He-4 when modelling experimental heating schedule
+    name::String                # Sample or grain name
+    notes::String               # Sample notes
+end
+function PlanarZirconHe(T::Type{<:AbstractFloat}=Float64;
+        age::Number = T(NaN),
+        age_sigma::Number = T(NaN),
+        offset::Number = zero(T),
+        height::Number = zero(T),
+        r::Number,
+        dr::Number = one(T), 
+        U238::Number,
+        Th232::Number,
+        Sm147::Number = zero(T),
+        U238_matrix::Number = zero(T), 
+        Th232_matrix::Number = zero(T), 
+        Sm147_matrix::Number = zero(T), 
+        grainsize_matrix::Number = one(T),
+        name::String = "",
+        notes::String = "",
+        agesteps = nothing,
+        tsteps = nothing,
+    )
+
+    # Temporal discretization
+    agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
+
+    # Crystal size and spatial discretization
+    redges = floatrange(0 : dr : r)                 # Edges of each radius element
+    rsteps = cntr(redges)                           # Centers of each radius element
+    nrsteps = length(rsteps)+2                      # Number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
+
+    # Observed radial HPE profiles at present day, in atoms per gram
+    r238U = fill(T(U238 * 6.022e17 / 238), size(rsteps))          # [atoms/g], converted from PPMw
+    r235U = fill(T(U238/137.818 * 6.022e17 / 235), size(rsteps))  # [atoms/g], converted from PPMw
+    r232Th = fill(T(Th232 * 6.022e17 / 232), size(rsteps))        # [atoms/g], converted from PPMw
+    r147Sm = fill(T(Sm147 * 6.022e17 / 147), size(rsteps))        # [atoms/g], converted from PPMw
+
+    # Outside (bulk/matrix) HPE concentrations, in atoms per gram
+    o238U = U238_matrix * 6.022e17 / 238                          # [atoms/g], converted from PPMw
+    o235U = U238_matrix/137.818 * 6.022e17 / 235                  # [atoms/g], converted from PPMw
+    o232Th = Th232_matrix * 6.022e17 / 232                        # [atoms/g], converted from PPMw
+    o147Sm = Sm147_matrix * 6.022e17 / 147                        # [atoms/g], converted from PPMw
+
+    # Zircon alpha stopping distances for each isotope in each decay chain, from
+    # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
+    alpharadii238U = (11.78, 14.09, 13.73, 14.13, 17.32, 16.69, 28.56, 16.48,)
+    alpharadii235U = (12.58, 15.04, 19.36, 18.06, 23.07, 26.87, 22.47,)
+    alpharadii232Th = (10.99, 16.67, 18.16, 17.32, 23.61, 29.19,)
+    # Ketcham et al. (2011), doi: 10.1016/j.gca.2011.10.011
+    alpharadii147Sm = (4.76,)
+    # Additional discretization outside of grain, for alpha injection
+    redgesₒ = floatrange(r : dr : r+maximum(alpharadii238U))
+
+    # Calculate effective He deposition for each decay chain, corrected for alpha
+    # stopping distance [parent per-decay concentration equivalents]
+    r238UHe = alphacorrectionslab(alpharadii238U, r238U, redges, o238U, redgesₒ)
+    r235UHe = alphacorrectionslab(alpharadii235U, r235U, redges, o235U, redgesₒ)
+    r232ThHe = alphacorrectionslab(alpharadii232Th, r232Th, redges, o232Th, redgesₒ)
+    r147SmHe = alphacorrectionslab(alpharadii147Sm, r147Sm, redges, o147Sm, redgesₒ)
+
+    # Alpha decay recoil damage [parent per-decay concentration equivalents]
+    r238Udam = 8*r238U # No smoothing of alpha damage, 8 alphas per 238U
+    r235Udam = 7*r235U # No smoothing of alpha damage, 7 alphas per 235U
+    r232Thdam = 6*r232Th # No smoothing of alpha damage, 6 alphas per 232 Th
+    r147Smdam = 1*r147Sm # No smoothing of alpha damage, 1 alpha per 147 Sm
+
+    # Calculate corrected alpha deposition and recoil damage each time step for each radius
+    decay = zeros(T, length(tsteps))
+    # Allocate deposition and damage arrays
+    bulkgrainsize = T(grainsize_matrix)
+    bulkdeposition = zeros(T, length(tsteps))
+    deposition = zeros(T, length(tsteps), nrsteps-2)
+    alphadamage = zeros(T, length(tsteps), nrsteps-2)
+    pr = zeros(T, length(tsteps), length(tsteps))
+
+    # Calculate bin edges given agesteps, assuming step boundaries are halfway between steps
+    agebinedges = [agesteps[1]-step_at(agesteps, 1)/2; cntr(agesteps); agesteps[end]+step_at(agesteps, lastindex(agesteps))/2]
+    leftedges, rightedges = agebinedges[1:end-1], agebinedges[2:end]
+
+    # U-238
+    @. decay = exp(λ238U*leftedges) - exp(λ238U*rightedges)
+    mul!(bulkdeposition, decay, o238U, 8, one(T))
+    mul!(deposition, decay, r238UHe', one(T), one(T))
+    mul!(alphadamage, decay, r238Udam', one(T), one(T))
+    # U-235
+    @. decay = exp(λ235U*leftedges) - exp(λ235U*rightedges)
+    mul!(bulkdeposition, decay, o235U, 7, one(T))
+    mul!(deposition, decay, r235UHe', one(T), one(T))
+    mul!(alphadamage, decay, r235Udam', one(T), one(T))
+    # Th-232
+    @. decay = exp(λ232Th*leftedges) - exp(λ232Th*rightedges)
+    mul!(bulkdeposition, decay, o232Th, 6, one(T))
+    mul!(deposition, decay, r232ThHe', one(T), one(T))
+    mul!(alphadamage, decay, r232Thdam', one(T), one(T))
+    # Sm-147
+    @. decay = exp(λ147Sm*leftedges) - exp(λ147Sm*rightedges)
+    mul!(bulkdeposition, decay, o147Sm, one(T), one(T))
+    mul!(deposition, decay, r147SmHe', one(T), one(T))
+    mul!(alphadamage, decay, r147Smdam', one(T), one(T))
+
+    # Allocate additional variables that will be needed for Crank-Nicolson
+    annealeddamage = copy(alphadamage)
+    β = zeros(T, nrsteps)
+
+    # Allocate output matrix for all timesteps
+    u = zeros(T, nrsteps, length(tsteps)+1)
+    vfinal = zeros(T, nrsteps-2)
+
+    # Allocate variables for tridiagonal matrix and RHS
+    dl = ones(T, nrsteps-1)    # Sub-diagonal row
+    d = ones(T, nrsteps)       # Diagonal
+    du = ones(T, nrsteps-1)    # Supra-diagonal row
+    du2 = ones(T, nrsteps-2)   # sup-sup-diagonal row for pivoting
+
+    # Tridiagonal matrix for LHS of Crank-Nicolson equation with regular grid cells
+    A = Tridiagonal(dl, d, du, du2)
+    F = lu(A, allowsingular=true)
+
+    # Vector for RHS of Crank-Nicolson equation with regular grid cells
+    y = zeros(T, nrsteps)
+
+    # Allocate arrays to optionaly track tracer and daughter concentrations during degassing
+    step_tracer = zeros(T, length(tsteps))
+    step_daughter = zeros(T, length(tsteps))
+
+    return PlanarZirconHe(
+        T(age),
+        T(age_sigma),
+        T(offset),
+        T(height),
+        agesteps,
+        tsteps,
+        rsteps,
+        redges,
+        nrsteps,
+        r238U,
+        r235U,
+        r232Th,
+        r147Sm,
+        bulkgrainsize,
+        bulkdeposition,
+        deposition,
+        alphadamage,
+        pr,
+        annealeddamage,
+        u,
+        vfinal,
+        β,
+        A,
+        F,
+        y,
+        step_tracer,
+        step_daughter,
+        name,
+        notes,
+    )
+end
 
 """
 ```julia
@@ -861,7 +1077,7 @@ struct ApatiteHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
     offset::T                   # [C] temperature offset relative to other samples / the surface
     height::T                   # [m] height relative to other samples / the surface
-    agesteps::V                 # [Ma] age in Ma relative to the present
+    agesteps::V                 # [Ma] sample age in millions of years before the present day
     tsteps::V                   # [Ma] forward time since crystallization
     rsteps::FloatRange          # [um] radius bin centers
     redges::FloatRange          # [um] radius bin edges
@@ -1087,7 +1303,7 @@ struct SphericalHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
     offset::T                   # [C] temperature offset relative to other samples / the surface
     height::T                   # [m] height relative to other samples / the surface
-    agesteps::V                 # [Ma] age in Ma relative to the present
+    agesteps::V                 # [Ma] sample age in millions of years before the present day
     tsteps::V                   # [Ma] forward time since crystallization
     rsteps::FloatRange          # [um] radius bin centers
     redges::FloatRange          # [um] radius bin edges
@@ -1294,7 +1510,7 @@ struct PlanarHe{T<:AbstractFloat, V<:AbstractVector{T}} <: HeliumSample{T}
     age_sigma::T                # [Ma] helium age uncertainty (one-sigma)
     offset::T                   # [C] temperature offset relative to other samples / the surface
     height::T                   # [m] height relative to other samples / the surface
-    agesteps::V                 # [Ma] age in Ma relative to the present
+    agesteps::V                 # [Ma] sample age in millions of years before the present day
     tsteps::V                   # [Ma] forward time since crystallization
     rsteps::FloatRange          # [um] halfwidth bin centers
     redges::FloatRange          # [um] halfwidth bin edges
@@ -1488,7 +1704,7 @@ struct SphericalAr{T<:AbstractFloat, V<:AbstractVector{T}} <: ArgonSample{T}
     age_sigma::T                # [Ma] Ar-40/Ar-39 age uncertainty (one-sigma)
     offset::T                   # [C] temperature offset relative to other samples / the surface
     height::T                   # [m] height relative to other samples / the surface
-    agesteps::V                 # [Ma] age in Ma relative to the present
+    agesteps::V                 # [Ma] sample age in millions of years before the present day
     tsteps::V                   # [Ma] forward time since crystallization
     rsteps::FloatRange          # [um] radius bin centers
     redges::FloatRange          # [um] radius bin edges
@@ -1647,7 +1863,7 @@ struct PlanarAr{T<:AbstractFloat, V<:AbstractVector{T}} <: ArgonSample{T}
     age_sigma::T                # [Ma] Ar-40/Ar-39 age uncertainty (one-sigma)
     offset::T                   # [C] temperature offset relative to other samples / the surface
     height::T                   # [m] height relative to other samples / the surface
-    agesteps::V                 # [Ma] age in Ma relative to the present
+    agesteps::V                 # [Ma] sample age in millions of years before the present day
     tsteps::V                   # [Ma] forward time since crystallization
     rsteps::FloatRange          # [um] halfwidth bin centers
     redges::FloatRange          # [um] halfwidth bin edges

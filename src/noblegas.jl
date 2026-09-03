@@ -55,7 +55,7 @@ function newton_age(mineral::HeliumSample)
     # Numerically solve for raw Ar age of the grain (i.e., as measured)
     return newton_he_age(μHe, μ238U, μ235U, μ232Th, μ147Sm)
 end
-function meanparent(mineral::PlanarHe)
+function meanparent(mineral::Union{PlanarHe, PlanarZirconHe})
     return (nanmean(mineral.r238U), nanmean(mineral.r235U), nanmean(mineral.r232Th), nanmean(mineral.r147Sm))
 end
 function meanparent(mineral::Union{SphericalHe, ZirconHe, ApatiteHe})
@@ -344,13 +344,13 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::Abstr
         # Convert any existing track length reduction for damage from
         # all previous timestep to an equivalent annealing time at the
         # current temperature
-        @turbo check_empty=true for j ∈ 1:i-1
+        @fast for j ∈ 1:i-1
             teq[j] = exp(C₂ + lᵢ * ((1/ρᵣ[i-1, j] - 1)^β - C₀) / C₁)
         end
 
         # Calculate the new reduced track lengths for all previous time steps
         # Accumulating annealing strictly in terms of reduced track length
-        @turbo check_empty=true for j ∈ 1:i
+        @fast for j ∈ 1:i
             ρᵣ[i,j] = 1 / ((C₀ + C₁ * (log(dt + teq[j]) - C₂) / lᵢ)^(1/β) + 1)
         end
     end
@@ -394,16 +394,16 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::Abstr
         dt = step_at(tsteps, i)
         lᵢ = log(1 / (Tsteps[i]+273.15)) - C₃
 
-        # Convert any existing track length reduction for ρᵣ from
+        # Convert any existing track length reduction for damage from
         # all previous timestep to an equivalent annealing time at the
         # current temperature
-        @turbo check_empty=true for j ∈ 1:i-1
+        @fast for j ∈ 1:i-1
             teq[j] = exp(C₂ + lᵢ * ((1/ρᵣ[i-1, j] - 1)^β - C₀) / C₁)
         end
 
         # Calculate the new reduced track lengths for all previous time steps
         # Accumulating annealing strictly in terms of reduced track length
-        @turbo check_empty=true for j ∈ 1:i
+        @fast for j ∈ 1:i
             ρᵣ[i,j] = 1 / ((C₀ + C₁ * (log(dt + teq[j]) - C₂) / lᵢ)^(1/β) + 1)
         end
     end
@@ -436,16 +436,11 @@ end
 
 """
 ```julia
-modelage(mineral::ZirconHe, Tsteps, [ρᵣ], dm::ZRDAAM)
-modelage(mineral::ApatiteHe, Tsteps, [ρᵣ], dm::RDAAM)
-modelage(mineral::SphericalHe, Tsteps, dm::Diffusivity)
-modelage(mineral::PlanarHe, Tsteps, dm::Diffusivity)
-modelage(mineral::SphericalAr, Tsteps, dm::Diffusivity)
-modelage(mineral::PlanarAr, Tsteps, dm::Diffusivity)
+modelage(mineral::NobleGasSample, Tsteps::AbstractVector, dm::DiffusivityModel, [rp::RegionalParameters])
 ```
 Calculate the predicted bulk age of a noble gas chronometer that has experienced a given 
-t-T path (specified by `tsteps_geol(mineral)` for time and `Tsteps` for temperature), 
-at a time resolution determined by `tsteps_geol(mineral)` using a Crank-Nicolson diffusion 
+t-T path (specified by `mineral.tsteps` for time and `Tsteps` for temperature), 
+at a time resolution determined by `tsteps` using a Crank-Nicolson diffusion 
 solution for a spherical (or planar slab) grain of radius (or halfwidth) `mineral.r` 
 at spatial resolution `mineral.dr`.
 

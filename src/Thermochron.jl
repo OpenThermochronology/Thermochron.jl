@@ -10,10 +10,17 @@ module Thermochron
     using Plots
     using Random
     using LinearAlgebra
-    using LoopVectorization
     using ProgressMeter: Progress, update!, finish!
     using LsqFit: curve_fit
     using LogExpFunctions: logaddexp, logsubexp, logsumexp
+    using LoopVectorization
+    macro fast(ex)
+        @static if Sys.isbsd()
+            esc(:(@turbo check_empty=true $ex))
+        else
+            esc(:(@inbounds @simd ivdep $ex))
+        end
+    end
 
     const FloatRange = typeof(1.0:1.0:10.0)
     floatrange(start, stop; length) = range(Float64(start), Float64(stop); length)
@@ -35,45 +42,52 @@ module Thermochron
     const κ40K = 1.1672e-4                  # [unitless] Garner et al., 1975 40K/K fraction
     export κ40K
     
+    # Type hierarchy, as well as some concrete types used within inversion functions
     include("types.jl")
     export Constraint, Boundary, DetailInterval, RegionalParameters     # Types used to pass information to MCMC functions
-    export Diffusivity, SDiffusivity                                    # Types for generic and scaled diffusivities
-    export MDiffusivity, MSDiffusivity, MultipleDiffusivity             # Types for multiple diffusivities
     
+    # Chronometers objects used to represent different types of sample/measurement
     include("chronometers.jl")
     export Chronometer, AbsoluteChronometer                             # Abstract types
     export ZirconTrackLength, MonaziteTrackLength, ApatiteTrackLength, ApatiteTrackLengthOriented   # Concrete fission track length types
     export ZirconFT, MonaziteFT, ApatiteFT                              # Concrete fission track types
-    export VitriniteRo                                                  # Concrete vitrinite reflectance types
-    export SphericalHe, PlanarHe, ZirconHe, ApatiteHe                   # Concrete U-Th/He types
+    export VitriniteRo                                                  # Concrete vitrinite reflectance type
+    export SphericalHe, PlanarHe, ZirconHe, ApatiteHe, PlanarZirconHe   # Concrete U-Th-[Sm]/He types
     export SphericalAr, PlanarAr                                        # Concrete K/Ar types
-    export get_age, get_age_sigma, empiricaluncertainty!, eU, radius    # Functions
-    const PlanarNobleGas{T} = Union{PlanarHe{T}, PlanarAr{T}}
-    const SphericalNobleGas{T} = Union{ZirconHe{T},ApatiteHe{T},SphericalHe{T},SphericalAr{T}}
+    export get_age, get_age_sigma, empiricaluncertainty!, eU, radius    # Utility functions
+    const PlanarNobleGas{T} = Union{PlanarZirconHe{T}, PlanarHe{T}, PlanarAr{T}}
+    const SphericalNobleGas{T} = Union{ZirconHe{T}, ApatiteHe{T}, SphericalHe{T}, SphericalAr{T}}
 
+    # Noble gas diffusion thermochronology functions and diffusivity/annealing models
     include("noblegas.jl")
     include("stepheating.jl")
     include("diffusion.jl")
+    export Diffusivity, SDiffusivity                                    # Types for generic and scaled diffusivities
+    export MDiffusivity, MSDiffusivity                                  # Types for multiple diffusivities
     export ZirconHeliumModel, ZRDAAM, ApatiteHeliumModel, RDAAM         # Damage-and-annealing based helium diffusivity model types
     export SingleDomain, MultipleDomain                                 # Types for modelling step-heating data, with one or more diffusion domains 
     export diffusivity                                                  # Function to calculate diffusivity at given temperature (and damage) for any DiffusivityModel
 
+    # Fission track thermochronology functions and annealing models
     include("fissiontrack.jl")
     export Ketcham1999FC, Ketcham2007FC                                 # Apatite fission track annealing model types
     export Yamada2007PC, Guenthner2013FC                                # Zircon fission track annealing models
     export Jones2021FA                                                  # Other mineral annealing models
     export modelage, modellength, anneal!                               # Functions
-    include("vitrinite.jl")
-    export NielsenBasinRo
 
+    # Vitrinite reflectance thermochronology functions and annealing models
+    include("vitrinite.jl")
+    export NielsenBasinRo                                               # Vitrinite reflectance annealing models
+
+    # Sample import
     include("parsing.jl")
     export chronometers, checktimediscretization                        # Parse datasets into Chronometer objects
 
+    # Inversion
     include("utilities.jl")
     include("inversion.jl")
-    export MCMC, MCMC_varkinetics, model, model!                        # Functions
-
     include("show.jl")
+    export MCMC, MCMC_varkinetics, model, model!                        # Inversion functions
 
     # Methodless functions for plotting extensions
     function ageeuplot end

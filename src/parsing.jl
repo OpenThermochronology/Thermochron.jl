@@ -98,6 +98,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
         first_index = findclosest(crystage[i], global_agesteps)
         agesteps = global_agesteps[first_index:end]
         mineral = lowercase(string(ds.mineral[i]))
+        geometry = haskey(ds, :geometry) ? lowercase(string(ds.geometry[i])) : ""
         offset = (haskey(ds, :offset_C) && !isnan(ds.offset_C[i])) ? ds.offset_C[i] : 0
         height = (haskey(ds, :height_m) && !isnan(ds.height_m[i])) ? ds.height_m[i] : 0
         name = (haskey(ds, :grain_name) && ds.grain_name[i]==ds.grain_name[i]) ? string(ds.grain_name[i]) : ""
@@ -119,18 +120,30 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
         if mineral === "zircon"
             # Zircon helium
             if haskey(ds, :raw_He_age_Ma) && haskey(ds, :raw_He_age_sigma_Ma) && (0 < ds.raw_He_age_sigma_Ma[i]/ds.raw_He_age_Ma[i])
-                # Modern format
-                c = ZirconHe(T;
-                    age = ds.raw_He_age_Ma[i],
-                    age_sigma = ds.raw_He_age_sigma_Ma[i],
-                    r = ds.halfwidth_um[i],
-                    dr, offset, height,
-                    U238, Th232, Sm147,
-                    U238_matrix, Th232_matrix, Sm147_matrix,
-                    grainsize_matrix,
-                    agesteps, name, notes,
-                    volumeweighting = zirconvolumeweighting,
-                )
+                c = if (geometry == "slab") || (geometry == "planar")
+                    PlanarZirconHe(T;
+                        age = ds.raw_He_age_Ma[i],
+                        age_sigma = ds.raw_He_age_sigma_Ma[i],
+                        r = ds.halfwidth_um[i],
+                        dr, offset, height,
+                        U238, Th232, Sm147,
+                        U238_matrix, Th232_matrix, Sm147_matrix,
+                        grainsize_matrix,
+                        agesteps, name, notes,
+                    )
+                else
+                    ZirconHe(T;
+                        age = ds.raw_He_age_Ma[i],
+                        age_sigma = ds.raw_He_age_sigma_Ma[i],
+                        r = ds.halfwidth_um[i],
+                        dr, offset, height,
+                        U238, Th232, Sm147,
+                        U238_matrix, Th232_matrix, Sm147_matrix,
+                        grainsize_matrix,
+                        agesteps, name, notes,
+                        volumeweighting = zirconvolumeweighting,
+                    )
+                end
                 push!(chrons, c)
                 push!(damodels, zdm)
             end
@@ -291,7 +304,6 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
             push!(damodels, NielsenBasinRo())
         end
         if haskey(ds, :D0_cm_2_s) && haskey(ds, :Ea_kJ_mol) && (0 < ds.D0_cm_2_s[i]) && (0 < ds.Ea_kJ_mol[i])
-            geometry = haskey(ds, :geometry) ? lowercase(string(ds.geometry[i])) : ""
             dm = Diffusivity(
                 D0 = T(ds.D0_cm_2_s[i]),
                 D0_logsigma = T((haskey(ds, :D0_logsigma) && !isnan(ds.D0_logsigma[i])) ? ds.D0_logsigma[i] : log(2)/2),
@@ -345,7 +357,6 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
         end
         if !isempty(Ar_step_heating_file) && Ar_step_heating_file==Ar_step_heating_file
             dds = importdataset(Ar_step_heating_file, importas=:Tuple)
-            geometry = haskey(ds, :geometry) ? lowercase(string(ds.geometry[i])) : ""
             DomainType = if (geometry == "slab") || (geometry == "planar")
                 PlanarAr
             elseif (geometry === "spherical")
@@ -424,11 +435,14 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
         end
         if !isempty(He_step_heating_file) && He_step_heating_file==He_step_heating_file
             dds = importdataset(He_step_heating_file, importas=:Tuple)
-            geometry = haskey(ds, :geometry) ? lowercase(string(ds.geometry[i])) : ""
             DomainType = if mineral === "apatite"
                 ApatiteHe
             elseif mineral === "zircon"
-                ZirconHe
+                if (geometry === "slab") || (geometry === "planar")
+                    PlanarZirconHe
+                else
+                    ZirconHe
+                end
             elseif (geometry === "slab") || (geometry === "planar")
                 PlanarHe
             elseif (geometry === "spherical")
