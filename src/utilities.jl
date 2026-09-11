@@ -1,5 +1,18 @@
 ## ---  Various useful internal utility functions
 
+    # As Base.diff(x), but returning a vector dx the same length as x
+    # assuming the an implicit initial value before first(x) is zero.
+    function diffzerofirst(x::AbstractArray{T}) where {T}
+        dx = similar(x)
+        xᵢ₋₁ = zero(T)
+        @inbounds for i in eachindex(x, dx)
+            xᵢ = x[i]
+            dx[i] = xᵢ - xᵢ₋₁
+            xᵢ₋₁ = xᵢ
+        end
+        return dx
+    end
+
     # This is not public API and so may be liable to change in future Julia versions
     # but can seemingly mean a factor of two in performance over using `step` function 
     # according to benchmarks based on use of `step_at` in this package

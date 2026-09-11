@@ -2220,21 +2220,21 @@ Base.eltype(x::MultipleDomain{T,C}) where {T,C} = C
 Base.eltype(x::SingleDomain{T,C}) where {T,C} = C
 
 # Retrive the nominal value (age, length, etc) of any Chronometer
-value(x::AbsoluteChronometer{T}) where {T} = x.age::T
-value(x::StepHeatingSample{T}) where {T} = nanmean(x.step_age, @.(x.fit/x.step_age_sigma^2))::T
-value(x::FissionTrackLength{T}) where {T} = x.length::T
-value(x::ApatiteTrackLengthOriented{T}) where {T} = x.lcmod::T
-value(x::VitriniteRo{T}) where {T} = x.Ro::T
+Isoplot.value(x::AbsoluteChronometer{T}) where {T} = x.age::T
+Isoplot.value(x::StepHeatingSample{T}) where {T} = nanmean(x.step_age, @.(x.fit/x.step_age_sigma^2))::T
+Isoplot.value(x::FissionTrackLength{T}) where {T} = x.length::T
+Isoplot.value(x::ApatiteTrackLengthOriented{T}) where {T} = x.lcmod::T
+Isoplot.value(x::VitriniteRo{T}) where {T} = x.Ro::T
 function val(x::Chronometer)
     @warn "Thermochron.val has been deprecated in favor of Thermochron.value"
     value(x)
 end
 
 # Retrive the nominal 1-sigma uncertainty (in age, length, etc.) of any Chronometer
-stdev(x::AbsoluteChronometer{T}) where {T} = x.age_sigma::T
-stdev(x::StepHeatingSample{T}) where {T} = nanstd(x.step_age, @.(x.fit/x.step_age_sigma^2))::T
-stdev(x::FissionTrackLength{T}) where {T} = zero(T)
-stdev(x::VitriniteRo{T}) where {T} = x.Ro_sigma::T
+Isoplot.stdev(x::AbsoluteChronometer{T}) where {T} = x.age_sigma::T
+Isoplot.stdev(x::StepHeatingSample{T}) where {T} = nanstd(x.step_age, @.(x.fit/x.step_age_sigma^2))::T
+Isoplot.stdev(x::FissionTrackLength{T}) where {T} = zero(T)
+Isoplot.stdev(x::VitriniteRo{T}) where {T} = x.Ro_sigma::T
 function err(x::Chronometer)
     @warn "Thermochron.err has been deprecated in favor of Thermochron.stdev"
     stdev(x)

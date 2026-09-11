@@ -4,8 +4,10 @@ module Thermochron
     @reexport using Distributions
     @reexport using NaNStatistics
     @reexport using StatGeochemBase
+    @reexport using Isoplot
     import StatGeochemBase.image_from_paths
     import StatGeochemBase.image_from_paths!
+    using Measurements: Measurement, ±
 
     using Plots
     using Random
@@ -67,7 +69,8 @@ module Thermochron
     export ZirconHeliumModel, ZRDAAM, ApatiteHeliumModel, RDAAM         # Damage-and-annealing based helium diffusivity model types
     export SingleDomain, MultipleDomain                                 # Types for modelling step-heating data, with one or more diffusion domains 
     export diffusivity                                                  # Function to calculate diffusivity at given temperature (and damage) for any DiffusivityModel
-
+    export arrhenius, Arrhenius                                         # Function and type for fitting Arrhenius trends to step heating experiments
+    
     # Fission track thermochronology functions and annealing models
     include("fissiontrack.jl")
     export Ketcham1999FC, Ketcham2007FC                                 # Apatite fission track annealing model types

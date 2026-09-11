@@ -1,3 +1,103 @@
+## --- Generating and fitting Arrhenius trends from step heating data
+
+# Type to hold a single Arrhenius fit and the data behind it
+struct Arrhenius{T}
+    logD_a2::Vector{Measurement{T}}
+    invTK::Vector{Measurement{T}}
+    fit::BitVector
+    a::Measurement{T}
+    yf::YorkFit{T}
+    logD0::Measurement{T}
+    D0::Measurement{T}
+    Ea::Measurement{T}
+    name::String
+    notes::String
+end
+
+function arrhenius(c::SingleDomain{T}; 
+        time_sigma = 0.1, 
+        temperature_sigma = 1.0,
+        halfwidth_sigma = 2.0,
+        degassing_relsigma_fallback = 0.025
+    ) where {T}
+    # Calculate cumulative fractions, with complete uncertainties
+    f_step_mu = diffzerofirst(c.fraction_experimental)
+    f_step_sigma = c.fraction_experimental_sigma
+    for i in eachindex(f_step_sigma)
+        if isnan(f_step_sigma[i])
+            f_step_sigma[i] = f_step_mu[i] * T(degassing_relsigma_fallback)
+        end
+    end
+    f_step = f_step_mu .± f_step_sigma
+    f_cum = cumsum(f_step)
+    f_cum ./= last(f_cum)   # Propagate uncertainties associated with normalization
+
+    # Calculate durations and inverse temperatures, with uncertainties
+    duration = diffzerofirst(c.tsteps_experimental) .± T(time_sigma)
+    invTK = one(T) ./ ((c.Tsteps_experimental .+ 273.15) .± T(temperature_sigma))
+
+    # Calculate log(D/a^2), with uncertainty
+    # for geometry appropriate to c.domain
+    logD_a2 = diffusivity_from_degassing(c.domain, f_cum, duration)
+
+    # Domain size, with uncertainty, in cm (converting from μm)
+    a = (radius(c) ± halfwidth_sigma) / 10_000
+
+    # York fit
+    yf = yorkfit(invTK[c.fit], logD_a2[c.fit])
+    logD0 = yf.intercept + log(a^2)
+    D0 = exp(logD0)
+    Ea = -yf.slope * 0.008314472
+
+    return Arrhenius{T}(
+        logD_a2,
+        invTK,
+        c.fit,
+        a,
+        yf,
+        logD0,
+        D0,
+        Ea,
+        c.name,
+        c.notes
+    )
+end
+
+function diffusivity_from_degassing(::PlanarNobleGas, f_cum::AbstractArray{T}, duration::AbstractArray{T}) where {T}
+    # Calculate log(D/a^2), with uncertainty
+    # for an infinite plane sheet
+    logD_a2 = similar(f_cum)
+    fᵢ₋₁ = zero(T)
+    for i in eachindex(f_cum, duration, logD_a2)
+        fᵢ = f_cum[i]
+        D_a2 = if value(fᵢ) < 0.525
+            π / (4 * duration[i]) * (fᵢ^2 - fᵢ₋₁^2) 
+        else
+            -4 / (π * duration[i]) * log((1 - fᵢ) / (1 - fᵢ₋₁))
+        end
+        logD_a2[i] = log(D_a2)
+        fᵢ₋₁ = fᵢ
+    end
+    return logD_a2
+end
+function diffusivity_from_degassing(::SphericalNobleGas, f_cum::AbstractArray{T}, duration::AbstractArray{T}) where {T}
+    # Calculate log(D/a^2), with uncertainty
+    # for an infinite plane sheet
+    logD_a2 = similar(f_cum)
+    fᵢ₋₁ = zero(T)
+    for i in eachindex(f_cum, duration, logD_a2)
+        fᵢ = f_cum[i]
+        D_a2 = if value(fᵢ) <= 0.85
+            (-1/3 * (fᵢ - fᵢ₋₁) - 2/π * (sqrt(1 - π/3*fᵢ) - sqrt(1 - π/3*fᵢ₋₁))) / duration[i]
+        else
+            -log((1 - fᵢ)/(1 - fᵢ₋₁)) / (π^2 * duration[i])
+        end
+        logD_a2[i] = log(D_a2)
+        fᵢ₋₁ = fᵢ
+    end
+    return logD_a2
+end
+
 ## --- Step heating diffusivity types
 
 """

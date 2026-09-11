@@ -292,7 +292,7 @@ function anneal!(data::AbstractVector{<:Chronometer{T}}, ::Type{C}, tsteps::Abst
     end
     return data
 end
-function anneal!(mineral::Union{ZirconHe, ApatiteHe}, Tsteps::AbstractVector, pr::AbstractMatrix)
+function anneal!(mineral::Union{PlanarZirconHe, ZirconHe, ApatiteHe}, Tsteps::AbstractVector, pr::AbstractMatrix)
     ntsteps = length(axes(pr, 1))
     first_index = firstindex(pr) + ntsteps - length(tsteps_geol(mineral))
     if first_index > 1
@@ -312,7 +312,7 @@ function anneal!(mineral::MultipleDomain, Tsteps::AbstractVector, prdm)
     end
     return c₀
 end
-function anneal!(mineral::ZirconHe, Tsteps::AbstractVector, dm::ZRDAAM)
+function anneal!(mineral::Union{PlanarZirconHe, ZirconHe}, Tsteps::AbstractVector, dm::ZRDAAM)
     anneal!(mineral.pr, view(mineral.annealeddamage,:,1), tsteps_geol(mineral), Tsteps, dm)
     mul!(mineral.annealeddamage, mineral.pr, mineral.alphadamage)
     return mineral

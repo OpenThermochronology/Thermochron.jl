@@ -26,7 +26,7 @@ module PlotsExt
 
     # Error boxes for Ar-Ar age spectra
     Thermochron.errorbox(xc::AbstractVector, y::AbstractVector, t::BitVector=trues(length(y)); kwargs...) = errorbox!(plot(), xc, y, t; kwargs...)
-    function Thermochron.errorbox!(h::Union{Plots.Plot, Plots.Subplot}, xc::AbstractVector, y::AbstractVector, t::BitVector=trues(length(y)); yerror::AbstractVector=zeros(size(x)), startvalue=0, framestyle=:box, label="", kwargs...)
+    function Thermochron.errorbox!(hdl::Union{Plots.Plot, Plots.Subplot}, xc::AbstractVector, y::AbstractVector, t::BitVector=trues(length(y)); yerror::AbstractVector=zeros(size(x)), startvalue=0, framestyle=:box, label="", kwargs...)
         @assert eachindex(y) == eachindex(yerror) == eachindex(t)
         @assert (eachindex(xc) == eachindex(y)) || eachindex(xc)==firstindex(y):lastindex(y)+1
         length(xc) == length(y) && (xc = [startvalue; xc])
@@ -37,22 +37,22 @@ module PlotsExt
                 xl .= (xc[i], xc[i], xc[i+1], xc[i+1], xc[i])
                 yl .= (y[i]-yerror[i], y[i]+yerror[i], y[i]+yerror[i], y[i]-yerror[i], y[i]-yerror[i])
                 s = Shape(xl, yl)
-                plot!(h, s; framestyle, label=(labelled ? "" : label), kwargs...)
+                plot!(hdl, s; framestyle, label=(labelled ? "" : label), kwargs...)
                 labelled = true
             end
         end
-        return h
+        return hdl
     end
     Thermochron.errorbox(c::Union{SingleDomain,MultipleDomain}; kwargs...) = errorbox!(plot(), c; kwargs...)
-    function Thermochron.errorbox!(h::Union{Plots.Plot, Plots.Subplot}, c::Union{SingleDomain,MultipleDomain}; fillalpha=0.5, excludedalpha=0.15, color=:black, kwargs...)
-        errorbox!(h, c.fraction_experimental, c.step_age, c.fit;
+    function Thermochron.errorbox!(hdl::Union{Plots.Plot, Plots.Subplot}, c::Union{SingleDomain,MultipleDomain}; fillalpha=0.5, excludedalpha=0.15, color=:black, kwargs...)
+        errorbox!(hdl, c.fraction_experimental, c.step_age, c.fit;
             yerror = 2*c.step_age_sigma,
             label = "Data (2σ analytical)",
             color, 
             fillalpha,
             kwargs...
         )
-        errorbox!(h, c.fraction_experimental, c.step_age;
+        errorbox!(hdl, c.fraction_experimental, c.step_age;
             yerror = 2*c.step_age_sigma,
             label = "Data (excluded)",
             color,
@@ -167,6 +167,29 @@ module PlotsExt
         return plot(hd, he; layout, size, title, kwargs...)
     end
 
+    # Arrhenius trends
+    Plots.plot(ar::Arrhenius; framestyle=:box, kwargs...) = plot!(plot(), ar; framestyle, kwargs...)
+    for P in (Plots.Plot, Plots.Subplot)
+        @eval function Plots.plot!(hdl::($P), ar::Arrhenius; annotatesteps=false, title=ar.name, xlabel="1/T [1/K]", ylabel="ln(D/a²) [ln(1/s)]", framestyle=:box, color=:black, kwargs...)
+            # Plot fitted data
+            fit = ar.fit
+            scatter!(hdl, ar.invTK[fit], ar.logD_a2[fit]; label="Data", title, xlabel, ylabel, framestyle, color, kwargs...)
+            # Plot all other valid data
+            valid = .!(isnan.(ar.invTK) .| isnan.(ar.logD_a2) .| isinf.(ar.logD_a2))
+            scatter!(hdl, ar.invTK[valid], ar.logD_a2[valid]; label="Data (excluded)", alpha=0.1, color, kwargs...)
+            if annotatesteps
+                annotate!(hdl, value.(ar.invTK[valid]), value.(ar.logD_a2[valid]), text.(" " .* string.(findall(valid)), 6, :helvetica, :grey, :bottom, :left,))
+            end
+            # Plot and annotate York fit
+            plot!(hdl, ar.yf, color=:blue, label="York fit")
+            ln_D0_a2 = ar.yf.intercept
+            ln_D0 = ln_D0_a2 + log(ar.a^2)
+            ann = text(" MSWD = $(round(ar.yf.mswd, digits=2))\n Ea = $(ar.Ea) [kJ/mol]\n D0 = $(ar.D0) [cm²/s]\n ln(D0) = $ln_D0 [ln(cm²/s)]\n ln(D0/a²) = $ln_D0_a2 [ln(1/s)]", :blue, 9, :bottom, :left)
+            annotate!(hdl, [first(xlims(hdl))], [first(ylims(hdl))], ann)
+            return hdl
+        end
+    end
+
     # Constraint boxes
     lowerbound(x::Uniform) = x.a
     lowerbound(x::Distribution) = quantile(x, 0.025)
@@ -175,12 +198,12 @@ module PlotsExt
 
     Plots.plot(c::Constraint; framestyle=:box, kwargs...) = plot!(plot(), c; framestyle, kwargs...)
     for P in (Plots.Plot, Plots.Subplot)
-        @eval function Plots.plot!(hdl::($P), c::Constraint; framestyle=:box, lw=2, fillalpha=0.1, color=:black, label="Constraints", kwargs...)
+        @eval function Plots.plot!(hdl::($P), c::Constraint; lw=2, fillalpha=0.1, color=:black, label="Constraints", kwargs...)
             for i in eachindex(c.agedist, c.Tdist)
                 t, T = c.agedist[i], c.Tdist[i]
                 x = [lowerbound(t), upperbound(t), upperbound(t), lowerbound(t)]
                 y = [upperbound(T), upperbound(T), lowerbound(T), lowerbound(T)]
-                plot!(hdl, Shape(x, y); framestyle, lw, fillalpha, color, label, kwargs...)
+                plot!(hdl, Shape(x, y); lw, fillalpha, color, label, kwargs...)
                 label = ""
             end
             return hdl

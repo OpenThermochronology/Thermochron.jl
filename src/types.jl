@@ -195,7 +195,7 @@ struct TTPath{T<:AbstractFloat, V<:AbstractVector{T}}
     boundary::Boundary{T}
     detail::DetailInterval{T}
 end
-function TTPath(agesteps::AbstractVector{T}, constraint::Constraint{T}, boundary::Boundary{T}, detail::DetailInterval{T}, maxpoints::Int) where {T}
+function TTPath(agesteps::V, constraint::Constraint{T}, boundary::Boundary{T}, detail::DetailInterval{T}, maxpoints::Int) where {T<:AbstractFloat, V<:AbstractVector{T}}
     # Discretized temperature
     Tsteps = zeros(T, length(agesteps))
     knot_index = zeros(Int, length(agesteps))
@@ -216,7 +216,7 @@ function TTPath(agesteps::AbstractVector{T}, constraint::Constraint{T}, boundary
     totalpoints = maxpoints + boundary.npoints + constraint.npoints
     agepointbuffer = similar(agepoints, totalpoints)
     Tpointbuffer = similar(agepoints, totalpoints)
-    TTPath(
+    TTPath{T, V}(
         agesteps,
         Tsteps,
         agepoints,
