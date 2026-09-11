@@ -2,9 +2,9 @@
 
     # As Base.diff(x), but returning a vector dx the same length as x
     # assuming the an implicit initial value before first(x) is zero.
-    function diffzerofirst(x::AbstractArray{T}) where {T}
+    function diffwithinitial(x::AbstractArray{T}, initial=zero(T)) where {T}
         dx = similar(x)
-        xᵢ₋₁ = zero(T)
+        xᵢ₋₁ = initial
         @inbounds for i in eachindex(x, dx)
             xᵢ = x[i]
             dx[i] = xᵢ - xᵢ₋₁
@@ -39,7 +39,7 @@
     @inline step_at(x::Union{OrdinalRange, StepRangeLen}, ::Integer) = step_fast(x)
 
     # Bounding nodes at a given index
-    function bounds_at(x::AbstractVector{T}, i::Integer) where {T<:Number}
+    function bounds_at(x::AbstractVector{T}, i::Integer) where {T<:Real}
         length(x) > 1 || return typemin(T), typemax(T)
         imin,imax = firstindex(x), lastindex(x)
         if imin < i <= imax
@@ -63,10 +63,10 @@
         end
         return true
     end
-    function isdistinct(points::AbstractArray, k::Int, nodes::AbstractArray, npoints::Int=length(points))
+    function isdistinct(points::AbstractArray, k::Int, nodes::AbstractVector, npoints::Int=length(points))
         @assert k ∈ eachindex(points)
         length(points) > 1 || return false
-        i = searchsortedfirst(nodes, points[k], rev=(last(nodes)<first(nodes)))
+        i = searchsortedfirst(nodes, points[k], rev=(last(nodes)<first(nodes)))::Integer
         l, u = bounds_at(nodes, i)
         notused = max(length(points)-npoints, 0)
         @inbounds for i in Iterators.drop(reverse(eachindex(points)), notused)
@@ -78,7 +78,7 @@
     end
 
     # Calculate the number of distinct points in a list (i.e., separated by at least one node)
-    function pointsininterval(points::AbstractArray, npoints::Int, lower::Number, upper::Number, nodes::AbstractArray)
+    function pointsininterval(points::AbstractArray, npoints::Int, lower::Number, upper::Number, nodes::AbstractVector)
         @assert firstindex(points) == 1
         @assert npoints <= lastindex(points)
         n = 0
@@ -188,7 +188,7 @@
     that intersects the interior of a sphere s₁ of radius `r₁` if the two are
     separated by distance `d`.
     """
-    function sphereintersectionfraction(r₁::T, r₂::T, d::T) where T <: AbstractFloat
+    function sphereintersectionfraction(r₁::T, r₂::T, d::T) where {T<:AbstractFloat}
         # Let r₁ and r₂ be the radii of two spheres s₁ and s₂, separated by distance d
         @assert (r₁ >= 0) &&  (r₂ >= 0)
         d = abs(d)
@@ -223,7 +223,7 @@
     that intersects the interior of a planar slab p of halfwidth `rₚ` if the two are
     separated by distance `d`.
     """
-    function slabsphereintersectionfraction(rₚ::T, rₛ::T, d::T) where T <: AbstractFloat
+    function slabsphereintersectionfraction(rₚ::T, rₛ::T, d::T) where {T<:AbstractFloat}
         # Let rₚ be the halfwidth of a planar slab and rₛ the radius of a sphere
         # separated by distance d
         @assert (rₚ >= 0) && (rₛ >= 0)
@@ -452,7 +452,7 @@
                     ll += logccdf(d, δᵢ)
                     if δᵢ > (μ + maxsigma*σ)
                         # Firm cap at some number standard deviations above the mean
-                        ll -= maxintfloat(T)
+                        ll -= maxintfloat(float(T))
                     end
                 end
                 last = x[i]
@@ -855,7 +855,7 @@
 
     # Adjust kinetic models
     movekinetics(rng::AbstractRNG, dm::Model, p=0.5) = dm
-    function movekinetics(rng::AbstractRNG, rp::RegionalParameters{T}, p=0.5) where {T}
+    function movekinetics(rng::AbstractRNG, rp::RegionalParameters{T}, p=0.5) where {T<:AbstractFloat}
         RegionalParameters(;
             geotherm = (rand(rng)<p) ? exp(log(rp.geotherm)+randn(rng, T)*rp.geotherm_logsigma/4) : rp.geotherm,
             geotherm_logsigma = rp.geotherm_logsigma,
@@ -867,7 +867,7 @@
             Ea_lambda_logsigma = rp.Ea_lambda_logsigma,
         )
     end
-    function movekinetics(rng::AbstractRNG, zdm::ZRDAAM{T}, p=0.5) where {T}
+    function movekinetics(rng::AbstractRNG, zdm::ZRDAAM{T}, p=0.5) where {T<:AbstractFloat}
         ZRDAAM(;
             Ea_z = (rand(rng)<p) ? zdm.Ea_z+randn(rng, T)*zdm.Ea_z_sigma/2 : zdm.Ea_z,
             Ea_z_sigma = zdm.Ea_z_sigma,
@@ -881,7 +881,7 @@
             rmin_sigma = zdm.rmin_sigma,
         )
     end
-    function movekinetics(rng::AbstractRNG, adm::RDAAM{T}, p=0.5) where {T}
+    function movekinetics(rng::AbstractRNG, adm::RDAAM{T}, p=0.5) where {T<:AbstractFloat}
         rmr0 = (rand(rng)<p) ? reflecting(adm.rmr0 + randn(rng, T)*adm.rmr0_sigma/2, 0, 1) : adm.rmr0
         RDAAM(;
             D0_L = (rand(rng)<p) ? exp(log(adm.D0_L)+randn(rng, T)*adm.D0_L_logsigma/2) : adm.D0_L,
@@ -895,7 +895,7 @@
             kappa = adm.kappa_rmr0 - rmr0,
         )
     end
-    function movekinetics(rng::AbstractRNG, dm::Diffusivity{T}, p=0.5) where {T}
+    function movekinetics(rng::AbstractRNG, dm::Diffusivity{T}, p=0.5) where {T<:AbstractFloat}
         Diffusivity(;
             D0 = (rand(rng)<p) ? exp(log(dm.D0)+randn(rng, T)*dm.D0_logsigma/2) : dm.D0,
             D0_logsigma = dm.D0_logsigma,
@@ -903,7 +903,7 @@
             Ea_logsigma = dm.Ea_logsigma,
         )
     end
-    function movekinetics(rng::AbstractRNG, dm::MDiffusivity{T,N}, p=0.5) where {T,N}
+    function movekinetics(rng::AbstractRNG, dm::MDiffusivity{T,N}, p=0.5) where {T<:AbstractFloat,N}
         MDiffusivity(;
             D0 = ((rand(rng)<p) ? @.(exp(log(dm.D0)+(rand(rng)<2/N)*randn(rng, T)*dm.D0_logsigma/4)) : dm.D0),
             D0_logsigma = dm.D0_logsigma,

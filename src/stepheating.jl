@@ -21,7 +21,7 @@ function arrhenius(c::SingleDomain{T};
         degassing_relsigma_fallback = 0.025
     ) where {T}
     # Calculate cumulative fractions, with complete uncertainties
-    f_step_mu = diffzerofirst(c.fraction_experimental)
+    f_step_mu = diffwithinitial(c.fraction_experimental)
     f_step_sigma = c.fraction_experimental_sigma
     for i in eachindex(f_step_sigma)
         if isnan(f_step_sigma[i])
@@ -33,7 +33,7 @@ function arrhenius(c::SingleDomain{T};
     f_cum ./= last(f_cum)   # Propagate uncertainties associated with normalization
 
     # Calculate durations and inverse temperatures, with uncertainties
-    duration = diffzerofirst(c.tsteps_experimental) .± T(time_sigma)
+    duration = diffwithinitial(c.tsteps_experimental) .± T(time_sigma)
     invTK = one(T) ./ ((c.Tsteps_experimental .+ 273.15) .± T(temperature_sigma))
 
     # Calculate log(D/a^2), with uncertainty
@@ -64,16 +64,18 @@ function arrhenius(c::SingleDomain{T};
 end
 
 function diffusivity_from_degassing(::PlanarNobleGas, f_cum::AbstractArray{T}, duration::AbstractArray{T}) where {T}
-    # Calculate log(D/a^2), with uncertainty
-    # for an infinite plane sheet
+    # Calculate log(D/a^2) (with uncertainty if using Measurements)
+    # for an infinite plane sheet, given standard analytical solutions
+    # as in equations 23 and 25 of Ginster and Reiners, 2018
+    # c.f. Table 5.1 of McDougall and Harrison, 1988
     logD_a2 = similar(f_cum)
     fᵢ₋₁ = zero(T)
     for i in eachindex(f_cum, duration, logD_a2)
         fᵢ = f_cum[i]
         D_a2 = if value(fᵢ) < 0.525
-            π / (4 * duration[i]) * (fᵢ^2 - fᵢ₋₁^2) 
+            π / (4 * duration[i]) * (fᵢ^2 - fᵢ₋₁^2) # Eq. 23, G&R 2018
         else
-            -4 / (π * duration[i]) * log((1 - fᵢ) / (1 - fᵢ₋₁))
+            -4 / (π * duration[i]) * log((1 - fᵢ) / (1 - fᵢ₋₁))  # Eq. 25, G&R 2018
         end
         logD_a2[i] = log(D_a2)
         fᵢ₋₁ = fᵢ
@@ -81,16 +83,18 @@ function diffusivity_from_degassing(::PlanarNobleGas, f_cum::AbstractArray{T}, d
     return logD_a2
 end
 function diffusivity_from_degassing(::SphericalNobleGas, f_cum::AbstractArray{T}, duration::AbstractArray{T}) where {T}
-    # Calculate log(D/a^2), with uncertainty
-    # for an infinite plane sheet
+    # Calculate log(D/a^2) (with uncertainty if using Measurements)
+    # for a sphere, given standard analytical solutions
+    # as in equations 31 and 33 of Ginster and Reiners, 2018
+    # c.f. Table 5.1 of McDougall and Harrison, 1988
     logD_a2 = similar(f_cum)
     fᵢ₋₁ = zero(T)
     for i in eachindex(f_cum, duration, logD_a2)
         fᵢ = f_cum[i]
         D_a2 = if value(fᵢ) <= 0.85
-            (-1/3 * (fᵢ - fᵢ₋₁) - 2/π * (sqrt(1 - π/3*fᵢ) - sqrt(1 - π/3*fᵢ₋₁))) / duration[i]
+            (-1/3 * (fᵢ - fᵢ₋₁) - 2/π * (sqrt(1 - π/3*fᵢ) - sqrt(1 - π/3*fᵢ₋₁))) / duration[i] # Eq 31, G&R 2018
         else
-            -log((1 - fᵢ)/(1 - fᵢ₋₁)) / (π^2 * duration[i])
+            -log((1 - fᵢ)/(1 - fᵢ₋₁)) / (π^2 * duration[i]) # Eq 33, G&R 2018
         end
         logD_a2[i] = log(D_a2)
         fᵢ₋₁ = fᵢ
