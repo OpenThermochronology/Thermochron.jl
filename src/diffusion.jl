@@ -103,12 +103,16 @@ function updatebeta!(β::Vector{T}, mineral::Union{ZirconHe{T}, PlanarZirconHe{T
     DN17 = D0_N17 * exp(-Ea_N17 / (R * TK)) * diffusivityratio # [micron^2/sec
 
     # Each radial step except first and latst
-    @fast for k in Base.OneTo(nrsteps-2)
-        bα = Ba * annealeddamage[damagestep,k]          # Alpha damage
-        fₐ = 1-exp(-bα*ϕ)                               # Fraction amorphous
-        τ = (lint₀/(4.2 / ((1-exp(-bα)) * SV) - 2.5))^2 # Tortuosity
-        De = 1 / ((1-fₐ)^3 / (Dz/τ) + fₐ^3 / DN17)      # Effective diffusivity
-        β[k+1] = 2 * dr^2 / (De*dt) # Shifted by 1 because β[1] is implicit point at negative radius
+    @inbounds for k in Base.OneTo(nrsteps-2)
+        if k > 1 && annealeddamage[damagestep,k] == annealeddamage[damagestep,k-1]
+            β[k+1] = β[k]
+        else
+            bα = Ba * annealeddamage[damagestep,k]          # Alpha damage
+            fₐ = 1-exp(-bα*ϕ)                               # Fraction amorphous
+            τ = (lint₀/(4.2 / ((1-exp(-bα)) * SV) - 2.5))^2 # Tortuosity
+            De = 1 / ((1-fₐ)^3 / (Dz/τ) + fₐ^3 / DN17)      # Effective diffusivity
+            β[k+1] = 2 * dr^2 / (De*dt) # Shifted by 1 because β[1] is implicit point at negative radius
+        end
     end
     # First and last radial step
     β[1] = β[2]
@@ -155,11 +159,15 @@ function updatebeta!(β::Vector{T}, mineral::ApatiteHe{T}, dm::RDAAM{T}, dt::T, 
     Dtrap = exp( Ea_trap / (R * TK)) # [unitless]
 
     # Each radial step except first and latst
-    @fast for k in Base.OneTo(nrsteps-2)
-        track_density = annealeddamage[damagestep, k]*damage_conversion # [cm/cm3]
-        trap = (Ψ*track_density + Ω*track_density^3)*Dtrap
-        De = DL/(trap+1) # [micron^2/t]
-        β[k+1] = 2 * dr^2 / (De*dt)
+    @inbounds for k in Base.OneTo(nrsteps-2)
+        if k > 1 && annealeddamage[damagestep,k] == annealeddamage[damagestep,k-1]
+             β[k+1] = β[k]
+        else
+            track_density = annealeddamage[damagestep,k]*damage_conversion # [cm/cm3]
+            trap = (Ψ*track_density + Ω*track_density^3)*Dtrap
+            De = DL/(trap+1) # [micron^2/t]
+            β[k+1] = 2 * dr^2 / (De*dt)
+        end
     end
     # First and last radial step
     β[1] = β[2]
