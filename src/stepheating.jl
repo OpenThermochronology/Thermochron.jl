@@ -14,11 +14,11 @@ struct Arrhenius{T}
     notes::String
 end
 
-function arrhenius(c::SingleDomain{T}; 
-        time_sigma = 0.1, 
-        temperature_sigma = 1.0,
-        halfwidth_sigma = 2.0,
-        degassing_relsigma_fallback = 0.025
+function arrhenius(c::StepHeatingSample{T}, fit::BitVector=c.fit; 
+        time_sigma::Number = 0.1,
+        temperature_sigma::Number = 1.0,
+        halfwidth_sigma::Number = 2.0,
+        degassing_relsigma_fallback::Number = 0.025,
     ) where {T}
     # Calculate cumulative fractions, with complete uncertainties
     f_step_mu = diffwithinitial(c.fraction_experimental)
@@ -44,7 +44,7 @@ function arrhenius(c::SingleDomain{T};
     a = (radius(c) ± halfwidth_sigma) / 10_000
 
     # York fit
-    yf = yorkfit(invTK[c.fit], logD_a2[c.fit])
+    yf = yorkfit(invTK[fit], logD_a2[fit])
     logD0 = yf.intercept + log(a^2)
     D0 = exp(logD0)
     Ea = -yf.slope * 0.008314472
@@ -52,7 +52,7 @@ function arrhenius(c::SingleDomain{T};
     return Arrhenius{T}(
         logD_a2,
         invTK,
-        c.fit,
+        fit,
         a,
         yf,
         logD0,
