@@ -1013,7 +1013,7 @@
     # Adjust model uncertainties of chronometers
     function movesigma!(rng, σcalc::AbstractVector{T}, chrons::AbstractVector{<:Chronometer}) where {T<:AbstractFloat}
         @assert eachindex(σcalc) == eachindex(chrons)
-        for C in (ZirconFT, MonaziteFT, ApatiteFT, ZirconHe, ApatiteHe, SphericalHe, PlanarHe, SphericalAr, PlanarAr, MultipleDomain)
+        for C in (ZirconFT, MonaziteFT, ApatiteFT, ZirconHe, PlanarZirconHe, ApatiteHe, SphericalHe, PlanarHe, SphericalAr, PlanarAr, MultipleDomain, SingleDomain)
             r = abs(randn(rng, T))
             for i in eachindex(chrons)
                 if chrons[i] isa C
@@ -1072,9 +1072,9 @@
         end
 
         # Optionally rescale log likelihoods to avoid one chronometer type from dominating the inversion
-        scalegar = rescale ? sqrt(count(x->(isa(x, SphericalAr) || isa(x, PlanarAr)), chrons)) : 1.0
-        scaleghe = rescale ? sqrt(count(x->(isa(x, SphericalHe) || isa(x, PlanarHe)), chrons)) : 1.0
-        scalezhe = rescale ? sqrt(count(x->isa(x, ZirconHe), chrons)) : 1.0
+        scalegar = rescale ? sqrt(count(x->isa(x, Union{SphericalAr, PlanarAr}, chrons))) : 1.0
+        scaleghe = rescale ? sqrt(count(x->isa(x, Union{SphericalHe, PlanarHe}, chrons))) : 1.0
+        scalezhe = rescale ? sqrt(count(x->isa(x, Union{ZirconHe, PlanarZirconHe}, chrons))) : 1.0
         scaleahe = rescale ? sqrt(count(x->isa(x, ApatiteHe), chrons)) : 1.0
         scalezft = rescale ? sqrt(count(x->isa(x, ZirconFT), chrons)) : 1.0
         scalemft = rescale ? sqrt(count(x->isa(x, MonaziteFT), chrons)) : 1.0
@@ -1105,8 +1105,8 @@
                 c::Union{SphericalHe{T}, PlanarHe{T}}
                 μcalc[i] = modelage(c, Tstepsᵢ, dm::Diffusivity{T}, rp; partitiondaughter)
                 ll += model_ll(c, σcalc[i])/scaleghe
-            elseif isa(c, ZirconHe)
-                c::ZirconHe{T}
+            elseif isa(c, ZirconHe) || isa(c, PlanarZirconHe)
+                c::Union{ZirconHe{T}, PlanarZirconHe{T}}
                 μcalc[i] = modelage(c, Tstepsᵢ, dm::ZirconHeliumModel{T}, rp; partitiondaughter)
                 ll += model_ll(c, σcalc[i])/scalezhe
             elseif isa(c, ApatiteHe)

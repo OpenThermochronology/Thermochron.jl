@@ -63,7 +63,7 @@
         redegastracer = false # Not required as diffusion parameters don't change
 
         # See what minerals we have
-        (any(x->isa(x, ZirconHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, ZirconHe), chrons)) zircons"
+        (any(x->isa(x, Union{ZirconHe, PlanarZirconHe}), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, Union{ZirconHe, PlanarZirconHe}), chrons)) zircons"
         (any(x->isa(x, ApatiteHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, ApatiteHe), chrons)) apatites"
         (any(x->isa(x, SphericalHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, SphericalHe), chrons)) generic spherical He chronometers"
         (any(x->isa(x, PlanarHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, PlanarHe), chrons)) generic planar slab He chronometers"
@@ -417,7 +417,7 @@
         redegastracer = true # Required when we are co-inverting for diffusion parameters in _varkinetics inversions
 
         # See what minerals we have
-        (any(x->isa(x, ZirconHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, ZirconHe), chrons)) zircons"
+        (any(x->isa(x, Union{ZirconHe, PlanarZirconHe}), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, Union{ZirconHe, PlanarZirconHe}), chrons)) zircons"
         (any(x->isa(x, ApatiteHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, ApatiteHe), chrons)) apatites"
         (any(x->isa(x, SphericalHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, SphericalHe), chrons)) generic spherical He chronometers"
         (any(x->isa(x, PlanarHe), chrons)) && @info "Inverting for He ages of $(count(x->isa(x, PlanarHe), chrons)) generic planar slab He chronometers"
