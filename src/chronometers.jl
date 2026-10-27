@@ -622,12 +622,13 @@ ZirconHe(T=Float64;
 )
 ```
 Construct a `ZirconHe` chronometer representing a zircon with a raw 
-helium age of `age` ± `age_sigma` [Ma], a spherical radius of `r` [μm], and  
-uniform U, Th and Sm concentrations specified by `U238`, `Th232`, and `Sm147` [PPMw]. 
+helium age of `age` ± `age_sigma` [Ma], a equivalent spherical radius of `r` [μm],  
+and uniform U, Th and Sm concentrations specified by `U238`, `Th232`, and `Sm147` [PPMw]. 
 A present day U-235/U-238 ratio of 1/137.818 is assumed.
 
-Spatial discretization follows a halfwidth step of `dr` [μm], while temporal 
-discretization  follows the age steps specified by `agesteps` (age before present)
+Spatial discretization follows a halfwidth step size of `dr` [μm], 
+(`r` will be rounded to the nearest `dr`), while temporal
+discretization follows the age steps specified by `agesteps` (age before present)
 and/or `tsteps` (forward time since crystallization), in Ma, where `tsteps` 
 must be sorted in increasing order.
 """
@@ -688,9 +689,10 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
     agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
 
     # Crystal size and spatial discretization
+    r = round(r/dr)*dr                              # Round to the nearest `dr`
     redges = floatrange(0 : dr : r)                 # Edges of each radius element
     rsteps = cntr(redges)                           # Centers of each radius element
-    nrsteps = length(rsteps)+2                      # Number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
+    nrsteps = length(rsteps)+2                      # Number of radial grid points. Note two implict points: one at negative radius, one outside grain
     # Relative volume each concentric radial shell
     relvolumes = volumefraction(volumeweighting, redges, r)
 
@@ -848,12 +850,13 @@ PlanarZirconHe(T=Float64;
 )
 ```
 Construct a `PlanarZirconHe` chronometer representing a zircon with a raw 
-helium age of `age` ± `age_sigma` [Ma], a spherical radius of `r` [μm], and  
+helium age of `age` ± `age_sigma` [Ma], a halfwidth of `r` [μm], and  
 uniform U, Th and Sm concentrations specified by `U238`, `Th232`, and `Sm147` [PPMw]. 
 A present day U-235/U-238 ratio of 1/137.818 is assumed.
 
-Spatial discretization follows a halfwidth step of `dr` [μm], while temporal 
-discretization  follows the age steps specified by `agesteps` (age before present)
+Spatial discretization follows a halfwidth step size of `dr` [μm], 
+(`r` will be rounded to the nearest `dr`), while temporal
+discretization follows the age steps specified by `agesteps` (age before present)
 and/or `tsteps` (forward time since crystallization), in Ma, where `tsteps` 
 must be sorted in increasing order.
 """
@@ -912,9 +915,10 @@ function PlanarZirconHe(T::Type{<:AbstractFloat}=Float64;
     agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
 
     # Crystal size and spatial discretization
+    r = round(r/dr)*dr                              # Round to the nearest `dr`
     redges = floatrange(0 : dr : r)                 # Edges of each radius element
     rsteps = cntr(redges)                           # Centers of each radius element
-    nrsteps = length(rsteps)+2                      # Number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
+    nrsteps = length(rsteps)+2                      # Number of radial grid points. Note two implict points: one at negative radius, one outside grain
 
     # Observed radial HPE profiles at present day, in atoms per gram
     r238U = fill(T(U238 * 6.022e17 / 238), size(rsteps))          # [atoms/g], converted from PPMw
@@ -1069,12 +1073,13 @@ ApatiteHe(T=Float64;
 )
 ```
 Construct an `ApatiteHe` chronometer representing an apatite with a raw 
-helium age of `age` ± `age_sigma` [Ma], a spherical radius of `r` [μm], and  
-uniform U, Th and Sm concentrations specified by `U238`, `Th232`, and `Sm147` [PPMw]. 
+helium age of `age` ± `age_sigma` [Ma], an equivalent spherical radius of `r` [μm],  
+and uniform U, Th and Sm concentrations specified by `U238`, `Th232`, and `Sm147` [PPMw]. 
 A present day U-235/U-238 ratio of 1/137.818 is assumed.
 
-Spatial discretization follows a halfwidth step of `dr` [μm], while temporal 
-discretization  follows the age steps specified by `agesteps` (age before present)
+Spatial discretization follows a radial step size of `dr` [μm], 
+(`r` will be rounded to the nearest `dr`), while temporal
+discretization follows the age steps specified by `agesteps` (age before present)
 and/or `tsteps` (forward time since crystallization), in Ma, where `tsteps` 
 must be sorted in increasing order.
 """
@@ -1135,9 +1140,10 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
     agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
 
     # Crystal size and spatial discretization
+    r = round(r/dr)*dr                              # Round to the nearest `dr`
     redges = floatrange(0 : dr : r)                 # Edges of each radius element
     rsteps = cntr(redges)                           # Centers of each radius element
-    nrsteps = length(rsteps)+2                      # Number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
+    nrsteps = length(rsteps)+2                      # Number of radial grid points. Note two implict points: one at negative radius, one outside grain
     # Relative volume each concentric radial shell
     relvolumes = volumefraction(volumeweighting, redges, r)
 
@@ -1302,8 +1308,9 @@ radius of `r` [μm], and uniform U, Th and Sm concentrations specified
 by `U238`, `Th232`, and `Sm147` [PPMw]. (A present day U-235/U-238 
 ratio of 1/137.818 is assumed)
 
-Spatial discretization follows a halfwidth step of `dr` [μm], while temporal 
-discretization  follows the age steps specified by `agesteps` (age before present)
+Spatial discretization follows a radial step size of `dr` [μm], 
+(`r` will be rounded to the nearest `dr`), while temporal
+discretization follows the age steps specified by `agesteps` (age before present)
 and/or `tsteps` (forward time since crystallization), in Ma, where `tsteps` 
 must be sorted in increasing order.
 """
@@ -1362,13 +1369,14 @@ function SphericalHe(T::Type{<:AbstractFloat}=Float64;
     agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
 
     # Crystal size and spatial discretization
+    r = round(r/dr)*dr                              # Round to the nearest `dr`
     redges = floatrange(0 : dr : r)                 # Edges of each radius element
     rsteps = cntr(redges)                           # Centers of each radius element
-    nrsteps = length(rsteps)+2                      # Number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
+    nrsteps = length(rsteps)+2                      # Number of radial grid points. Note two implict points: one at negative radius, one outside grain
     # Relative volume each concentric radial shell
     relvolumes = volumefraction(volumeweighting, redges, r)
 
-    # Observed radial HPE profiles at present day
+    # Observed radial HPE profiles at present day, in atoms per gram
     r238U = fill(T(U238 * 6.022e17 / 238), size(rsteps))          # [atoms/g], converted from PPMw
     r235U = fill(T(U238/137.818 * 6.022e17 / 235), size(rsteps))  # [atoms/g], converted from PPMw
     r232Th = fill(T(Th232 * 6.022e17 / 232), size(rsteps))        # [atoms/g], converted from PPMw
@@ -1512,8 +1520,9 @@ half-width of `r` [μm], and uniform U, Th and Sm concentrations specified
 by `U238`, `Th232`, and `Sm147` [PPMw]. (A present day U-235/U-238 
 ratio of 1/137.818 is assumed)
 
-Spatial discretization follows a halfwidth step of `dr` [μm], while temporal 
-discretization  follows the age steps specified by `agesteps` (age before present)
+Spatial discretization follows a halfwidth step size of `dr` [μm], 
+(`r` will be rounded to the nearest `dr`), while temporal
+discretization follows the age steps specified by `agesteps` (age before present)
 and/or `tsteps` (forward time since crystallization), in Ma, where `tsteps` 
 must be sorted in increasing order.
 """
@@ -1565,16 +1574,17 @@ function PlanarHe(T::Type{<:AbstractFloat}=Float64;
         agesteps = nothing,
         tsteps = nothing,
     )
-
+``
     # Temporal discretization
     agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
 
     # Crystal size and spatial discretization
+    r = round(r/dr)*dr                              # Round to the nearest `dr`
     redges = floatrange(0 : dr : r)                 # Edges of each halfwidth element
     rsteps = cntr(redges)                           # Centers of each halfwidth element
-    nrsteps = length(rsteps)+2                      # Number of radial grid points -- note 2 implict points: one at negative halfwidth, one outside grain
+    nrsteps = length(rsteps)+2                      # Number of radial grid points. Note two implict points: one at negative halfwidth, one outside grain
 
-    # Observed radial HPE profiles at present day
+    # Observed radial HPE profiles at present day, in atoms per gram
     r238U = fill(T(U238 * 6.022e17 / 238), size(rsteps))          # [atoms/g], converted from PPMw
     r235U = fill(T(U238/137.818 * 6.022e17 / 235), size(rsteps))  # [atoms/g], converted from PPMw
     r232Th = fill(T(Th232 * 6.022e17 / 232), size(rsteps))        # [atoms/g], converted from PPMw
@@ -1709,8 +1719,9 @@ Construct an `SphericalAr` chronometer representing a mineral with a raw
 argon age of `age` ± `age_sigma` [Ma], a uniform diffusivity, a spherical
 radius of `r` [μm], and uniform K-40 concentrations specified by `K40` [PPMw].
 
-Spatial discretization follows a halfwidth step of `dr` [μm], while temporal 
-discretization  follows the age steps specified by `agesteps` (age before present)
+Spatial discretization follows a radial step size of `dr` [μm], 
+(`r` will be rounded to the nearest `dr`), while temporal
+discretization follows the age steps specified by `agesteps` (age before present)
 and/or `tsteps` (forward time since crystallization), in Ma, where `tsteps` 
 must be sorted in increasing order.
 """
@@ -1761,9 +1772,10 @@ function SphericalAr(T::Type{<:AbstractFloat}=Float64;
     agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
 
     # Crystal size and spatial discretization
-    rsteps = floatrange(0+dr/2 : dr : r-dr/2)
-    redges = floatrange(     0 : dr : r     )   # Edges of each radius element
-    nrsteps = length(rsteps)+2                  # number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
+    r = round(r/dr)*dr                              # Round to the nearest `dr`
+    redges = floatrange(     0 : dr : r     )       # Edges of each radius element
+    rsteps = floatrange(0+dr/2 : dr : r-dr/2)       # Centers of each radius element
+    nrsteps = length(rsteps)+2                      # Number of radial grid points. Note two implict points: one at negative radius, one outside grain
     # Relative volume each concentric radial shell
     relvolumes = volumefraction(volumeweighting, redges, r)
 
@@ -1866,10 +1878,11 @@ PlanarAr(T=Float64;
 ```
 Construct an `PlanarAr` chronometer representing a mineral with a raw 
 argon age of `age` ± `age_sigma` [Ma], a uniform diffusivity,
-a radius of `r` [μm], and uniform K-40 concentrations specified by `K40` [PPM].
+a halfwidth of `r` [μm], and uniform K-40 concentrations specified by `K40` [PPM].
 
-Spatial discretization follows a halfwidth step of `dr` [μm], while temporal 
-discretization  follows the age steps specified by `agesteps` (age before present)
+Spatial discretization follows a halfwidth step size of `dr` [μm], 
+(`r` will be rounded to the nearest `dr`), while temporal
+discretization follows the age steps specified by `agesteps` (age before present)
 and/or `tsteps` (forward time since crystallization), in Ma, where `tsteps` 
 must be sorted in increasing order.
 """
@@ -1918,12 +1931,13 @@ function PlanarAr(T::Type{<:AbstractFloat}=Float64;
     agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
 
     # Crystal size and spatial discretization
-    rsteps = floatrange(0+dr/2 : dr : r-dr/2)
-    redges = floatrange(     0 : dr : r     )   # Edges of each radius element
-    nrsteps = length(rsteps)+2                  # number of radial grid points -- note 2 implict points: one at negative radius, one outside grain
+    r = round(r/dr)*dr                              # Round to the nearest `dr`
+    redges = floatrange(     0 : dr : r     )       # Edges of each halfwidth element
+    rsteps = floatrange(0+dr/2 : dr : r-dr/2)       # Centers of each halfwidth element
+    nrsteps = length(rsteps)+2                      # Number of radial grid points. Note two implict points: one at negative halfwidth, one outside grain
 
     # Observed radial HPE profiles at present day
-    r40K = fill(T(K40), size(rsteps))         # [PPMw]
+    r40K = fill(T(K40), size(rsteps))               # [PPMw]
 
     # Convert to atoms per gram
     r40K .*= 6.022e17 / 39.96399848

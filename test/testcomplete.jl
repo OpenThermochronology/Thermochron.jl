@@ -201,7 +201,7 @@
     @test length(chrons) == 333
     calc = zeros(length(chrons))
     calcuncert = zeros(length(chrons))
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=false, stepagebytime=false) ≈ -8.046685671194149e8
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; redegastracer=false, stepagebytime=false) ≈ -8.04744466758631e8
 
 ## --- Test generation and modelling of Chronometer objects, with nonuniform (log-spaced) Vector for agesteps/tsteps
 
