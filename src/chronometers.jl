@@ -708,9 +708,12 @@ function ZirconHe(T::Type{<:AbstractFloat}=Float64;
 
     # Zircon alpha stopping distances for each isotope in each decay chain, from
     # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
-    alpharadii238U = (11.78, 14.09, 13.73, 14.13, 17.32, 16.69, 28.56, 16.48,)
+    alpharadii238U = (11.78, 14.09, 13.73, 14.13, 17.32, 19.69, 28.56, 16.48,)
+    #                  238U,  234U, 230Th, 226Ra, 222Rn, 218Po, 214Bi, 210Po,
     alpharadii235U = (12.58, 15.04, 19.36, 18.06, 23.07, 26.87, 22.47,)
+    #                  235U, 231Pa, 227Th, 223Ra, 219Ra, 215Po, 211Bi
     alpharadii232Th = (10.99, 16.67, 18.16, 17.32, 23.61, 29.19,)
+    #                  323Th, 228Th, 224Ra, 220Rn, 216Po, 212Bi/212Po
     # Ketcham et al. (2011), doi: 10.1016/j.gca.2011.10.011
     alpharadii147Sm = (4.76,)
     # Additional discretization outside of grain, for alpha injection
@@ -927,9 +930,12 @@ function PlanarZirconHe(T::Type{<:AbstractFloat}=Float64;
 
     # Zircon alpha stopping distances for each isotope in each decay chain, from
     # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
-    alpharadii238U = (11.78, 14.09, 13.73, 14.13, 17.32, 16.69, 28.56, 16.48,)
+    alpharadii238U = (11.78, 14.09, 13.73, 14.13, 17.32, 19.69, 28.56, 16.48,)
+    #                  238U,  234U, 230Th, 226Ra, 222Rn, 218Po, 214Bi, 210Po,
     alpharadii235U = (12.58, 15.04, 19.36, 18.06, 23.07, 26.87, 22.47,)
+    #                  235U, 231Pa, 227Th, 223Ra, 219Ra, 215Po, 211Bi
     alpharadii232Th = (10.99, 16.67, 18.16, 17.32, 23.61, 29.19,)
+    #                  323Th, 228Th, 224Ra, 220Rn, 216Po, 212Bi/212Po
     # Ketcham et al. (2011), doi: 10.1016/j.gca.2011.10.011
     alpharadii147Sm = (4.76,)
     # Additional discretization outside of grain, for alpha injection
@@ -1150,8 +1156,11 @@ function ApatiteHe(T::Type{<:AbstractFloat}=Float64;
     # Apatite alpha stopping distances for each isotope in each decay chain, from
     # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
     alpharadii238U = (13.54, 16.26, 15.84, 16.31, 20.09, 22.89, 33.39, 19.10,)
+    #                  238U,  234U, 230Th, 226Ra, 222Rn, 218Po, 214Bi, 210Po,
     alpharadii235U = (14.48, 17.39, 22.5, 20.97, 26.89, 31.40, 26.18,)
+    #                  235U, 231Pa, 227Th, 223Ra, 219Ra, 215Po, 211Bi
     alpharadii232Th = (12.60, 19.32, 21.08, 20.09, 27.53, 34.14,)
+    #                  323Th, 228Th, 224Ra, 220Rn, 216Po, 212Bi/212Po
     # Ketcham et al. (2011), doi: 10.1016/j.gca.2011.10.011
     alpharadii147Sm = (5.93,)
     # Additional discretization outside of grain, for alpha injection
@@ -1374,8 +1383,11 @@ function SphericalHe(T::Type{<:AbstractFloat}=Float64;
     # Alpha stopping distances for each isotope in each decay chain, adjusted from those of apatite
     # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
     alpharadii238U = (13.54, 16.26, 15.84, 16.31, 20.09, 22.89, 33.39, 19.10,)./stoppingpower
+    #                  238U,  234U, 230Th, 226Ra, 222Rn, 218Po, 214Bi, 210Po,
     alpharadii235U = (14.48, 17.39, 22.5, 20.97, 26.89, 31.40, 26.18,)./stoppingpower
+    #                  235U, 231Pa, 227Th, 223Ra, 219Ra, 215Po, 211Bi
     alpharadii232Th = (12.60, 19.32, 21.08, 20.09, 27.53, 34.14,)./stoppingpower
+    #                  323Th, 228Th, 224Ra, 220Rn, 216Po, 212Bi/212Po
     # Ketcham et al. (2011), doi: 10.1016/j.gca.2011.10.011
     alpharadii147Sm = (5.93,)./stoppingpower
     # Additional discretization outside of grain, for alpha injection
@@ -1577,8 +1589,11 @@ function PlanarHe(T::Type{<:AbstractFloat}=Float64;
     # Alpha stopping distances for each isotope in each decay chain, adjusted from those of apatite
     # Farley et al. (1996), doi: 10.1016/S0016-7037(96)00193-7
     alpharadii238U = (13.54, 16.26, 15.84, 16.31, 20.09, 22.89, 33.39, 19.10,)./stoppingpower
+    #                  238U,  234U, 230Th, 226Ra, 222Rn, 218Po, 214Bi, 210Po,
     alpharadii235U = (14.48, 17.39, 22.5, 20.97, 26.89, 31.40, 26.18,)./stoppingpower
+    #                  235U, 231Pa, 227Th, 223Ra, 219Ra, 215Po, 211Bi
     alpharadii232Th = (12.60, 19.32, 21.08, 20.09, 27.53, 34.14,)./stoppingpower
+    #                  323Th, 228Th, 224Ra, 220Rn, 216Po, 212Bi/212Po
     # Ketcham et al. (2011), doi: 10.1016/j.gca.2011.10.011
     alpharadii147Sm = (5.93,)./stoppingpower
     # Additional discretization outside of grain, for alpha injection
