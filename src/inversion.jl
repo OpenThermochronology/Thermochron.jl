@@ -445,7 +445,7 @@
         damodels₀ = damodels
         damodels = copy(damodels)
         damodelsₚ = copy(damodels)
-        rpₚ = rp
+        rpₚ = rp₀ = rp
         updatekinetics = falses(size(damodels))
 
         # Initial propopsal
@@ -455,7 +455,7 @@
         ll = llₚ = model!(rng, μcalc, σcalc, chrons, damodels, path.Tsteps, rp; 
             rescale, rescalesdd, rescalemdd, redegastracer, stepwisetracerfraction, partitiondaughter) + 
             diff_ll(path.Tsteps, dTmax, dTmax_sigma) + 
-            kinetic_ll!(updatekinetics, damodelsₚ, damodels₀) + kinetic_ll(rpₚ, rp) + 
+            kinetic_ll!(updatekinetics, damodelsₚ, damodels₀) + kinetic_ll(rpₚ, rp₀) + 
             (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
         
         # Proposal probabilities (must sum to 1)
@@ -532,7 +532,7 @@
             # Calculate model ages for each grain, log likelihood of proposal
             llₚ = model!(rng, μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps, rpₚ; rescale, rescalesdd, rescalemdd, redegastracer, stepwisetracerfraction, partitiondaughter)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
-            llₚ += kinetic_ll!(updatekinetics, damodelsₚ, damodels₀) + kinetic_ll(rpₚ, rp)
+            llₚ += kinetic_ll!(updatekinetics, damodelsₚ, damodels₀) + kinetic_ll(rpₚ, rp₀)
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
             # Accept or reject proposal based on likelihood
@@ -659,7 +659,7 @@
             # Calculate model ages for each grain, log likelihood of proposal
             llₚ = model!(rng, μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps, rpₚ; rescale, rescalesdd, rescalemdd, redegastracer, stepwisetracerfraction, partitiondaughter)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
-            llₚ += kinetic_ll!(updatekinetics, damodelsₚ, damodels₀) + kinetic_ll(rpₚ, rp)
+            llₚ += kinetic_ll!(updatekinetics, damodelsₚ, damodels₀) + kinetic_ll(rpₚ, rp₀)
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
             # Accept or reject proposal based on likelihood
