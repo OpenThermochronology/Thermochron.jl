@@ -75,7 +75,7 @@ function diffusivity_from_degassing(::PlanarNobleGas, f_cum::AbstractArray{T}, d
         D_a2 = if value(fᵢ) < 0.525
             π / (4 * duration[i]) * (fᵢ^2 - fᵢ₋₁^2) # Eq. 23, G&R 2018
         else
-            -4 / (π * duration[i]) * log((1 - fᵢ) / (1 - fᵢ₋₁))  # Eq. 25, G&R 2018
+            -4 / (π^2 * duration[i]) * log((1 - fᵢ) / (1 - fᵢ₋₁))  # Eq. 25, G&R 2018
         end
         logD_a2[i] = log(D_a2)
         fᵢ₋₁ = fᵢ
