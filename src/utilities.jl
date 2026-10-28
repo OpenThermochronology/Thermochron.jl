@@ -1076,24 +1076,24 @@
         end
 
         # Optionally rescale log likelihoods to avoid one chronometer type from dominating the inversion
-        scalegar = rescale ? sqrt(count(x->isa(x, Union{SphericalAr, PlanarAr}, chrons))) : 1.0
-        scaleghe = rescale ? sqrt(count(x->isa(x, Union{SphericalHe, PlanarHe}, chrons))) : 1.0
-        scalezhe = rescale ? sqrt(count(x->isa(x, Union{ZirconHe, PlanarZirconHe}, chrons))) : 1.0
-        scaleahe = rescale ? sqrt(count(x->isa(x, ApatiteHe), chrons)) : 1.0
-        scalezft = rescale ? sqrt(count(x->isa(x, ZirconFT), chrons)) : 1.0
-        scalemft = rescale ? sqrt(count(x->isa(x, MonaziteFT), chrons)) : 1.0
-        scaleaft = rescale ? sqrt(count(x->isa(x, ApatiteFT), chrons)) : 1.0
-        scaleztl = rescale ? sqrt(count(x->isa(x, ZirconTrackLength), chrons)) : 1.0
-        scalemtl = rescale ? sqrt(count(x->isa(x, MonaziteTrackLength), chrons)) : 1.0
-        scaleatl = rescale ? sqrt(count(x->isa(x, ApatiteTrackLength), chrons)) : 1.0
-        scaleato = rescale ? sqrt(count(x->isa(x, ApatiteTrackLengthOriented), chrons)) : 1.0
-        scalevro = rescale ? sqrt(count(x->isa(x, VitriniteRo), chrons)) : 1.0
+        scalegar = rescale ? sqrt(count(x->isa(x, Union{SphericalAr, PlanarAr}, chrons))) : one(T)
+        scaleghe = rescale ? sqrt(count(x->isa(x, Union{SphericalHe, PlanarHe}, chrons))) : one(T)
+        scalezhe = rescale ? sqrt(count(x->isa(x, Union{ZirconHe, PlanarZirconHe}, chrons))) : one(T)
+        scaleahe = rescale ? sqrt(count(x->isa(x, ApatiteHe), chrons)) : one(T)
+        scalezft = rescale ? sqrt(count(x->isa(x, ZirconFT), chrons)) : one(T)
+        scalemft = rescale ? sqrt(count(x->isa(x, MonaziteFT), chrons)) : one(T)
+        scaleaft = rescale ? sqrt(count(x->isa(x, ApatiteFT), chrons)) : one(T)
+        scaleztl = rescale ? sqrt(count(x->isa(x, ZirconTrackLength), chrons)) : one(T)
+        scalemtl = rescale ? sqrt(count(x->isa(x, MonaziteTrackLength), chrons)) : one(T)
+        scaleatl = rescale ? sqrt(count(x->isa(x, ApatiteTrackLength), chrons)) : one(T)
+        scaleato = rescale ? sqrt(count(x->isa(x, ApatiteTrackLengthOriented), chrons)) : one(T)
+        scalevro = rescale ? sqrt(count(x->isa(x, VitriniteRo), chrons)) : one(T)
         
         # Rescale step heating chronometers if either rescale OR rescalesdd/rescalemdd is set
         nsdd = sum(x->(isa(x, SingleDomain) ? count(x.fit) : 0), chrons)
-        scalesdd = (rescale | rescalesdd) ? sqrt(nsdd) : 1.0
+        scalesdd = (rescale | rescalesdd) ? sqrt(nsdd) : one(T)
         nmdd = sum(x->(isa(x, MultipleDomain) ? count(x.fit) : 0), chrons)
-        scalemdd = (rescale | rescalemdd) ? sqrt(nmdd) : 1.0
+        scalemdd = (rescale | rescalemdd) ? sqrt(nmdd) : one(T)
 
         # Cycle through each Chronometer, model and calculate log likelihood
         ll = zero(T)

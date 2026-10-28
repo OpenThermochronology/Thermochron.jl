@@ -231,14 +231,14 @@ end
 ## ---  Combined daughter+tracer degassing functions
 
 function degas!(mineral::HeliumSample, tsteps_degassing, Tsteps_degassing, dm; fuse::Bool=true, redegastracer::Bool=true)
+    # Degas daughter isotope
     total_daughter = degas_daughter!(mineral, tsteps_degassing, Tsteps_degassing, dm; fuse)
-    # Now diffuse parent isotope tracer (He-3), if neccesary
-    if redegastracer || !(0 < sum(mineral.step_tracer))
-        degas_tracer!(mineral, total_daughter, tsteps_degassing, Tsteps_degassing, dm; fuse)
-    end
+    # Now diffuse parent isotope tracer (He-3), if neccesary (always, since total_daughter has changed)
+    degas_tracer!(mineral, total_daughter, tsteps_degassing, Tsteps_degassing, dm; fuse)
     return mineral.step_tracer, mineral.step_daughter
 end
 function degas!(mineral::ArgonSample, tsteps_degassing, Tsteps_degassing, dm; fuse::Bool=true, redegastracer::Bool=true)
+    # Degas daughter isotope
     degas_daughter!(mineral, tsteps_degassing, Tsteps_degassing, dm; fuse)
     # Now diffuse parent isotope tracer (Ar-39), if neccesary
     if redegastracer || !(0 < sum(mineral.step_tracer))

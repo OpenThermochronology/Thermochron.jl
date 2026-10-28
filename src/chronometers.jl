@@ -1738,8 +1738,8 @@ struct SphericalAr{T<:AbstractFloat, V<:AbstractVector{T}} <: ArgonSample{T}
     nrsteps::Int                # [n] number of radial steps, including both implicit points at each side
     r40K::Vector{T}             # [atoms/g] radial K-40 concentrations
     bulkgrainsize::T            # [mm] average grain size of the whole-rock matrix
-    bulkdeposition::Vector{T}   # [atoms/g], converted from PPMw Ar-40 production outside grain
-    deposition::Matrix{T}       # [atoms/g], converted from PPMw Ar-40 deposition matrix
+    bulkdeposition::Vector{T}   # [atoms/g] Ar-40 production outside grain
+    deposition::Matrix{T}       # [atoms/g] Ar-40 deposition matrix
     u::Matrix{T}                # Diffusion profiles, coordinate transform'd, including boundary conditions
     vfinal::Vector{T}           # Final diffusion profile
     β::Vector{T}                # Radial vector of inverse diffusivity (2 * dr^2 / (D*dt)) for Crank-Nicolson
@@ -1898,8 +1898,8 @@ struct PlanarAr{T<:AbstractFloat, V<:AbstractVector{T}} <: ArgonSample{T}
     nrsteps::Int                # [n] number of spatial steps, including both implicit points at each side
     r40K::Vector{T}             # [atoms/g] radial K-40 concentrations
     bulkgrainsize::T            # [mm] average grain size of the whole-rock matrix
-    bulkdeposition::Vector{T}   # [atoms/g], converted from PPMw Ar-40 production outside grain
-    deposition::Matrix{T}       # [atoms/g], converted from PPMw Ar-40 deposition matrix
+    bulkdeposition::Vector{T}   # [atoms/g] Ar-40 production outside grain
+    deposition::Matrix{T}       # [atoms/g] Ar-40 deposition matrix
     u::Matrix{T}                # Diffusion profiles, including boundary conditions
     vfinal::Vector{T}           # Final diffusion profile
     β::Vector{T}                # Radial vector of inverse diffusivity (2 * dr^2 / (D*dt)) for Crank-Nicolson
@@ -2168,7 +2168,7 @@ struct MultipleDomain{T<:AbstractFloat, C<:NobleGasSample{T}} <: StepHeatingSamp
     domains::Vector{C}                      # Vector of chronometer obects for each domain
     model_age::Vector{T}                    # [Ma] calculated age at each model degassing step
     model_tracer::Vector{T}                 # [atoms/g equivalent] parent tracer degassed
-    model_daughter::Vector{T}               # [atoms/g], converted from PPMw daughter degassed
+    model_daughter::Vector{T}               # [atoms/g] daughter degassed
     model_fraction::Vector{T}               # [unitless] cumulative fraction of parent tracer degasssed
     tsteps_degassing::FloatRange            # [s] time steps of model heating schedule
     Tsteps_degassing::Vector{T}             # [C] temperature steps of model heating schedule
