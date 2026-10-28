@@ -84,8 +84,8 @@
         n = 0
         @inbounds for j in eachindex(nodes)
             if lower < nodes[j] <= upper
+                l, u = bounds_at(nodes, j)
                 for k in 1:npoints
-                    l, u = bounds_at(nodes, j)
                     if max(lower,l) < points[k] <= min(upper, u)
                         # Only one point per interval can count towards total
                         n += 1
