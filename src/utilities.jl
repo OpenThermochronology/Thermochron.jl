@@ -522,7 +522,7 @@
                     dm::$Mᵢ
                     dmₚ = damodelsₚ[i]::$Mᵢ
                     ll += kinetic_ll(dmₚ, dm)
-                    for j in eachindex(damodelsₚ, damodels)
+                    for j in eachindex(damodels)
                         if updatekinetics[j] && (damodels[j] == dm) && (damodelsₚ[j] == dmₚ)
                             updatekinetics[j] = false
                         end
@@ -533,6 +533,7 @@
                 current = next_branch
             end
             return quote
+                @assert eachindex(updatekinetics) == eachindex(damodelsₚ) == eachindex(damodels)
                 fill!(updatekinetics, true)
                 ll = zero(T)
                 # Count each unique kinetic model exactly once towards the kinetic log likelihood
@@ -547,6 +548,7 @@
         else
             # Fall back to generic approach
             return quote
+                @assert eachindex(updatekinetics) == eachindex(damodelsₚ) == eachindex(damodels)
                 fill!(updatekinetics, true)
                 ll = zero(T)
                 # Count each unique kinetic model exactly once towards the kinetic log likelihood
@@ -555,7 +557,7 @@
                         dm = damodels[i]
                         dmₚ = damodelsₚ[i]
                         ll += kinetic_ll(dmₚ, dm)
-                        for j in eachindex(damodelsₚ, damodels)
+                        for j in eachindex(damodels)
                             if updatekinetics[j] && (damodels[j] == dm) && (damodelsₚ[j] == dmₚ)
                                 updatekinetics[j] = false
                             end
@@ -972,6 +974,7 @@
                 current = next_branch
             end
             return quote
+                @assert eachindex(updatekinetics) == eachindex(damodels)
                 fill!(updatekinetics, true)
                 for i in eachindex(damodels)
                     if updatekinetics[i]
@@ -984,6 +987,7 @@
         else
             # Fall back to generic approach
             return quote
+                @assert eachindex(updatekinetics) == eachindex(damodels)
                 fill!(updatekinetics, true)
                 for i in eachindex(damodels)
                     if updatekinetics[i]

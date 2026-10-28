@@ -2096,7 +2096,7 @@ function SingleDomain(T=Float64, C=ApatiteHe;
     model_step_age = zeros(T, length(tsteps_experimental))
 
     # Allocate domain
-    domain = C(T; offset, agesteps, tsteps, kwargs...)
+    domain = C(T; offset, height, agesteps, tsteps, kwargs...)
     return SingleDomain(
         T.(step_age),
         T.(step_age_sigma),
@@ -2216,7 +2216,7 @@ function MultipleDomain(T=Float64, C=PlanarAr;
     # Allocate domains
     bulk_age = nanmean(step_age, @.(fit./step_age_sigma^2))
     bulk_age_sigma = nanstd(step_age, @.(fit./step_age_sigma^2))
-    domains = [C(T; age=bulk_age, age_sigma=bulk_age_sigma, offset, r, dr, agesteps, tsteps, kwargs...) for i in eachindex(volume_fraction)]
+    domains = [C(T; age=bulk_age, age_sigma=bulk_age_sigma, offset, height, r, dr, agesteps, tsteps, kwargs...) for i in eachindex(volume_fraction)]
     return MultipleDomain(
         T.(step_age),
         T.(step_age_sigma),

@@ -250,51 +250,54 @@ end
 
 """
 ```julia
-ρᵣ = anneal(dt::Number, tsteps::Vector, Tsteps::Matrix, [model::DiffusivityModel=ZRDAAM()])
+ρᵣ = anneal(tsteps::AbstractVector, Tsteps::AbstractVector, dm::DamageDiffusivityModel, [ΔT])
 ```
-ZirconHe damage annealing model as in Guenthner et al. 2013 (AJS)
+Calculate a reduced density matrix given a damage and annealing model such as RDAAM or ZRDAAM.
 """
-function anneal(tsteps::AbstractVector, Tsteps::AbstractVector, dm::DiffusivityModel=ZRDAAM())
+function anneal(tsteps::AbstractVector, Tsteps::AbstractVector, dm::DiffusivityModel, ΔT=273.15)
     # Allocate matrix to hold reduced track lengths for all previous timesteps
     ntsteps = length(tsteps)
     ρᵣ = zeros(ntsteps,ntsteps)
     teq = zeros(ntsteps)
     # In=-place version
-    anneal!(ρᵣ, teq, tsteps, Tsteps, dm)
+    anneal!(ρᵣ, teq, tsteps, Tsteps, dm, ΔT)
     return ρᵣ, teq
 end
 
 """
 ```julia
-anneal!(data::AbstractVector{<:Chronometer}, ::Type{<:HeliumSample}, tsteps, Tsteps, dm::DiffusivityModel)
-anneal!(mineral::ZirconHe, Tsteps, dm::ZRDAAM)
-anneal!(mineral::ApatiteHe, Tsteps, dm::RDAAM)
-anneal!(ρᵣ::Matrix, dt::Number, tsteps, Tsteps, [dm::DiffusivityModel=ZRDAAM()])
+anneal!(data::AbstractVector{<:Chronometer}, ::Type{<:HeliumSample}, tsteps, Tsteps, dm::DiffusivityModel, [rp::RegionalParameters)
+anneal!(mineral::HeliumSample, Tsteps, dm::DamageDiffusivityModel, [rp::RegionalParameters])
+anneal!(ρᵣ, teq, tsteps, Tsteps, dm::DamageDiffusivityModel, [ΔT])
 ```
-In-place version of `anneal`
+In-place version of `anneal`, which may be applied to `Chronometer`s.
 """
-function anneal!(data::AbstractVector{<:Chronometer{T}}, ::Type{C}, tsteps::AbstractVector{T}, Tsteps::AbstractVector{T}, dm::DiffusivityModel{T}) where {T<:AbstractFloat, C<:HeliumSample}
+function anneal!(data::AbstractVector{<:Chronometer{T}}, ::Type{C}, tsteps::AbstractVector{T}, Tsteps::AbstractVector{T}, dm::DiffusivityModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T<:AbstractFloat, C<:HeliumSample}
     @assert eachindex(tsteps) == eachindex(Tsteps)
     if any(x->isa(x, C), data)
         im = argmax(i->(eltype(data[i]) <: C) ? length(tsteps_geol(data[i])) : 0, eachindex(data))
-        first_index = firstindex(Tsteps) + length(tsteps) - length(tsteps_geol(data[im]))
-        dₘ = if first_index > 1
-            anneal!(data[im], @views(Tsteps[first_index:end]), dm)::C
-        else
-            anneal!(data[im], Tsteps, dm)::C
-        end
-        pr = dₘ.pr
-        @assert length(tsteps_geol(dₘ)) == length(axes(pr, 1)) == length(axes(pr, 2))
+        cₘ = anneal!(data[im]::C, Tsteps, dm, rp)
+        pr = cₘ.pr::AbstractMatrix{T}
+        @assert length(tsteps_geol(cₘ)) == length(axes(pr, 1)) == length(axes(pr, 2))
         for i in eachindex(data)
             if i!=im && eltype(data[i]) <: C
-                anneal!(data[i], Tsteps, pr)
+                anneal!(data[i], pr)
             end
         end
     end
     return data
 end
-function anneal!(mineral::Union{PlanarZirconHe, ZirconHe, ApatiteHe}, Tsteps::AbstractVector, pr::AbstractMatrix)
-    ntsteps = length(axes(pr, 1))
+
+# Anneal via known ρᵣ matrix
+function anneal!(mineral::MultipleDomain, pr::AbstractMatrix)
+    for c in mineral.domains
+        anneal!(c, pr)
+    end
+    return mineral
+end
+anneal!(mineral::SingleDomain, pr::AbstractMatrix) = anneal!(mineral.domain, pr)
+function anneal!(mineral::Union{PlanarZirconHe, ZirconHe, ApatiteHe}, pr::AbstractMatrix)
+    ntsteps = size(pr, 1)
     first_index = firstindex(pr) + ntsteps - length(tsteps_geol(mineral))
     if first_index > 1
         mul!(mineral.annealeddamage, @views(pr[first_index:end, first_index:end]), mineral.alphadamage)
@@ -303,24 +306,30 @@ function anneal!(mineral::Union{PlanarZirconHe, ZirconHe, ApatiteHe}, Tsteps::Ab
     end
     return mineral
 end
-anneal!(mineral::SingleDomain, Tsteps::AbstractVector, prdm) = anneal!(mineral.domain, Tsteps, prdm)
-function anneal!(mineral::MultipleDomain, Tsteps::AbstractVector, prdm)
-    for c in mineral.domains
-        anneal!(c, Tsteps, prdm)
+
+# Anneal without previously-known ρᵣ matrix
+function anneal!(mineral::MultipleDomain{T}, Tsteps::AbstractVector, dm::DamageDiffusivityModel, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T}
+    c0 = first(mineral.domains)
+    ΔT = T(273.15) + temperatureoffset(mineral, rp)
+    anneal!(c0.pr, view(c0.annealeddamage,:,1), tsteps_geol(c0), Tsteps, dm, ΔT) # Calculate ρᵣ matrix for first domain
+    anneal!(mineral, c0.pr) # Apply to all domains
+    return mineral
+end
+anneal!(mineral::SingleDomain{T}, Tsteps::AbstractVector, dm::DamageDiffusivityModel, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T} = anneal!(mineral.domain, Tsteps, dm, rp)
+function anneal!(mineral::Union{PlanarZirconHe{T}, ZirconHe{T}, ApatiteHe{T}}, Tsteps::AbstractVector, dm::DamageDiffusivityModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T}
+    ΔT = T(273.15) + temperatureoffset(mineral, rp)
+    first_index = firstindex(Tsteps) + length(Tsteps) - length(tsteps_geol(mineral))
+    if first_index > 1
+        anneal!(mineral.pr, view(mineral.annealeddamage,:,1), tsteps_geol(mineral), @views(Tsteps[first_index:end]), dm, ΔT)
+    else
+        anneal!(mineral.pr, view(mineral.annealeddamage,:,1), tsteps_geol(mineral), Tsteps, dm, ΔT)
     end
-    return mineral
-end
-function anneal!(mineral::Union{PlanarZirconHe, ZirconHe}, Tsteps::AbstractVector, dm::ZRDAAM)
-    anneal!(mineral.pr, view(mineral.annealeddamage,:,1), tsteps_geol(mineral), Tsteps, dm)
     mul!(mineral.annealeddamage, mineral.pr, mineral.alphadamage)
     return mineral
 end
-function anneal!(mineral::ApatiteHe, Tsteps::AbstractVector, dm::RDAAM)
-    anneal!(mineral.pr, view(mineral.annealeddamage,:,1), tsteps_geol(mineral), Tsteps, dm)
-    mul!(mineral.annealeddamage, mineral.pr, mineral.alphadamage)
-    return mineral
-end
-function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::AbstractVector, Tsteps::AbstractVector, dm::ZRDAAM{T}) where T <: AbstractFloat
+
+# Calculate ρᵣ matrix
+function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::AbstractVector, Tsteps::AbstractVector, dm::ZRDAAM{T}, ΔT::T=T(273.15)) where {T <: AbstractFloat}
     @assert eachindex(tsteps) == eachindex(Tsteps) == eachindex(teq) == axes(ρᵣ, 1) == axes(ρᵣ,2) == Base.OneTo(length(tsteps))
     ntsteps = length(tsteps)
     fill!(teq, zero(T))
@@ -332,12 +341,12 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::Abstr
 
     # First timestep
     dt = step_at(tsteps, 1)
-    ρᵣ[1,1] = 1 / ((C₀ + C₁*(log(dt)-C₂)/(log(1 / (Tsteps[1]+273.15))-C₃))^(1/β)+1)
+    ρᵣ[1,1] = 1 / ((C₀ + C₁*(log(dt)-C₂)/(log(1 / (Tsteps[1]+ΔT))-C₃))^(1/β)+1)
 
     # All subsequent timesteps
     @inbounds for i ∈ 2:ntsteps
         dt = step_at(tsteps, i)
-        lᵢ = log(1 / (Tsteps[i]+273.15)) - C₃
+        lᵢ = log(1 / (Tsteps[i]+ΔT)) - C₃
 
         # Convert any existing track length reduction for damage from
         # all previous timestep to an equivalent annealing time at the
@@ -371,7 +380,7 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::Abstr
 
     return ρᵣ
 end
-function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::AbstractVector, Tsteps::AbstractVector, dm::RDAAM{T}) where T <: AbstractFloat
+function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::AbstractVector, Tsteps::AbstractVector, dm::RDAAM{T}, ΔT::T=T(273.15)) where T <: AbstractFloat
     @assert eachindex(tsteps) == eachindex(Tsteps) == eachindex(teq) == axes(ρᵣ, 1) == axes(ρᵣ,2) == Base.OneTo(length(tsteps))
     ntsteps = length(tsteps)
     @assert size(ρᵣ) === (ntsteps, ntsteps)
@@ -385,12 +394,12 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::Abstr
 
     # First timestep
     dt = step_at(tsteps, 1)
-    ρᵣ[1,1] = 1 / ((C₀ + C₁*(log(dt)-C₂)/(log(1 / (Tsteps[1]+273.15))-C₃))^(1/β)+1)
+    ρᵣ[1,1] = 1 / ((C₀ + C₁*(log(dt)-C₂)/(log(1 / (Tsteps[1]+ΔT))-C₃))^(1/β)+1)
 
     # All subsequent timesteps
     @inbounds for i ∈ 2:ntsteps
         dt = step_at(tsteps, i)
-        lᵢ = log(1 / (Tsteps[i]+273.15)) - C₃
+        lᵢ = log(1 / (Tsteps[i]+ΔT)) - C₃
 
         # Convert any existing track length reduction for damage from
         # all previous timestep to an equivalent annealing time at the
