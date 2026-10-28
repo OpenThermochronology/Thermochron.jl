@@ -519,7 +519,7 @@
                     dmₚ = damodelsₚ[i]::$Mᵢ
                     ll += kinetic_ll(dmₚ, dm)
                     for j in eachindex(damodelsₚ, damodels)
-                        if updatekinetics[j] && (damodels[j] == dm) && (damodelsₚ[i] == dmₚ)
+                        if updatekinetics[j] && (damodels[j] == dm) && (damodelsₚ[j] == dmₚ)
                             updatekinetics[j] = false
                         end
                     end
@@ -552,7 +552,7 @@
                         dmₚ = damodelsₚ[i]
                         ll += kinetic_ll(dmₚ, dm)
                         for j in eachindex(damodelsₚ, damodels)
-                            if updatekinetics[j] && (damodels[j] == dm) && (damodelsₚ[i] == dmₚ)
+                            if updatekinetics[j] && (damodels[j] == dm) && (damodelsₚ[j] == dmₚ)
                                 updatekinetics[j] = false
                             end
                         end
