@@ -17,7 +17,7 @@ ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64;
     rmr0::Number = NaN,                     # [unitless] annealing parameter
     name::String = "",                      # Sample or grain name
     notes::String = "",                     # Sample notes
-    agesteps::AbstracVector | tsteps::AbstracVector, # Temporal discretization
+    agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
 )
 ```
 Construct an `ApatiteTrackLengthOriented` chronometer representing a single apatite fission 
@@ -119,10 +119,10 @@ ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
     rmr0::Number = NaN,                     # [unitless] annealing parameter
     name::String = "",                      # Sample or grain name
     notes::String = "",                     # Sample notes
-    agesteps::AbstracVector | tsteps::AbstracVector, # Temporal discretization
+    agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
 )
 ```
-Construct an `ApatiteTrackLengthOriented` chronometer representing a single apatite 
+Construct an `ApatiteTrackLength` chronometer representing a single apatite 
 fission track `length` um long with a relative annealing resistance specified by `rmr0`, 
 optionally at a constant temperature offset (relative to other samples) of `offset` [C].
 
@@ -209,7 +209,7 @@ ZirconTrackLength(T::Type{<:AbstractFloat}=Float64;
     l0_sigma::Number = 0.051,               # [um] Initial track length unertainty
     name::String = "",                      # Sample or grain name
     notes::String = "",                     # Sample notes  
-    agesteps::AbstracVector | tsteps::AbstracVector, # Temporal discretization
+    agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
 )
 ```
 Construct a `ZirconTrackLength` chronometer representing a single zircon fission track
@@ -288,7 +288,7 @@ MonaziteTrackLength(T::Type{<:AbstractFloat} = Float64;
     l0_sigma::Number = 0.19,                # [um] Initial track length unertainty
     name::String = "",                      # Sample or grain name
     notes::String = "",                     # Sample notes
-    agesteps::AbstracVector | tsteps::AbstracVector, # Temporal discretization
+    agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
 )
 ```
 Construct a `MonaziteTrackLength` chronometer representing a single monazite fission track
@@ -367,7 +367,7 @@ ZirconFT(T::Type{<:AbstractFloat} = Float64;
     height::Number = zero(T),       # [m] height relative to other samples / surface (negative for depth)
     name::String = "",              # Sample or grain name
     notes::String = "",             # Sample notes
-    agesteps::AbstracVector | tsteps::AbstracVector, # Temporal discretization
+    agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
 )
 ```
 Construct a `ZirconFT` chronometer representing a zircon with a fission track age 
@@ -422,7 +422,7 @@ MonaziteFT(T::Type{<:AbstractFloat} = Float64;
     height::Number = zero(T),       # [m] height relative to other samples / surface (negative for depth)
     name::String = "",              # Sample or grain name
     notes::String = "",             # Sample notes
-    agesteps::AbstracVector | tsteps::AbstracVector, # Temporal discretization
+    agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
 )
 ```
 Construct a `MonaziteFT` chronometer representing a monazite with a fission track age 
@@ -482,7 +482,7 @@ ApatiteFT(T::Type{<:AbstractFloat} = Float64;
     rmr0::Number = NaN,             # [unitless] annealing parameter
     name::String = "",              # Sample or grain name
     notes::String = "",             # Sample notes
-    agesteps::AbstracVector | tsteps::AbstracVector, # Temporal discretization
+    agesteps::AbstractVector | tsteps::AbstractVector, # Temporal discretization
 )
 ```
 Construct an `ApatiteFT` chronometer representing a apatite with a fission track age 
@@ -564,7 +564,7 @@ VitriniteRo(T::Type{<:AbstractFloat} = Float64;
     height::Number = zero(T),        # [m] height relative to other samples / the surface
     name::String = "",               # Sample or grain name
     notes::String = "",              # Sample notes
-    agesteps::AbstracVector | tsteps::AbstracVector,
+    agesteps::AbstractVector | tsteps::AbstractVector,
 )
 ```
 Construct a `VitriniteRo` chronometer representing a measured vitrinite

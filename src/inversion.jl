@@ -1,18 +1,17 @@
     """
     ```julia
-    MCMC(chrons::AbstractVector{<:Chronometer}, params::NamedTuple, npoints::Int, path.agepoints::Vector, path.Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval];
+    MCMC(chrons::AbstractVector{<:Chronometer}, damodels::AbstractVector{<:Model}, params::NamedTuple, boundary::Boundary, [constraint::Constraint], [detail::DetailInterval]; 
         rp::RegionalParameters = RegionalParameters(),
         rng::AbstractRNG = Random.default_rng(),
         liveplot::Bool = false, 
         maxplots::Int = 512, 
         maxplotsburnin::Int = maxplots÷2, 
-        maxplotscollection::Int = maxplots÷2
+        maxplotscollection::Int = maxplots÷2, 
     )
     ```
     Markov chain Monte Carlo time-Temperature inversion of the thermochronometric chrons 
     specified as a vector `chrons` of `Chronometer` objects (`ZirconHe`, `ApatiteHe`, 
-    `ApatiteFT`, etc.) and model parameters specified by the named tuple `params`, 
-    with variable diffusion kinetics.
+    `ApatiteFT`, etc.) and model parameters specified by the named tuple `params`.
 
     Returns a `TTResult` object containing posterior time-temperature paths,
 
@@ -352,14 +351,13 @@
 
     """
     ```julia
-    MCMC_varkinetics(chrons::AbstractVector{<:Chronometer}, params::NamedTuple, npoints::Int, path.agepoints::Vector, path.Tpoints::Vector, constraint::Constraint, boundary::Boundary, [detail::DetailInterval];
-        rp::RegionalParameters{T} = RegionalParameters{T}(),
+    MCMC_varkinetics(chrons::AbstractVector{<:Chronometer}, damodels::AbstractVector{<:Model}, params::NamedTuple, boundary::Boundary, [constraint::Constraint], [detail::DetailInterval]; 
+        rp::RegionalParameters = RegionalParameters(),
         rng::AbstractRNG = Random.default_rng(),
         liveplot::Bool = false, 
         maxplots::Int = 512, 
         maxplotsburnin::Int = maxplots÷2, 
-        maxplotscollection::Int = maxplots÷2
-    )
+        maxplotscollection::Int = maxplots÷2, 
     ```
     Markov chain Monte Carlo time-Temperature inversion of the thermochronometric chrons 
     specified as a vector `chrons` of `Chronometer` objects (`ZirconHe`, `ApatiteHe`, 

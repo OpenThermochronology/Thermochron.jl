@@ -101,7 +101,7 @@ end
 # Fraction of noble gas retained at the whole-rock scale in the IGB
 # over duration `dt` Ma at temperature `TK` Kelvin
 function fraction_retained(dt::Number, TK::Number, ::HeliumSample, rp::RegionalParameters)
-    λ = 1.0*exp(-rp.Ea_lambda/(0.008314472*TK)) # Slower diffusive loss for Ar by a factor of sqrt(31/71)
+    λ = 1.0*exp(-rp.Ea_lambda/(0.008314472*TK))
     return exp(-λ*dt)
 end
 function fraction_retained(dt::Number, TK::Number, ::ArgonSample, rp::RegionalParameters)

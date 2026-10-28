@@ -363,7 +363,7 @@
     equilibrium as well as alpha ejection (given internal radial `rparent` 
     concentration vector and spatial discretization `redges`, `relvolumes`) and
     injection (given uniform external `parentₒ` concentration and spatial 
-    discretization `redgesₒ`, `relvolumesₒ`) for an infinite slab mineral grain.
+    discretization `redgesₒ`, `relvolumesₒ`) for a spherical mineral grain.
     """
     function alphacorrectionspherical(alpharadii, rparent::AbstractVector{T}, redges, relvolumes, parentₒ::T, redgesₒ, relvolumesₒ) where {T}
         # Prepare

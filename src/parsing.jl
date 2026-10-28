@@ -316,7 +316,11 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                 elseif (geometry === "spherical")
                     SphericalHe
                 else
-                    @warn "Geometry \"$geometry\" not recognized in row $i, defaulting to spherical"
+                    if geometry === ""
+                        @warn "Geometry not provided for He sample in row $i, defaulting to spherical"
+                    else
+                        @warn "Geometry \"$geometry\" not recognized for He sample in row $i, defaulting to spherical"
+                    end
                     SphericalHe
                 end
                 c = DomainType(T;
@@ -338,7 +342,11 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                 elseif (geometry === "spherical")
                     SphericalAr
                 else
-                    @warn "Geometry \"$geometry\" not recognized in row $i, defaulting to spherical"
+                    if geometry === ""
+                        @warn "Geometry not provided for Ar sample in row $i, defaulting to spherical"
+                    else
+                        @warn "Geometry \"$geometry\" not recognized for Ar sample in row $i, defaulting to spherical"
+                    end
                     SphericalAr
                 end
                 # Planar slab argon
@@ -362,7 +370,11 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
             elseif (geometry === "spherical")
                 SphericalAr
             else
-                @warn "Geometry \"$geometry\" not recognized in row $i, defaulting to spherical"
+                if geometry === ""
+                    @warn "Geometry not provided for Ar sample in row $i, defaulting to spherical"
+                else
+                    @warn "Geometry \"$geometry\" not recognized for Ar sample in row $i, defaulting to spherical"
+                end
                 SphericalAr
             end
             r = (haskey(ds, :halfwidth_um) && !isnan(ds.halfwidth_um[i])) ? ds.halfwidth_um[i] : 100
@@ -448,7 +460,11 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
             elseif (geometry === "spherical")
                 SphericalHe
             else
-                @warn "Geometry \"$geometry\" not recognized in row $i, defaulting to spherical"
+                if geometry === ""
+                    @warn "Geometry not provided for He sample in row $i, defaulting to spherical"
+                else
+                    @warn "Geometry \"$geometry\" not recognized for He sample in row $i, defaulting to spherical"
+                end
                 SphericalHe
             end
             # Radius of modeled grain (nominal for MDD)
