@@ -304,13 +304,10 @@ function anneal!(mineral::Union{PlanarZirconHe, ZirconHe, ApatiteHe}, Tsteps::Ab
 end
 anneal!(mineral::SingleDomain, Tsteps::AbstractVector, prdm) = anneal!(mineral.domain, Tsteps, prdm)
 function anneal!(mineral::MultipleDomain, Tsteps::AbstractVector, prdm)
-    c₀ = first(mineral.domains)
-    anneal!(c₀, Tsteps, prdm)
-    pr = c₀.pr
-    for c in Iterators.drop(mineral.domains,1)
-        mul!(c.annealeddamage, pr, c.alphadamage)
+    for c in mineral.domains
+        anneal!(c, Tsteps, prdm)
     end
-    return c₀
+    return mineral
 end
 function anneal!(mineral::Union{PlanarZirconHe, ZirconHe}, Tsteps::AbstractVector, dm::ZRDAAM)
     anneal!(mineral.pr, view(mineral.annealeddamage,:,1), tsteps_geol(mineral), Tsteps, dm)
