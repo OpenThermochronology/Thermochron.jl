@@ -350,7 +350,7 @@ function crank_nicolson!(mineral::SphericalNobleGas{T}, tsteps::AbstractVector{T
 
     # Check time and radius discretization
     nrsteps = mineral.nrsteps::Int
-    rsteps = mineral.rsteps::AbstractVector{T}
+    rsteps = mineral.rsteps::AbstractRange{T}
     @assert eachindex(rsteps) == Base.OneTo(nrsteps-2)
     ntsteps = length(tsteps)
     @assert eachindex(tsteps) == eachindex(Tsteps) == Base.OneTo(ntsteps)
@@ -421,7 +421,8 @@ function crank_nicolson_geol!(mineral::SphericalNobleGas{T}, tsteps::AbstractVec
 
     # Check time and radius discretization
     nrsteps = mineral.nrsteps::Int
-    rsteps = mineral.rsteps::AbstractVector{T}
+    rsteps = mineral.rsteps::AbstractRange{T}
+    rout = (last(rsteps) + step(rsteps))::T
     @assert eachindex(rsteps) == Base.OneTo(nrsteps-2)
     ntsteps = length(tsteps)
     @assert eachindex(tsteps) == eachindex(Tsteps) == Base.OneTo(ntsteps)
@@ -478,7 +479,7 @@ function crank_nicolson_geol!(mineral::SphericalNobleGas{T}, tsteps::AbstractVec
         if partitiondaughter
             bulkdaughter *= fraction_retained(dt, TK, mineral, rp)
             bulkdaughter += bulkdeposition[i]
-            y[nrsteps] = bulkdaughter * partitioning_internal_bulk(TK, mineral, rp)
+            y[nrsteps] = bulkdaughter * partitioning_internal_bulk(TK, mineral, rp) * rout
         end
 
         # RHS of tridiagonal Crank-Nicolson equation for regular grid cells.
@@ -533,7 +534,7 @@ function diffusant_lost!(step_diffusant::AbstractVector{T}, mineral::SphericalNo
     ntsteps = length(step_diffusant)
     @assert eachindex(step_diffusant) == Base.OneTo(ntsteps)
     nrsteps = mineral.nrsteps::Int
-    rsteps = mineral.rsteps::AbstractVector{T}
+    rsteps = mineral.rsteps::AbstractRange{T}
     relvolumes = mineral.relvolumes::Vector{T}
     @assert eachindex(relvolumes) == eachindex(rsteps) == Base.OneTo(nrsteps-2)
 

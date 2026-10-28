@@ -170,7 +170,7 @@ function degas_daughter!(mineral::NobleGasSample{T}, tsteps_degassing, Tsteps_de
     # Erase previous diffusion profiles
     u = fill!(mineral.u, zero(T))
     u[:,1] .= mineral.y # Initialize with final profile from prevous (geologic) inversion
-    # u[end,1] = zero(T) # Zero concentration at outer boundary, since we degas in a vacuum
+    u[end,1] = zero(T) # Zero concentration at outer boundary, since we degas in a vacuum
     # Degas and return total daughter
     crank_nicolson!(mineral, tsteps_degassing, Tsteps_degassing, dm; fuse)
     return diffusant_lost!(mineral.step_daughter, mineral; fuse)

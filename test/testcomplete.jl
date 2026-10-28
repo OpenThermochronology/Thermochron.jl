@@ -142,10 +142,10 @@
 
     # Test again with partitiondaughter=true
     chrons, damodels = chronometers(dsg, params, zirconvolumeweighting=:spherical, apatitevolumeweighting=:spherical)
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; partitiondaughter=true, redegastracer=false, stepagebytime=false) ≈ -123711.00044648896
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; partitiondaughter=true, redegastracer=true, stepwisetracerfraction=false, stepagebytime=false) ≈ -156348.05929060755
-    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; partitiondaughter=true, redegastracer=true, stepwisetracerfraction=true, stepagebytime=false) ≈ -149411.81731317137
-    @test round.(calc[1:18], sigdigits=7) ≈ [100.512, 196.5576, 110.1778, 199.4246, 195.5172, 868.0376, 969.4693, 962.8585, 283.9666, 286.9614, 242.1764, 276.2153, 1085.555, 304.6573, 95.84216, 148.2799, 297.8883, 262.766]
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; partitiondaughter=true, redegastracer=false, stepagebytime=false) ≈ -123714.64398761316
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; partitiondaughter=true, redegastracer=true, stepwisetracerfraction=false, stepagebytime=false) ≈ -156351.70283173176
+    @test Thermochron.model!(calc, calcuncert, chrons, damodels, Tsteps; partitiondaughter=true, redegastracer=true, stepwisetracerfraction=true, stepagebytime=false) ≈ -149415.46085429558
+    @test round.(calc[1:18], sigdigits=7) ≈ [100.512, 196.5576, 110.3531, 199.7099, 195.5172, 868.0376, 969.4693, 962.8585, 283.9666, 287.0222, 242.1764, 276.7396, 1085.555, 304.6573, 95.84216, 148.3213, 298.2285, 262.766]
     @test calc[19] ≈ 0.8 atol=0.5
     @test calc[20] ≈ 0.8 atol=0.5
     @test calc[21] ≈ 720 atol=100
