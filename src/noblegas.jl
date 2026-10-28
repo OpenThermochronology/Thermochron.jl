@@ -6,13 +6,13 @@ calc_Ar(t, K40) = K40*BR40K*(exp(λ40K*t)-1)
 calc_dArdt(t, K40) = K40*BR40K*λ40K*exp(λ40K*t)
 # Use Newton's method to solve for Ar age
 function newton_ar_age(Ar::T, K40; iterations::Int=16) where {T<:Number}
-    Tf = float(T)
-    argonage = one(Tf)
+    ∅ = zero(float(T))
+    argonage = log1p(Ar/(K40*BR40K))/λ40K # Approximate initial guess
     for _ in 1:iterations
         ∂Ar∂t = calc_dArdt(argonage, K40) # Calculate derivative
         argonage += (Ar - calc_Ar(argonage, K40))/∂Ar∂t # Move towards zero (calc_Ar(argonage) == μAr)
     end
-    return max(argonage, zero(Tf))
+    return max(argonage, ∅)
 end
 # Apply to an ArgonSample
 function newton_age(mineral::ArgonSample)
@@ -38,13 +38,14 @@ function calc_dHedt(t, U238, U235, Th232, Sm147=0.0)
 end
 # Use Newton's method to solve for He age
 function newton_he_age(He::T, U238, U235, Th232, Sm147=zero(T); iterations::Int=16) where {T<:Number}
-    Tf = float(T)
-    heliumage = one(Tf)
+    ∅ = zero(float(T))
+    iszero(He) && return ∅
+    heliumage = log1p(He/(U238*8 + U235*7 + Th232*6 + Sm147))/λ238U # Approximate initial guess
     for _ in 1:iterations
         ∂He∂t = calc_dHedt(heliumage, U238, U235, Th232, Sm147) # Calculate derivative
         heliumage += (He - calc_He(heliumage, U238, U235, Th232, Sm147))/∂He∂t # Move towards zero (He(heliumage) == μHe)
     end
-    return max(heliumage, zero(Tf))
+    return max(heliumage, ∅)
 end
 # Apply to a HeliumSample
 function newton_age(mineral::HeliumSample)
