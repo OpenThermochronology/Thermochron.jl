@@ -59,14 +59,14 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
     global_agesteps = haskey(params, :agesteps) ? params.agesteps : nothing
     global_agesteps, global_tsteps = checktimediscretization(T, global_agesteps, global_tsteps)
 
-    haskey(ds, :mineral) || @error "dataset must contain a column labeled `mineral`"
+    haskey(ds, :mineral) || error("dataset must contain a column labeled `mineral`")
     mineral = ds.mineral
     crystage = if haskey(ds, :crystallization_age_Ma)
         ds.crystallization_age_Ma
     elseif haskey(ds, :crystAge) # Legacy option
         ds.crystAge
     else
-        @error "dataset must contain a column labeled `crystallization age [Ma]`"
+        error("dataset must contain a column labeled `crystallization age [Ma]`")
     end
     @assert eachindex(mineral) == eachindex(crystage)
 
@@ -601,7 +601,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
         end
     end
 
-    isempty(chrons) && @error "No chronometers found"
+    isempty(chrons) && error("No chronometers found")
     return unionize(chrons), unionize(damodels)
 end
 

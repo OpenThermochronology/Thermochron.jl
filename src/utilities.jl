@@ -176,7 +176,7 @@
         elseif shape === :planar
             return (redges[2:end] .- redges[1:end-1])./r
         else
-            @error "Shape $shape not recognized; options are `:spherical`, `:cylindrical`, or `:planar`"
+            error("Shape $shape not recognized; options are `:spherical`, `:cylindrical`, or `:planar`")
         end
     end
 
@@ -1211,7 +1211,7 @@
 ## --- Check validity and consistency of temporal discretization
 
     function checktimediscretization(::Type{T}, agesteps, tsteps=nothing) where {T<:AbstractFloat}
-        isnothing(tsteps) && isnothing(agesteps) && @error "At least one of `tsteps` or `agesteps` is required"
+        isnothing(tsteps) && isnothing(agesteps) && error("At least one of `tsteps` or `agesteps` is required")
         isnothing(tsteps) && (tsteps = ((first(agesteps) - step_at(agesteps,1)/2) .- agesteps))
         isnothing(agesteps) && (agesteps = (last(tsteps) + step_at(tsteps, lastindex(tsteps))/2) .- tsteps)
         @assert issorted(tsteps, lt=<=) "`tsteps` must be in strictly increasing order"

@@ -72,7 +72,7 @@ function Ketcham1999FC(s::Symbol)
             beta = -7.4224,   # Box-Cox transform parameter
         )
     else
-        @error "unsupported option :$s, use :c_axis_projected or :unprojected (alternatively :oriented or :unoriented)"
+        error("unsupported option :$s, use :c_axis_projected or :unprojected (alternatively :oriented or :unoriented)")
     end
 end
 
