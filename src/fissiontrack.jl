@@ -450,7 +450,7 @@ function model_ll(mineral::FissionTrackSample, Tsteps::AbstractVector, am::Annea
     age = modelage(mineral, Tsteps, am, rp)
     δ = age - mineral.age
     σ² = mineral.age_sigma^2
-    -0.5*(log(2*pi*σ²) + δ^2/σ²)
+    return -0.5*(log(2*pi*σ²) + δ^2/σ²)
 end
 
 

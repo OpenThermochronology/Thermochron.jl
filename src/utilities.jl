@@ -439,6 +439,10 @@
     accepteddetail(path::TTPath, npoints::Int, detail::DetailInterval) = pointsininterval(path.agepoints, npoints, detail.agemin, detail.agemax, path.agesteps)
     mindetail(path::TTPath, npoints::Int, detail::DetailInterval) = min(accepteddetail(path, npoints, detail), detail.minpoints)
 
+    # Smallest allowable log likelihood (to avoid getting stuck at -Inf)
+    minll(::Type{Float64}) = -1.3407807929942596e154
+    minll(::Type{T}) where {T<:AbstractFloat} =  -sqrt(floatmax(T))
+
     # Log likelihood function for maximum reheating rate
     function diff_ll(x::AbstractArray{T}, μ::Number, σ::Number; maxsigma::Number=6) where {T<:Number}
         i₀ = firstindex(x)
@@ -1100,35 +1104,35 @@
             if isa(c, SphericalAr) || isa(c, PlanarAr)
                 c::Union{SphericalAr{T}, PlanarAr{T}}
                 μcalc[i] = modelage(c, Tstepsᵢ, dm::Diffusivity{T}, rp; partitiondaughter)
-                ll += model_ll(c, σcalc[i])/scalegar
+                ll += nanmax(model_ll(c, σcalc[i])/scalegar, minll(T))
             elseif isa(c, SphericalHe) || isa(c, PlanarHe)
                 c::Union{SphericalHe{T}, PlanarHe{T}}
                 μcalc[i] = modelage(c, Tstepsᵢ, dm::Diffusivity{T}, rp; partitiondaughter)
-                ll += model_ll(c, σcalc[i])/scaleghe
+                ll += nanmax(model_ll(c, σcalc[i])/scaleghe, minll(T))
             elseif isa(c, ZirconHe) || isa(c, PlanarZirconHe)
                 c::Union{ZirconHe{T}, PlanarZirconHe{T}}
                 μcalc[i] = modelage(c, Tstepsᵢ, dm::ZirconHeliumModel{T}, rp; partitiondaughter)
-                ll += model_ll(c, σcalc[i])/scalezhe
+                ll += nanmax(model_ll(c, σcalc[i])/scalezhe, minll(T))
             elseif isa(c, ApatiteHe)
                 c::ApatiteHe{T}
                 μcalc[i] = modelage(c, Tstepsᵢ, dm::ApatiteHeliumModel{T}, rp; partitiondaughter)
-                ll += model_ll(c, σcalc[i])/scaleahe
+                ll += nanmax(model_ll(c, σcalc[i])/scaleahe, minll(T))
             elseif isa(c, ZirconFT)
                 c::ZirconFT{T}
                 μcalc[i] = modelage(c, Tstepsᵢ, dm::ZirconAnnealingModel{T}, rp)
-                ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scalezft
+                ll += nanmax(norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scalezft, minll(T))
             elseif isa(c, MonaziteFT)
                 c::MonaziteFT{T}
                 μcalc[i] = modelage(c, Tstepsᵢ, dm::MonaziteAnnealingModel{T}, rp)
-                ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scalemft
+                ll += nanmax(norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scalemft, minll(T))
             elseif isa(c, ApatiteFT)
                 c::ApatiteFT{T}
                 μcalc[i] = modelage(c, Tstepsᵢ, dm::ApatiteAnnealingModel{T}, rp)
-                ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scaleaft
+                ll += nanmax(norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scaleaft, minll(T))
             elseif isa(c, VitriniteRo)
                 c::VitriniteRo{T}
                 μcalc[i] = modelage(c, Tstepsᵢ, dm::VitriniteReflectanceModel{T}, rp)
-                ll += norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scalevro
+                ll += nanmax(norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scalevro, minll(T))
             elseif isa(c, ZirconTrackLength)
                 c::ZirconTrackLength{T}
                 if isnan(first(c.calc))
@@ -1137,7 +1141,7 @@
                     μ, σcalc[i] = c.calc
                 end
                 μcalc[i] = max(draw_from_population(rng, c, σcalc[i]), zero(T)) # Draw from dist, but cannot be negative
-                ll += model_ll(c, σcalc[i])/scaleztl
+                ll += nanmax(model_ll(c, σcalc[i])/scaleztl, minll(T))
             elseif isa(c, MonaziteTrackLength)
                 c::MonaziteTrackLength{T}
                 if isnan(first(c.calc))
@@ -1146,7 +1150,7 @@
                     μ, σcalc[i] = c.calc
                 end
                 μcalc[i] = max(draw_from_population(rng, c, σcalc[i]), zero(T)) # Draw from dist, but cannot be negative
-                ll += model_ll(c, σcalc[i])/scalemtl
+                ll += nanmax(model_ll(c, σcalc[i])/scalemtl, minll(T))
             elseif isa(c, ApatiteTrackLength)
                 c::ApatiteTrackLength{T}
                 if isnan(first(c.calc))
@@ -1155,7 +1159,7 @@
                     μ, σcalc[i] = c.calc
                 end
                 μcalc[i] = max(draw_from_population(rng, c, σcalc[i]), zero(T)) # Draw from dist, but cannot be negative
-                ll += model_ll(c, σcalc[i])/scaleatl
+                ll += nanmax(model_ll(c, σcalc[i])/scaleatl, minll(T))
             elseif isa(c, ApatiteTrackLengthOriented)
                 c::ApatiteTrackLengthOriented{T}
                 if isnan(first(c.calc))
@@ -1164,23 +1168,23 @@
                     μ, σcalc[i] = c.calc
                 end
                 μcalc[i] = max(draw_from_population(rng, c, σcalc[i]), zero(T)) # Draw from dist, but cannot be negative
-                ll += model_ll(c, σcalc[i])/scaleato
+                ll += nanmax(model_ll(c, σcalc[i])/scaleato, minll(T))
             elseif isa(c, SingleDomain)
                 c::SingleDomain{T, <:Union{ArgonSample{T}, HeliumSample{T}}}
                 age, stepage, fraction = modelage(c, Tstepsᵢ, dm::DiffusivityModel{T}, rp; redegastracer, partitiondaughter)
                 @assert issorted(fraction) "Degassing fraction is not properly cumulative"
                 if redegastracer
                     if stepwisetracerfraction
-                        ll += stepwise_degassing_ll(c)/scalesdd
+                        ll += nanmax(stepwise_degassing_ll(c)/scalesdd, minll(T))
                     else
-                        ll += cumulative_degassing_ll(c)/scalesdd
+                        ll += nanmax(cumulative_degassing_ll(c)/scalesdd, minll(T))
                     end
                 end
                 μcalc[i] = draw_from_population(rng, stepage, fraction)
                 if stepagebytime
-                    ll += model_ll_bytime(c, σcalc[i])/scalesdd
+                    ll += nanmax(model_ll_bytime(c, σcalc[i])/scalesdd, minll(T))
                 else
-                    ll += model_ll_byfraction(c, σcalc[i])/scalesdd
+                    ll += nanmax(model_ll_byfraction(c, σcalc[i])/scalesdd, minll(T))
                 end
             elseif isa(c, MultipleDomain)
                 c::MultipleDomain{T, <:Union{ArgonSample{T}, HeliumSample{T}}}
@@ -1188,16 +1192,16 @@
                 @assert issorted(fraction) "Degassing fraction is not properly cumulative"
                 if redegastracer
                     if stepwisetracerfraction
-                        ll += stepwise_degassing_ll(c)/scalemdd
+                        ll += nanmax(stepwise_degassing_ll(c)/scalemdd, minll(T))
                     else
-                        ll += cumulative_degassing_ll(c)/scalemdd
+                        ll += nanmax(cumulative_degassing_ll(c)/scalemdd, minll(T))
                     end
                 end
                 μcalc[i] = draw_from_population(rng, stepage, fraction)
                 if stepagebytime
-                    ll += model_ll_bytime(c, σcalc[i])/scalemdd
+                    ll += nanmax(model_ll_bytime(c, σcalc[i])/scalemdd, minll(T))
                 else
-                    ll += model_ll_byfraction(c, σcalc[i])/scalemdd
+                    ll += nanmax(model_ll_byfraction(c, σcalc[i])/scalemdd, minll(T))
                 end
             else
                 # NaN if not calculated
