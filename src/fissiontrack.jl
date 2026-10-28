@@ -266,10 +266,10 @@ rmr₀ = (-0.0495 -0.0348F +0.3528|Cl - 1| +0.0701|OH - 1|
 ```
 """
 function apatite_rmr0model(F, Cl, OH, Mn=0, Fe=0, others=0)
-    F+Cl+OH ≈ 2 || error("F, Cl, and OH should sum to 2")
+    @assert F+Cl+OH ≈ 2 "F, Cl, and OH should sum to 2"
     h = (- 0.0348F + 0.3528abs(Cl - 1) + 0.0701abs(OH - 1) +
          - 0.8592Mn - 1.2252Fe - 0.1721others -0.0495      )
-    return h^0.1433
+    return clamp(h, 0, 1)^0.1433
 end
 export apatite_rmr0model
 
@@ -284,7 +284,7 @@ of Ketcham et al. 1999 (doi: 10.2138/am-1999-0903)
 rmr₀ = 1 - exp(2.107(1 - abs(Cl - 1)) - 1.834)
 ```
 """
-apatite_rmr0fromcl(Cl) = 1 - exp(2.107*(1 - abs(Cl - 1)) - 1.834)
+apatite_rmr0fromcl(Cl) = clamp(1 - exp(2.107*(1 - abs(Cl - 1)) - 1.834), 0, 1)
 export apatite_rmr0fromcl
 
 """
@@ -298,7 +298,7 @@ fission track following the relation (Fig. 7b) of Ketcham et al. 1999
 rmr₀ = 1 - exp(0.647(dpar-1.75) - 1.834)
 ```
 """
-apatite_rmr0fromdpar(dpar) = 1 - exp(0.647(dpar-1.75) - 1.834)
+apatite_rmr0fromdpar(dpar) = clamp(1 - exp(0.647(dpar-1.75) - 1.834), 0, 1)
 export apatite_rmr0fromdpar
 
 """
@@ -312,7 +312,7 @@ fission track following the relation (Fig. 7b) of Ketcham et al. 1999
 dpar = (log(1 - rmr₀) + 1.834)/0.647 + 1.75
 ```
 """
-apatite_dparfromrmr0(rmr₀) = (log(1 - rmr₀) + 1.834)/0.647 + 1.75
+apatite_dparfromrmr0(rmr₀) = clamp((log(1 - rmr₀) + 1.834)/0.647 + 1.75, 0, 5)
 export apatite_dparfromrmr0
 
 
