@@ -82,7 +82,7 @@ function ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64;
     agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
     l0, l0_sigma, rmr0 = parseaftparams(;l0, l0_sigma, dpar, F, Cl, OH, rmr0, oriented=true)
     @assert eachindex(r) == eachindex(pr) == eachindex(agesteps) == eachindex(tsteps)
-    h = hash((ApatiteTrackLengthOriented, offset, agesteps, l0, l0_sigma, rmr0))
+    h = hash((ApatiteTrackLengthOriented, offset, height, agesteps, l0, l0_sigma, rmr0))
     ApatiteTrackLengthOriented(
         T(length),
         T(angle),
@@ -180,7 +180,7 @@ function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
     # Multikinetic fission track parameters
     l0, l0_sigma, rmr0 = parseaftparams(;l0, l0_sigma, dpar, F, Cl, OH, rmr0, oriented=false)
     @assert eachindex(r) == eachindex(pr) == eachindex(agesteps) == eachindex(tsteps)
-    h = hash((ApatiteTrackLength, offset, agesteps, l0, l0_sigma, rmr0))
+    h = hash((ApatiteTrackLength, offset, height, agesteps, l0, l0_sigma, rmr0))
     ApatiteTrackLength(
         T(length),
         T(offset),
@@ -259,7 +259,7 @@ function ZirconTrackLength(T::Type{<:AbstractFloat}=Float64;
         l0_sigma = 0.051
     end
     @assert eachindex(r) == eachindex(pr) == eachindex(agesteps) == eachindex(tsteps)
-    h = hash((ZirconTrackLength, offset, agesteps, l0, l0_sigma))
+    h = hash((ZirconTrackLength, offset, height, agesteps, l0, l0_sigma))
     ZirconTrackLength(
         T(length),
         T(offset),
@@ -338,7 +338,7 @@ function MonaziteTrackLength(T::Type{<:AbstractFloat}=Float64;
         l0_sigma = 0.19
     end
     @assert eachindex(r) == eachindex(pr) == eachindex(agesteps) == eachindex(tsteps)
-    h = hash((MonaziteTrackLength, offset, agesteps, l0, l0_sigma))
+    h = hash((MonaziteTrackLength, offset, height, agesteps, l0, l0_sigma))
     MonaziteTrackLength(
         T(length),
         T(offset),
@@ -2084,7 +2084,7 @@ function SingleDomain(T=Float64, C=ApatiteHe;
     agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
     
     # Check input arrays are the right size and ordered properly
-    @assert eachindex(step_age) == eachindex(step_age_sigma) == eachindex(fraction_experimental) == eachindex(tsteps_experimental) == eachindex(Tsteps_experimental)
+    @assert eachindex(step_age) == eachindex(step_age_sigma) == eachindex(fraction_experimental) == eachindex(fraction_experimental_sigma) == eachindex(tsteps_experimental) == eachindex(Tsteps_experimental)
     @assert issorted(tsteps_experimental, lt=<=) "Degassing time steps must be in strictly increasing order"
     @assert all(x->0<=x<=1, fraction_experimental) "All \"fraction degassed\" values must be between 0 and 1"
 

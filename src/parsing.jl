@@ -60,7 +60,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
     global_agesteps, global_tsteps = checktimediscretization(T, global_agesteps, global_tsteps)
 
     haskey(ds, :mineral) || error("dataset must contain a column labeled `mineral`")
-    mineral = ds.mineral
+    minerals = ds.mineral
     crystage = if haskey(ds, :crystallization_age_Ma)
         ds.crystallization_age_Ma
     elseif haskey(ds, :crystAge) # Legacy option
@@ -68,7 +68,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
     else
         error("dataset must contain a column labeled `crystallization age [Ma]`")
     end
-    @assert eachindex(mineral) == eachindex(crystage)
+    @assert eachindex(minerals) == eachindex(crystage)
 
     # Default damage models for each mineral
     zdm = (haskey(params, :zdm) ? params.zdm : ZRDAAM())::ZirconHeliumModel{T}
@@ -94,10 +94,11 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
     # Create and fill vectors of chronometers
     chrons = Chronometer[]
     damodels = Model[]
-    for i in eachindex(mineral)
+    for i in eachindex(minerals)
         first_index = findclosest(crystage[i], global_agesteps)
+        crystage[i] > (first(global_agesteps) - step_at(global_agesteps, 1)) && @warn "Sample in row $i has crystallization age $(crystage[i]) Ma, truncating to oldest model step at $(first(global_agesteps)) Ma"
         agesteps = global_agesteps[first_index:end]
-        mineral = lowercase(string(ds.mineral[i]))
+        mineral = lowercase(string(minerals[i]))
         geometry = haskey(ds, :geometry) ? lowercase(string(ds.geometry[i])) : ""
         offset = (haskey(ds, :offset_C) && !isnan(ds.offset_C[i])) ? ds.offset_C[i] : 0
         height = (haskey(ds, :height_m) && !isnan(ds.height_m[i])) ? ds.height_m[i] : 0
@@ -326,7 +327,7 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                 c = DomainType(T;
                     age = ds.raw_He_age_Ma[i],
                     age_sigma = ds.raw_He_age_sigma_Ma[i],
-                    stoppingpower = alphastoppingpower(ds.mineral[i]),
+                    stoppingpower = alphastoppingpower(mineral),
                     r = ds.halfwidth_um[i],
                     dr, offset, height,
                     U238, Th232, Sm147,
@@ -475,9 +476,6 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
             # Ensure experimental time steps are cumulatibve
             tsteps_experimental = issorted(dds.time_s, lt=<=) ? dds.time_s : cumsum(dds.time_s)
             if haskey(dds, :He_4_He_3) # He ratio format
-                Rstep = dds.He_4_He_3
-                Rstep_sigma = dds.He_4_He_3_sigma
-                Rbulk = nanmean(dds.He_4_He_3, dds.He_3)
                 # Determine if reported degassing is cumulative or not
                 if issorted(dds.He_3)
                     fraction_experimental = dds.He_3
@@ -486,6 +484,9 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                     fraction_stepwise = dds.He_3
                     fraction_experimental = cumsum(fraction_stepwise)
                 end
+                Rstep = dds.He_4_He_3
+                Rstep_sigma = dds.He_4_He_3_sigma
+                Rbulk = nanmean(dds.He_4_He_3, fraction_stepwise)
                 # Ensure fractions are normalized to 1
                 total_experimental = last(fraction_experimental)
                 fraction_experimental ./= total_experimental
@@ -540,7 +541,10 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                     grainsize_matrix,
                     agesteps, name, notes,
                 )
-                if haskey(ds, :dose_alpha_g) # Use observed dose from file, if applicable
+                if haskey(ds, :dose_alpha_g) 
+                    # Use observed dose from file, if applicable
+                    # This will not be used (will be overwritten) in geological inversions, 
+                    # but may be wanted for some laboratory models
                     for domain in c.domains
                         domain.annealeddamage .= ds.dose_alpha_g[i]
                     end
@@ -590,7 +594,10 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
                     grainsize_matrix,
                     agesteps, name, notes,
                 )
-                if haskey(ds, :dose_alpha_g) # Use observed dose from file, if applicable
+                if haskey(ds, :dose_alpha_g) 
+                    # Use observed dose from file, if applicable
+                    # This will not be used (will be overwritten) in geological inversions, 
+                    # but may be wanted for some laboratory models
                     c.domain.annealeddamage .= ds.dose_alpha_g[i]
                 end
                 dm = if mineral === "apatite"
