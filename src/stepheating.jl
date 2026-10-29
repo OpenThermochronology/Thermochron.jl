@@ -22,7 +22,7 @@ function arrhenius(c::StepHeatingSample{T}, fit::BitVector=c.fit;
     ) where {T}
     # Calculate cumulative fractions, with complete uncertainties
     f_step_mu = diffwithinitial(c.fraction_experimental)
-    f_step_sigma = c.fraction_experimental_sigma
+    f_step_sigma = copy(c.fraction_experimental_sigma)
     for i in eachindex(f_step_sigma)
         if isnan(f_step_sigma[i])
             f_step_sigma[i] = f_step_mu[i] * T(degassing_relsigma_fallback)

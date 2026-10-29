@@ -74,8 +74,8 @@ function ApatiteTrackLengthOriented(T::Type{<:AbstractFloat}=Float64;
         notes::String = "",
         agesteps = nothing,
         tsteps = nothing,
-        r::Vector = zeros(T, size(agesteps)),
-        pr::Vector = zeros(T, size(agesteps)),
+        r::Vector = zeros(T, size(isnothing(agesteps) ? tsteps : agesteps)),
+        pr::Vector = zeros(T, size(isnothing(agesteps) ? tsteps : agesteps)),
         calc::Vector = zeros(T, 2),
     )
     # Temporal discretization
@@ -171,8 +171,8 @@ function ApatiteTrackLength(T::Type{<:AbstractFloat}=Float64;
         notes::String = "",
         agesteps = nothing,
         tsteps = nothing,
-        r::Vector = zeros(T, size(agesteps)),
-        pr::Vector = zeros(T, size(agesteps)),
+        r::Vector = zeros(T, size(isnothing(agesteps) ? tsteps : agesteps)),
+        pr::Vector = zeros(T, size(isnothing(agesteps) ? tsteps : agesteps)),
         calc::Vector = zeros(T, 2),
     )
     # Temporal discretization
@@ -245,8 +245,8 @@ function ZirconTrackLength(T::Type{<:AbstractFloat}=Float64;
         notes::String = "",
         agesteps = nothing,
         tsteps = nothing,
-        r::Vector = zeros(T, size(agesteps)),
-        pr::Vector = zeros(T, size(agesteps)),
+        r::Vector = zeros(T, size(isnothing(agesteps) ? tsteps : agesteps)),
+        pr::Vector = zeros(T, size(isnothing(agesteps) ? tsteps : agesteps)),
         calc::Vector = zeros(T, 2),
     )
     # Temporal discretization
@@ -324,8 +324,8 @@ function MonaziteTrackLength(T::Type{<:AbstractFloat}=Float64;
         notes::String = "",
         agesteps = nothing,
         tsteps = nothing,
-        r::Vector = zeros(T, size(agesteps)),
-        pr::Vector = zeros(T, size(agesteps)),
+        r::Vector = zeros(T, size(isnothing(agesteps) ? tsteps : agesteps)),
+        pr::Vector = zeros(T, size(isnothing(agesteps) ? tsteps : agesteps)),
         calc::Vector = zeros(T, 2),
     )
     # Temporal discretization
@@ -2290,7 +2290,7 @@ function eU(x::HeliumSample{T}) where {T<:AbstractFloat}
     # Convert from atoms/g to ppm
     eu = nanmean(x.r238U) / (6.022e17 / 238)
     eu += 0.238*nanmean(x.r232Th) / (6.022e17 / 232)
-    eu += 0.012*nanmean(x.r147Sm) / (6.022e17 / 147)
+    eu += 0.0083*nanmean(x.r147Sm) / (6.022e17 / 147)
     return T(eu)
 end
 
