@@ -648,7 +648,7 @@ is interpreted as external uncertainty which should be reflected in `σcalc`.
 Similarity in eU and offset is assessed on the basis of Gaussian kernels with
 bandwidth equal to `sigma_eU` for eU and `sigma_offset` for temperature offset.
 """
-function empiricaluncertainty!(σcalc::AbstractVector{T}, chrons::AbstractArray{<:Chronometer{T}}, ::Type{C};
+function empiricaluncertainty!(σcalc::AbstractVector{T}, chrons::AbstractArray{<:Chronometer{T}}, ::Type{C}, rp::RegionalParameters{T}=RegionalParameters{T}();
         fraction::Number = 1/sqrt(2),
         sigma_eU::Number = (C<:ZirconHe) ? 100.0 : (C<:ApatiteHe) ? 10.0 : 25.0,
         sigma_offset::Number = 10.0,
@@ -659,11 +659,11 @@ function empiricaluncertainty!(σcalc::AbstractVector{T}, chrons::AbstractArray{
     chrons_C = chrons[inds]
     eU_C = eU.(chrons_C)
     ages_C = value.(chrons_C)
-    ΔT_C = temperatureoffset.(chrons_C)
+    ΔT_C = temperatureoffset.(chrons_C, rp)
     for i ∈ inds
         nearest_eU = minimum(j->abs(eU(chrons[j]) - eU(chrons[i])), setdiff(inds, i))
         eU_kernel = Normal(eU(chrons[i]), max(sigma_eU, nearest_eU/2))
-        ΔT_kernel = Normal(temperatureoffset(chrons[i]), sigma_offset)
+        ΔT_kernel = Normal(temperatureoffset(chrons[i], rp), sigma_offset)
         W = pdf.(eU_kernel, eU_C) .* pdf.(ΔT_kernel, ΔT_C)
         # Assume some fraction of weighted variance is from unknown external uncertainty
         σₑ = nanstd(ages_C, W) * fraction   # External uncertainty (est)

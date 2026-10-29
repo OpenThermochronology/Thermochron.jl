@@ -305,10 +305,18 @@ anneal!(mineral::SingleDomain, pr::AbstractMatrix) = anneal!(mineral.domain, pr)
 function anneal!(mineral::Union{PlanarZirconHe, ZirconHe, ApatiteHe}, pr::AbstractMatrix)
     ntsteps = size(pr, 1)
     first_index = firstindex(pr) + ntsteps - length(tsteps_geol(mineral))
-    if first_index > 1
-        @views mul!(mineral.annealeddamage, pr[first_index:end, first_index:end], mineral.alphadamage)
+    if uniformparent(mineral)
+        if first_index > 1
+            @views mineral.annealeddamage .= mul!(mineral.annealeddamage[:,1], pr[first_index:end, first_index:end], mineral.alphadamage[:,1])
+        else
+            @views mineral.annealeddamage .= mul!(mineral.annealeddamage[:,1], pr, mineral.alphadamage[:,1])
+        end
     else
-        mul!(mineral.annealeddamage, pr, mineral.alphadamage)
+        if first_index > 1
+            @views mul!(mineral.annealeddamage, pr[first_index:end, first_index:end], mineral.alphadamage)
+        else
+            mul!(mineral.annealeddamage, pr, mineral.alphadamage)
+        end
     end
     return mineral
 end

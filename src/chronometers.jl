@@ -2245,8 +2245,8 @@ end
 
 # Implement eltype methods to deal with chronometers which are wrapper types
 Base.eltype(x::Chronometer) = typeof(x)
-Base.eltype(x::MultipleDomain{T,C}) where {T,C} = C
-Base.eltype(x::SingleDomain{T,C}) where {T,C} = C
+Base.eltype(::MultipleDomain{T,C}) where {T,C} = C
+Base.eltype(::SingleDomain{T,C}) where {T,C} = C
 
 # Retrive the nominal value (age, length, etc) of any Chronometer
 Isoplot.value(x::AbsoluteChronometer{T}) where {T} = x.age::T
@@ -2262,7 +2262,7 @@ end
 # Retrive the nominal 1-sigma uncertainty (in age, length, etc.) of any Chronometer
 Isoplot.stdev(x::AbsoluteChronometer{T}) where {T} = x.age_sigma::T
 Isoplot.stdev(x::StepHeatingSample{T}) where {T} = nanstd(x.step_age, @.(x.fit/x.step_age_sigma^2))::T
-Isoplot.stdev(x::FissionTrackLength{T}) where {T} = zero(T)
+Isoplot.stdev(::FissionTrackLength{T}) where {T} = zero(T)
 Isoplot.stdev(x::VitriniteRo{T}) where {T} = x.Ro_sigma::T
 function err(x::Chronometer)
     @warn "Thermochron.err has been deprecated in favor of Thermochron.stdev"
@@ -2270,7 +2270,7 @@ function err(x::Chronometer)
 end
 
 # Retrive the temperature offset of any Chronometer
-function temperatureoffset(x::Chronometer{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T}
+function temperatureoffset(x::Chronometer{T}, rp::RegionalParameters{T}) where {T}
     T(x.offset - x.height*rp.geotherm/1000)
 end
 
@@ -2295,10 +2295,17 @@ function eU(x::HeliumSample{T}) where {T<:AbstractFloat}
 end
 
 # Retrieve size (ESR for spherical samples, halfwidth for planar samples)
-radius(x::Chronometer{T}) where {T} = T(NaN)
-radius(x::NobleGasSample{T}) where {T} = maximum(x.redges)::T
+radius(::Chronometer{T}) where {T} = T(NaN)
+radius(x::NobleGasSample{T}) where {T} = last(x.redges)::T
 radius(x::SingleDomain) = radius(x.domain)
 radius(x::MultipleDomain) = radius(first(x.domains))
+
+# Check if a chronometer has a uniform radial deposition profile
+uniformparent(::Chronometer) = true
+uniformparent(x::ArgonSample) = all(isapprox(first(x.K40)), x.K40)
+uniformparent(x::HeliumSample) = all(isapprox(first(x.alphadamage)), view(x.alphadamage, 1, :))
+uniformparent(x::SingleDomain) = uniformparent(x.domain)
+uniformparent(x::MultipleDomain) = uniformparent(first(x.domains))
 
 ## -- Utility functions related to age and age uncertinty of absolute chronometers
 
