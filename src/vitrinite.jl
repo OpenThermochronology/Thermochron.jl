@@ -2,21 +2,34 @@
 
 # note that VR predictions for rapid thermal excursions are sensitive to agesteps density in that interval
 
-struct NielsenBasinRo{T<:AbstractFloat} <: VitriniteReflectanceModel{T}
+"""
+```julia
+NielsenBasinRo(;
+    logA = 60.9856,                 # [log(1/Myr)] Rate constant
+    Ea = (34:2:72) .* 4184.0,       # [kJ/mol] activation energy
+    stoich = [0.0185,..,0.0096],    # [unitless] fraction of each component
+    Ro0 = 0.2104,                   # [unitless] preexponential factor
+)
+```
+The basin%Ro model of Nielsen et al. 2015 (doi: 10.1111/bre.12160)
+"""
+struct NielsenBasinRo{T<:AbstractFloat,N} <: VitriniteReflectanceModel{T}
     logA::T
-    Ea::Vector{T}
-    stoich::Vector{T}
+    Ea::NTuple{N,T}
+    stoich::NTuple{N,T}
     Ro0::T
 end
-function NielsenBasinRo(T::Type{<:AbstractFloat}=Float64;
-        logA::Number = 60.9856,
-        Ea::AbstractVector = [34.,36.,38.,40.,42.,44.,46.,48.,50.,52.,54.,56.,58.,60.,62.,64.,66.,68.,70.,72.] .* 4184.0,
-        stoich::AbstractVector = normalize_stoich([0.0185,0.0143,0.0569,0.0478,0.0497,0.0344,0.0344,0.0322,0.0282,0.0062,0.1155,0.1041,0.1023,0.0760,0.0593,0.0512,0.0477,0.0086,0.0246,0.0096]),
-        Ro0::Number = 0.2104,
-    )
-    NielsenBasinRo(T(logA), T.(Ea), T.(stoich), T(Ro0))
+function NielsenBasinRo(;
+        logA::T = 60.9856,                      # [log(1/Myr)] Rate constant
+        Ea::AbstractVector{T} = (34:2:72) .* 4184.0, # [kJ/mol] activation energy
+        stoich::AbstractVector{T} = [0.0185,0.0143,0.0569,0.0478,0.0497,0.0344,0.0344,0.0322,0.0282,0.0062,0.1155,0.1041,0.1023,0.0760,0.0593,0.0512,0.0477,0.0086,0.0246,0.0096],  # [unitless] fraction of each component
+        Ro0::T = 0.2104,                        # [unitless] preexponential factor
+    ) where {T}
+    @assert length(Ea) == length(stoich) "Ea and stoich must be same length"
+    Ea_tuple = (T.(Ea)...,) 
+    stoich_tuple = (T.(stoich ./ sum(stoich))...,) # Normalize
+    NielsenBasinRo(T(logA), Ea_tuple, stoich_tuple, T(Ro0))
 end
-normalize_stoich(x) = x ./ sum(x)
 
 ## --- Forward model
 
@@ -30,17 +43,18 @@ experienced a given t-T path (specified by `vro.tsteps` for time and
 """
 function modelage(vro::VitriniteRo{T}, Tsteps::AbstractVector, model::NielsenBasinRo{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T<:AbstractFloat}
     tsteps = tsteps_geol(vro)
-    ΔT = T(273.15) + temperatureoffset(vro, rp)
     @assert issorted(tsteps)
     @assert eachindex(tsteps) == eachindex(Tsteps)
-    A = exp(model.logA) / SEC_MYR
     xi = vro.xi::Vector{T}
-    copyto!(xi, model.stoich)   # reset in place, no allocation
-    @inbounds for i in eachindex(tsteps, Tsteps)
-        Tavg = Tsteps[i] + ΔT
-        dt = abs(step_at(tsteps, i)) * SEC_MYR
-        for j in eachindex(xi, model.Ea)
-            k = A * exp(-model.Ea[j] / (8.3143 * Tavg))
+    @assert eachindex(xi) == eachindex(model.stoich) == eachindex(model.Ea)
+    logA = model.logA::T
+    ΔT = T(273.15) + temperatureoffset(vro, rp)
+    copyto!(xi, model.stoich)
+    @inbounds for i in eachindex(tsteps)
+        TK = Tsteps[i] + ΔT
+        dt = abs(step_at(tsteps, i))
+        for j in eachindex(xi)
+            k = exp(logA - model.Ea[j]/(8.3143 * TK))
             xi[j] *= exp(-k*dt)
         end
     end

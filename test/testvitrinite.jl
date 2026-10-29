@@ -10,7 +10,7 @@
     @test length(dm.stoich) == 20
     @test sum(dm.stoich) ≈ 1.0
 
-    dm2 = NielsenBasinRo(Float64; Ro0=0.25)
+    dm2 = NielsenBasinRo(Ro0=0.25)
     @test dm2.Ro0 ≈ 0.25
     @test sum(dm2.stoich) ≈ 1.0
 
