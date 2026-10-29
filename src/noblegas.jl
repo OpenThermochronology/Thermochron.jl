@@ -258,10 +258,8 @@ function anneal(tsteps::AbstractVector, Tsteps::AbstractVector, dm::DiffusivityM
     # Allocate matrix to hold reduced track lengths for all previous timesteps
     ntsteps = length(tsteps)
     ρᵣ = zeros(ntsteps,ntsteps)
-    teq = zeros(ntsteps)
     # In=-place version
-    anneal!(ρᵣ, teq, tsteps, Tsteps, dm, ΔT)
-    return ρᵣ, teq
+    return anneal!(ρᵣ, tsteps, Tsteps, dm, ΔT)
 end
 
 """
@@ -325,7 +323,7 @@ end
 function anneal!(mineral::MultipleDomain{T}, Tsteps::AbstractVector, dm::DamageDiffusivityModel, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T}
     c0 = first(mineral.domains)
     ΔT = T(273.15) + temperatureoffset(mineral, rp)
-    anneal!(c0.pr, view(c0.annealeddamage,:,1), tsteps_geol(c0), Tsteps, dm, ΔT) # Calculate ρᵣ matrix for first domain
+    anneal!(c0.pr, tsteps_geol(c0), Tsteps, dm, ΔT) # Calculate ρᵣ matrix for first domain
     anneal!(mineral, c0.pr) # Apply to annealed damage of all domains
     return mineral
 end
@@ -334,19 +332,19 @@ function anneal!(mineral::Union{PlanarZirconHe{T}, ZirconHe{T}, ApatiteHe{T}}, T
     ΔT = T(273.15) + temperatureoffset(mineral, rp)
     first_index = firstindex(Tsteps) + length(Tsteps) - length(tsteps_geol(mineral))
     if first_index > 1
-        anneal!(mineral.pr, view(mineral.annealeddamage,:,1), tsteps_geol(mineral), @views(Tsteps[first_index:end]), dm, ΔT)
+        anneal!(mineral.pr, tsteps_geol(mineral), @views(Tsteps[first_index:end]), dm, ΔT)
     else
-        anneal!(mineral.pr, view(mineral.annealeddamage,:,1), tsteps_geol(mineral), Tsteps, dm, ΔT)
+        anneal!(mineral.pr, tsteps_geol(mineral), Tsteps, dm, ΔT)
     end
     anneal!(mineral, mineral.pr) # Apply to annealed damage
     return mineral
 end
 
 # Calculate ρᵣ matrix
-function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::AbstractVector, Tsteps::AbstractVector, dm::ZRDAAM{T}, ΔT::T=T(273.15)) where {T <: AbstractFloat}
-    @assert eachindex(tsteps) == eachindex(Tsteps) == eachindex(teq) == axes(ρᵣ, 1) == axes(ρᵣ,2) == Base.OneTo(length(tsteps))
+function anneal!(ρᵣ::AbstractMatrix{T}, tsteps::AbstractVector, Tsteps::AbstractVector, dm::ZRDAAM{T}, ΔT::T=T(273.15)) where {T <: AbstractFloat}
+    @assert eachindex(tsteps) == eachindex(Tsteps) == axes(ρᵣ, 1) == axes(ρᵣ,2) == Base.OneTo(length(tsteps))
     ntsteps = length(tsteps)
-    fill!(teq, zero(T))
+    @assert size(ρᵣ) === (ntsteps, ntsteps)
     C₀ = dm.C0::T
     C₁ = dm.C1::T
     C₂ = dm.C2::T
@@ -362,17 +360,14 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::Abstr
         dt = step_at(tsteps, i)
         lᵢ = log(1 / (Tsteps[i]+ΔT)) - C₃
 
-        # Convert any existing track length reduction for damage from
-        # all previous timestep to an equivalent annealing time at the
-        # current temperature
-        @fast for j ∈ 1:i-1
-            teq[j] = exp(C₂ + lᵢ * ((1/ρᵣ[i-1, j] - 1)^β - C₀) / C₁)
-        end
-
         # Calculate the new reduced track lengths for all previous time steps
         # Accumulating annealing strictly in terms of reduced track length
         @fast for j ∈ 1:i
-            ρᵣ[i,j] = 1 / ((C₀ + C₁ * (log(dt + teq[j]) - C₂) / lᵢ)^(1/β) + 1)
+            # Convert track length reduction for damage from previous timesteps
+            # to an equivalent annealing time at the current temperature
+            teq = exp(C₂ + lᵢ * ((1/ρᵣ[i-1, j] - 1)^β - C₀) / C₁) * (i!=j)
+            # Current reduced track length
+            ρᵣ[i,j] = 1 / ((C₀ + C₁ * (log(dt + teq) - C₂) / lᵢ)^(1/β) + 1)
         end
     end
 
@@ -394,12 +389,10 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::Abstr
 
     return ρᵣ
 end
-function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::AbstractVector, Tsteps::AbstractVector, dm::RDAAM{T}, ΔT::T=T(273.15)) where T <: AbstractFloat
-    @assert eachindex(tsteps) == eachindex(Tsteps) == eachindex(teq) == axes(ρᵣ, 1) == axes(ρᵣ,2) == Base.OneTo(length(tsteps))
+function anneal!(ρᵣ::AbstractMatrix{T}, tsteps::AbstractVector, Tsteps::AbstractVector, dm::RDAAM{T}, ΔT::T=T(273.15)) where T <: AbstractFloat
+    @assert eachindex(tsteps) == eachindex(Tsteps) == axes(ρᵣ, 1) == axes(ρᵣ,2) == Base.OneTo(length(tsteps))
     ntsteps = length(tsteps)
     @assert size(ρᵣ) === (ntsteps, ntsteps)
-    @assert size(teq) === (ntsteps,)
-    fill!(teq, zero(T))
     C₀ = dm.C0::T
     C₁ = dm.C1::T
     C₂ = dm.C2::T
@@ -415,17 +408,14 @@ function anneal!(ρᵣ::AbstractMatrix{T}, teq::AbstractVector{T}, tsteps::Abstr
         dt = step_at(tsteps, i)
         lᵢ = log(1 / (Tsteps[i]+ΔT)) - C₃
 
-        # Convert any existing track length reduction for damage from
-        # all previous timestep to an equivalent annealing time at the
-        # current temperature
-        @fast for j ∈ 1:i-1
-            teq[j] = exp(C₂ + lᵢ * ((1/ρᵣ[i-1, j] - 1)^β - C₀) / C₁)
-        end
-
         # Calculate the new reduced track lengths for all previous time steps
         # Accumulating annealing strictly in terms of reduced track length
         @fast for j ∈ 1:i
-            ρᵣ[i,j] = 1 / ((C₀ + C₁ * (log(dt + teq[j]) - C₂) / lᵢ)^(1/β) + 1)
+            # Convert track length reduction for damage from previous timesteps
+            # to an equivalent annealing time at the current temperature
+            teq = exp(C₂ + lᵢ * ((1/ρᵣ[i-1, j] - 1)^β - C₀) / C₁) * (i!=j)
+            # Current reduced track length
+            ρᵣ[i,j] = 1 / ((C₀ + C₁ * (log(dt + teq) - C₂) / lᵢ)^(1/β) + 1)
         end
     end
 
