@@ -29,7 +29,7 @@
 
     # Isothermal residence at 80 C for 50 Ma
     vro = VitriniteRo(agesteps=reverse(cntr(0:50)))
-    @test modelage(vro, fill(80, 50), NielsenBasinRo()) ≈ 0.543989018090385 
+    @test modelreflectance(vro, fill(80, 50), NielsenBasinRo()) ≈ 0.543989018090385 
 
     # Burial-then-exhumation: 100 Ma (20 C) -> 40 Ma (150 C) -> present (90 C)
     agesteps = reverse(cntr(0:100))
@@ -38,35 +38,35 @@
         Tsteps[i] = a > 40 ? 20 + (100-a)/(100-40)*(150-20) : 150 + (40-a)/40*(90-150)
     end
     vro = VitriniteRo(agesteps=agesteps)
-    @test modelage(vro, Tsteps, NielsenBasinRo()) ≈ 0.8705766330673169 
+    @test modelreflectance(vro, Tsteps, NielsenBasinRo()) ≈ 0.8705766330673169 
 
     # Sanity checks: more heating should never yield lower predicted %Ro,
     # and predicted %Ro should never drop below the immature starting value
     vro = VitriniteRo(agesteps=reverse(cntr(0:50)))
     dm = NielsenBasinRo()
-    Ro_cool = modelage(vro, fill(80, 50), dm)
-    Ro_hot = modelage(vro, fill(100, 50), dm)
+    Ro_cool = modelreflectance(vro, fill(80, 50), dm)
+    Ro_hot = modelreflectance(vro, fill(100, 50), dm)
     @test Ro_hot > Ro_cool
     @test Ro_cool >= dm.Ro0
     @test Ro_hot >= dm.Ro0
 
     # 20 C isothermal for 28 Ma: mild but non-negligible maturation above Ro0
     vro = VitriniteRo(agesteps=reverse(cntr(0:28)))
-    @test modelage(vro, fill(20., 28), NielsenBasinRo()) ≈ 0.2594903705509342
+    @test modelreflectance(vro, fill(20., 28), NielsenBasinRo()) ≈ 0.2594903705509342
 
     # Constant heating from 10°C at 2.8 C/Ma,
     # as in Fig. 5 of Nielsen et al. 2017: 
     Tsteps = 10:2.8:290
     vro = VitriniteRo(;agesteps = length(Tsteps)-1:-1:0.0)
-    @test modelage(vro, Tsteps, NielsenBasinRo()) ≈ 7.85173749893207
+    @test modelreflectance(vro, Tsteps, NielsenBasinRo()) ≈ 7.85173749893207
 
     Tsteps = 10:2.8:201
     vro = VitriniteRo(;agesteps = length(Tsteps)-1:-1:0.0)
-    @test modelage(vro, Tsteps, NielsenBasinRo()) ≈ 2.748360568398062
+    @test modelreflectance(vro, Tsteps, NielsenBasinRo()) ≈ 2.748360568398062
 
     Tsteps = 10:2.8:150
     vro = VitriniteRo(;agesteps = length(Tsteps)-1:-1:0.0)
-    @test modelage(vro, Tsteps, NielsenBasinRo()) ≈ 0.8046313060705653
+    @test modelreflectance(vro, Tsteps, NielsenBasinRo()) ≈ 0.8046313060705653
 
 
 ## --- Test model! dispatch for VitriniteRo

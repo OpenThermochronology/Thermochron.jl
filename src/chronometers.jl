@@ -571,7 +571,7 @@ Construct a `VitriniteRo` chronometer representing a measured vitrinite
 reflectance of `Ro` ± `Ro_sigma` [%Ro], predicted from a t-T path via a
 kinetic model such as `NielsenBasinRo`.
 """
-struct VitriniteRo{T<:AbstractFloat, V<:AbstractVector{T}} <: AbsoluteChronometer{T}
+struct VitriniteRo{T<:AbstractFloat, V<:AbstractVector{T}} <: Chronometer{T}
     Ro::T                   # [%] measured vitrinite reflectance
     Ro_sigma::T             # [%] measured Ro uncertainty (one-sigma)
     offset::T               # [C] temperature offset relative to other samples / the surface

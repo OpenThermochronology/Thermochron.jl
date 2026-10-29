@@ -35,13 +35,13 @@ end
 
 """
 ```julia
-modelage(vro::VitriniteRo, Tsteps, model::VitriniteReflectanceModel)
+modelreflectance(vro::VitriniteRo, Tsteps, model::VitriniteReflectanceModel)
 ```
 Calculate the predicted vitrinite reflectance (%Ro) of a sample that has
 experienced a given t-T path (specified by `vro.tsteps` for time and
 `Tsteps` for temperature), given kinetic model parameters `model`.
 """
-function modelage(vro::VitriniteRo{T}, Tsteps::AbstractVector, model::NielsenBasinRo{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T<:AbstractFloat}
+function modelreflectance(vro::VitriniteRo{T}, Tsteps::AbstractVector, model::NielsenBasinRo{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T<:AbstractFloat}
     tsteps = tsteps_geol(vro)
     @assert issorted(tsteps)
     @assert eachindex(tsteps) == eachindex(Tsteps)
@@ -63,6 +63,6 @@ function modelage(vro::VitriniteRo{T}, Tsteps::AbstractVector, model::NielsenBas
 end
 
 model_ll(vro::VitriniteRo, Tsteps::AbstractVector, model::VitriniteReflectanceModel, rp::RegionalParameters=RegionalParameters()) =
-    norm_ll(modelage(vro, Tsteps, model, rp), stdev(vro), value(vro))
+    norm_ll(modelreflectance(vro, Tsteps, model, rp), stdev(vro), value(vro))
 
 ## --- End of File

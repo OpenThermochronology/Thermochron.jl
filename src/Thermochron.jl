@@ -68,19 +68,22 @@ module Thermochron
     export MDiffusivity, MSDiffusivity                                  # Types for multiple diffusivities
     export ZirconHeliumModel, ZRDAAM, ApatiteHeliumModel, RDAAM         # Damage-and-annealing based helium diffusivity model types
     export SingleDomain, MultipleDomain                                 # Types for modelling step-heating data, with one or more diffusion domains 
+    export Arrhenius, arrhenius                                         # Function and type for fitting Arrhenius trends to step heating experiments
+    export anneal!                                                      # Anneal a DamageDiffusivityModel such as RDAAM or ZRDAAM
     export diffusivity                                                  # Function to calculate diffusivity at given temperature (and damage) for any DiffusivityModel
-    export arrhenius, Arrhenius                                         # Function and type for fitting Arrhenius trends to step heating experiments
-    
+
     # Fission track thermochronology functions and annealing models
     include("fissiontrack.jl")
     export Ketcham1999FC, Ketcham2007FC                                 # Apatite fission track annealing model types
     export Yamada2007PC, Guenthner2013FC                                # Zircon fission track annealing models
     export Jones2021FA                                                  # Other mineral annealing models
-    export modelage, modellength, anneal!                               # Functions
 
     # Vitrinite reflectance thermochronology functions and annealing models
     include("vitrinite.jl")
     export NielsenBasinRo                                               # Vitrinite reflectance annealing models
+
+    # User-facing functions for various of the above chronometers
+    export modelage, modellength, modelreflectance
 
     # Sample import
     include("parsing.jl")

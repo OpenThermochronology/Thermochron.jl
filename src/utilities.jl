@@ -1135,7 +1135,7 @@
                 ll += nanmax(norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scaleaft, minll(T))
             elseif isa(c, VitriniteRo)
                 c::VitriniteRo{T}
-                μcalc[i] = modelage(c, Tstepsᵢ, dm::VitriniteReflectanceModel{T}, rp)
+                μcalc[i] = modelreflectance(c, Tstepsᵢ, dm::VitriniteReflectanceModel{T}, rp)
                 ll += nanmax(norm_ll(μcalc[i], σcalc[i], value(c), stdev(c))/scalevro, minll(T))
             elseif isa(c, ZirconTrackLength)
                 c::ZirconTrackLength{T}
