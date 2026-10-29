@@ -33,7 +33,7 @@ the last two types can be used to wrap any of the previous diffusive (He or Ar)
 chronometer types for the purpose of modelling step heating data, 
 particularly including 4He/3He and 40Ar/39Ar degassing curves.
 
-Fission track chronometers
+Non-diffusive chronometers:
 | Chronometer                  | Mineral  | System            | Annealing model(s)                  |
 | :---                         | :---     | :---              | :---                                |
 | [`ZirconFT`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.ZirconFT) | zircon | fission track age | [`Yamada2007PC`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Yamada2007PC),[`Guenthner2013FC`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Guenthner2013FC) |
@@ -43,6 +43,7 @@ Fission track chronometers
 | [`MonaziteTrackLength`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.MonaziteTrackLength)  | monazite | track length | [`Jones2021FA`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Jones2021FA) |
 | [`ApatiteTrackLength`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.ApatiteTrackLength)  | apatite | track length | [`Ketcham1999FC(:unoriented)`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Ketcham1999FC) |
 | [`ApatiteTrackLengthOriented`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.ApatiteTrackLengthOriented) | apatite  | track length | [`Ketcham1999FC`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Ketcham1999FC), [`Ketcham2007FC`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.Ketcham2007FC) |
+| [`VitriniteRo`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.VitriniteRo) | vitrinite  | vitrinite reflectance | [`NielsenBasinRo`](https://openthermochronology.github.io/Thermochron.jl/dev/#Thermochron.NielsenBasinRo) |
 
 Inversions may include any combination of chronometers.
 

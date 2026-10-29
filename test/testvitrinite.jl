@@ -29,7 +29,7 @@
 
     # Isothermal residence at 80 C for 50 Ma
     vro = VitriniteRo(agesteps=reverse(cntr(0:50)))
-    @test modelage(vro, fill(80, 50), NielsenBasinRo()) ≈ 0.6306865531922565
+    @test modelage(vro, fill(80, 50), NielsenBasinRo()) ≈ 0.543989018090385 
 
     # Burial-then-exhumation: 100 Ma (20 C) -> 40 Ma (150 C) -> present (90 C)
     agesteps = reverse(cntr(0:100))
@@ -38,7 +38,7 @@
         Tsteps[i] = a > 40 ? 20 + (100-a)/(100-40)*(150-20) : 150 + (40-a)/40*(90-150)
     end
     vro = VitriniteRo(agesteps=agesteps)
-    @test modelage(vro, Tsteps, NielsenBasinRo()) ≈ 1.2622215580241707
+    @test modelage(vro, Tsteps, NielsenBasinRo()) ≈ 0.8705766330673169 
 
     # Sanity checks: more heating should never yield lower predicted %Ro,
     # and predicted %Ro should never drop below the immature starting value
@@ -52,7 +52,22 @@
 
     # 20 C isothermal for 28 Ma: mild but non-negligible maturation above Ro0
     vro = VitriniteRo(agesteps=reverse(cntr(0:28)))
-    @test modelage(vro, fill(20., 28), NielsenBasinRo()) ≈ 0.2610983385906111
+    @test modelage(vro, fill(20., 28), NielsenBasinRo()) ≈ 0.2594903705509342
+
+    # Constant heating from 10°C at 2.8 C/Ma,
+    # as in Fig. 5 of Nielsen et al. 2017: 
+    Tsteps = 10:2.8:290
+    vro = VitriniteRo(;agesteps = length(Tsteps)-1:-1:0.0)
+    @test modelage(vro, Tsteps, NielsenBasinRo()) ≈ 7.85173749893207
+
+    Tsteps = 10:2.8:201
+    vro = VitriniteRo(;agesteps = length(Tsteps)-1:-1:0.0)
+    @test modelage(vro, Tsteps, NielsenBasinRo()) ≈ 2.748360568398062
+
+    Tsteps = 10:2.8:150
+    vro = VitriniteRo(;agesteps = length(Tsteps)-1:-1:0.0)
+    @test modelage(vro, Tsteps, NielsenBasinRo()) ≈ 0.8046313060705653
+
 
 ## --- Test model! dispatch for VitriniteRo
 
@@ -66,8 +81,8 @@
     σcalc = zeros(1)
     ll = Thermochron.model!(μcalc, σcalc, chrons, damodels, Tsteps)
 
-    @test ll ≈ 1.88846083098508
-    @test μcalc[1] ≈ 0.6306865531922565
+    @test ll ≈ 1.4493477214534756
+    @test μcalc[1] ≈ 0.543989018090385 
 
 ## --- Test model! with mixed chronometer types
 
@@ -82,8 +97,8 @@
     σcalc = zeros(2)
     ll = Thermochron.model!(μcalc, σcalc, chrons, damodels, fill(80.0, 50))
 
-    @test ll ≈ -264.0174839895607
-    @test μcalc[1] ≈ 0.6306865531922565
+    @test ll ≈ -264.4565970990923
+    @test μcalc[1] ≈ 0.543989018090385
     @test isfinite(μcalc[2]) && !isnan(μcalc[2])  # ApatiteFT computed something real; exact value not pinned here
 
 ## --- End of File
