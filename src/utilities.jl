@@ -512,7 +512,7 @@
         @assert dmₚ == dm
         return zero(T)
     end
-    @generated function kinetic_ll!(updatekinetics::BitVector, damodelsₚ::AbstractVector{M}, damodels::AbstractVector{M})  where {T,M<:Model{T}}
+    @generated function kinetic_ll!(update::BitVector, damodelsₚ::AbstractVector{M}, damodels::AbstractVector{M})  where {T,M<:Model{T}}
         if M isa Union
             # Split the union with if-elseif.. block
             ifblock = Expr(:block)
@@ -523,8 +523,8 @@
                     dmₚ = damodelsₚ[i]::$Mᵢ
                     ll += kinetic_ll(dmₚ, dm)
                     for j in eachindex(damodels)
-                        if updatekinetics[j] && (damodels[j] == dm) && (damodelsₚ[j] == dmₚ)
-                            updatekinetics[j] = false
+                        if update[j] && (damodels[j] == dm) && (damodelsₚ[j] == dmₚ)
+                            update[j] = false
                         end
                     end
                 end
@@ -533,12 +533,12 @@
                 current = next_branch
             end
             return quote
-                @assert eachindex(updatekinetics) == eachindex(damodelsₚ) == eachindex(damodels)
-                fill!(updatekinetics, true)
+                @assert eachindex(update) == eachindex(damodelsₚ) == eachindex(damodels)
+                fill!(update, true)
                 ll = zero(T)
                 # Count each unique kinetic model exactly once towards the kinetic log likelihood
                 for i in eachindex(damodelsₚ, damodels)
-                    if updatekinetics[i]
+                    if update[i]
                         dm = damodels[i]
                         $ifblock
                     end
@@ -548,18 +548,18 @@
         else
             # Fall back to generic approach
             return quote
-                @assert eachindex(updatekinetics) == eachindex(damodelsₚ) == eachindex(damodels)
-                fill!(updatekinetics, true)
+                @assert eachindex(update) == eachindex(damodelsₚ) == eachindex(damodels)
+                fill!(update, true)
                 ll = zero(T)
                 # Count each unique kinetic model exactly once towards the kinetic log likelihood
                 for i in eachindex(damodelsₚ, damodels)
-                    if updatekinetics[i]
+                    if update[i]
                         dm = damodels[i]
                         dmₚ = damodelsₚ[i]
                         ll += kinetic_ll(dmₚ, dm)
                         for j in eachindex(damodels)
-                            if updatekinetics[j] && (damodels[j] == dm) && (damodelsₚ[j] == dmₚ)
-                                updatekinetics[j] = false
+                            if update[j] && (damodels[j] == dm) && (damodelsₚ[j] == dmₚ)
+                                update[j] = false
                             end
                         end
                     end
@@ -941,7 +941,7 @@
             volume_fraction,
         )
     end
-    @generated function movekinetics!(rng::AbstractRNG, damodels::AbstractVector{M}, updatekinetics::BitVector, p=0.5) where {M<:Model}
+    @generated function movekinetics!(rng::AbstractRNG, damodels::AbstractVector{M}, update::BitVector, p=0.5) where {M<:Model}
         if M isa Union
             # Split the union with if-elseif.. block
             ifblock = Expr(:block)
@@ -952,19 +952,19 @@
                     dmₚ = movekinetics(rng, dm, p)::$Mᵢ
                     # Keep diffusivity models which start identical, identical
                     for j in eachindex(damodels)
-                        if updatekinetics[j]
+                        if update[j]
                             if damodels[j] == dm
                                 # Identical models
                                 damodels[j] = dmₚ
-                                updatekinetics[j] = false
+                                update[j] = false
                             elseif damodels[j] == unwrap(dm)
                                 # Model that we wrap
                                 damodels[j] = unwrap(dmₚ)
-                                updatekinetics[j] = false 
+                                update[j] = false 
                             elseif unwrap(damodels[j]) == unwrap(dm)
                                 # Model that wraps us (or that wraps same thing as us)
                                 damodels[j] = wrap(unwrap(dmₚ), movewrapperkinetics(rng, damodels[j], p))
-                                updatekinetics[j] = false 
+                                update[j] = false 
                             end
                         end
                     end
@@ -974,10 +974,10 @@
                 current = next_branch
             end
             return quote
-                @assert eachindex(updatekinetics) == eachindex(damodels)
-                fill!(updatekinetics, true)
+                @assert eachindex(update) == eachindex(damodels)
+                fill!(update, true)
                 for i in eachindex(damodels)
-                    if updatekinetics[i]
+                    if update[i]
                         dm = damodels[i]
                         $ifblock
                     end
@@ -987,27 +987,27 @@
         else
             # Fall back to generic approach
             return quote
-                @assert eachindex(updatekinetics) == eachindex(damodels)
-                fill!(updatekinetics, true)
+                @assert eachindex(update) == eachindex(damodels)
+                fill!(update, true)
                 for i in eachindex(damodels)
-                    if updatekinetics[i]
+                    if update[i]
                         dm = damodels[i]
                         dmₚ = movekinetics(rng, dm, p)
                         # Keep diffusivity models which start identical, identical
                         for j in eachindex(damodels)
-                            if updatekinetics[j]
+                            if update[j]
                                 if damodels[j] == dm
                                     # Identical models
                                     damodels[j] = dmₚ
-                                    updatekinetics[j] = false
+                                    update[j] = false
                                 elseif damodels[j] == unwrap(dm)
                                     # Model that we wrap
                                     damodels[j] = unwrap(dmₚ)
-                                    updatekinetics[j] = false 
+                                    update[j] = false 
                                 elseif unwrap(damodels[j]) == unwrap(dm)
                                     # Model that wraps us (or that wraps same thing as us)
                                     damodels[j] = wrap(unwrap(dmₚ), movewrapperkinetics(rng, damodels[j], p))
-                                    updatekinetics[j] = false 
+                                    update[j] = false 
                                 end
                             end
                         end
@@ -1039,8 +1039,8 @@
         ll = model!(μcalc, σcalc, chrons, damodels, Tsteps, rp; kwargs...)
         return μcalc, σcalc, ll
     end
-    model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::AbstractVector{<:Chronometer{T}}, damodels::AbstractVector{<:Model{T}}, Tsteps::AbstractVector{T}, rp::RegionalParameters{T}=RegionalParameters{T}(); kwargs...) where {T} = model!(Random.default_rng(), μcalc, σcalc, chrons, damodels, Tsteps, rp; kwargs...)
-    function model!(rng::AbstractRNG, μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::AbstractVector{<:Chronometer{T}}, damodels::AbstractVector{<:Model{T}}, Tsteps::AbstractVector{T}, rp::RegionalParameters{T}=RegionalParameters{T}(); 
+    model!(μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::AbstractVector{<:Chronometer{T}}, damodels::AbstractVector{<:Model{T}}, Tsteps::AbstractVector{T}, rp::RegionalParameters{T}=RegionalParameters{T}(); kwargs...) where {T} = model!(Random.default_rng(), falses(size(μcalc)), μcalc, σcalc, chrons, damodels, Tsteps, rp; kwargs...)
+    function model!(rng::AbstractRNG, update::BitVector, μcalc::AbstractVector{T}, σcalc::AbstractVector{T}, chrons::AbstractVector{<:Chronometer{T}}, damodels::AbstractVector{<:Model{T}}, Tsteps::AbstractVector{T}, rp::RegionalParameters{T}=RegionalParameters{T}(); 
             rescale::Bool=false,
             rescalesdd::Bool=false,
             rescalemdd::Bool=false,
@@ -1065,13 +1065,13 @@
         if any(x->isa(unwrap(x),ZRDAAM), damodels)
             iz = findfirst(x->isa(unwrap(x),ZRDAAM), damodels)
             zdm = unwrap(damodels[iz])::ZRDAAM{T}
-            anneal!(chrons, ZirconHe, tsteps, Tsteps, zdm)
+            anneal!(update, chrons, ZirconHe, tsteps, Tsteps, zdm)
         end
         # Pre-anneal RDAAM samples, if any
         if any(x->isa(unwrap(x),RDAAM), damodels)
             ir = findfirst(x->isa(unwrap(x),RDAAM), damodels)
             adm = unwrap(damodels[ir])::RDAAM{T}
-            anneal!(chrons, ApatiteHe, tsteps, Tsteps, adm)
+            anneal!(update, chrons, ApatiteHe, tsteps, Tsteps, adm)
         end
 
         # Flag any fission track lengths for recalculation

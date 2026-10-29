@@ -266,22 +266,28 @@ end
 
 """
 ```julia
-anneal!(data::AbstractVector{<:Chronometer}, ::Type{<:HeliumSample}, tsteps, Tsteps, dm::DiffusivityModel, [rp::RegionalParameters)
+anneal!(update::BitVector, data::AbstractVector{<:Chronometer}, ::Type{<:HeliumSample}, tsteps, Tsteps, dm::DamageDiffusivityModel, [rp::RegionalParameters])
 anneal!(mineral::HeliumSample, Tsteps, dm::DamageDiffusivityModel, [rp::RegionalParameters])
 anneal!(ρᵣ, teq, tsteps, Tsteps, dm::DamageDiffusivityModel, [ΔT])
 ```
 In-place version of `anneal`, which may be applied to `Chronometer`s.
 """
-function anneal!(data::AbstractVector{<:Chronometer{T}}, ::Type{C}, tsteps::AbstractVector{T}, Tsteps::AbstractVector{T}, dm::DiffusivityModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T<:AbstractFloat, C<:HeliumSample}
+function anneal!(update::BitVector, data::AbstractVector{<:Chronometer{T}}, ::Type{C}, tsteps::AbstractVector{T}, Tsteps::AbstractVector{T}, dm::DiffusivityModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}();
+        maxoffset = 2.5, # Maximum allowed temperature offset between a sample and its assigned annealing profile
+    ) where {T<:AbstractFloat, C<:HeliumSample}
     @assert eachindex(tsteps) == eachindex(Tsteps)
-    if any(x->isa(x, C), data)
-        im = argmax(i->(eltype(data[i]) <: C) ? length(tsteps_geol(data[i])) : 0, eachindex(data))
-        cₘ = anneal!(data[im]::C, Tsteps, dm, rp)
+    @assert eachindex(update) == eachindex(data)
+    @. update = eltype(data) <: C
+    while any(update)
+        iₘ = argmax(i -> update[i]*length(tsteps_geol(data[i])), eachindex(data))
+        cₘ = anneal!(data[iₘ]::C, Tsteps, dm, rp)
+        update[iₘ] = false
+        offsetₘ = temperatureoffset(cₘ, rp)
         pr = cₘ.pr::AbstractMatrix{T}
-        @assert length(tsteps_geol(cₘ)) == length(axes(pr, 1)) == length(axes(pr, 2))
         for i in eachindex(data)
-            if i!=im && eltype(data[i]) <: C
+            if update[i] && isapprox(offsetₘ, temperatureoffset(data[i], rp), atol=maxoffset)
                 anneal!(data[i], pr)
+                update[i] = false
             end
         end
     end
@@ -300,7 +306,7 @@ function anneal!(mineral::Union{PlanarZirconHe, ZirconHe, ApatiteHe}, pr::Abstra
     ntsteps = size(pr, 1)
     first_index = firstindex(pr) + ntsteps - length(tsteps_geol(mineral))
     if first_index > 1
-        mul!(mineral.annealeddamage, @views(pr[first_index:end, first_index:end]), mineral.alphadamage)
+        @views mul!(mineral.annealeddamage, pr[first_index:end, first_index:end], mineral.alphadamage)
     else
         mul!(mineral.annealeddamage, pr, mineral.alphadamage)
     end
@@ -312,7 +318,7 @@ function anneal!(mineral::MultipleDomain{T}, Tsteps::AbstractVector, dm::DamageD
     c0 = first(mineral.domains)
     ΔT = T(273.15) + temperatureoffset(mineral, rp)
     anneal!(c0.pr, view(c0.annealeddamage,:,1), tsteps_geol(c0), Tsteps, dm, ΔT) # Calculate ρᵣ matrix for first domain
-    anneal!(mineral, c0.pr) # Apply to all domains
+    anneal!(mineral, c0.pr) # Apply to annealed damage of all domains
     return mineral
 end
 anneal!(mineral::SingleDomain{T}, Tsteps::AbstractVector, dm::DamageDiffusivityModel, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T} = anneal!(mineral.domain, Tsteps, dm, rp)
@@ -324,7 +330,7 @@ function anneal!(mineral::Union{PlanarZirconHe{T}, ZirconHe{T}, ApatiteHe{T}}, T
     else
         anneal!(mineral.pr, view(mineral.annealeddamage,:,1), tsteps_geol(mineral), Tsteps, dm, ΔT)
     end
-    mul!(mineral.annealeddamage, mineral.pr, mineral.alphadamage)
+    anneal!(mineral, mineral.pr) # Apply to annealed damage
     return mineral
 end
 

@@ -82,6 +82,7 @@
 
         # Struct to hold t-T path proposals and related variables
         path = TTPath(agesteps, constraint, boundary, detail, maxpoints)
+        update = falses(size(damodels))
 
         # Variables to hold proposals
         npointsₚ = npoints
@@ -92,7 +93,7 @@
         initialproposal!(rng, path, npoints) 
 
         # Log-likelihood for initial proposal
-        ll = llₚ = model!(rng, μcalc, σcalc, chrons, damodels, path.Tsteps, rp; 
+        ll = llₚ = model!(rng, update, μcalc, σcalc, chrons, damodels, path.Tsteps, rp; 
             rescale, rescalesdd, rescalemdd, redegastracer, partitiondaughter) + 
             diff_ll(path.Tsteps, dTmax, dTmax_sigma) + (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
 
@@ -160,7 +161,7 @@
             collectproposal!(path, npointsₚ)
 
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(rng, μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps, rp; rescale, rescalesdd, rescalemdd, redegastracer, partitiondaughter)
+            llₚ = model!(rng, update, μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps, rp; rescale, rescalesdd, rescalemdd, redegastracer, partitiondaughter)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
@@ -273,7 +274,7 @@
             collectproposal!(path, npointsₚ)
 
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(rng, μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps, rp; rescale, rescalesdd, rescalemdd, redegastracer, partitiondaughter)
+            llₚ = model!(rng, update, μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps, rp; rescale, rescalesdd, rescalemdd, redegastracer, partitiondaughter)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
@@ -435,6 +436,7 @@
 
         # Struct to hold t-T path proposals and related variables
         path = TTPath(agesteps, constraint, boundary, detail, maxpoints)
+        update = falses(size(damodels))
 
         # Variables to hold proposals
         npointsₚ = npoints
@@ -444,16 +446,15 @@
         damodels = copy(damodels)
         damodelsₚ = copy(damodels)
         rpₚ = rp₀ = rp
-        updatekinetics = falses(size(damodels))
 
         # Initial propopsal
         initialproposal!(rng, path, npoints)
 
         # Log-likelihood for initial proposal
-        ll = llₚ = model!(rng, μcalc, σcalc, chrons, damodels, path.Tsteps, rp; 
+        ll = llₚ = model!(rng, update, μcalc, σcalc, chrons, damodels, path.Tsteps, rp; 
             rescale, rescalesdd, rescalemdd, redegastracer, stepwisetracerfraction, partitiondaughter) + 
             diff_ll(path.Tsteps, dTmax, dTmax_sigma) + 
-            kinetic_ll!(updatekinetics, damodelsₚ, damodels₀) + kinetic_ll(rpₚ, rp₀) + 
+            kinetic_ll!(update, damodelsₚ, damodels₀) + kinetic_ll(rpₚ, rp₀) + 
             (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
         
         # Proposal probabilities (must sum to 1)
@@ -514,7 +515,7 @@
 
             elseif (r <= p_move+p_birth+p_death+p_bounds+p_kinetics)
                 # Adjust kinetic parameters, one at a time
-                movekinetics!(rng, damodelsₚ, updatekinetics)
+                movekinetics!(rng, damodelsₚ, update)
                 rpₚ = movekinetics(rng, rpₚ)
 
             end
@@ -528,9 +529,9 @@
             end
                
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(rng, μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps, rpₚ; rescale, rescalesdd, rescalemdd, redegastracer, stepwisetracerfraction, partitiondaughter)
+            llₚ = model!(rng, update, μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps, rpₚ; rescale, rescalesdd, rescalemdd, redegastracer, stepwisetracerfraction, partitiondaughter)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
-            llₚ += kinetic_ll!(updatekinetics, damodelsₚ, damodels₀) + kinetic_ll(rpₚ, rp₀)
+            llₚ += kinetic_ll!(update, damodelsₚ, damodels₀) + kinetic_ll(rpₚ, rp₀)
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
             # Accept or reject proposal based on likelihood
@@ -641,7 +642,7 @@
 
             elseif (r <= p_move+p_birth+p_death+p_bounds+p_kinetics)
                 # Adjust kinetic parameters, one at a time
-                movekinetics!(rng, damodelsₚ, updatekinetics)
+                movekinetics!(rng, damodelsₚ, update)
                 rpₚ = movekinetics(rng, rpₚ)
 
             end
@@ -655,9 +656,9 @@
             end
 
             # Calculate model ages for each grain, log likelihood of proposal
-            llₚ = model!(rng, μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps, rpₚ; rescale, rescalesdd, rescalemdd, redegastracer, stepwisetracerfraction, partitiondaughter)
+            llₚ = model!(rng, update, μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps, rpₚ; rescale, rescalesdd, rescalemdd, redegastracer, stepwisetracerfraction, partitiondaughter)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
-            llₚ += kinetic_ll!(updatekinetics, damodelsₚ, damodels₀) + kinetic_ll(rpₚ, rp₀)
+            llₚ += kinetic_ll!(update, damodelsₚ, damodels₀) + kinetic_ll(rpₚ, rp₀)
             dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
             # Accept or reject proposal based on likelihood
