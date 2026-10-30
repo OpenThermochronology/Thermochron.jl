@@ -22,7 +22,6 @@
         maxpoints = 40,             # [n] Maximum allowed number of t-T points
         npoints = 5,                # [n] Initial number of t-T points
         simplified = false,         # Prefer simpler tT paths?
-        dynamicsigma = true,        # Update model uncertainties?
         # Diffusivity and annealing models
         zdm = ZRDAAM(), 
         adm = RDAAM(), 
@@ -32,7 +31,7 @@
         # Model uncertainty is not well known (depends on annealing parameters,
         # decay constants, diffusion parameters, etc.), but is certainly non-zero.
         # Here we add (in quadrature) a blanket model uncertainty of 25 Ma.
-        σmodel = 25.0,              # [Ma] assumed model uncertainty (resampled if dynamicsigma)
+        σmodel = 25.0,              # [Ma] assumed model uncertainty
         T0annealing = 1,            # [unitless] initial annealing "temperature"
     )
 

@@ -1043,20 +1043,6 @@
         end
     end
 
-    # Adjust model uncertainties of chronometers
-    function movesigma!(rng, σcalc::AbstractVector{T}, chrons::AbstractVector{<:Chronometer}) where {T<:AbstractFloat}
-        @assert eachindex(σcalc) == eachindex(chrons)
-        for C in (ZirconFT, MonaziteFT, ApatiteFT, ZirconHe, PlanarZirconHe, ApatiteHe, SphericalHe, PlanarHe, SphericalAr, PlanarAr, MultipleDomain, SingleDomain)
-            r = abs(randn(rng, T))
-            for i in eachindex(chrons)
-                if chrons[i] isa C
-                    σcalc[i] *= r
-                end
-            end
-        end
-        return σcalc
-    end
-
     # Utility functions to calculate model ages for all chronometers at once
     function model!(chrons::AbstractVector{<:Chronometer{T}}, damodels::AbstractVector{<:Model{T}}, Tsteps::AbstractVector{T}, rp::RegionalParameters{T}=RegionalParameters{T}(); kwargs...) where {T}
         μcalc = zeros(T, size(chrons))

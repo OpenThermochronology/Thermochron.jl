@@ -22,7 +22,6 @@
         maxpoints = 40,             # [n] Maximum allowed number of t-T points
         npoints = 5,                # [n] Initial number of t-T points
         simplified = false,         # Prefer simpler tT paths?
-        dynamicsigma = true,        # Update model uncertainties?
         # Diffusivity and annealing models
         zdm = ZRDAAM(), 
         adm = RDAAM(), 

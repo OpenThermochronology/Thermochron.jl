@@ -42,7 +42,6 @@
         npoints = (haskey(params, :npoints) ? params.npoints : minpoints)::Int
         npoints = max(npoints, detail.minpoints+1)
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
-        dynamicsigma = (haskey(params, :dynamicsigma) ? params.dynamicsigma : false)::Bool
         dynamicjumping = (haskey(params, :dynamicjumping) ? params.dynamicjumping : false)::Bool
         rescale = (haskey(params, :rescale) ? params.rescale : false)::Bool
         rescalesdd = (haskey(params, :rescalesdd) ? params.rescalesdd : false)::Bool
@@ -95,7 +94,7 @@
         # Log-likelihood for initial proposal
         ll = llₚ = model!(rng, update, μcalc, σcalc, chrons, damodels, path.Tsteps, rp; 
             rescale, rescalesdd, rescalemdd, redegastracer, partitiondaughter) + 
-            diff_ll(path.Tsteps, dTmax, dTmax_sigma) + (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
+            diff_ll(path.Tsteps, dTmax, dTmax_sigma)
 
         # Proposal probabilities (must sum to 1)
         p_move = 0.64
@@ -147,9 +146,6 @@
                 # If there's an imposed unconformity or other t-T constraint, adjust within bounds
                 movebounds!(rng, path)
 
-                # Move uncertainties
-                dynamicsigma && movesigma!(rng, σcalcₚ, chrons)
-
             end
 
             # Ensure we have enough points in the "detail" interval, if any
@@ -163,7 +159,6 @@
             # Calculate model ages for each grain, log likelihood of proposal
             llₚ = model!(rng, update, μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps, rp; rescale, rescalesdd, rescalemdd, redegastracer, partitiondaughter)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
-            dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
             # Accept or reject proposal based on likelihood
             if log(rand(rng)) < (llₚ - ll) / simannealT(n, T0annealing, λannealing)
@@ -260,9 +255,6 @@
                 # If there's an imposed unconformity or other t-T constraint, adjust within bounds
                 movebounds!(rng, path)
 
-                # Move uncertainties
-                dynamicsigma && movesigma!(rng, σcalcₚ, chrons)
-
             end
             
             # Ensure we have enough points in the "detail" interval, if any
@@ -276,7 +268,6 @@
             # Calculate model ages for each grain, log likelihood of proposal
             llₚ = model!(rng, update, μcalcₚ, σcalcₚ, chrons, damodels, path.Tsteps, rp; rescale, rescalesdd, rescalemdd, redegastracer, partitiondaughter)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
-            dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
             # Accept or reject proposal based on likelihood
             if log(rand(rng)) < (llₚ - ll)
@@ -395,7 +386,6 @@
         npoints = (haskey(params, :npoints) ? params.npoints : minpoints)::Int
         npoints = max(npoints, detail.minpoints+1)
         totalpoints = maxpoints + boundary.npoints + constraint.npoints::Int
-        dynamicsigma = (haskey(params, :dynamicsigma) ? params.dynamicsigma : false)::Bool
         dynamicjumping = (haskey(params, :dynamicjumping) ? params.dynamicjumping : false)::Bool
         rescale = (haskey(params, :rescale) ? params.rescale : false)::Bool
         rescalesdd = (haskey(params, :rescalesdd) ? params.rescalesdd : false)::Bool
@@ -454,8 +444,7 @@
         ll = llₚ = model!(rng, update, μcalc, σcalc, chrons, damodels, path.Tsteps, rp; 
             rescale, rescalesdd, rescalemdd, redegastracer, stepwisetracerfraction, partitiondaughter) + 
             diff_ll(path.Tsteps, dTmax, dTmax_sigma) + 
-            kinetic_ll!(update, damodelsₚ, damodels₀) + kinetic_ll(rpₚ, rp₀) + 
-            (dynamicsigma ? sum(x->-log1p(x), σcalc) : zero(T)) 
+            kinetic_ll!(update, damodelsₚ, damodels₀) + kinetic_ll(rpₚ, rp₀)
         
         # Proposal probabilities (must sum to 1)
         p_move = 0.6
@@ -510,9 +499,6 @@
                 # If there's an imposed unconformity or other t-T constraint, adjust within bounds
                 movebounds!(rng, path)
 
-                # Move uncertainties
-                dynamicsigma && movesigma!(rng, σcalcₚ, chrons)
-
             elseif (r <= p_move+p_birth+p_death+p_bounds+p_kinetics)
                 # Adjust kinetic parameters, one at a time
                 movekinetics!(rng, damodelsₚ, update)
@@ -532,7 +518,6 @@
             llₚ = model!(rng, update, μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps, rpₚ; rescale, rescalesdd, rescalemdd, redegastracer, stepwisetracerfraction, partitiondaughter)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             llₚ += kinetic_ll!(update, damodelsₚ, damodels₀) + kinetic_ll(rpₚ, rp₀)
-            dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
             # Accept or reject proposal based on likelihood
             if log(rand(rng)) < (llₚ - ll) / simannealT(n, T0annealing, λannealing) 
@@ -637,9 +622,6 @@
                 # If there's an imposed unconformity or other t-T constraint, adjust within bounds
                 movebounds!(rng, path)
 
-                # Move uncertainties
-                dynamicsigma && movesigma!(rng, σcalcₚ, chrons)
-
             elseif (r <= p_move+p_birth+p_death+p_bounds+p_kinetics)
                 # Adjust kinetic parameters, one at a time
                 movekinetics!(rng, damodelsₚ, update)
@@ -659,7 +641,6 @@
             llₚ = model!(rng, update, μcalcₚ, σcalcₚ, chrons, damodelsₚ, path.Tsteps, rpₚ; rescale, rescalesdd, rescalemdd, redegastracer, stepwisetracerfraction, partitiondaughter)
             llₚ += diff_ll(path.Tsteps, dTmax, dTmax_sigma)
             llₚ += kinetic_ll!(update, damodelsₚ, damodels₀) + kinetic_ll(rpₚ, rp₀)
-            dynamicsigma && (llₚ += sum(x->-log1p(x), σcalcₚ)) 
 
             # Accept or reject proposal based on likelihood
             if log(rand(rng)) < (llₚ - ll)
