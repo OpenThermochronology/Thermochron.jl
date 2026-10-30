@@ -61,7 +61,7 @@ function Base.show(io::IO, ::MIME"text/plain", x::C) where {T, C<:MultipleDomain
       step age          : $(printshort(x.step_age)) Ma
       step age sigma    : $(printshort(x.step_age_sigma)) Ma
       fraction degassed : $(printshort(x.fraction_experimental))
-      offset            : $(x.offset) C from the surface
+      offset            : $(x.offset) C - geotherm * $(x.height/1000) km 
       domains           : $(printshort(x.domains))
       agesteps          : $(printshort(agesteps_geol(x))) Ma
     """
@@ -72,7 +72,7 @@ function Base.show(io::IO, ::MIME"text/plain", x::C) where {T, C<:MultipleDomain
       Rstep/Rbulk       : $(printshort(x.step_age))
       Rstep/Rbulk sigma : $(printshort(x.step_age_sigma))
       fraction degassed : $(printshort(x.fraction_experimental))
-      offset            : $(x.offset) C from the surface
+      offset            : $(x.offset) C - geotherm * $(x.height/1000) km 
       domains           : $(printshort(x.domains))
       agesteps          : $(printshort(agesteps_geol(x))) Ma
     """
@@ -83,7 +83,7 @@ function Base.show(io::IO, ::MIME"text/plain", x::C) where {T, C<:SingleDomain{T
       step age          : $(printshort(x.step_age)) Ma
       step age sigma    : $(printshort(x.step_age_sigma)) Ma
       fraction degassed : $(printshort(x.fraction_experimental))
-      offset            : $(x.offset) C from the surface
+      offset            : $(x.offset) C - geotherm * $(x.height/1000) km 
       domain            : $(x.domain)
       agesteps          : $(printshort(agesteps_geol(x))) Ma
     """
@@ -94,7 +94,7 @@ function Base.show(io::IO, ::MIME"text/plain", x::C) where {T, C<:SingleDomain{T
       Rstep/Rbulk       : $(printshort(x.step_age))
       Rstep/Rbulk sigma : $(printshort(x.step_age_sigma))
       fraction degassed : $(printshort(x.fraction_experimental))
-      offset            : $(x.offset) C from the surface
+      offset            : $(x.offset) C - geotherm * $(x.height/1000) km 
       domain            : $(x.domain)
       agesteps          : $(printshort(agesteps_geol(x))) Ma
     """
@@ -104,7 +104,7 @@ function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:ArgonSample}
     print(io, """$T:
       age       : $(x.age) Ma
       age_sigma : $(x.age_sigma) Ma
-      offset    : $(x.offset) C from the surface
+      offset    : $(x.offset) C - geotherm * $(x.height/1000) km 
       K-40      : $(printshort(x.r40K / (6.022E23 / 1E6 / 39.96399848))) ppm
       rsteps    : $(x.rsteps) μm
       agesteps  : $(x.agesteps) Ma
@@ -115,7 +115,7 @@ function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:HeliumSample}
     print(io, """$T:
       age       : $(x.age) Ma
       age_sigma : $(x.age_sigma) Ma
-      offset    : $(x.offset) C from the surface
+      offset    : $(x.offset) C - geotherm * $(x.height/1000) km 
       U-238     : $(printshort(x.r238U / (6.022E23 / 1E6 / 238))) ppm
       U-235     : $(printshort(x.r235U / (6.022E23 / 1E6 / 235))) ppm
       Th-232    : $(printshort(x.r232Th / (6.022E23 / 1E6 / 232))) ppm
@@ -129,7 +129,7 @@ function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:FissionTrackSampl
     print(io, """$T:
       age       : $(x.age) Ma
       age_sigma : $(x.age_sigma) Ma
-      offset    : $(x.offset) C from the surface
+      offset    : $(x.offset) C - geotherm * $(x.height/1000) km 
       agesteps  : $(x.agesteps) Ma
     """
     )
@@ -138,7 +138,7 @@ function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:ApatiteFT}
     print(io, """$T:
       age       : $(x.age) Ma
       age_sigma : $(x.age_sigma) Ma
-      offset    : $(x.offset) C from the surface
+      offset    : $(x.offset) C - geotherm * $(x.height/1000) km 
       rmr₀      : $(x.rmr0)
       agesteps  : $(printshort(x.agesteps)) Ma
     """
@@ -147,7 +147,7 @@ end
 function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:FissionTrackLength}
     print(io, """$T:
       length    : $(x.length) μm
-      offset    : $(x.offset) C from the surface
+      offset    : $(x.offset) C - geotherm * $(x.height/1000) km 
       agesteps  : $(printshort(x.agesteps)) Ma
     """
     )
@@ -156,7 +156,7 @@ function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:ApatiteTrackLengt
     print(io, """$T:
       length    : $(x.length) μm
       angle     : $(x.angle) degrees from c-axis
-      offset    : $(x.offset) C from the surface
+      offset    : $(x.offset) C - geotherm * $(x.height/1000) km 
       rmr₀      : $(x.rmr0)
       agesteps  : $(printshort(x.agesteps)) Ma
     """
@@ -166,7 +166,7 @@ function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:VitriniteRo}
     print(io, """$T:
       Rₒ        : $(x.Ro) %
       Rₒ sigma  : $(x.Ro_sigma) %
-      offset    : $(x.offset) C from the surface
+      offset    : $(x.offset) C - geotherm * $(x.height/1000) km 
       agesteps  : $(printshort(x.agesteps)) Ma
     """
     )
