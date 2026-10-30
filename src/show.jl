@@ -45,6 +45,13 @@ function Base.show(io::IO, x::T) where {T<:ApatiteTrackLengthOriented}
     θ = round(x.angle, sigdigits=3)
     print(io, "$t($(l) μm, $(θ)°)")
 end
+function Base.show(io::IO, x::T) where {T<:VitriniteRo}
+    t = Base.typename(T).wrapper
+    σ = round(x.Ro_sigma, sigdigits=2)
+    d = log10(x.Ro)-log10(x.Ro_sigma)
+    μ = round(x.Ro, sigdigits=2+floor(Int, d*!isnan(d)))
+    print(io, "$t($(μ)±$(σ) %)")
+end
 
 # Verbose show methods
 printshort(x::AbstractArray) = "[$(first(x)) … $(last(x))]"
@@ -132,7 +139,7 @@ function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:ApatiteFT}
       age       : $(x.age) Ma
       age_sigma : $(x.age_sigma) Ma
       offset    : $(x.offset) C from the surface
-      rmr0      : $(x.rmr0)
+      rmr₀      : $(x.rmr0)
       agesteps  : $(printshort(x.agesteps)) Ma
     """
     )
@@ -150,23 +157,23 @@ function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:ApatiteTrackLengt
       length    : $(x.length) μm
       angle     : $(x.angle) degrees from c-axis
       offset    : $(x.offset) C from the surface
-      rmr0      : $(x.rmr0)
+      rmr₀      : $(x.rmr0)
+      agesteps  : $(printshort(x.agesteps)) Ma
+    """
+    )
+end
+function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:VitriniteRo}
+    print(io, """$T:
+      Rₒ        : $(x.Ro) %
+      Rₒ sigma  : $(x.Ro_sigma) %
+      offset    : $(x.offset) C from the surface
       agesteps  : $(printshort(x.agesteps)) Ma
     """
     )
 end
 
-# Compact show for annealing models
-function Base.show(io::IO, x::T) where {T<:AnnealingModel}
-    if get(io, :compact, false)
-        print(io, "$T(…)")
-    else
-        Base.show_default(io, x)
-    end
-end
-
-# Compact show for diffusivity models
-function Base.show(io::IO, x::T) where {T<:DiffusivityModel}
+# Compact show for annealing, diffusivity, etc. models
+function Base.show(io::IO, x::T) where {T<:Model}
     if get(io, :compact, false)
         print(io, "$T(…)")
     else

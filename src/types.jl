@@ -43,10 +43,10 @@ function Base.:(==)(x::T, y::T) where {T<:Model}
     end
     return true
 end
-Base.isapprox(x::Model, y::Model) = false
+Base.isapprox(::Model, ::Model; kwargs...) = false
 function Base.isapprox(x::T, y::T; kwargs...) where {T<:Model}
     for n in fieldnames(T)
-        isapprox(getfield(x, n), getfield(y, n), kwargs...) || return false
+        isapprox(getfield(x, n), getfield(y, n); kwargs...) || return false
     end
     return true
 end

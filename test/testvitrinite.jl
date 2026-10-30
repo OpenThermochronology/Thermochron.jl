@@ -6,13 +6,12 @@
     @test dm isa Thermochron.NielsenBasinRo{Float64}
     @test dm.Ro0 ≈ 0.2104
     @test dm.logA ≈ 60.9856
-    @test length(dm.Ea) == 20
-    @test length(dm.stoich) == 20
-    @test sum(dm.stoich) ≈ 1.0
+    @test length(dm.Ea) == length(dm.fraction) == 20
+    @test sum(dm.fraction) ≈ 1.0
 
     dm2 = NielsenBasinRo(Ro0=0.25)
     @test dm2.Ro0 ≈ 0.25
-    @test sum(dm2.stoich) ≈ 1.0
+    @test sum(dm2.fraction) ≈ 1.0
 
 ## --- Test VitriniteRo construction
 

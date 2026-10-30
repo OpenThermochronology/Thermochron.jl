@@ -1574,7 +1574,7 @@ function PlanarHe(T::Type{<:AbstractFloat}=Float64;
         agesteps = nothing,
         tsteps = nothing,
     )
-``
+
     # Temporal discretization
     agesteps, tsteps = checktimediscretization(T, agesteps, tsteps)
 
@@ -2302,7 +2302,7 @@ radius(x::MultipleDomain) = radius(first(x.domains))
 
 # Check if a chronometer has a uniform radial deposition profile
 uniformparent(::Chronometer) = true
-uniformparent(x::ArgonSample) = all(isapprox(first(x.K40)), x.K40)
+uniformparent(x::ArgonSample) = all(isapprox(first(x.rK40)), x.rK40)
 uniformparent(x::HeliumSample) = all(isapprox(first(x.alphadamage)), view(x.alphadamage, 1, :))
 uniformparent(x::SingleDomain) = uniformparent(x.domain)
 uniformparent(x::MultipleDomain) = uniformparent(first(x.domains))

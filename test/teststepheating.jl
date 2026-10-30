@@ -38,7 +38,7 @@
     @test sum(step_tracer) ≈ sum(step_daughter) ≈ total_daughter ≈ 1.6465637391602522e16
 
     mineral = ApatiteHe(r=50,dr=1,U238=33.0,Th232=24.2,Sm147=22.0,tsteps=tsteps)
-    Thermochron.anneal!(mineral, Tsteps, RDAAM())
+    Thermochron.anneal!(mineral, Tsteps, RDAAM(), RegionalParameters())
     @test modelage(mineral, Tsteps, RDAAM()) ≈ 321.6472978976417
     total_daughter = nanmean(mineral.y[2:end-1]./mineral.rsteps, mineral.relvolumes)
     step_tracer, step_daughter = Thermochron.degas!(mineral, tsteps_degassing, Tsteps_degassing, RDAAM())
@@ -49,7 +49,7 @@
     @test sum(step_tracer) ≈ sum(step_daughter) ≈ total_daughter ≈ 4.1992268428047976e16
 
     mineral = ZirconHe(r=50,dr=1,U238=33.0,Th232=24.2,Sm147=22.0,tsteps=tsteps)
-    Thermochron.anneal!(mineral, Tsteps, ZRDAAM())
+    Thermochron.anneal!(mineral, Tsteps, ZRDAAM(), RegionalParameters())
     @test modelage(mineral, Tsteps, ZRDAAM()) ≈ 589.5024052472548
     total_daughter = nanmean(mineral.y[2:end-1]./mineral.rsteps, mineral.relvolumes)
     step_tracer, step_daughter = Thermochron.degas!(mineral, tsteps_degassing, Tsteps_degassing, ZRDAAM())
@@ -96,7 +96,7 @@
     println()
     display(sdd)
 
-    Thermochron.anneal!(sdd.domain, Tsteps, RDAAM())
+    Thermochron.anneal!(sdd.domain, Tsteps, RDAAM(), RegionalParameters())
     age, stepage, fraction = modelage(sdd, Tsteps, RDAAM())
     @test age ≈ 3.5005457844184718
     # @info round.(stepage, sigdigits=5)
@@ -148,7 +148,7 @@
     println()
     display(sdd)
 
-    Thermochron.anneal!(sdd.domain, Tsteps, ZRDAAM())
+    Thermochron.anneal!(sdd.domain, Tsteps, ZRDAAM(), rp)
     age, stepage, fraction = modelage(sdd, Tsteps, ZRDAAM())
     # @test age ≈ 60.931162717197225
     # @info round.(stepage, sigdigits=5)

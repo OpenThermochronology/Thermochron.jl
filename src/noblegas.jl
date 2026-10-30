@@ -270,7 +270,7 @@ anneal!(ρᵣ, teq, tsteps, Tsteps, dm::DamageDiffusivityModel, [ΔT])
 ```
 In-place version of `anneal`, which may be applied to `Chronometer`s.
 """
-function anneal!(update::BitVector, data::AbstractVector{<:Chronometer{T}}, ::Type{C}, tsteps::AbstractVector{T}, Tsteps::AbstractVector{T}, dm::DiffusivityModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}();
+function anneal!(update::BitVector, data::AbstractVector{<:Chronometer{T}}, ::Type{C}, tsteps::AbstractVector{T}, Tsteps::AbstractVector{T}, dm::DiffusivityModel{T}, rp::RegionalParameters{T};
         maxoffset = 2.5, # Maximum allowed temperature offset between a sample and its assigned annealing profile
     ) where {T<:AbstractFloat, C<:HeliumSample}
     @assert eachindex(tsteps) == eachindex(Tsteps)
@@ -278,7 +278,7 @@ function anneal!(update::BitVector, data::AbstractVector{<:Chronometer{T}}, ::Ty
     @. update = eltype(data) <: C
     while any(update)
         iₘ = argmax(i -> update[i]*length(tsteps_geol(data[i])), eachindex(data))
-        cₘ = anneal!(data[iₘ]::C, Tsteps, dm, rp)
+        cₘ = anneal!(data[iₘ], Tsteps, dm, rp)::C
         update[iₘ] = false
         offsetₘ = temperatureoffset(cₘ, rp)
         pr = cₘ.pr::AbstractMatrix{T}
@@ -320,15 +320,22 @@ function anneal!(mineral::Union{PlanarZirconHe, ZirconHe, ApatiteHe}, pr::Abstra
 end
 
 # Anneal without previously-known ρᵣ matrix
-function anneal!(mineral::MultipleDomain{T}, Tsteps::AbstractVector, dm::DamageDiffusivityModel, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T}
+function anneal!(mineral::MultipleDomain{T}, Tsteps::AbstractVector, dm::DamageDiffusivityModel, rp::RegionalParameters{T}) where {T}
     c0 = first(mineral.domains)
     ΔT = T(273.15) + temperatureoffset(mineral, rp)
-    anneal!(c0.pr, tsteps_geol(c0), Tsteps, dm, ΔT) # Calculate ρᵣ matrix for first domain
-    anneal!(mineral, c0.pr) # Apply to annealed damage of all domains
-    return mineral
+    # Calculate ρᵣ matrix for first domain
+    first_index = firstindex(Tsteps) + length(Tsteps) - length(tsteps_geol(mineral))
+    if first_index > 1
+        anneal!(c0.pr, tsteps_geol(c0), @views(Tsteps[first_index:end]), dm, ΔT)
+    else
+        anneal!(c0.pr, tsteps_geol(c0), Tsteps, dm, ΔT)
+    end
+    # Apply to annealed damage of all domains
+    anneal!(mineral, c0.pr) 
+    return c0
 end
-anneal!(mineral::SingleDomain{T}, Tsteps::AbstractVector, dm::DamageDiffusivityModel, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T} = anneal!(mineral.domain, Tsteps, dm, rp)
-function anneal!(mineral::Union{PlanarZirconHe{T}, ZirconHe{T}, ApatiteHe{T}}, Tsteps::AbstractVector, dm::DamageDiffusivityModel{T}, rp::RegionalParameters{T}=RegionalParameters{T}()) where {T}
+anneal!(mineral::SingleDomain, Tsteps::AbstractVector, dm::DamageDiffusivityModel, rp::RegionalParameters) = anneal!(mineral.domain, Tsteps, dm, rp)
+function anneal!(mineral::Union{PlanarZirconHe{T}, ZirconHe{T}, ApatiteHe{T}}, Tsteps::AbstractVector, dm::DamageDiffusivityModel{T}, rp::RegionalParameters{T}) where {T}
     ΔT = T(273.15) + temperatureoffset(mineral, rp)
     first_index = firstindex(Tsteps) + length(Tsteps) - length(tsteps_geol(mineral))
     if first_index > 1
@@ -413,7 +420,7 @@ function anneal!(ρᵣ::AbstractMatrix{T}, tsteps::AbstractVector, Tsteps::Abstr
         @fast for j ∈ 1:i
             # Convert track length reduction for damage from previous timesteps
             # to an equivalent annealing time at the current temperature
-            teq = exp(C₂ + lᵢ * ((1/ρᵣ[i-1, j] - 1)^β - C₀) / C₁) * (i!=j)
+            teq = ifelse(i==j, zero(T), exp(C₂ + lᵢ * ((1/ρᵣ[i-1, j] - 1)^β - C₀) / C₁))
             # Current reduced track length
             ρᵣ[i,j] = 1 / ((C₀ + C₁ * (log(dt + teq) - C₂) / lᵢ)^(1/β) + 1)
         end

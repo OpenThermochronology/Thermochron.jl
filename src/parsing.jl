@@ -381,10 +381,10 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
             r = (haskey(ds, :halfwidth_um) && !isnan(ds.halfwidth_um[i])) ? ds.halfwidth_um[i] : 100
             # Determine if reported degassing is cumulative or not
             if issorted(dds.fraction_degassed)
-                fraction_experimental = dds.fraction_degassed
+                fraction_experimental = copy(dds.fraction_degassed)
                 fraction_stepwise = diff([0; fraction_experimental])
             else
-                fraction_stepwise = dds.fraction_degassed
+                fraction_stepwise = copy(dds.fraction_degassed)
                 fraction_experimental = cumsum(fraction_stepwise)
             end
             # Ensure fractions are normalized to 1
@@ -478,10 +478,10 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
             if haskey(dds, :He_4_He_3) # He ratio format
                 # Determine if reported degassing is cumulative or not
                 if issorted(dds.He_3)
-                    fraction_experimental = dds.He_3
+                    fraction_experimental = copy(dds.He_3)
                     fraction_stepwise = diff([0; fraction_experimental])
                 else
-                    fraction_stepwise = dds.He_3
+                    fraction_stepwise = copy(dds.He_3)
                     fraction_experimental = cumsum(fraction_stepwise)
                 end
                 Rstep = dds.He_4_He_3
@@ -499,10 +499,10 @@ function chronometers(T::Type{<:AbstractFloat}, ds, params;
             else # Rstep_Rbulk format
                 # Determine if reported degassing is cumulative or not
                 if issorted(dds.fraction_degassed)
-                    fraction_experimental = dds.fraction_degassed
+                    fraction_experimental = copy(dds.fraction_degassed)
                     fraction_stepwise = diff([0; fraction_experimental])
                 else
-                    fraction_stepwise = dds.fraction_degassed
+                    fraction_stepwise = copy(dds.fraction_degassed)
                     fraction_experimental = cumsum(fraction_stepwise)
                 end
                 # Ensure fractions are normalized to 1

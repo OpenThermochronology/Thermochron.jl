@@ -135,6 +135,7 @@
 
     # Standard RDAAM annealing model
     dm = RDAAM()
+    rp = RegionalParameters()
 
     rate = 0.1 # C/Ma
     agesteps = (120:-0.3:0.)./rate
@@ -144,13 +145,13 @@
     ap28 = ApatiteHe(;age=75, age_sigma=5, r=60, dr=1, U238=28, Th232=0, agesteps)
     ap150 = ApatiteHe(;age=75, age_sigma=5, r=60, dr=1, U238=150, Th232=0, agesteps)
     ap250 = ApatiteHe(;age=75, age_sigma=5, r=60, dr=1, U238=250, Th232=0, agesteps)
-    anneal!(ap4, Tsteps, dm)
+    anneal!(ap4, Tsteps, dm, rp)
     @test modelage(ap4, Tsteps, dm)*rate ≈ 55 atol=1
-    anneal!(ap28, Tsteps, dm)
+    anneal!(ap28, Tsteps, dm, rp)
     @test modelage(ap28, Tsteps, dm)*rate ≈ 68 atol=1
-    anneal!(ap150, Tsteps, dm)
+    anneal!(ap150, Tsteps, dm, rp)
     @test modelage(ap150, Tsteps, dm)*rate ≈ 76 atol=1
-    anneal!(ap250, Tsteps, dm)
+    anneal!(ap250, Tsteps, dm, rp)
     @test modelage(ap250, Tsteps, dm)*rate ≈ 79 atol=1
 
     rate = 1.0 # C/Ma
@@ -161,13 +162,13 @@
     ap28 = ApatiteHe(;age=75, age_sigma=5, r=60, dr=1, U238=28, Th232=0, agesteps)
     ap150 = ApatiteHe(;age=75, age_sigma=5, r=60, dr=1, U238=150, Th232=0, agesteps)
     ap250 = ApatiteHe(;age=75, age_sigma=5, r=60, dr=1, U238=250, Th232=0, agesteps)
-    anneal!(ap4, Tsteps, dm)
+    anneal!(ap4, Tsteps, dm, rp)
     @test modelage(ap4, Tsteps, dm)*rate ≈ 48 atol=1
-    anneal!(ap28, Tsteps, dm)
+    anneal!(ap28, Tsteps, dm, rp)
     @test modelage(ap28, Tsteps, dm)*rate ≈ 64 atol=1
-    anneal!(ap150, Tsteps, dm)
+    anneal!(ap150, Tsteps, dm, rp)
     @test modelage(ap150, Tsteps, dm)*rate ≈ 76 atol=1
-    anneal!(ap250, Tsteps, dm)
+    anneal!(ap250, Tsteps, dm, rp)
     @test modelage(ap250, Tsteps, dm)*rate ≈ 79 atol=1
 
     rate = 10.0 # C/Ma
@@ -178,13 +179,13 @@
     ap28 = ApatiteHe(;age=75, age_sigma=5, r=60, dr=1, U238=28, Th232=0, agesteps)
     ap150 = ApatiteHe(;age=75, age_sigma=5, r=60, dr=1, U238=150, Th232=0, agesteps)
     ap250 = ApatiteHe(;age=75, age_sigma=5, r=60, dr=1, U238=250, Th232=0, agesteps)
-    anneal!(ap4, Tsteps, dm)
+    anneal!(ap4, Tsteps, dm, rp)
     @test modelage(ap4, Tsteps, dm)*rate ≈ 53 atol=1
-    anneal!(ap28, Tsteps, dm)
+    anneal!(ap28, Tsteps, dm, rp)
     @test modelage(ap28, Tsteps, dm)*rate ≈ 58 atol=1
-    anneal!(ap150, Tsteps, dm)
+    anneal!(ap150, Tsteps, dm, rp)
     @test modelage(ap150, Tsteps, dm)*rate ≈ 72 atol=1
-    anneal!(ap250, Tsteps, dm)
+    anneal!(ap250, Tsteps, dm, rp)
     @test modelage(ap250, Tsteps, dm)*rate ≈ 76 atol=1
 
 ## --- End of file

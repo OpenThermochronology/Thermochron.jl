@@ -1065,13 +1065,13 @@
         if any(x->isa(unwrap(x),ZRDAAM), damodels)
             iz = findfirst(x->isa(unwrap(x),ZRDAAM), damodels)
             zdm = unwrap(damodels[iz])::ZRDAAM{T}
-            anneal!(update, chrons, ZirconHe, tsteps, Tsteps, zdm)
+            anneal!(update, chrons, Union{ZirconHe,PlanarZirconHe}, tsteps, Tsteps, zdm, rp; maxoffset=2.5)
         end
         # Pre-anneal RDAAM samples, if any
         if any(x->isa(unwrap(x),RDAAM), damodels)
             ir = findfirst(x->isa(unwrap(x),RDAAM), damodels)
             adm = unwrap(damodels[ir])::RDAAM{T}
-            anneal!(update, chrons, ApatiteHe, tsteps, Tsteps, adm)
+            anneal!(update, chrons, ApatiteHe, tsteps, Tsteps, adm, rp; maxoffset=2.5)
         end
 
         # Flag any fission track lengths for recalculation
@@ -1080,9 +1080,9 @@
         end
 
         # Optionally rescale log likelihoods to avoid one chronometer type from dominating the inversion
-        scalegar = rescale ? sqrt(count(x->isa(x, Union{SphericalAr, PlanarAr}, chrons))) : one(T)
-        scaleghe = rescale ? sqrt(count(x->isa(x, Union{SphericalHe, PlanarHe}, chrons))) : one(T)
-        scalezhe = rescale ? sqrt(count(x->isa(x, Union{ZirconHe, PlanarZirconHe}, chrons))) : one(T)
+        scalegar = rescale ? sqrt(count(x->isa(x, Union{SphericalAr, PlanarAr}), chrons)) : one(T)
+        scaleghe = rescale ? sqrt(count(x->isa(x, Union{SphericalHe, PlanarHe}), chrons)) : one(T)
+        scalezhe = rescale ? sqrt(count(x->isa(x, Union{ZirconHe, PlanarZirconHe}), chrons)) : one(T)
         scaleahe = rescale ? sqrt(count(x->isa(x, ApatiteHe), chrons)) : one(T)
         scalezft = rescale ? sqrt(count(x->isa(x, ZirconFT), chrons)) : one(T)
         scalemft = rescale ? sqrt(count(x->isa(x, MonaziteFT), chrons)) : one(T)
