@@ -781,13 +781,14 @@
         randomize!(rng, path.boundary)
         randomize!(rng, path.constraint, path.boundary)
         collectaccepted!(path, 0)
+        tsteps = ((first(path.agesteps) - step_at(path.agesteps,1)/2) .- path.agesteps)
         for i in eachindex(path.agepoints, path.Tpoints)
             if (i-firstindex(path.agepoints)) < path.detail.minpoints
                 path.agepoints[i] = rand(rng, Uniform(path.detail.agemin, path.detail.agemax)) # Uniformly from the detail interval
             else
                 path.agepoints[i] = rand(rng, path.agesteps) # Uniformly from the model age domain
             end
-            path.Tpoints[i] = linterp1(reverse(path.agesteps), path.Tsteps, first(path.agesteps)-path.agepoints[i])
+            path.Tpoints[i] = linterp1(tsteps, path.Tsteps, first(path.agesteps)-path.agepoints[i])
         end
         collectaccepted!(path, npoints)
         return path
