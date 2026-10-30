@@ -885,6 +885,16 @@
             D0_N17_logsigma = zdm.D0_N17_logsigma,
             rmin = (rand(rng)<p) ? reflecting(zdm.rmin + randn(rng, T)*zdm.rmin_sigma/2, 0, 1) : zdm.rmin,
             rmin_sigma = zdm.rmin_sigma,
+            # Other parameters that are unchanged:
+            lint0 = zdm.lint0,
+            SV = zdm.SV,
+            Ba = zdm.Ba,
+            phi = zdm.phi,
+            beta = zdm.beta,
+            C0 = zdm.C0,
+            C1 = zdm.C1,
+            C2 = zdm.C2,
+            C3 = zdm.C3,
         )
     end
     function movekinetics(rng::AbstractRNG, adm::RDAAM{T}, p=0.5) where {T<:AbstractFloat}
@@ -899,6 +909,20 @@
             rmr0 = rmr0,
             rmr0_sigma = adm.rmr0_sigma,
             kappa = adm.kappa_rmr0 - rmr0,
+            kappa_rmr0 = adm.kappa_rmr0,
+            # Other parameters that are unchanged:
+            psi = adm.psi,
+            omega = adm.omega,
+            etaq = adm.etaq,
+            rhoap = adm.rhoap,
+            L = adm.L,
+            lambdaf = adm.lambdaf,
+            lambdaD = adm.lambdaD,
+            beta = adm.beta,
+            C0 = adm.C0,
+            C1 = adm.C1,
+            C2 = adm.C2,
+            C3 = adm.C3,
         )
     end
     function movekinetics(rng::AbstractRNG, dm::Diffusivity{T}, p=0.5) where {T<:AbstractFloat}
