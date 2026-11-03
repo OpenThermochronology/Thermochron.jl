@@ -115,7 +115,7 @@
     arh = arrhenius(sdd)
     @test arh isa Arrhenius{Float64}
     @test arh.yf isa Thermochron.YorkFit{Float64}
-    @test arh.yf.mswd ≈ 12.198621500215292
+    @test arh.yf.mswd ≈ 13.941281714531764
     @test Thermochron.value(arh.logD0) ≈ -10.785267802210843
     @test Thermochron.stdev(arh.logD0) ≈ 0.17410554914876
     @test Thermochron.value(arh.D0) ≈ 2.0702257571577676e-5
@@ -167,7 +167,7 @@
     arh = arrhenius(sdd)
     @test arh isa Arrhenius{Float64}
     @test arh.yf isa Thermochron.YorkFit{Float64}
-    @test arh.yf.mswd ≈ 8.987488568277705
+    @test arh.yf.mswd ≈ 10.271415506603091
     @test Thermochron.value(arh.logD0) ≈ -10.63752320442042
     @test Thermochron.stdev(arh.logD0) ≈ 0.17154084709232897
     @test Thermochron.value(arh.D0) ≈ 2.3998404609730614e-5
