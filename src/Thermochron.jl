@@ -65,7 +65,7 @@ module Thermochron
     include("stepheating.jl")
     include("diffusion.jl")
     export Diffusivity, SDiffusivity                                    # Types for generic and scaled diffusivities
-    export MDiffusivity, MSDiffusivity                                  # Types for multiple diffusivities
+    export MDiffusivity, MSDiffusivity, MultipleDiffusivity             # Types for multiple diffusivities
     export ZirconHeliumModel, ZRDAAM, ApatiteHeliumModel, RDAAM         # Damage-and-annealing based helium diffusivity model types
     export SingleDomain, MultipleDomain                                 # Types for modelling step-heating data, with one or more diffusion domains 
     export Arrhenius, arrhenius                                         # Function and type for fitting Arrhenius trends to step heating experiments
